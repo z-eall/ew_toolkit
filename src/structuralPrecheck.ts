@@ -195,9 +195,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
     const valid = validate(value);
     if (!valid && validate.errors) {
       for (const error of validate.errors) {
-        // additionalProperties fires once per branch at the object root with
-        // the bad key in params — skip the generic root-level duplicate noise
-        // ajv sometimes emits alongside it for the same object.
+        // additionalProperties errors carry the bad key in params — use that
+        // to build a message naming the key, instead of ajv's generic one.
         const message = error.params && "additionalProperty" in error.params
           ? `Unknown key '${(error.params as { additionalProperty: string }).additionalProperty}' for a ${BRANCH_TITLES[branch]} — ${error.message}.`
           : `${error.instancePath || "(entry)"} ${error.message}`;
