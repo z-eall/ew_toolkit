@@ -19,13 +19,13 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 ## Decisions so far
 
 - [What's the technical shape of a Monaco-based validator on GitHub Pages + Actions?](issues/05-web-app-mechanics.md) — Confirmed $0-forever. Vite as bundler (monaco-yaml requires one), schema bundled at build time, single combined `schedule`-triggered workflow (regen + build + deploy) — a two-workflow split would silently break since `GITHUB_TOKEN` can't chain workflows. Full findings: [research/05-web-app-mechanics.md](research/05-web-app-mechanics.md).
+- [Can key references be validated without full data-aware game data?](issues/04-reference-validation-feasibility.md) — Yes for `data.yaml` named templates (clean definition/usage pair, same-file and cross-file, no game data needed) — the concrete v1 feature. Custom saved keys are a weaker best-effort warning. Prefab names, global keys, and event names must wait. Full findings: [research/04-reference-validation-feasibility.md](research/04-reference-validation-feasibility.md).
 
 ## Not yet specified
 
 - UI/UX design of the validator page (layout, error display style, file-upload vs. drag-drop vs. folder picker) — a `/prototype` question, framework (Vite) now decided.
 - Repo structure/scaffold: how the schema-generation script, the web app, and the single combined GitHub Actions workflow (schema regen + build + deploy, per ticket 05) are organized within one repo, plus the one-time Pages "Build and deployment source → GitHub Actions" setting.
 - Version-picker dropdown implementation, if ticket 03 finds multi-version schema generation feasible.
-- Reference-checking (same-file and/or cross-file) implementation, if ticket 04 finds it feasible without full data-aware work.
 - Branding/naming polish (repo name, site title/domain) beyond the working name "EWP Toolkit."
 - Contribution/license posture now that public release is intended (e.g. MIT license, README, how community feedback/issues get handled).
 
