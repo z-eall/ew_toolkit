@@ -1,8 +1,12 @@
 import "./style.css";
-import { navHtml, mountThemeToggle } from "./nav";
+import { navHtml, mountThemeToggle, iconFor } from "./nav";
 
 // Hardcoded v1 Tool registration — see .scratch/ew_toolkit/hub-map.md Notes.
+// `key` matches the corresponding entry in nav.ts's navItems and picks the
+// tool's icon via iconFor; omit it (or use a key with no icon mapping) and
+// the tool gets nav.ts's default icon automatically.
 interface Tool {
+  key: string;
   name: string;
   subpath: string;
   description: string;
@@ -10,6 +14,7 @@ interface Tool {
 
 const tools: Tool[] = [
   {
+    key: "ewp_validator",
     name: "EWP Validator",
     subpath: "./ewp_validator/",
     description:
@@ -31,7 +36,7 @@ app.innerHTML = `
         .map(
           (t) => `
         <div class="tool-row">
-          <a class="tool-btn" href="${t.subpath}">${t.name}</a>
+          <a class="tool-btn" href="${t.subpath}"><span class="nav-icon" aria-hidden="true">${iconFor(t.key)}</span>${t.name}</a>
           <span class="tool-desc">${t.description}</span>
         </div>
       `,
