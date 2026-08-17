@@ -27,6 +27,12 @@ describe("guessBranch", () => {
     expect(guessBranch({ name: "x", prefab: "Bonemass", ints: ["a"] }).branch).toBe("ewpRuleEntry");
   });
 
+  it("guesses wecDataEntry for a raw-data entry (name + bare fields, no typed list) — ticket 13", () => {
+    expect(guessBranch({ name: "loot_eldenking", position: "4251,-2618,4361.5", rotation: "90,0,0" }).branch).toBe(
+      "wecDataEntry",
+    );
+  });
+
   it("defaults to ewpRuleEntry for a normal rule entry and for total garbage", () => {
     expect(guessBranch({ prefab: "Bonemass", type: "create" }).branch).toBe("ewpRuleEntry");
     expect(guessBranch({ foo: "bar" }).branch).toBe("ewpRuleEntry");
@@ -80,6 +86,27 @@ describe("runStructuralPrecheck", () => {
     expect(problems.every((p) => p.branch === "EWP rule entry")).toBe(true);
     expect(problems.some((p) => p.message.includes("foo"))).toBe(true);
     expect(problems.some((p) => p.message.includes("baz"))).toBe(true);
+  });
+
+  it("accepts a raw-data entry that sets bare ZDO fields (position/rotation) as valid — ticket 13", () => {
+    const yaml = "- name: loot_eldenking\n  position: 4251,-2618,4361.5\n  rotation: 90,0,0\n";
+    expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
+  });
+
+  it("flags a legacy top-level delay: as a blue notice, not an error — ticket 13", () => {
+    const yaml = "- prefab: dungeon_queen_door_custom\n  type: change, state true\n  delay: 18\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.filter((p) => p.severity === "error")).toEqual([]);
+    const flag = problems.find((p) => p.severity === "info" && p.message.includes("delay"));
+    expect(flag).toBeDefined();
+    expect(yaml.slice(...flag!.range).trim()).toBe("delay: 18");
+  });
+
+  it("flags a legacy single-line spawn: string as a blue notice, not an error — ticket 13", () => {
+    const yaml = "- prefab: Beehive\n  type: create\n  spawn: fx_BonusYield, 0,0,1\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.filter((p) => p.severity === "error")).toEqual([]);
+    expect(problems.some((p) => p.severity === "info" && p.message.includes("spawn"))).toBe(true);
   });
 
   it("reports YAML syntax errors and skips downstream structural checks for that file", () => {

@@ -26,9 +26,10 @@ const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
 const MARKER_OWNER = "ewp-toolkit";
 const VALIDATE_DEBOUNCE_MS = 200;
 
-const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key", string> = {
+const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key" | "data-function", string> = {
   "data-reference": "data.yaml reference",
   "custom-key": "custom saved key",
+  "data-function": "object data",
 };
 
 export class FileManager {

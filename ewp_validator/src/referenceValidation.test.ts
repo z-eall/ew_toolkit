@@ -71,6 +71,24 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(problems.some((p) => p.kind === "data-reference" && p.message.includes("missing_spawn_data"))).toBe(true);
   });
 
+  it("treats a data: <function> value as a blue object-data flag, not an undefined reference — ticket 13", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  data: <string_isSpawningPrefabData>\n" }];
+    const problems = runReferenceValidation(files);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "info", kind: "data-function" });
+    expect(problems[0].message).toContain("object data");
+    expect(problems.some((p) => p.severity === "error")).toBe(false);
+  });
+
+  it("also flags a spawn[] nested data: <function> value rather than erroring — ticket 13", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  spawn:\n  - prefab: Skeleton\n    data: <string_foo>\n" },
+    ];
+    const problems = runReferenceValidation(files);
+    expect(problems.some((p) => p.kind === "data-function")).toBe(true);
+    expect(problems.some((p) => p.severity === "error")).toBe(false);
+  });
+
   it("does not treat an object filter's data: shorthand as a data.yaml reference", () => {
     // ObjectData.data is a single-filter shorthand in PrefabData.cs, a different
     // semantic from the top-level action `data:` field despite the same name.
@@ -92,6 +110,8 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "custom-key" });
     expect(problems[0].message).toContain("myFlag");
     expect(problems[0].message).toContain("ewp_data.yaml");
+    // Shortened wording — ticket 13
+    expect(problems[0].message).toContain("before treating this as a bug");
   });
 
   it("flags a <save_...> write with no matching read anywhere loaded", () => {

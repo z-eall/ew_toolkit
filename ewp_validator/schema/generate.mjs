@@ -378,7 +378,13 @@ const wecDataEntry = {
     itemAmount: numberOrString,
   },
   required: ["name"],
-  additionalProperties: false,
+  // Data entries can also set raw ZDO fields directly by name — e.g.
+  // `position: x,y,z` / `rotation: y,x,z` writing world position/rotation as
+  // object data. Undocumented (docs/hacks.md only shows the typed
+  // `data: type, key, value` form) but live-tested to work (ticket 13). The
+  // extra key is the ZDO field name and the value a scalar, so accept any
+  // additional scalar property rather than flagging it as unknown.
+  additionalProperties: { anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }] },
 };
 
 const valueEntry = {

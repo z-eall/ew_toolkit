@@ -65,12 +65,16 @@ export function guessBranch(item: unknown): Guess {
     if ("valueGroup" in obj) return { branch: "valueGroup", likelyDataNameTypo: false };
     if ("value" in obj) return { branch: "valueEntry", likelyDataNameTypo: false };
 
-    const hasTypedList = TYPED_LIST_KEYS.some((k) => k in obj);
-    const looksLikeWecShape = hasTypedList && !("prefab" in obj) && !("type" in obj);
-
-    if ("name" in obj && looksLikeWecShape) {
+    // A data entry names itself with `name:` and never carries an EWP rule's
+    // trigger keys (prefab/type). This covers both typed-list data entries and
+    // raw-data entries (name + bare ZDO fields like position/rotation — ticket 13),
+    // which have no typed-list key to recognize them by.
+    if ("name" in obj && !("prefab" in obj) && !("type" in obj)) {
       return { branch: "wecDataEntry", likelyDataNameTypo: false };
     }
+
+    const hasTypedList = TYPED_LIST_KEYS.some((k) => k in obj);
+    const looksLikeWecShape = hasTypedList && !("prefab" in obj) && !("type" in obj);
     // WEC's own README_data.md writes the entry-name key as `data:` in one
     // section (a confirmed copy-paste typo, not a real alias — ticket 07).
     // Still guess WEC data entry here so the diagnostic names the real
@@ -87,6 +91,14 @@ export function guessBranch(item: unknown): Guess {
 // (ticket 09). Scoped to just this one conditional-requiredness case, not a
 // full per-type field-relevance matrix.
 const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "time", "realtime"]);
+
+// Undocumented/legacy constructs on an EWP rule entry that are live-tested to
+// work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
+// notices and stripped before ajv so they don't also raise a hard error.
+const LEGACY_DELAY_MESSAGE =
+  "Legacy top-level `delay:` — undocumented, but works in-game. Prefer per-action delays (spawnDelay/pokeDelay/removeDelay).";
+const legacySpawnMessage = (key: string) =>
+  `Legacy single-line \`${key}:\` format — it still works, but the newer list form is recommended.`;
 
 function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   const typeValue = typeof item.type === "string" ? item.type.split(",")[0].trim() : "";
@@ -191,8 +203,39 @@ export function runStructuralPrecheck(text: string): Problem[] {
       continue; // skip ajv validation against wecDataEntry: it would just repeat "required: name"
     }
 
+    // Peel off legacy-but-working constructs before ajv: flag each in blue and
+    // validate the remainder, so a legacy `delay:`/`spawn:` doesn't also error.
+    let toValidate: Record<string, unknown> = value;
+    if (branch === "ewpRuleEntry") {
+      const strip: string[] = [];
+      if ("delay" in value) {
+        strip.push("delay");
+        problems.push({
+          severity: "info",
+          message: LEGACY_DELAY_MESSAGE,
+          branch: BRANCH_TITLES.ewpRuleEntry,
+          range: findPairRange(itemNode, "delay") ?? itemRange,
+        });
+      }
+      for (const key of ["spawn", "swap"] as const) {
+        if (typeof value[key] === "string") {
+          strip.push(key);
+          problems.push({
+            severity: "info",
+            message: legacySpawnMessage(key),
+            branch: BRANCH_TITLES.ewpRuleEntry,
+            range: findPairRange(itemNode, key) ?? itemRange,
+          });
+        }
+      }
+      if (strip.length > 0) {
+        toValidate = { ...value };
+        for (const k of strip) delete toValidate[k];
+      }
+    }
+
     const validate = getValidator(branch);
-    const valid = validate(value);
+    const valid = validate(toValidate);
     if (!valid && validate.errors) {
       for (const error of validate.errors) {
         // additionalProperties errors carry the bad key in params — use that

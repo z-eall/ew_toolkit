@@ -91,7 +91,13 @@ describe("wecDataEntry", () => {
   it("requires name and does not accept data as a property (ticket 07)", () => {
     expect(wecDataEntry.required).toEqual(["name"]);
     expect(wecDataEntry.properties.data).toBeUndefined();
-    expect(wecDataEntry.additionalProperties).toBe(false);
+  });
+
+  it("accepts extra scalar keys as raw ZDO data fields (ticket 13)", () => {
+    // position:/rotation: and other bare field names write object data directly.
+    expect(wecDataEntry.additionalProperties).toEqual({
+      anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }],
+    });
   });
 
   it("has the documented typed-value-list properties", () => {

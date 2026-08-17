@@ -21,7 +21,7 @@ export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind: "data-reference" | "custom-key";
+  kind: "data-reference" | "custom-key" | "data-function";
   range: [start: number, end: number];
 }
 
@@ -48,7 +48,15 @@ function isBarewordReference(raw: unknown): raw is string {
   const trimmed = raw.trim();
   if (trimmed === "") return false;
   if (trimmed.includes(",")) return false; // "type, key, value" / "itemid, amount" shorthand
+  if (trimmed.includes("<") || trimmed.includes(">")) return false; // a <function> value reads from ZDO data (functions.md), not a data.yaml name
   return true;
+}
+
+// `<...>` value expressions (docs/functions.md) read from the triggering
+// object's ZDO data rather than naming a data.yaml entry — never a broken
+// reference, but worth a blue flag to confirm the field exists in object data.
+function isFunctionExpression(raw: unknown): raw is string {
+  return typeof raw === "string" && /<[^>]+>/.test(raw);
 }
 
 function isDropsReference(raw: unknown): raw is string {
@@ -85,6 +93,7 @@ const CLEAR_READ_RE = /<clear_([A-Za-z0-9]+)>/g;
 export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   const definitions = new Map<string, Occurrence[]>();
   const dataUsages: { name: string; occ: Occurrence }[] = [];
+  const dataFunctions: { expr: string; occ: Occurrence }[] = [];
   const keyWrites = new Map<string, Occurrence[]>();
   const keyReads = new Map<string, Occurrence[]>();
 
@@ -121,6 +130,11 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
       for (const field of TOP_LEVEL_DATA_REF_FIELDS) {
         const raw = value[field];
+        if (field === "data" && isFunctionExpression(raw)) {
+          const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
+          dataFunctions.push({ expr: raw.trim(), occ: { fileId: file.id, range } });
+          continue;
+        }
         const isRef = field === "drops" ? isDropsReference(raw) : isBarewordReference(raw);
         if (!isRef) continue;
         const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
@@ -150,6 +164,11 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         for (const nested of (arrNode as any).items) {
           if (!isMap(nested)) continue;
           const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
+          if (isFunctionExpression(nestedValue.data)) {
+            const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
+            dataFunctions.push({ expr: nestedValue.data.trim(), occ: { fileId: file.id, range } });
+            continue;
+          }
           if (!isBarewordReference(nestedValue.data)) continue;
           const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
           dataUsages.push({ name: (nestedValue.data as string).trim(), occ: { fileId: file.id, range } });
@@ -170,6 +189,16 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         range: occ.range,
       });
     }
+  }
+
+  for (const { expr, occ } of dataFunctions) {
+    problems.push({
+      fileId: occ.fileId,
+      severity: "info",
+      kind: "data-function",
+      message: `\`data: ${expr}\` reads a value from the triggering object's ZDO data — make sure that field is present in the object data.`,
+      range: occ.range,
+    });
   }
 
   const usedNames = new Set(dataUsages.map((u) => u.name));
@@ -193,7 +222,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom saved key '${name}' is read but never written (\`<save_${name}_…>\`) in the loaded files — check expand_world/ewp_data.yaml; may be set by another mod or console command.`,
+        message: `Custom key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }
@@ -205,7 +234,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom saved key '${name}' is written but never read (keys:/bannedKeys:/type: key) in the loaded files — check expand_world/ewp_data.yaml; may be used elsewhere.`,
+        message: `Custom key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }
