@@ -33,8 +33,10 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 
 ## Not yet specified
 
+- **[User-test v1 and feed back validation corrections](issues/13-v1-user-testing-feedback.md)** — OPEN. The user exercises the deployed tool against real EWP/WEC YAML and reports where validation is wrong (false positives/negatives, bad messages/locations); each case becomes a targeted Schema/pre-check fix with a regression test. The real-world correctness pass the automated tests can't cover.
 - ~~Version-picker dropdown as a post-v1 fast-follow~~ — **DROPPED 2026-08-17.** Latest-only is sufficient; the generator already tracks the latest public release on every run. The fast-follow assumed a doc-parsing generator, but the shipped generator is hand-encoded, so faithful per-version schemas would cost far more than estimated. See ticket 03's updated decision.
-- Branding/naming polish (site title/domain) beyond the working name "EWP Toolkit" — repo itself is now named `ewp_toolkit` at https://github.com/z-eall/ewp_toolkit.
+- **[Rebrand project id from `ewp_toolkit` to `ew_toolkit`](issues/14-rebrand-to-ew-toolkit.md)** — OPEN. The vision widened: the site becomes a home for multiple EW-mod tools (EWP validator = tool #1), so the EWP-specific name is renamed to the umbrella `ew_toolkit` / "EW Toolkit". Ticket holds the full rename order-of-operations; the load-bearing edit is `vite.config.ts`'s Pages `base`, which must match the renamed repo. Repo rename (GitHub settings) is the user's step; the rest is Claude's.
+- **Reframe the destination as a multi-tool EW site** (fog, ongoing HITL discussion) — the current Destination is scoped to a single tool (the EWP validator). The user now sees the site potentially hosting tools for other EW mods. Not yet sharp enough to ticket: needs a `/grilling` + `/domain-modeling` pass to decide whether the Destination formally widens, and if so, the site's layout / navigation / functionality for holding multiple tools. Surfaced 2026-08-17 alongside the [ew_toolkit rebrand](issues/14-rebrand-to-ew-toolkit.md).
 
 ## Out of scope
 
