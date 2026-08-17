@@ -1,7 +1,7 @@
 # Rebrand project id from `ewp_toolkit` to `ew_toolkit`
 
 Type: task
-Status: open
+Status: closed — superseded
 Blocked by: (none)
 
 ## Question
@@ -71,4 +71,12 @@ disagree). So the repo rename and that edit must ship together, repo first.
 
 ## Answer
 
-(pending — starts once the user renames the GitHub repo in step 1)
+**Superseded 2026-08-17** by the EW Toolkit Hub map, charted this session. That
+map's destination isn't just a rename — the current `ewp_toolkit` repo becomes
+the hub repo itself, restructured in place: this repo's existing source moves
+into a subfolder (e.g. `/ewp_validator/`) and a new root landing page is added
+alongside it, all under one GitHub Pages deploy. That's a bigger, differently-
+shaped change than this ticket's plain rename, so the work continues as
+[ticket 16](16-restructure-into-hub-layout.md) on the new
+map (indexed on [hub-map.md](../hub-map.md)) rather than finishing here. This ticket's rename plan (the `vite.config.ts`
+`base` gotcha especially) remains useful reference for that ticket.

@@ -1,11 +1,7 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite";
 
-// GitHub Pages project sites serve at /<repo>/, not /. Vite's default base:'/'
-// 404s on Pages if this is forgotten (see .scratch/ewp-toolkit/issues/12-repo-scaffold.md
-// and research/05-web-app-mechanics.md).
+// GitHub Pages project sites serve at /<repo>/, not /. Must exactly match the
+// renamed repo or built assets 404 (same gotcha as ewp_validator/vite.config.ts).
 export default defineConfig({
-  base: "/ewp_toolkit/",
-  test: {
-    environment: "node",
-  },
+  base: "/ew_toolkit/",
 });

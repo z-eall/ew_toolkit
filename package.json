@@ -1,25 +1,15 @@
 {
-  "name": "ewp-toolkit",
+  "name": "ew-toolkit-landing",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "generate-schema": "node schema/generate.mjs",
-    "dev": "npm run generate-schema && vite",
-    "build": "npm run generate-schema && vite build",
-    "preview": "vite preview",
-    "pretest": "npm run generate-schema",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "ajv": "^8.17.1",
-    "monaco-editor": "^0.52.0",
-    "monaco-yaml": "^5.2.1",
-    "yaml": "^2.6.1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "vite": "^5.4.11",
-    "vitest": "^4.1.10"
+    "vite": "^5.4.11"
   }
 }

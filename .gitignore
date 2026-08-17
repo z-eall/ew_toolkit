@@ -3,4 +3,4 @@ dist/
 
 # Regenerated fresh by schema/generate.mjs on every build — committing it would
 # just drift stale in git history (ticket 12).
-src/schema.generated.json
+ewp_validator/src/schema.generated.json

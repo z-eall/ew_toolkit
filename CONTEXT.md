@@ -1,4 +1,4 @@
-# EWP Toolkit
+# EW Toolkit
 
 QoL tooling for scripters who write YAML for Jere's ExpandWorld mod series in Valheim. This context covers the terminology for the tooling project itself, not Valheim or the mods' in-game mechanics.
 
@@ -58,3 +58,21 @@ WEC's `value:` and `valueGroup:` list-item shapes — a value entry defines a si
 
 **Discriminator-less array**:
 The fact that EWP rule entries, WEC data entries, value entries, and value groups all share one YAML list with no tag/type field distinguishing them — entry kind must be inferred structurally (which keys are present), not read off a field. Central constraint on how the schema's top-level shape has to work (a `oneOf` union, not one flat object).
+
+**EW Toolkit** (umbrella/site):
+The public site hosting all Tools for Jere Kuusela's Valheim mods, branded after the ExpandWorld flagship line. Umbrella scope is tiered: now/near-term = Jere's mods (ExpandWorld family + non-EW-named world-editing mods like WEC/SDC); future-only-if-required = general Valheim world editing. Distinct from the [[EWP Toolkit]] project, which is this specific Tool's own map/repo before the reframe.
+
+**Tool**:
+A discrete utility hosted on the [[Hub]], reachable at its own [[Subpath]]. The EWP validator is Tool #1.
+
+**Hub**:
+The [[EW Toolkit]] site's shell: a single repo, single GitHub Pages deploy, with a root landing page that lists and links to each [[Tool]]. Introduced by the [EW Toolkit Hub map](hub-map.md); not the same thing as any one Tool.
+
+**Landing page**:
+The Hub's root page — lists available Tools and links to each one's [[Subpath]]. Built as its own small Vite/TS app, matching the validator's existing tooling, no framework.
+
+**Subpath**:
+The URL path segment a Tool builds and deploys into under the Hub's single domain, e.g. `/ewp_validator/` for the validator. Each Tool's build stays independent; only the deployed output is joined under the Hub's one Pages URL.
+
+**Tool registration**:
+The mechanism by which a Tool gets listed on the [[Landing page]]. v1 is a hardcoded list (name/subpath/description) in the landing page source — no auto-discovery, since only 1-2 Tools are expected near-term.
