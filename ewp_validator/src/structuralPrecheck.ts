@@ -12,6 +12,30 @@ import schemaJson from "./schema.generated.json";
 
 export type Severity = "error" | "warning" | "info";
 
+/** error > warning > info — the fixed severity order the Problems panel and editor markers sort by. */
+export const SEVERITY_RANK: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
+
+/**
+ * The highest-priority item in `items` (lowest {@link SEVERITY_RANK}), with an
+ * optional tie-break comparator for items of equal severity (negative return
+ * means `a` wins). Returns null for an empty list.
+ */
+export function pickHighestPriority<T extends { severity: Severity }>(
+  items: readonly T[],
+  tieBreak?: (a: T, b: T) => number,
+): T | null {
+  let top: T | null = null;
+  for (const item of items) {
+    if (!top) {
+      top = item;
+      continue;
+    }
+    const rankDiff = SEVERITY_RANK[item.severity] - SEVERITY_RANK[top.severity];
+    if (rankDiff < 0 || (rankDiff === 0 && tieBreak && tieBreak(item, top) < 0)) top = item;
+  }
+  return top;
+}
+
 export interface Problem {
   severity: Severity;
   message: string;

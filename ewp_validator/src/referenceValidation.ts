@@ -222,7 +222,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message: `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }
@@ -234,7 +234,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message: `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }

@@ -18,7 +18,7 @@ import {
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
-import type { Severity } from "./structuralPrecheck";
+import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
 
@@ -554,14 +554,14 @@ editor.onDidFocusEditorText(() => {
 editor.onDidChangeCursorPosition((e) => {
   const file = fileManager.activeFile;
   const line = e.position.lineNumber;
-  const rank: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
   let best: LoadedFile["problems"][number] | null = null;
   if (file) {
-    for (const p of file.problems) {
+    const onLine = file.problems.filter((p) => {
       const startLine = file.model.getPositionAt(p.range[0]).lineNumber;
       const endLine = file.model.getPositionAt(Math.max(p.range[1], p.range[0])).lineNumber;
-      if (line >= startLine && line <= endLine && (!best || rank[p.severity] < rank[best.severity])) best = p;
-    }
+      return line >= startLine && line <= endLine;
+    });
+    best = pickHighestPriority(onLine);
   }
   const key = best && file ? `${file.id}:${best.range[0]}` : null;
   if (key === focusedProblemKey) return;

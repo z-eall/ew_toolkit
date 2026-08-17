@@ -6,7 +6,7 @@
 // always re-runs across every loaded file, not just the one that changed).
 import * as monaco from "monaco-editor";
 import { runReferenceValidation } from "./referenceValidation";
-import { runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
+import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 
 export interface LoadedFile {
   id: string;
@@ -119,13 +119,7 @@ export class FileManager {
     this.setActive(fileId);
     const file = this.files.find((f) => f.id === fileId);
     if (!file) return;
-    const rank: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
-    let top: Problem | null = null;
-    for (const p of file.problems) {
-      if (!top || rank[p.severity] < rank[top.severity] || (rank[p.severity] === rank[top.severity] && p.range[0] < top.range[0])) {
-        top = p;
-      }
-    }
+    const top = pickHighestPriority(file.problems, (a, b) => a.range[0] - b.range[0]);
     if (top) this.revealProblem(fileId, top.range[0]);
   }
 
