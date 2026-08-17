@@ -13,7 +13,7 @@
 // Run: node schema/generate.mjs  (writes ../src/schema.generated.json)
 
 import { writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -395,7 +395,7 @@ const valueGroup = {
 
 // ---------- Assemble ----------
 
-function buildSchema(meta) {
+export function buildSchema(meta) {
   return {
     $schema: "http://json-schema.org/draft-07/schema#",
     _meta: meta,
@@ -438,12 +438,17 @@ async function fetchEwpVersion() {
   }
 }
 
-const ewpVersion = await fetchEwpVersion();
-const schema = buildSchema({
-  ewpVersion,
-  generatedAt: new Date().toISOString(),
-  source: "https://github.com/JereKuusela/valheim-expand_world_prefabs",
-});
+// Guarded so tests can `import { buildSchema } from './generate.mjs'` without
+// triggering a network fetch and file write as a side effect of the import —
+// this block only runs when the file is executed directly (`node generate.mjs`).
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  const ewpVersion = await fetchEwpVersion();
+  const schema = buildSchema({
+    ewpVersion,
+    generatedAt: new Date().toISOString(),
+    source: "https://github.com/JereKuusela/valheim-expand_world_prefabs",
+  });
 
-await writeFile(OUT_PATH, JSON.stringify(schema, null, 2) + "\n", "utf-8");
-console.log(`generate.mjs: wrote ${OUT_PATH}${ewpVersion ? ` (EWP ${ewpVersion})` : ""}`);
+  await writeFile(OUT_PATH, JSON.stringify(schema, null, 2) + "\n", "utf-8");
+  console.log(`generate.mjs: wrote ${OUT_PATH}${ewpVersion ? ` (EWP ${ewpVersion})` : ""}`);
+}

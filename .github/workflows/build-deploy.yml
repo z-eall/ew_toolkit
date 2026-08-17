@@ -39,6 +39,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm test
+
       # Regenerates src/schema.generated.json (fetches EWP's current version
       # from Jere's manifest.json) then builds the Vite site. Both are one
       # `npm run build` per package.json.
