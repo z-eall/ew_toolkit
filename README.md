@@ -8,7 +8,7 @@ QoL tooling for scripters who write YAML for [Jere Kuusela's](https://github.com
 
 **Status: early planning/build — not yet usable.**
 
-Planning and design decisions are tracked in [`.scratch/ewp-toolkit/hub-map.md`](.scratch/ewp-toolkit/hub-map.md) (hub) and [`.scratch/ewp-toolkit/map.md`](.scratch/ewp-toolkit/map.md) (EWP validator).
+Planning and design decisions are tracked in [`.scratch/ew_toolkit/hub-map.md`](.scratch/ew_toolkit/hub-map.md) (hub) and [`.scratch/ew_toolkit/map.md`](.scratch/ew_toolkit/map.md) (EWP validator).
 
 ## License
 

@@ -1,6 +1,6 @@
 # Research: Monaco + monaco-yaml on GitHub Pages/Actions — technical shape and $0-forever check
 
-Ticket: `.scratch/ewp-toolkit/issues/05-web-app-mechanics.md`
+Ticket: `.scratch/ew_toolkit/issues/05-web-app-mechanics.md`
 Date: 2026-08-17
 
 ## Bottom line

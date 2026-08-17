@@ -35,9 +35,14 @@ Done this session (`[CLAUDE]` steps):
 - Display/text sweep: `README.md` rewritten for the hub, `CONTEXT.md` H1 → "EW Toolkit", `.gitignore`'s `schema.generated.json` path updated to `ewp_validator/src/schema.generated.json`.
 - Confirmed the move didn't break anything: `ewp_validator` still builds (`npm run build`) and its full test suite still passes (48/48) from its new location; the new root landing page also builds and typechecks clean.
 
-Still outstanding (not blocking — hand these off whenever ready):
+**Update 2026-08-17 (later same day):** all outstanding items done —
 
-- **[USER — GitHub settings]** Rename the repo `ewp_toolkit` → `ew_toolkit` on GitHub. Not done yet — the local remote still points at `ewp_toolkit` (GitHub's redirect covers this in the meantime, so it isn't urgent).
-- **[USER]** Once renamed, re-point the local git remote: `git remote set-url origin https://github.com/z-eall/ew_toolkit.git`.
-- **[USER or later session]** Rename the local folder `C:\Users\Ultimate\Claude\ewp_toolkit` → `ew_toolkit` — offline step, not mid-session.
-- **Not this ticket's job, flagging for [ticket 17](17-multi-tool-build-pipeline.md):** `.github/workflows/build-deploy.yml` still runs `npm ci && npm test && npm run build` against the repo root, which is now the landing page project only — it no longer builds/tests the validator, and the deployed site would just be the landing page. Don't push this restructuring to `main` until ticket 17 lands, or the live Pages deploy breaks.
+- **[USER]** GitHub repo renamed `ewp_toolkit` → `ew_toolkit`.
+- **[USER]** Local folder renamed `C:\Users\Ultimate\Claude\ewp_toolkit` → `ew_toolkit`.
+- **[CLAUDE]** Local git remote re-pointed: `git remote set-url origin https://github.com/z-eall/ew_toolkit.git`.
+- **[CLAUDE]** Ticket 17 landed first, so CI already builds/tests/deploys both projects — no longer a blocker.
+- **[CLAUDE]** Standardized `.scratch/ewp-toolkit/` (hyphen — a leftover from before the underscore convention was settled) to `.scratch/ew_toolkit/` via `git mv`, and swept every `.scratch/ewp-toolkit/...` path reference across the repo (workflow, `scripts/build-hub.mjs`, `ewp_validator/vite.config.ts`, `ewp_validator/schema/generate.mjs`, `src/main.ts`, `README.md`, and the map/ticket files' own internal links) to the new path. Historical prose mentioning the old `ewp_toolkit` repo name (GitHub URLs cited in older tickets, `MARKER_OWNER`/Monaco URI identifier strings) was left as-is — those are dated records or internal-only identifiers, not live paths.
+
+Verified after the rename: `npm run build:hub` at the new root still produces the combined `dist/` (landing page + `dist/ewp_validator/`), and `ewp_validator`'s 48-test suite still passes from the new location.
+
+This ticket is now fully closed out — nothing left outstanding.

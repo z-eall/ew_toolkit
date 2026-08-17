@@ -1,6 +1,6 @@
 # How is EWP's YAML structure documented/derivable from Jere's repo?
 
-Research for ticket `.scratch/ewp-toolkit/issues/02-schema-source.md`. All claims below are cited to a specific file/URL in Jere Kuusela's own repos (primary sources), fetched directly via the GitHub raw-content and REST API on 2026-08-17. Branch is `main` for both repos; EWP's `main` was last touched 2026-08-15 (two days before this research), current published version is **1.58.0/1.58.1** (see "Versioning" note in Q4).
+Research for ticket `.scratch/ew_toolkit/issues/02-schema-source.md`. All claims below are cited to a specific file/URL in Jere Kuusela's own repos (primary sources), fetched directly via the GitHub raw-content and REST API on 2026-08-17. Branch is `main` for both repos; EWP's `main` was last touched 2026-08-15 (two days before this research), current published version is **1.58.0/1.58.1** (see "Versioning" note in Q4).
 
 Repos and files actually read for this research:
 

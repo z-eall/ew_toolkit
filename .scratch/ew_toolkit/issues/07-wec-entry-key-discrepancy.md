@@ -10,7 +10,7 @@ Ticket 02 found WEC's own `README_data.md` inconsistent with itself: the "Dynami
 
 Read WEC's source directly — `WorldEditCommands/service/data/DataData.cs`, `DataEntry.cs`, `PlainDataEntry.cs` (confirmed present in the repo's file tree at https://github.com/JereKuusela/valheim-world_edit_commands) — to determine whether `name:` and `data:` are both valid aliases for the entry-name property, or whether one of them is a doc typo.
 
-Save findings to `.scratch/ewp-toolkit/research/07-wec-entry-key-discrepancy.md`.
+Save findings to `.scratch/ew_toolkit/research/07-wec-entry-key-discrepancy.md`.
 
 ## Answer
 

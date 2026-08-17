@@ -58,7 +58,7 @@ disagree). So the repo rename and that edit must ship together, repo first.
 
 5. **[CLAUDE] Planning-doc sweep (internal, low risk):** `map.md` title +
    references, GitHub URLs in tickets 01/10/11/12 (auto-redirect anyway, but
-   tidy). Optional: rename the `.scratch/ewp-toolkit/` folder →
+   tidy). Optional: rename the `.scratch/ew_toolkit/` folder →
    `.scratch/ew-toolkit/` — internal relative links survive, breaks nothing.
 
 6. **[CLAUDE]** Commit + push → CI rebuilds and redeploys to the new Pages path.

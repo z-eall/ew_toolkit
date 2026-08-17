@@ -14,7 +14,7 @@ Reaching the destination means: a visitor lands on the hub root, sees available 
 - This map builds directly on the validator's own frozen map ([map.md](map.md)) — the validator is absorbed here as Tool #1, not rebuilt from scratch.
 - Skills every session should consult: `/grilling` and `/domain-modeling` for any ticket touching terminology or open decisions; `/research` for AFK research tickets; `/prototype` for the landing page's visual design.
 - Standing preferences carried over: $0 cost (GitHub Pages + Actions free tier only, no paid hosting); reuse existing free/open tooling over custom builds; minimal-tooling ethos (the validator's map chose one root `package.json`, no workspace tooling — this map continues that unless it proves painful).
-- Local project root: `C:\Users\Ultimate\Claude\ewp_toolkit` (git repo, GitHub remote https://github.com/z-eall/ewp_toolkit.git). This repo *becomes* the hub repo, restructured in place — see ticket 16. Renamed to `ew_toolkit` as part of that restructuring, superseding the old map's ticket 14.
+- Local project root: `C:\Users\Ultimate\Claude\ew_toolkit` (git repo, GitHub remote https://github.com/z-eall/ew_toolkit.git). Renamed from `ewp_toolkit` on both GitHub and locally as part of [ticket 16](issues/16-restructure-into-hub-layout.md)'s restructuring, superseding the old map's ticket 14.
 - Architecture locked during charting (2026-08-17):
   - Same repo, restructured in place (not a new repo) — preserves git history for free.
   - Each Tool keeps its own `package.json`/`vite.config`; a root build step runs each and copies output into `dist/<subpath>/` — no workspace/monorepo tooling (npm workspaces, Turborepo, Nx) unless plain scripts prove painful.
@@ -23,7 +23,7 @@ Reaching the destination means: a visitor lands on the hub root, sees available 
 
 ## Decisions so far
 
-- [Rename repo to `ew_toolkit` and restructure into hub layout](issues/16-restructure-into-hub-layout.md) — subfolder is `ewp_validator`; validator moved in, minimal placeholder landing page added at root, tests/build confirmed unbroken. GitHub rename + remote repoint + local folder rename still outstanding (user-owned, non-blocking).
+- [Rename repo to `ew_toolkit` and restructure into hub layout](issues/16-restructure-into-hub-layout.md) — subfolder is `ewp_validator`; validator moved in, minimal placeholder landing page added at root. GitHub rename, local folder rename, and remote repoint are all done; `.scratch/ewp-toolkit/` was also standardized to `.scratch/ew_toolkit/` (underscore, matching convention).
 - [Build the multi-tool build/deploy pipeline](issues/17-multi-tool-build-pipeline.md) — `scripts/build-hub.mjs` builds the landing page + each Tool and combines into `dist/<subpath>/`; CI updated to install/test/build both projects and deploy the combined artifact. Adding Tool #2 later just means adding it to the script's `tools` array. Still can't push/deploy until the GitHub rename happens (both `vite.config.ts` `base`s assume `ew_toolkit`).
 
 ## Not yet specified

@@ -1,6 +1,6 @@
 # Reference-validation feasibility (no external game-data index)
 
-Research for: `.scratch/ewp-toolkit/issues/04-reference-validation-feasibility.md`
+Research for: `.scratch/ew_toolkit/issues/04-reference-validation-feasibility.md`
 
 Primary sources (all fetched 2026-08-17 from the `main` branch of
 `JereKuusela/valheim-expand_world_prefabs`):

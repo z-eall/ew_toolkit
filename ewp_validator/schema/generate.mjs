@@ -3,7 +3,7 @@
 // This is a STATIC schema: the field list, enums, and typing rules below are
 // hand-encoded from Jere Kuusela's EWP source (ExpandWorldPrefabs/PrefabData.cs)
 // and docs (docs/scripting.md), reconciled per the decisions in
-// .scratch/ewp-toolkit/issues/02, 06, 07, 08, 09, 10. On each scheduled run this
+// .scratch/ew_toolkit/issues/02, 06, 07, 08, 09, 10. On each scheduled run this
 // script only re-fetches EWP's publish/manifest.json to stamp the *current*
 // EWP version into the output — it does not re-derive the field list from
 // live source. If Jere adds a genuinely new field, it won't appear here until

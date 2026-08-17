@@ -4,7 +4,7 @@ name: Build and deploy
 # steps of the same run. A two-workflow split (schedule regenerates + pushes a
 # commit -> a separate `on: push` workflow builds/deploys) would silently
 # never fire the second workflow, because the default GITHUB_TOKEN cannot
-# trigger another workflow run (see .scratch/ewp-toolkit/issues/05-web-app-mechanics.md).
+# trigger another workflow run (see .scratch/ew_toolkit/issues/05-web-app-mechanics.md).
 # This design sidesteps that entirely anyway: schema.generated.json is
 # gitignored (ticket 12) and never committed, so this workflow has nothing to
 # push back to the repo in the first place.
@@ -37,7 +37,7 @@ jobs:
           node-version: 22
 
       # Landing page and each Tool are separate npm projects with their own
-      # lockfiles (see .scratch/ewp-toolkit/hub-map.md Notes) — install both.
+      # lockfiles (see .scratch/ew_toolkit/hub-map.md Notes) — install both.
       - run: npm ci
       - run: npm ci
         working-directory: ewp_validator

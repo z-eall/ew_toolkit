@@ -1,6 +1,6 @@
 import "./style.css";
 
-// Hardcoded v1 Tool registration — see .scratch/ewp-toolkit/hub-map.md Notes.
+// Hardcoded v1 Tool registration — see .scratch/ew_toolkit/hub-map.md Notes.
 // Visual design/layout is ticket 18's job; this is a minimal placeholder so
 // the hub has a working root page.
 interface Tool {

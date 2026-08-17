@@ -12,7 +12,7 @@ Investigate Jere's EWP repo (https://github.com/JereKuusela/valheim-expand_world
 - What's the actual shape of the data (nesting, key names, types, enums, required/optional fields)?
 - Cross-check findings against the existing third-party schema at https://valheimtools.stream/ewp.json for gaps/discrepancies — treat it only as a cross-check reference, not authoritative.
 
-Save findings to `.scratch/ewp-toolkit/research/02-schema-source.md`.
+Save findings to `.scratch/ew_toolkit/research/02-schema-source.md`.
 
 ## Answer
 
