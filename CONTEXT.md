@@ -36,3 +36,16 @@ A value in one EWP YAML file that points at an id/key defined in a *different* E
 
 **Batch validation**:
 Opening/uploading multiple EWP YAML files at once, each validated independently against the schema, with per-file, per-line error locations. Core v1 capability alongside single-file validation.
+
+**EWP rule entry**:
+A YAML list item shaped like EWP's own `Data` structure (`prefab`/`type`/filters/actions/etc.) — one of four legal shapes that can appear in a script file's top-level array.
+_Avoid_: "script entry" (ambiguous with the other three shapes below)
+
+**WEC data entry**:
+A YAML list item with a `name:` key plus typed value lists (`ints`, `floats`, `strings`, etc.) — WEC's reusable data template, referenced by an EWP rule entry's `data:` field.
+
+**Value entry / Value group**:
+WEC's `value:` and `valueGroup:` list-item shapes — a value entry defines a single substitutable value; a value group randomly picks one value from a named pool. Both can appear anywhere in the same array as EWP rule entries and WEC data entries.
+
+**Discriminator-less array**:
+The fact that EWP rule entries, WEC data entries, value entries, and value groups all share one YAML list with no tag/type field distinguishing them — entry kind must be inferred structurally (which keys are present), not read off a field. Central constraint on how the schema's top-level shape has to work (a `oneOf` union, not one flat object).
