@@ -119,7 +119,7 @@ describe("runStructuralPrecheck", () => {
   it("rejects a non-array top-level document", () => {
     const problems = runStructuralPrecheck("prefab: Bonemass\ntype: create\n");
     expect(problems).toHaveLength(1);
-    expect(problems[0].message).toContain("must be a YAML array");
+    expect(problems[0].message).toContain("must be a YAML list");
   });
 
   it("warns on a missing prefab for a type that requires one, per ticket 09", () => {

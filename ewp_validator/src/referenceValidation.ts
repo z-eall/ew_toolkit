@@ -185,7 +185,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "error",
         kind: "data-reference",
-        message: `Undefined data.yaml reference '${name}' — no \`name: ${name}\` entry in the loaded files.`,
+        message: `No data entry named '${name}' is loaded. Add a \`name: ${name}\` entry, or correct the name.`,
         range: occ.range,
       });
     }
@@ -196,7 +196,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       fileId: occ.fileId,
       severity: "info",
       kind: "data-function",
-      message: `\`data: ${expr}\` reads a value from the triggering object's ZDO data — make sure that field is present in the object data.`,
+      message: `This reads \`${expr}\` from the object's data. Make sure that field is in the object data.`,
       range: occ.range,
     });
   }
@@ -209,7 +209,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "info",
         kind: "data-reference",
-        message: `data.yaml entry '${name}' is defined but unused in the loaded files — may be referenced from a file outside this batch.`,
+        message: `Data entry '${name}' is not used in the loaded files. A file outside this batch can still use it.`,
         range: occ.range,
       });
     }
@@ -222,7 +222,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message: `Key '${name}' is read but never written (<save_..>) in the loaded files. Check expand_world/ewp_data.yaml first.`,
         range: occ.range,
       });
     }
@@ -234,7 +234,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message: `Key '${name}' is written (<save_..>) but never read in the loaded files. Check expand_world/ewp_data.yaml first.`,
         range: occ.range,
       });
     }

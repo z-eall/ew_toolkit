@@ -111,7 +111,7 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems[0].message).toContain("myFlag");
     expect(problems[0].message).toContain("ewp_data.yaml");
     // Shortened wording — ticket 13
-    expect(problems[0].message).toContain("before treating this as a bug");
+    expect(problems[0].message).toContain("Check expand_world/ewp_data.yaml first");
   });
 
   it("flags a <save_...> write with no matching read anywhere loaded", () => {

@@ -96,16 +96,16 @@ const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "ti
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
 // notices and stripped before ajv so they don't also raise a hard error.
 const LEGACY_DELAY_MESSAGE =
-  "Legacy top-level `delay:` — undocumented, but works in-game. Prefer per-action delays (spawnDelay/pokeDelay/removeDelay).";
+  "Old format: a top-level `delay:`. It works, but prefer `spawnDelay:`/`pokeDelay:`/`removeDelay:`.";
 const legacySpawnMessage = (key: string) =>
-  `Legacy single-line \`${key}:\` format — it still works, but the newer list form is recommended.`;
+  `Old format: a single-line \`${key}:\`. It works, but the list form is better.`;
 
 function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   const typeValue = typeof item.type === "string" ? item.type.split(",")[0].trim() : "";
   if (TYPES_WITHOUT_PREFAB.has(typeValue)) return null;
   if (typeof item.prefab === "string" && item.prefab.trim() !== "") return null;
   if ("prefab" in item && typeof item.prefab !== "string") return null; // malformed prefab is ajv's job to report
-  return `type '${typeValue || "(none)"}' needs a non-empty 'prefab' (only globalkey/key/custom/event/time/realtime may omit it).`;
+  return `type '${typeValue || "(none)"}' needs a 'prefab'. Only globalkey/key/custom/event/time/realtime can omit it.`;
 }
 
 export function nodeRange(node: { range?: readonly [number, number, number] | null }): [number, number] {
@@ -170,7 +170,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
   if (!root || !isSeq(root)) {
     problems.push({
       severity: "error",
-      message: "Top level must be a YAML array — a list of `- ` entries.",
+      message: "The top level must be a YAML list. Start each entry with `- `.",
       branch: "(root)",
       range: root && (root as any).range ? nodeRange(root as any) : [0, text.length],
     });
@@ -181,7 +181,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
     if (!isMap(itemNode)) {
       problems.push({
         severity: "error",
-        message: "Each entry must be a mapping (key: value pairs), not a bare scalar or list.",
+        message: "Each entry must be `key: value` pairs, not a single value or a list.",
         branch: "(item)",
         range: nodeRange(itemNode as any),
       });
@@ -196,7 +196,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
       const r = findPairRange(itemNode, "data") ?? itemRange;
       problems.push({
         severity: "warning",
-        message: "WEC entries name themselves with `name:`, not `data:` — this entry won't register (documented WEC README typo).",
+        message: "Use `name:`, not `data:`, to name a data entry. This entry will not register (a known WEC README typo).",
         branch: BRANCH_TITLES.wecDataEntry,
         range: r,
       });
@@ -241,7 +241,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
         // additionalProperties errors carry the bad key in params — use that
         // to build a message naming the key, instead of ajv's generic one.
         const message = error.params && "additionalProperty" in error.params
-          ? `Unknown key '${(error.params as { additionalProperty: string }).additionalProperty}' for a ${BRANCH_TITLES[branch]}.`
+          ? `'${(error.params as { additionalProperty: string }).additionalProperty}' is not a valid key in a ${BRANCH_TITLES[branch]}.`
           : `${error.instancePath || "(entry)"} ${error.message}`;
         problems.push({
           severity: "error",
