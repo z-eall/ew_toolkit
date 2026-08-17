@@ -33,7 +33,7 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 
 ## Not yet specified
 
-- Version-picker dropdown as a post-v1 fast-follow (deferred, not blocking this map — see ticket 03's decision).
+- ~~Version-picker dropdown as a post-v1 fast-follow~~ — **DROPPED 2026-08-17.** Latest-only is sufficient; the generator already tracks the latest public release on every run. The fast-follow assumed a doc-parsing generator, but the shipped generator is hand-encoded, so faithful per-version schemas would cost far more than estimated. See ticket 03's updated decision.
 - Branding/naming polish (site title/domain) beyond the working name "EWP Toolkit" — repo itself is now named `ewp_toolkit` at https://github.com/z-eall/ewp_toolkit.
 
 ## Out of scope
