@@ -109,6 +109,25 @@ export class FileManager {
     this.editor.focus();
   }
 
+  /**
+   * Switch to `fileId` and jump to its highest-priority problem
+   * (error > warning > flag, earliest offset within a severity). Opening a file
+   * from the sidebar should land the cursor on the first thing worth reading.
+   */
+  revealTopProblem(fileId: string) {
+    this.setActive(fileId);
+    const file = this.files.find((f) => f.id === fileId);
+    if (!file) return;
+    const rank: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
+    let top: Problem | null = null;
+    for (const p of file.problems) {
+      if (!top || rank[p.severity] < rank[top.severity] || (rank[p.severity] === rank[top.severity] && p.range[0] < top.range[0])) {
+        top = p;
+      }
+    }
+    if (top) this.revealProblem(fileId, top.range[0]);
+  }
+
   private scheduleRevalidateAll() {
     clearTimeout(this.debounceHandle);
     this.debounceHandle = setTimeout(() => {

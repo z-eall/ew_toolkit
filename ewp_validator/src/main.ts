@@ -52,16 +52,34 @@ const ICONS = {
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   // Classic floppy disk: shutter notch at the top, label at the bottom.
   save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h6V4"/><path d="M8 13h8v6H8z"/>',
+  // Nav glyphs — copied from the hub's nav.ts so the toolbar reads the same.
+  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-9"/><path d="M9.5 20v-6h5v6"/>',
+  support: '<path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3h4l3.61 1.63A1 1 0 0 1 11 5.5v3.42a1 1 0 0 1-1 1H6"/><path d="M3 4h2v10H3z"/>',
 };
+
+// Theme is shared with the hub via the same localStorage key, so a choice made
+// on either page carries over. The chrome follows the earthy hub palette (CSS
+// `data-theme`); Monaco gets the matching built-in editor theme.
+type Theme = "dark" | "light";
+const THEME_KEY = "ew-toolkit-theme";
+const storedTheme = (): Theme => (localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark");
+function applyTheme(theme: Theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem(THEME_KEY, theme);
+  monaco.editor.setTheme(theme === "light" ? "vs" : "vs-dark");
+  const btn = document.querySelector<HTMLButtonElement>("#theme-toggle");
+  if (btn) btn.textContent = theme === "dark" ? "☾ Dark" : "☀ Light";
+}
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="app">
     <nav class="site-nav">
       <div class="site-nav-links">
-        <a class="nav-link" href="../">Home</a>
-        <a class="nav-link active" href="./">EWP Validator</a>
-        <a class="nav-link" href="../support/">Support</a>
+        <a class="nav-link" href="../"><span class="nav-icon" aria-hidden="true">${icon(ICONS.home)}</span>Home</a>
+        <a class="nav-link active" href="./"><span class="nav-icon" aria-hidden="true">${icon(ICONS.file)}</span>EWP Validator</a>
+        <a class="nav-link" href="../support/"><span class="nav-icon" aria-hidden="true">${icon(ICONS.support)}</span>Support</a>
       </div>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
     </nav>
     <div class="app-header">
       <span><b>Expand World Prefabs YAML Validator</b></span>
@@ -125,10 +143,17 @@ configureMonacoYaml(monaco, {
 });
 
 const editor = monaco.editor.create(document.getElementById("editor")!, {
-  theme: "vs-dark",
+  theme: storedTheme() === "light" ? "vs" : "vs-dark",
   automaticLayout: true,
   minimap: { enabled: false },
   fontSize: 13,
+});
+
+// Chrome + editor theme, kept in sync with the hub. Ctrl+F / Ctrl+H (Monaco's
+// built-in find & replace, incl. Replace All) work whenever the editor is focused.
+applyTheme(storedTheme());
+document.getElementById("theme-toggle")!.addEventListener("click", () => {
+  applyTheme((document.documentElement.getAttribute("data-theme") as Theme) === "dark" ? "light" : "dark");
 });
 
 const fileManager = new FileManager(editor, render);
@@ -175,11 +200,16 @@ function renderFileList() {
 
   if (all.length === 0) {
     fileListEl.innerHTML = `
-      <div class="empty-state">
-        <p><span class="hint-icon">${icon(ICONS.file)}</span> Upload one or multiple files</p>
-        <p><span class="hint-icon">${icon(ICONS.folder)}</span> Upload one or multiple folders</p>
+      <div class="empty-state" id="empty-state" title="Click to upload">
+        <p data-open="files"><span class="hint-icon has-plus">${icon(ICONS.file)}<span class="plus-sup">+</span></span> Upload one or multiple files</p>
+        <p data-open="folders"><span class="hint-icon has-plus">${icon(ICONS.folder)}<span class="plus-sup">+</span></span> Upload one or multiple folders</p>
         <p><span class="hint-icon">${icon(ICONS.dragArrow)}</span> Or drag &amp; drop here</p>
       </div>`;
+    document.getElementById("empty-state")!.addEventListener("click", (e) => {
+      const which = (e.target as HTMLElement).closest("[data-open]")?.getAttribute("data-open");
+      if (which === "folders") folderInput.click();
+      else fileInput.click();
+    });
     return;
   }
 
@@ -211,8 +241,8 @@ function renderFileList() {
         ${statusBadge(vf.status, errors, warnings)}
         <button class="remove-btn" title="Remove file">×</button>
       `;
-      row.querySelector(".file-name")!.addEventListener("click", () => fileManager.setActive(vf.id));
-      row.querySelector(".badge")!.addEventListener("click", () => fileManager.setActive(vf.id));
+      row.querySelector(".file-name")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
+      row.querySelector(".badge")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
       row.querySelector(".remove-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
         fileManager.removeFile(vf.id);
@@ -265,12 +295,21 @@ function renderProblemsPanel() {
   for (const { file, problem } of shown) {
     const start = file.model.getPositionAt(problem.range[0]);
     const row = document.createElement("div");
-    row.className = `problem ${problem.severity}`;
+    const key = `${file.id}:${problem.range[0]}`;
+    row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
+    row.dataset.key = key;
     row.innerHTML = `<span class="loc">${escapeHtml(file.name)}:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
     row.addEventListener("click", () => fileManager.revealProblem(file.id, problem.range[0]));
     problemsListEl.appendChild(row);
   }
+  if (focusedProblemKey) {
+    problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "nearest" });
+  }
 }
+
+// The problem row the editor cursor is currently sitting on (file id + offset),
+// so the panel can follow the caret onto a flagged line and highlight its note.
+let focusedProblemKey: string | null = null;
 
 function renderTabs(counts: Record<Severity, number>) {
   const tabs: Severity[] = ["error", "warning", "info"];
@@ -278,6 +317,7 @@ function renderTabs(counts: Record<Severity, number>) {
   for (const tab of tabs) {
     const btn = document.createElement("button");
     btn.className = `problem-tab ${tab} ${tab === activeTab ? "active" : ""}`;
+    btn.title = `Show ${TAB_LABEL[tab].toLowerCase()}`;
     btn.innerHTML = `<span class="tab-dot"></span>${TAB_LABEL[tab]}<span class="tab-count">${counts[tab]}</span>`;
     btn.addEventListener("click", () => {
       activeTab = tab;
@@ -504,6 +544,27 @@ newFileBtn.addEventListener("click", () => createNewFile());
 // default expand_world/expand_world_prefabs.yaml so the loose edits have a home.
 editor.onDidFocusEditorText(() => {
   if (fileManager.allFiles.length === 0) createNewFile();
+});
+
+// The Problems panel follows the caret: land on a flagged line and its note is
+// selected (and, if needed, its tab opened) in the panel below.
+editor.onDidChangeCursorPosition((e) => {
+  const file = fileManager.activeFile;
+  const line = e.position.lineNumber;
+  const rank: Record<Severity, number> = { error: 0, warning: 1, info: 2 };
+  let best: LoadedFile["problems"][number] | null = null;
+  if (file) {
+    for (const p of file.problems) {
+      const startLine = file.model.getPositionAt(p.range[0]).lineNumber;
+      const endLine = file.model.getPositionAt(Math.max(p.range[1], p.range[0])).lineNumber;
+      if (line >= startLine && line <= endLine && (!best || rank[p.severity] < rank[best.severity])) best = p;
+    }
+  }
+  const key = best && file ? `${file.id}:${best.range[0]}` : null;
+  if (key === focusedProblemKey) return;
+  focusedProblemKey = key;
+  if (best && activeTab !== best.severity) activeTab = best.severity;
+  renderProblemsPanel();
 });
 
 filenameTextEl.addEventListener("keydown", (e) => {
