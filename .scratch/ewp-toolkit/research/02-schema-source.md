@@ -39,9 +39,20 @@ I diffed the documented field list against the authoritative YAML-binding class,
 
 This could mean the docs are stale (the field was renamed/removed and the docs weren't updated), or that there's a YAML-level alias/coercion for it — but **that cannot be confirmed from public source**, because the actual YamlDotNet deserializer setup (`Yaml.Init()`, called in `ExpandWorldPrefabs/ExpandWorldPrefabs.cs` line 27) and the parsing helpers used throughout `PrefabData.cs`/`PrefabLoading.cs` (`Parse`, `DataValue`, `Conditions`, `Functions`, `Log` — all `using Data;`/`using Service;`) are **not present in either the EWP or WEC repo's source tree**. They are referenced only as pre-built DLLs via `<Reference Include="YamlDotNet">` etc. in `ExpandWorldPrefabs.csproj` (`HintPath="..\..\Libs\..."`), i.e. compiled into a private shared library that isn't published under any obviously-named repo among Jere's ~40 public GitHub repos (checked; no `valheim-common`/`valheim-shared`/similar exists). **This is the clearest evidence that even full C# source access from both public repos is not sufficient for 100% schema completeness** — some parsing/aliasing behavior is simply invisible without decompiling the shipped DLL or testing empirically against a running server.
 
+**UPDATE (resolved via live in-game testing, see [issues/08-gap-handling-policy.md](../issues/08-gap-handling-policy.md)):** the project owner tested all three forms in a running server and confirmed they are equivalent —
+```yaml
+filter: int, pickedUp, 1       # singular, inline triple
+filters:                       # plural, list form
+- int, pickedUp, 1
+filter: isFromPlayerInventory  # singular, bareword data.yaml reference
+```
+This confirms the YAML-level alias/coercion hypothesis above: the closed-source deserializer does accept a scalar value for `filter`/`bannedFilter` as shorthand for a single-item `filters`/`bannedFilters` list. Schema should treat singular as `string` and plural as `string[]` on the same underlying property, both fully valid.
+
 ### A gap that's undocumented *by design*, confirmed by Jere himself
 
 WEC's `README.md` "ZDO data keys" section (lines 304–432) states outright: *"Most should be self-explanatory. More explanation will be added later,"* followed by two long bullet lists of key names with **empty** descriptions (e.g. `` `addedDefaultItems`: `` with nothing after the colon), and: *"The field system adds `XXX.m_YYY` for each field where XXX is the component name and YYY is the field name."* This means the `data`/`filter`/`keys` mini-syntax's key namespace (`component.m_field`) is fundamentally open-ended — any field on any Unity component attached to any Valheim prefab is a legal key. That set is not enumerable from EWP or WEC source at all; it only exists in Valheim's own compiled game assembly (`assembly_valheim.dll`), which is neither source-available nor part of either mod repo. No amount of reading Jere's C# closes this gap — full enumeration would require reflecting over the game binary itself (or crowd-sourcing a key list, which is what the third-party schema partially attempts via free-text `examples`, not enforcement).
+
+**UPDATE (per ticket 08's resolution):** the namespace is even broader than "real component fields" — WEC's `data set=int,isCustomData,1`-style commands let scripters attach arbitrary custom-named data keys with no tie to any real Unity component field at all. So this isn't just an open-ended-but-patterned (`Word.m_word`-shaped) namespace; it's two distinct legitimate shapes (real component field paths, and arbitrary user-chosen custom keys). Schema validates these fields as an unconstrained string, not a `Word.m_word` pattern.
 
 ### Verdict for Q1
 
