@@ -1,7 +1,7 @@
 # Scope the data.yaml reference-validation feature for v1
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: (none)
 
 ## Question
