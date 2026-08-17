@@ -8,6 +8,7 @@
     "dev": "npm run generate-schema && vite",
     "build": "npm run generate-schema && vite build",
     "preview": "vite preview",
+    "pretest": "npm run generate-schema",
     "test": "vitest run"
   },
   "dependencies": {
