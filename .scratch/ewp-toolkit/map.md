@@ -31,11 +31,8 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 
 ## Not yet specified
 
-- UI/UX design of the validator page (layout, error display style, file-upload vs. drag-drop vs. folder picker) — a `/prototype` question, framework (Vite) now decided.
-- Repo structure/scaffold: how the schema-generation script, the web app, and the single combined GitHub Actions workflow (schema regen + build + deploy, per ticket 05) are organized within one repo, plus the one-time Pages "Build and deployment source → GitHub Actions" setting.
 - Version-picker dropdown as a post-v1 fast-follow (deferred, not blocking this map — see ticket 03's decision).
 - Branding/naming polish (site title/domain) beyond the working name "EWP Toolkit" — repo itself is now named `ewp_toolkit` at https://github.com/z-eall/ewp_toolkit.
-- Contribution/license posture now that public release is intended (e.g. MIT license, README, how community feedback/issues get handled).
 
 ## Out of scope
 
