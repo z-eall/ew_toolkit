@@ -1,0 +1,61 @@
+name: Build and deploy
+
+# Single combined workflow: regenerate schema, build, and deploy all run as
+# steps of the same run. A two-workflow split (schedule regenerates + pushes a
+# commit -> a separate `on: push` workflow builds/deploys) would silently
+# never fire the second workflow, because the default GITHUB_TOKEN cannot
+# trigger another workflow run (see .scratch/ewp-toolkit/issues/05-web-app-mechanics.md).
+# This design sidesteps that entirely anyway: schema.generated.json is
+# gitignored (ticket 12) and never committed, so this workflow has nothing to
+# push back to the repo in the first place.
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Daily. Off-the-hour minute to avoid GitHub's documented queuing delay
+    # at the top of every hour.
+    - cron: "17 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Regenerates src/schema.generated.json (fetches EWP's current version
+      # from Jere's manifest.json) then builds the Vite site. Both are one
+      # `npm run build` per package.json.
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,22 @@
+{
+  "name": "ewp-toolkit",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate-schema": "node schema/generate.mjs",
+    "dev": "npm run generate-schema && vite",
+    "build": "npm run generate-schema && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "monaco-editor": "^0.52.0",
+    "monaco-yaml": "^5.2.1",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

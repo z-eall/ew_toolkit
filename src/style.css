@@ -1,0 +1,110 @@
+:root {
+  color-scheme: dark;
+  --bg: #1e1e1e;
+  --panel: #252526;
+  --border: #3c3c3c;
+  --text: #d4d4d4;
+  --muted: #8a8a8a;
+  --error: #f14c4c;
+  --warning: #cca700;
+  --info: #3794ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-header {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.app-header b {
+  color: var(--text);
+  font-size: 14px;
+}
+
+#editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.problems {
+  height: 220px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  overflow-y: auto;
+  font-size: 12.5px;
+  font-family: Consolas, Menlo, monospace;
+}
+
+.problems-header {
+  padding: 6px 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+
+.problem {
+  padding: 5px 12px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+}
+
+.problem:hover {
+  background: #2a2d2e;
+}
+
+.problem.error {
+  border-left-color: var(--error);
+}
+
+.problem.warning {
+  border-left-color: var(--warning);
+}
+
+.problem.info {
+  border-left-color: var(--info);
+}
+
+.problem .loc {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.problem .branch {
+  color: var(--muted);
+}
+
+.problems-empty {
+  padding: 10px 12px;
+  color: var(--muted);
+}
