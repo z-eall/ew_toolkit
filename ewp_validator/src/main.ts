@@ -175,11 +175,11 @@ const problemsListEl = document.getElementById("problems-list")!;
 let currentSort: SortMode = DEFAULT_UPLOAD_SORT;
 const sidebarFilters = new Set<FileStatus>(["error", "warning", "valid"]);
 
-// ---------- Problems panel tab state (error / warning / flag) ----------
-// The "flag" tab is the info severity — the blue data.yaml/custom-key hints.
+// ---------- Problems panel tab state (error / warning / info) ----------
+// The "info" tab is the blue data.yaml/custom-key/legacy-format hints.
 
 let activeTab: Severity = "error";
-const TAB_LABEL: Record<Severity, string> = { error: "Errors", warning: "Warnings", info: "Flags" };
+const TAB_LABEL: Record<Severity, string> = { error: "Errors", warning: "Warnings", info: "Info" };
 
 function render() {
   renderFileList();

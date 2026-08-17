@@ -96,9 +96,9 @@ const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "ti
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
 // notices and stripped before ajv so they don't also raise a hard error.
 const LEGACY_DELAY_MESSAGE =
-  "Old format: a top-level `delay:`. It works, but prefer `spawnDelay:`/`pokeDelay:`/`removeDelay:`.";
+  "Old format: a top-level `delay:`. It still works, but we recommend using the latest format.";
 const legacySpawnMessage = (key: string) =>
-  `Old format: a single-line \`${key}:\`. It works, but the list form is better.`;
+  `Old format: a single-line \`${key}:\`. It still works, but we recommend using the latest format.`;
 
 function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   const typeValue = typeof item.type === "string" ? item.type.split(",")[0].trim() : "";

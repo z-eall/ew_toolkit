@@ -103,22 +103,22 @@ describe("data.yaml reference validation (ticket 06)", () => {
 });
 
 describe("custom saved key lint (ticket 06)", () => {
-  it("flags a keys: read with no matching <save_...> write anywhere loaded", () => {
+  it("flags a keys: read with no matching <save_...> write anywhere loaded as a blue notice, not a warning — ticket 13", () => {
     const files = [{ id: "a", text: "- prefab: Beehive\n  type: create\n  keys: myFlag 1\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "custom-key" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "custom-key" });
     expect(problems[0].message).toContain("myFlag");
     expect(problems[0].message).toContain("ewp_data.yaml");
-    // Shortened wording — ticket 13
-    expect(problems[0].message).toContain("Check expand_world/ewp_data.yaml first");
+    // Restored wording — ticket 13
+    expect(problems[0].message).toContain("before treating this as a bug");
   });
 
-  it("flags a <save_...> write with no matching read anywhere loaded", () => {
+  it("flags a <save_...> write with no matching read anywhere loaded as a blue notice, not a warning — ticket 13", () => {
     const files = [{ id: "a", text: "- prefab: Beehive\n  type: create\n  command: <save_orphanFlag_1>\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ severity: "warning", kind: "custom-key" });
+    expect(problems[0]).toMatchObject({ severity: "info", kind: "custom-key" });
     expect(problems[0].message).toContain("orphanFlag");
   });
 

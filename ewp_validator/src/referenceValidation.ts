@@ -185,7 +185,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "error",
         kind: "data-reference",
-        message: `No data entry named '${name}' is loaded. Add a \`name: ${name}\` entry, or correct the name.`,
+        message: `Undefined data entry reference '${name}'. Add a \`name: ${name}\` entry, or correct the invalid entry.`,
         range: occ.range,
       });
     }
@@ -220,9 +220,9 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "warning",
+        severity: "info",
         kind: "custom-key",
-        message: `Key '${name}' is read but never written (<save_..>) in the loaded files. Check expand_world/ewp_data.yaml first.`,
+        message: `Custom key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }
@@ -232,9 +232,9 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "warning",
+        severity: "info",
         kind: "custom-key",
-        message: `Key '${name}' is written (<save_..>) but never read in the loaded files. Check expand_world/ewp_data.yaml first.`,
+        message: `Custom key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
         range: occ.range,
       });
     }
