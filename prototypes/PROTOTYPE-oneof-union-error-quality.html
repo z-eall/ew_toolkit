@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PROTOTYPE — Discriminator-less array: oneOf error quality</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ajv@6/dist/ajv.bundle.js"></script>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ec; --muted: #93a0b4; --accent: #7aa2f7;
+    --ok: #4fd18b; --warn: #f0c674; --bad: #f07178;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; padding: 24px; line-height: 1.5;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .intro {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 20px; max-width: 900px;
+  }
+  .intro p { margin: 6px 0; color: var(--muted); font-size: 14px; }
+  .intro b { color: var(--text); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .tab {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--accent); color: #0f1115; border-color: var(--accent); font-weight: 600; }
+  .scenario-desc {
+    font-size: 13px; color: var(--muted); margin-bottom: 12px; max-width: 900px;
+  }
+  .layout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  textarea {
+    width: 100%; height: 380px; background: var(--panel2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+    font-family: Consolas, Menlo, monospace; font-size: 13px; resize: vertical;
+  }
+  .btn {
+    background: var(--accent); color: #0f1115; border: none; border-radius: 6px;
+    padding: 8px 14px; font-weight: 600; cursor: pointer; margin-top: 10px; font-size: 13px;
+  }
+  .entry-card {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 10px; font-size: 13px;
+  }
+  .entry-card.ok { border-left: 3px solid var(--ok); }
+  .entry-card.bad { border-left: 3px solid var(--bad); }
+  .entry-title { font-weight: 600; margin-bottom: 4px; }
+  .entry-title .branch { color: var(--accent); font-weight: 400; }
+  .err-line { color: var(--bad); font-family: Consolas, Menlo, monospace; font-size: 12px; margin: 3px 0; padding-left: 8px; border-left: 2px solid var(--bad); }
+  .ok-line { color: var(--ok); font-size: 12px; }
+  .verdict {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; margin-top: 18px; max-width: 900px; font-size: 13px; color: var(--muted);
+  }
+  .verdict b { color: var(--text); }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Discriminator-less array — is a naive <code>oneOf</code> union's error output usable?</h1>
+<div class="intro">
+  <p><b>The question this prototype answers:</b> EWP script files are one YAML array mixing four
+  entry shapes with no tag field — an <b>EWP rule entry</b>, a <b>WEC data entry</b>, a
+  <b>Value entry</b>, and a <b>Value group</b>. The Schema has to describe this as a
+  <code>oneOf</code> union of four object shapes. JSON Schema validators are historically bad at
+  reporting errors for <code>oneOf</code> unions — a malformed entry can get reported against
+  <i>every</i> branch it didn't match, instead of the one branch it was clearly attempting.</p>
+  <p>This page runs the <b>same broken YAML</b> through two approaches side by side:</p>
+  <p><b>A — Naive oneOf:</b> validate each array item against the full four-branch <code>oneOf</code>
+  schema and show whatever Ajv (a standard JSON Schema validator) reports.</p>
+  <p><b>B — Structural pre-check:</b> guess which of the four shapes an item is clearly attempting
+  (by which distinguishing keys are present — <code>valueGroup</code>, <code>value</code>, or
+  <code>name</code>+typed-lists-without-<code>prefab</code>/<code>type</code> → WEC data entry,
+  else → EWP rule entry), then validate against <i>only</i> that one schema.</p>
+  <p>Use the tabs below to step through scenarios, or edit the YAML directly and click Validate.</p>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="scenario-desc" id="scenario-desc"></div>
+
+<div class="layout">
+  <div class="panel">
+    <h2>YAML input (array of entries)</h2>
+    <textarea id="yaml-input" spellcheck="false"></textarea>
+    <button class="btn" onclick="runValidation()">Validate</button>
+  </div>
+  <div class="panel">
+    <h2>A — Naive oneOf (Ajv, raw)</h2>
+    <div id="result-a"></div>
+  </div>
+  <div class="panel">
+    <h2>B — Structural pre-check</h2>
+    <div id="result-b"></div>
+  </div>
+</div>
+
+<div class="verdict" id="verdict"></div>
+
+<script>
+// ---------- Schema (per tickets 02/06/08/09's decisions) ----------
+
+const enumType = ["create","destroy","change","state","say","command","poke","globalkey","key","custom","event","time","realtime"];
+
+// per ticket 09: enum fields strict; bool/number-with-alt-syntax fields accept native type or any string
+const boolOrString = { anyOf: [{ type: "boolean" }, { type: "string" }] };
+const numberOrString = { anyOf: [{ type: "number" }, { type: "string" }] };
+// per ticket 08: filter/bannedFilter singular (string) and plural (string[]) both valid, same underlying list
+const filterField = { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] };
+
+const ewpRuleEntry = {
+  title: "EWP rule entry",
+  type: "object",
+  properties: {
+    prefab: { type: "string" },
+    excludePrefab: { type: "string" },
+    type: { enum: enumType },
+    types: { type: "array", items: { type: "string" } },
+    chance: numberOrString,
+    weight: numberOrString,
+    admin: boolOrString,
+    day: boolOrString,
+    night: boolOrString,
+    remove: boolOrString,
+    command: { type: "string" },
+    filter: filterField,
+    filters: filterField,
+    bannedFilter: filterField,
+    bannedFilters: filterField,
+    data: { type: "string" },
+    injectData: { type: "string" }
+  },
+  additionalProperties: false
+};
+
+const wecDataEntry = {
+  title: "WEC data entry",
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    ints: { type: "array", items: { type: "string" } },
+    floats: { type: "array", items: { type: "string" } },
+    strings: { type: "array", items: { type: "string" } },
+    bools: { type: "array", items: { type: "string" } },
+    longs: { type: "array", items: { type: "string" } },
+    vecs: { type: "array", items: { type: "string" } },
+    quats: { type: "array", items: { type: "string" } },
+    bytes: { type: "array", items: { type: "string" } },
+    hashes: { type: "array", items: { type: "string" } },
+    items: { type: "array", items: { type: "object" } },
+    containerSize: { type: "string" },
+    itemAmount: { type: "string" }
+  },
+  required: ["name"],
+  additionalProperties: false
+};
+
+const valueEntry = {
+  title: "Value entry",
+  type: "object",
+  properties: { value: { type: "string" } },
+  required: ["value"],
+  additionalProperties: false
+};
+
+const valueGroup = {
+  title: "Value group",
+  type: "object",
+  properties: {
+    valueGroup: { type: "string" },
+    values: { type: "array", items: { type: "string" } }
+  },
+  required: ["valueGroup", "values"],
+  additionalProperties: false
+};
+
+const unionSchema = {
+  type: "array",
+  items: { oneOf: [ewpRuleEntry, wecDataEntry, valueEntry, valueGroup] }
+};
+
+// ---------- Approach A: naive oneOf ----------
+
+const ajv = new Ajv({ allErrors: true, verbose: true, jsonPointers: true });
+const validateUnion = ajv.compile(unionSchema);
+
+// ---------- Approach B: structural pre-check ----------
+
+function guessBranch(item) {
+  if (item && typeof item === "object") {
+    if ("valueGroup" in item) return { name: "Value group", schema: valueGroup };
+    if ("value" in item) return { name: "Value entry", schema: valueEntry };
+    const hasTypedList = ["ints","floats","strings","bools","longs","vecs","quats","bytes","hashes","items"].some(k => k in item);
+    if ("name" in item && hasTypedList && !("prefab" in item) && !("type" in item)) {
+      return { name: "WEC data entry", schema: wecDataEntry };
+    }
+  }
+  return { name: "EWP rule entry", schema: ewpRuleEntry }; // default guess
+}
+
+const compiledSingle = new Map();
+function validateSingle(schema, item) {
+  if (!compiledSingle.has(schema)) compiledSingle.set(schema, ajv.compile(schema));
+  const v = compiledSingle.get(schema);
+  const ok = v({ ...item }); // ajv mutates/marks; shallow clone is enough here
+  return { ok, errors: v.errors || [] };
+}
+
+// ---------- Rendering ----------
+
+function summarizeKeys(item) {
+  if (!item || typeof item !== "object") return String(item);
+  return Object.keys(item).join(", ");
+}
+
+function runValidation() {
+  const text = document.getElementById("yaml-input").value;
+  let doc;
+  try {
+    doc = jsyaml.load(text);
+  } catch (e) {
+    document.getElementById("result-a").innerHTML = `<div class="err-line">YAML parse error: ${e.message}</div>`;
+    document.getElementById("result-b").innerHTML = "";
+    return;
+  }
+  if (!Array.isArray(doc)) doc = [doc];
+
+  // --- Approach A ---
+  const validAll = validateUnion(doc);
+  const errorsByIndex = {};
+  (validateUnion.errors || []).forEach(e => {
+    const m = /^\/(\d+)/.exec(e.dataPath || e.instancePath || "");
+    const idx = m ? Number(m[1]) : -1;
+    (errorsByIndex[idx] = errorsByIndex[idx] || []).push(e);
+  });
+
+  let htmlA = "";
+  doc.forEach((item, i) => {
+    const errs = errorsByIndex[i] || [];
+    const bad = errs.length > 0;
+    htmlA += `<div class="entry-card ${bad ? "bad" : "ok"}">
+      <div class="entry-title">Entry #${i + 1} <span class="branch">{ ${summarizeKeys(item)} }</span></div>`;
+    if (!bad) {
+      htmlA += `<div class="ok-line">✓ matched one branch, no errors</div>`;
+    } else {
+      htmlA += `<div style="color:var(--muted);font-size:12px;margin-bottom:4px;">${errs.length} raw Ajv error(s) — every branch it failed:</div>`;
+      errs.forEach(e => {
+        htmlA += `<div class="err-line">${e.schemaPath || ""} — ${e.message}${e.params && e.params.allowedValues ? " [" + e.params.allowedValues.join(", ") + "]" : ""}</div>`;
+      });
+    }
+    htmlA += `</div>`;
+  });
+  document.getElementById("result-a").innerHTML = htmlA || "<em>empty document</em>";
+
+  // --- Approach B ---
+  let htmlB = "";
+  doc.forEach((item, i) => {
+    const guess = guessBranch(item);
+    const { ok, errors } = validateSingle(guess.schema, item);
+    htmlB += `<div class="entry-card ${ok ? "ok" : "bad"}">
+      <div class="entry-title">Entry #${i + 1} <span class="branch">guessed: ${guess.name}</span></div>`;
+    if (ok) {
+      htmlB += `<div class="ok-line">✓ valid ${guess.name}</div>`;
+    } else {
+      errors.forEach(e => {
+        htmlB += `<div class="err-line">${e.dataPath || e.instancePath || "(root)"} ${e.message}${e.params && e.params.allowedValues ? " [" + e.params.allowedValues.join(", ") + "]" : ""}</div>`;
+      });
+    }
+    htmlB += `</div>`;
+  });
+  document.getElementById("result-b").innerHTML = htmlB || "<em>empty document</em>";
+}
+
+// ---------- Scenarios ----------
+
+const scenarios = [
+  {
+    tab: "Happy: EWP rule",
+    desc: "A valid EWP rule entry. Both approaches should show a clean pass.",
+    yaml: `- prefab: Bonemass\n  type: create\n  chance: 0.1\n  data: ultra_bonemass\n`
+  },
+  {
+    tab: "Happy: WEC data",
+    desc: "A valid WEC data entry (name + typed lists). Both approaches should pass.",
+    yaml: `- name: ultra_bonemass\n  strings:\n  - Humanoid.m_name, Ultra Bonemass\n  floats:\n  - RandomSkillFactor, 1.5\n`
+  },
+  {
+    tab: "Happy: mixed file",
+    desc: "A realistic mixed file: EWP rule entry + WEC data entry + value entry + value group, like a real expand_prefabs_*.yaml. All four shapes in one array, no tag field — this is the actual case the schema has to handle.",
+    yaml: `- prefab: Bonemass\n  type: create\n  data: ultra_bonemass\n\n- name: ultra_bonemass\n  floats:\n  - RandomSkillFactor, 1.5\n\n- value: greeting, Hello there\n\n- valueGroup: biome_pool\n  values:\n  - Meadows\n  - BlackForest\n`
+  },
+  {
+    tab: "Broken: typo'd key",
+    desc: "prefab misspelled as 'prefeb' on an otherwise-valid EWP rule entry. This is the case the ticket cares about most: does the error clearly point at 'you misspelled prefab', or does it dump failures against all four branches?",
+    yaml: `- prefeb: Bonemass\n  type: create\n  chance: 0.1\n`
+  },
+  {
+    tab: "Broken: wrong enum type",
+    desc: "type is given as a number instead of one of the fixed allowed words. Per ticket 09, enum fields validate strictly — this should be caught cleanly.",
+    yaml: `- prefab: Bonemass\n  type: 123\n  chance: 0.1\n`
+  },
+  {
+    tab: "Broken: matches nothing",
+    desc: "An entry with no distinguishing keys of any of the four shapes — pure garbage. Worst case for the naive oneOf: no branch has any real similarity to latch onto.",
+    yaml: `- foo: bar\n  baz: 1\n`
+  },
+  {
+    tab: "Free play",
+    desc: "Edit freely. Try your own EWP/WEC YAML.",
+    yaml: `- prefab: Bonemass\n  type: create\n  chance: 0.1\n`
+  }
+];
+
+let activeTab = 0;
+
+function renderTabs() {
+  const tabsEl = document.getElementById("tabs");
+  tabsEl.innerHTML = scenarios.map((s, i) =>
+    `<div class="tab ${i === activeTab ? "active" : ""}" onclick="selectTab(${i})">${s.tab}</div>`
+  ).join("");
+  document.getElementById("scenario-desc").textContent = scenarios[activeTab].desc;
+}
+
+function selectTab(i) {
+  activeTab = i;
+  document.getElementById("yaml-input").value = scenarios[i].yaml;
+  renderTabs();
+  runValidation();
+}
+
+// ---------- Init ----------
+
+renderTabs();
+document.getElementById("yaml-input").value = scenarios[0].yaml;
+runValidation();
+</script>
+
+<div class="verdict">
+  <b>How to read this:</b> open this file directly in a browser (double-click, needs internet
+  access for the two CDN scripts). Step through the "Broken" tabs and compare panel A vs panel B.
+  If A's raw Ajv output on the typo'd-key and matches-nothing scenarios reads as noisy/unhelpful
+  compared to B's single clear "guessed branch + its own errors" message, that confirms the
+  ticket's suspicion and the real implementation should use the structural pre-check (B), not a
+  naive oneOf (A), for its actual validation + error-reporting path.
+</div>
+
+</body>
+</html>
