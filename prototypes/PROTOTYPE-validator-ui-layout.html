@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PROTOTYPE — Validator page: 3 layout variants</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+    --text: #e6e8ec; --muted: #93a0b4; --accent: #7aa2f7;
+    --ok: #4fd18b; --warn: #f0c674; --bad: #f07178;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  .intro {
+    padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--panel);
+    font-size: 13px; color: var(--muted);
+  }
+  .intro b { color: var(--text); }
+  .stage { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+  .variant { position: absolute; inset: 0; display: none; flex-direction: column; }
+  .variant.active { display: flex; }
+
+  code, .code-font { font-family: Consolas, Menlo, monospace; }
+  .line { display: flex; white-space: pre; }
+  .line-num { width: 34px; flex: none; text-align: right; padding-right: 8px; color: #4a5163; user-select: none; }
+  .line-text { flex: 1; }
+  .squiggle {
+    text-decoration: underline wavy var(--bad); text-decoration-skip-ink: none; cursor: help;
+  }
+  .shape-tag {
+    display: inline-block; font-size: 10px; padding: 0 5px; border-radius: 3px;
+    background: #2c3550; color: var(--accent); margin-right: 6px; font-family: -apple-system, sans-serif;
+  }
+
+  /* ---- Variant A: tabbed, single-file focus, inline-only ---- */
+  .a-tabs { display: flex; background: var(--panel); border-bottom: 1px solid var(--border); }
+  .a-tab {
+    padding: 9px 16px; font-size: 13px; cursor: pointer; color: var(--muted);
+    border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px;
+  }
+  .a-tab.active { background: var(--panel2); color: var(--text); }
+  .a-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .a-editor { flex: 1; background: var(--panel2); padding: 14px 0; overflow: auto; font-size: 13px; }
+  .a-status { background: var(--panel); border-top: 1px solid var(--border); padding: 6px 16px; font-size: 12px; color: var(--muted); }
+
+  /* ---- Variant B: sidebar + editor + problems panel ---- */
+  .b-body { flex: 1; display: flex; min-height: 0; }
+  .b-sidebar { width: 220px; background: var(--panel); border-right: 1px solid var(--border); overflow: auto; }
+  .b-sidebar-header { padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .b-file-row { padding: 8px 14px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--muted); }
+  .b-file-row.active { background: var(--panel2); color: var(--text); }
+  .b-badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+  .b-badge.err { background: #4a2020; color: var(--bad); }
+  .b-badge.ok { background: #1c3626; color: var(--ok); }
+  .b-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .b-editor { flex: 1; background: var(--panel2); padding: 14px 0; overflow: auto; font-size: 13px; }
+  .b-problems { height: 190px; background: var(--panel); border-top: 1px solid var(--border); overflow: auto; }
+  .b-problems-header { padding: 8px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .b-problem-row { padding: 7px 14px; font-size: 12px; border-bottom: 1px solid #1c2029; cursor: pointer; }
+  .b-problem-row:hover { background: var(--panel2); }
+  .b-problem-file { color: var(--muted); }
+
+  /* ---- Variant C: continuous merged scroll ---- */
+  .c-topbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border); font-size: 13px; }
+  .c-drop { color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 6px 12px; }
+  .c-next-btn { background: var(--accent); color: #0f1115; border: none; border-radius: 5px; padding: 6px 12px; font-weight: 600; cursor: pointer; font-size: 12px; }
+  .c-scroll { flex: 1; overflow: auto; background: var(--panel2); }
+  .c-file-header { position: sticky; top: 0; background: #232838; padding: 6px 16px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); z-index: 1; }
+  .c-line { display: flex; white-space: pre; font-size: 13px; }
+  .c-margin { width: 4px; flex: none; }
+  .c-margin.hot { background: var(--bad); }
+
+  /* ---- Switcher ---- */
+  .switcher {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: #1c2130; border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 8px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.4); font-size: 13px; z-index: 10;
+  }
+  .switcher button {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 14px;
+  }
+  .switcher button:hover { background: var(--accent); color: #0f1115; }
+  .switcher .label { min-width: 220px; text-align: center; color: var(--text); }
+  .switcher .label b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <b>Ticket 11 — three structurally different layouts for the EWP Toolkit validator page.</b>
+  Same 3 fake files, same 2 fake errors, in every variant — only the layout and navigation model
+  change. Flip between them with the floating switcher (or ← → keys) and judge which structure
+  best fits <b>batch validation</b> across correlated multi-file systems. Errors show the
+  <b>structural pre-check</b>'s guessed <b>EWP rule entry</b>/<b>WEC data entry</b> branch (ticket 10) inline.
+</div>
+
+<div class="stage">
+
+  <!-- ============ VARIANT A ============ -->
+  <div class="variant" id="variant-A">
+    <div class="a-tabs" id="a-tabs"></div>
+    <div class="a-editor code-font" id="a-editor"></div>
+    <div class="a-status" id="a-status"></div>
+  </div>
+
+  <!-- ============ VARIANT B ============ -->
+  <div class="variant" id="variant-B">
+    <div class="b-body">
+      <div class="b-sidebar">
+        <div class="b-sidebar-header">Loaded files</div>
+        <div id="b-file-list"></div>
+      </div>
+      <div class="b-main">
+        <div class="b-editor code-font" id="b-editor"></div>
+        <div class="b-problems">
+          <div class="b-problems-header">Problems (all files)</div>
+          <div id="b-problem-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT C ============ -->
+  <div class="variant" id="variant-C">
+    <div class="c-topbar">
+      <div class="c-drop">Drop your expand_prefabs_*.yaml files or a folder here</div>
+      <button class="c-next-btn" onclick="jumpNextErrorC()">Jump to next error ↓</button>
+    </div>
+    <div class="c-scroll code-font" id="c-scroll"></div>
+  </div>
+
+</div>
+
+<div class="switcher">
+  <button onclick="cycle(-1)">←</button>
+  <div class="label" id="switcher-label"></div>
+  <button onclick="cycle(1)">→</button>
+</div>
+
+<script>
+// ---------- Shared fake data (same across all 3 variants) ----------
+
+const files = [
+  {
+    name: "expand_prefabs_bosses.yaml",
+    lines: [
+      "- prefeb: Bonemass",
+      "  type: create",
+      "  chance: 0.1",
+      "  data: ultra_bonemass",
+      "",
+      "- name: ultra_bonemass",
+      "  floats:",
+      "  - RandomSkillFactor, 1.5"
+    ],
+    shapes: ["EWP rule", null, null, null, null, "WEC data", null, null],
+    errors: [{ line: 0, col: 3, len: 6, msg: "Unknown property 'prefeb' (interpreted as EWP rule entry) — did you mean 'prefab'?" }]
+  },
+  {
+    name: "expand_prefabs_farming.yaml",
+    lines: [
+      "- prefab: Beehive",
+      "  type: 123",
+      "  chance: 0.4"
+    ],
+    shapes: ["EWP rule", null, null],
+    errors: [{ line: 1, col: 8, len: 3, msg: "type: 123 is not one of the allowed values (interpreted as EWP rule entry) — expected one of: create, destroy, change, ..." }]
+  },
+  {
+    name: "data.yaml",
+    lines: [
+      "- name: isFromPlayerInventory",
+      "  ints:",
+      "  - pickedUp, 1"
+    ],
+    shapes: ["WEC data", null, null],
+    errors: []
+  }
+];
+
+function fileErrCount(f) { return f.errors.length; }
+function totalErrCount() { return files.reduce((n, f) => n + f.errors.length, 0); }
+
+function renderLineHTML(f, i) {
+  const err = f.errors.find(e => e.line === i);
+  const raw = f.lines[i];
+  const tag = f.shapes[i] ? `<span class="shape-tag">${f.shapes[i]}</span>` : "";
+  let text = escapeHtml(raw);
+  if (err) {
+    const before = escapeHtml(raw.slice(0, err.col));
+    const mid = escapeHtml(raw.slice(err.col, err.col + err.len));
+    const after = escapeHtml(raw.slice(err.col + err.len));
+    text = `${before}<span class="squiggle" title="${escapeHtml(err.msg)}">${mid}</span>${after}`;
+  }
+  return { tag, text, hasErr: !!err };
+}
+function escapeHtml(s) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// ---------- Variant A: tabs, single-file focus, inline-only ----------
+
+let aActive = 0;
+function renderA() {
+  document.getElementById("a-tabs").innerHTML = files.map((f, i) => `
+    <div class="a-tab ${i===aActive?"active":""}" onclick="selectA(${i})">
+      <span class="a-dot" style="background:${fileErrCount(f)?"var(--bad)":"var(--ok)"}"></span>
+      ${f.name}
+    </div>`).join("");
+  const f = files[aActive];
+  document.getElementById("a-editor").innerHTML = f.lines.map((_, i) => {
+    const { tag, text } = renderLineHTML(f, i);
+    return `<div class="line"><div class="line-num">${i+1}</div><div class="line-text">${tag}${text}</div></div>`;
+  }).join("");
+  document.getElementById("a-status").textContent =
+    fileErrCount(f) ? `${fileErrCount(f)} problem(s) in this file — squiggle underline, hover for detail`
+                     : "No problems in this file";
+}
+function selectA(i) { aActive = i; renderA(); }
+
+// ---------- Variant B: sidebar + editor + problems panel ----------
+
+let bActive = 0;
+function renderB() {
+  document.getElementById("b-file-list").innerHTML = files.map((f, i) => `
+    <div class="b-file-row ${i===bActive?"active":""}" onclick="selectB(${i})">
+      <span>${f.name}</span>
+      <span class="b-badge ${fileErrCount(f)?"err":"ok"}">${fileErrCount(f)?fileErrCount(f):"✓"}</span>
+    </div>`).join("");
+  const f = files[bActive];
+  document.getElementById("b-editor").innerHTML = f.lines.map((_, i) => {
+    const { tag, text } = renderLineHTML(f, i);
+    return `<div class="line"><div class="line-num">${i+1}</div><div class="line-text">${tag}${text}</div></div>`;
+  }).join("");
+  const allProblems = [];
+  files.forEach(ff => ff.errors.forEach(e => allProblems.push({ file: ff.name, line: e.line, msg: e.msg })));
+  document.getElementById("b-problem-list").innerHTML = allProblems.length
+    ? allProblems.map(p => `<div class="b-problem-row" onclick="selectB(${files.findIndex(x=>x.name===p.file)})">
+        <span class="b-problem-file">${p.file}:${p.line+1}</span> — ${escapeHtml(p.msg)}
+      </div>`).join("")
+    : `<div class="b-problem-row">No problems across any loaded file 🎉</div>`;
+}
+function selectB(i) { bActive = i; renderB(); }
+
+// ---------- Variant C: continuous merged scroll ----------
+
+function renderC() {
+  let html = "";
+  const errPositions = [];
+  files.forEach(f => {
+    html += `<div class="c-file-header">${f.name} ${fileErrCount(f) ? `— ${fileErrCount(f)} problem(s)` : "— clean"}</div>`;
+    f.lines.forEach((_, i) => {
+      const { tag, text, hasErr } = renderLineHTML(f, i);
+      if (hasErr) errPositions.push(`${f.name}:${i}`);
+      html += `<div class="c-line" id="cline-${f.name}-${i}">
+        <div class="c-margin ${hasErr?"hot":""}"></div>
+        <div class="line-num">${i+1}</div>
+        <div class="line-text">${tag}${text}</div>
+      </div>`;
+    });
+  });
+  document.getElementById("c-scroll").innerHTML = html;
+  window._cErrPositions = errPositions;
+  window._cErrCursor = -1;
+}
+function jumpNextErrorC() {
+  const positions = window._cErrPositions || [];
+  if (!positions.length) return;
+  window._cErrCursor = (window._cErrCursor + 1) % positions.length;
+  const el = document.getElementById(`cline-${positions[window._cErrCursor].replace(":", "-")}`);
+  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+// ---------- Switcher ----------
+
+const variants = [
+  { key: "A", label: "Tabbed single-file, inline-only" },
+  { key: "B", label: "Sidebar + Problems panel (IDE-style)" },
+  { key: "C", label: "Continuous merged scroll, margin hotspots" }
+];
+let current = 0;
+
+function applyVariant() {
+  document.querySelectorAll(".variant").forEach(el => el.classList.remove("active"));
+  document.getElementById(`variant-${variants[current].key}`).classList.add("active");
+  document.getElementById("switcher-label").innerHTML = `<b>${variants[current].key}</b> — ${variants[current].label}`;
+  const url = new URL(window.location);
+  url.searchParams.set("variant", variants[current].key);
+  history.replaceState(null, "", url);
+  if (variants[current].key === "A") renderA();
+  if (variants[current].key === "B") renderB();
+  if (variants[current].key === "C") renderC();
+}
+
+function cycle(dir) {
+  current = (current + dir + variants.length) % variants.length;
+  applyVariant();
+}
+
+document.addEventListener("keydown", e => {
+  const tag = document.activeElement.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement.isContentEditable) return;
+  if (e.key === "ArrowLeft") cycle(-1);
+  if (e.key === "ArrowRight") cycle(1);
+});
+
+// ---------- Init ----------
+
+const initial = new URLSearchParams(window.location.search).get("variant");
+const idx = variants.findIndex(v => v.key === (initial || "").toUpperCase());
+current = idx >= 0 ? idx : 0;
+applyVariant();
+</script>
+
+</body>
+</html>
