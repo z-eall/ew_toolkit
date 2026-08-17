@@ -20,7 +20,7 @@ export interface Problem {
   range: [start: number, end: number];
 }
 
-type BranchName = "ewpRuleEntry" | "wecDataEntry" | "valueEntry" | "valueGroup";
+export type BranchName = "ewpRuleEntry" | "wecDataEntry" | "valueEntry" | "valueGroup";
 
 const TYPED_LIST_KEYS = [
   "ints",
@@ -53,13 +53,13 @@ function getValidator(branch: BranchName) {
   return v;
 }
 
-interface Guess {
+export interface Guess {
   branch: BranchName;
   /** true when the item has `data:` where `name:` was clearly meant (ticket 07). */
   likelyDataNameTypo: boolean;
 }
 
-function guessBranch(item: unknown): Guess {
+export function guessBranch(item: unknown): Guess {
   if (item && typeof item === "object" && !Array.isArray(item)) {
     const obj = item as Record<string, unknown>;
     if ("valueGroup" in obj) return { branch: "valueGroup", likelyDataNameTypo: false };
@@ -96,12 +96,12 @@ function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   return `type '${typeValue || "(none)"}' expects a non-empty 'prefab' (only globalkey/key/custom/event/time/realtime can omit it).`;
 }
 
-function nodeRange(node: { range?: readonly [number, number, number] | null }): [number, number] {
+export function nodeRange(node: { range?: readonly [number, number, number] | null }): [number, number] {
   if (!node.range) return [0, 0];
   return [node.range[0], node.range[2] ?? node.range[1]];
 }
 
-function findPairRange(map: YAMLMap, keyName: string): [number, number] | null {
+export function findPairRange(map: YAMLMap, keyName: string): [number, number] | null {
   const pair = map.items.find((p: Pair) => isScalarKey(p.key, keyName));
   if (!pair) return null;
   const keyRange = (pair.key as any)?.range;
@@ -110,6 +110,12 @@ function findPairRange(map: YAMLMap, keyName: string): [number, number] | null {
   const end = valueRange ? valueRange[2] ?? valueRange[1] : keyRange ? keyRange[2] : null;
   if (start == null || end == null) return null;
   return [start, end];
+}
+
+/** The raw value node for `keyName` on `map`, e.g. to walk into a nested seq/map. */
+export function getPairValueNode(map: YAMLMap, keyName: string): unknown {
+  const pair = map.items.find((p: Pair) => isScalarKey(p.key, keyName));
+  return pair ? pair.value : null;
 }
 
 function isScalarKey(key: unknown, name: string): boolean {

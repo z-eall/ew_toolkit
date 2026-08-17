@@ -1,8 +1,11 @@
 // Multi-file state for the ticket 11 "sidebar + Problems panel" layout.
-// Each loaded file gets its own Monaco model and is validated independently
-// (Batch validation, per CONTEXT.md) — there is no cross-file coupling here,
-// that's reference validation (ticket 06), not part of this pass.
+// Each loaded file gets its own Monaco model. Two validation passes run on
+// every change: the ticket 10 structural pre-check (per-file, no coupling)
+// and the ticket 06 reference validation (cross-file by nature — a change in
+// one file can make a `data:` reference in another valid or invalid — so it
+// always re-runs across every loaded file, not just the one that changed).
 import * as monaco from "monaco-editor";
+import { runReferenceValidation } from "./referenceValidation";
 import { runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 
 export interface LoadedFile {
@@ -18,14 +21,19 @@ const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
   info: monaco.MarkerSeverity.Info,
 };
 
-const MARKER_OWNER = "ewp-structural-precheck";
+const MARKER_OWNER = "ewp-toolkit";
 const VALIDATE_DEBOUNCE_MS = 200;
+
+const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key", string> = {
+  "data-reference": "data.yaml reference",
+  "custom-key": "custom saved key",
+};
 
 export class FileManager {
   private files: LoadedFile[] = [];
   private activeId: string | null = null;
   private nextId = 1;
-  private debounceHandles = new Map<string, ReturnType<typeof setTimeout>>();
+  private debounceHandle: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     private editor: monaco.editor.IStandaloneCodeEditor,
@@ -47,8 +55,8 @@ export class FileManager {
     const model = monaco.editor.createModel(content, "yaml", uri);
     const file: LoadedFile = { id, name: uniqueName, model, problems: [] };
     this.files.push(file);
-    model.onDidChangeContent(() => this.scheduleValidate(file));
-    this.validate(file);
+    model.onDidChangeContent(() => this.scheduleRevalidateAll());
+    this.revalidateAll();
     if (this.activeId === null) this.setActive(id);
     else this.onChange();
     return file;
@@ -58,9 +66,8 @@ export class FileManager {
     const idx = this.files.findIndex((f) => f.id === id);
     if (idx === -1) return;
     const [removed] = this.files.splice(idx, 1);
-    clearTimeout(this.debounceHandles.get(id));
-    this.debounceHandles.delete(id);
     removed.model.dispose();
+    this.revalidateAll(); // a removed file's data.yaml entries/keys may have been the only definition/write for something
     if (this.activeId === id) {
       const next = this.files[idx] ?? this.files[idx - 1] ?? null;
       this.setActive(next?.id ?? null);
@@ -87,19 +94,35 @@ export class FileManager {
     this.editor.focus();
   }
 
-  private scheduleValidate(file: LoadedFile) {
-    clearTimeout(this.debounceHandles.get(file.id));
-    this.debounceHandles.set(
-      file.id,
-      setTimeout(() => {
-        this.validate(file);
-        this.onChange();
-      }, VALIDATE_DEBOUNCE_MS),
-    );
+  private scheduleRevalidateAll() {
+    clearTimeout(this.debounceHandle);
+    this.debounceHandle = setTimeout(() => {
+      this.revalidateAll();
+      this.onChange();
+    }, VALIDATE_DEBOUNCE_MS);
   }
 
-  private validate(file: LoadedFile) {
-    file.problems = runStructuralPrecheck(file.model.getValue());
+  private revalidateAll() {
+    for (const file of this.files) {
+      file.problems = runStructuralPrecheck(file.model.getValue());
+    }
+
+    const refProblems = runReferenceValidation(this.files.map((f) => ({ id: f.id, text: f.model.getValue() })));
+    for (const rp of refProblems) {
+      const file = this.files.find((f) => f.id === rp.fileId);
+      if (!file) continue;
+      file.problems.push({
+        severity: rp.severity,
+        message: rp.message,
+        branch: REFERENCE_BRANCH_LABEL[rp.kind],
+        range: rp.range,
+      });
+    }
+
+    for (const file of this.files) this.applyMarkers(file);
+  }
+
+  private applyMarkers(file: LoadedFile) {
     const markers: monaco.editor.IMarkerData[] = file.problems.map((p) => {
       const start = file.model.getPositionAt(p.range[0]);
       const end = file.model.getPositionAt(Math.max(p.range[1], p.range[0] + 1));

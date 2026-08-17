@@ -32,10 +32,19 @@ Suggestions or checks that require real EWP/game data beyond the schema shape, e
 _Avoid_: "smart autocomplete"
 
 **Cross-file reference**:
-A value in one EWP YAML file that points at an id/key defined in a *different* EWP YAML file — the correlated-systems pain point driving multi-file support. Whether this is checkable without full data-aware groundwork is an open research question.
+A value in one EWP YAML file that points at an id/key defined in a *different* EWP YAML file — the correlated-systems pain point driving multi-file support. Resolved by [[Reference validation]] for the `data.yaml` namespace and, as a best-effort lint, for [[Custom saved key]]s; prefab names, global keys, and event names still need data-aware groundwork and remain unchecked.
 
 **Batch validation**:
-Opening/uploading multiple EWP YAML files at once, each validated independently against the schema, with per-file, per-line error locations. Core v1 capability alongside single-file validation.
+Opening/uploading multiple EWP YAML files at once, each validated independently against the schema, with per-file, per-line error locations. Implemented as the sidebar file list + Problems panel layout (ticket 11).
+
+**Structural pre-check**:
+The mechanism behind [[Structural validation]] for the [[Discriminator-less array]]: guess an array entry's intended shape (EWP rule entry / WEC data entry / value entry / value group) from which distinguishing keys are present, then validate against only that one shape's schema. Chosen over a naive `oneOf` because the union alone produces 13-15 unscoped errors per typo (see `prototype/oneof-union-error-quality`) — `oneOf` stays only the acceptance mechanism, never the error-reporting source.
+
+**Reference validation**:
+The v1 implementation of [[Cross-file reference]] checking, scoped to the one namespace with a clean structural definition/usage split: a `name:` entry anywhere in the loaded batch defines a `data.yaml` identifier; a bareword `data:`/`addItems:`/`removeItems:`/`drops:` value elsewhere in the batch (same file or not) uses it. An undefined reference is a hard error; a defined-but-unused entry is a low-severity hint. Distinct from [[Data-aware autocomplete]], which needs real game data this doesn't.
+
+**Custom saved key**:
+A scripter-chosen identifier written via the `<save_X_Y>` string template and read via `keys:`/`bannedKeys:`/`type: key` or the `<load_X>`/`<clear_X>` templates. [[Reference validation]] flags a one-sided read-without-write or write-without-read within the loaded batch as a warning, not an error — a key can legitimately be written by another mod or a console command outside the batch, so the check points the scripter at `expand_world/ewp_data.yaml` to verify rather than asserting a bug. Distinct from global keys, which are deliberately not checked (too many are set by vanilla game logic, not scripter YAML).
 
 **EWP rule entry**:
 A YAML list item shaped like EWP's own `Data` structure (`prefab`/`type`/filters/actions/etc.) — one of four legal shapes that can appear in a script file's top-level array.
