@@ -13,20 +13,22 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 - Standing preference: cost stays at $0 — GitHub free tier only (Pages + Actions), no paid hosting/services.
 - Prefer reusing existing free/open tooling (Monaco + monaco-yaml) over building a custom editor/validator from scratch.
 - Independent from the existing `valheimtools.stream` tool/schema — used only as a cross-check reference (`https://valheimtools.stream/ewp.json`), not a dependency or source of truth.
-- Local project root: `C:\Users\Ultimate\Claude\EWP_toolkit`, git-initialized locally. GitHub remote not yet created — see ticket 01.
+- Local project root: `C:\Users\Ultimate\Claude\ewp_toolkit`, git-initialized locally. GitHub remote: https://github.com/z-eall/ewp_toolkit.git.
 - Reference repos: EWP (https://github.com/JereKuusela/valheim-expand_world_prefabs), WEC (https://github.com/JereKuusela/valheim-world_edit_commands, data docs at README_data.md).
 
 ## Decisions so far
 
+- [Set up GitHub account and EWP Toolkit repo](issues/01-github-setup.md) — Repo created at https://github.com/z-eall/ewp_toolkit; local folder renamed to `ewp_toolkit` to match; remote wired, not yet pushed.
 - [What's the technical shape of a Monaco-based validator on GitHub Pages + Actions?](issues/05-web-app-mechanics.md) — Confirmed $0-forever. Vite as bundler (monaco-yaml requires one), schema bundled at build time, single combined `schedule`-triggered workflow (regen + build + deploy) — a two-workflow split would silently break since `GITHUB_TOKEN` can't chain workflows. Full findings: [research/05-web-app-mechanics.md](research/05-web-app-mechanics.md).
 - [Can key references be validated without full data-aware game data?](issues/04-reference-validation-feasibility.md) — Yes for `data.yaml` named templates (clean definition/usage pair, same-file and cross-file, no game data needed) — the concrete v1 feature. Custom saved keys are a weaker best-effort warning. Prefab names, global keys, and event names must wait. Full findings: [research/04-reference-validation-feasibility.md](research/04-reference-validation-feasibility.md).
+- [Can EWP schema generation support multiple mod versions?](issues/03-multi-version-feasibility.md) — Ship latest-only for v1. No GitHub tags/releases exist; `publish/manifest.json`'s commit history gives a reliable ~30-version history instead, and the schema does change meaningfully across versions, so version-picker is a well-scoped ~1-2 day fast-follow once v1 is stable, not a v1 requirement. Full findings: [research/03-multi-version-feasibility.md](research/03-multi-version-feasibility.md).
 
 ## Not yet specified
 
 - UI/UX design of the validator page (layout, error display style, file-upload vs. drag-drop vs. folder picker) — a `/prototype` question, framework (Vite) now decided.
 - Repo structure/scaffold: how the schema-generation script, the web app, and the single combined GitHub Actions workflow (schema regen + build + deploy, per ticket 05) are organized within one repo, plus the one-time Pages "Build and deployment source → GitHub Actions" setting.
-- Version-picker dropdown implementation, if ticket 03 finds multi-version schema generation feasible.
-- Branding/naming polish (repo name, site title/domain) beyond the working name "EWP Toolkit."
+- Version-picker dropdown as a post-v1 fast-follow (deferred, not blocking this map — see ticket 03's decision).
+- Branding/naming polish (site title/domain) beyond the working name "EWP Toolkit" — repo itself is now named `ewp_toolkit` at https://github.com/z-eall/ewp_toolkit.
 - Contribution/license posture now that public release is intended (e.g. MIT license, README, how community feedback/issues get handled).
 
 ## Out of scope
