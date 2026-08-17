@@ -65,6 +65,52 @@ export interface TreeGroup {
   files: ViewFile[];
 }
 
+// ---------- Save planning ----------
+
+export type SaveScope = "file" | "folder" | "all";
+
+export interface SaveFile {
+  name: string;
+  folder: string;
+  content: string;
+}
+
+export interface SavePlan {
+  /** "single" downloads the raw file; "zip" packs a folder-structured archive. */
+  kind: "single" | "zip";
+  /** The download filename handed to the browser. */
+  filename: string;
+  /** Archive members (one, with a bare name, in the single case). */
+  entries: { path: string; content: string }[];
+}
+
+const zipPath = (f: SaveFile) => (f.folder ? `${f.folder}/${f.name}` : f.name);
+
+/**
+ * Decide what a Save action produces. A lone file downloads raw (no zip, no
+ * folder wrapper); anything else packs into a folder-structured zip. Returns
+ * null when the scope selects nothing (e.g. "file" with no active file).
+ */
+export function planSave(files: readonly SaveFile[], scope: SaveScope, active: SaveFile | null): SavePlan | null {
+  let selected: SaveFile[];
+  if (scope === "all") selected = [...files];
+  else if (scope === "file") selected = active ? [active] : [];
+  else selected = active ? files.filter((f) => f.folder === active.folder) : [];
+
+  if (selected.length === 0) return null;
+  if (selected.length === 1) {
+    const only = selected[0];
+    return { kind: "single", filename: only.name, entries: [{ path: only.name, content: only.content }] };
+  }
+
+  const base = scope === "folder" ? active?.folder || "expand_world" : "expand_world";
+  return {
+    kind: "zip",
+    filename: `${base}.zip`,
+    entries: selected.map((f) => ({ path: zipPath(f), content: f.content })),
+  };
+}
+
 /** Group into one level of folders, preserving the incoming (already sorted) order. */
 export function buildTree(files: readonly ViewFile[]): TreeGroup[] {
   const groups: TreeGroup[] = [];

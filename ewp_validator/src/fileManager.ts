@@ -85,6 +85,19 @@ export class FileManager {
     this.onChange();
   }
 
+  /** Rename a loaded file. Blank names are rejected; collisions get a ` (n)` suffix. */
+  renameFile(id: string, rawName: string): void {
+    const file = this.files.find((f) => f.id === id);
+    if (!file) return;
+    const trimmed = rawName.trim();
+    if (trimmed === "" || trimmed === file.name) {
+      this.onChange();
+      return;
+    }
+    file.name = this.uniqueName(trimmed, id);
+    this.onChange();
+  }
+
   /** Switch to `fileId` and move the cursor to the character offset within its model. */
   revealProblem(fileId: string, offset: number) {
     const file = this.files.find((f) => f.id === fileId);
@@ -140,8 +153,8 @@ export class FileManager {
     monaco.editor.setModelMarkers(file.model, MARKER_OWNER, markers);
   }
 
-  private uniqueName(name: string): string {
-    const existing = new Set(this.files.map((f) => f.name));
+  private uniqueName(name: string, exceptId?: string): string {
+    const existing = new Set(this.files.filter((f) => f.id !== exceptId).map((f) => f.name));
     if (!existing.has(name)) return name;
     const dot = name.lastIndexOf(".");
     const base = dot === -1 ? name : name.slice(0, dot);

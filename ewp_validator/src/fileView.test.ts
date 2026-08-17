@@ -4,6 +4,8 @@ import {
   DEFAULT_UPLOAD_SORT,
   filterFiles,
   folderFromRelativePath,
+  planSave,
+  type SaveFile,
   sortFiles,
   statusOf,
   type ViewFile,
@@ -99,6 +101,46 @@ describe("filterFiles", () => {
   });
   it("keeps everything when all statuses enabled", () => {
     expect(filterFiles(files, new Set(["error", "warning", "valid"]))).toHaveLength(3);
+  });
+});
+
+describe("planSave", () => {
+  const sf = (name: string, folder: string, content = "x"): SaveFile => ({ name, folder, content });
+  const files = [
+    sf("a.yaml", "expand_world", "AA"),
+    sf("b.yaml", "expand_world", "BB"),
+    sf("loose.yaml", "", "LL"),
+  ];
+
+  it("saves the active file raw (no zip, no folder wrapper)", () => {
+    const plan = planSave(files, "file", files[0]);
+    expect(plan).toEqual({ kind: "single", filename: "a.yaml", entries: [{ path: "a.yaml", content: "AA" }] });
+  });
+
+  it("zips a folder's files with the folder as a directory in the archive", () => {
+    const plan = planSave(files, "folder", files[0])!;
+    expect(plan.kind).toBe("zip");
+    expect(plan.filename).toBe("expand_world.zip");
+    expect(plan.entries).toEqual([
+      { path: "expand_world/a.yaml", content: "AA" },
+      { path: "expand_world/b.yaml", content: "BB" },
+    ]);
+  });
+
+  it("saves a single-member folder raw rather than zipping it", () => {
+    const plan = planSave([sf("only.yaml", "solo", "S")], "folder", sf("only.yaml", "solo", "S"));
+    expect(plan).toMatchObject({ kind: "single", filename: "only.yaml" });
+  });
+
+  it("zips everything for scope 'all', keeping folderless files at the archive root", () => {
+    const plan = planSave(files, "all", files[0])!;
+    expect(plan.kind).toBe("zip");
+    expect(plan.entries.map((e) => e.path)).toEqual(["expand_world/a.yaml", "expand_world/b.yaml", "loose.yaml"]);
+  });
+
+  it("returns null when the scope selects nothing", () => {
+    expect(planSave([], "all", null)).toBeNull();
+    expect(planSave(files, "file", null)).toBeNull();
   });
 });
 

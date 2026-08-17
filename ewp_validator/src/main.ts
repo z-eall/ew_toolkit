@@ -9,6 +9,9 @@ import {
   filterFiles,
   folderFromRelativePath,
   type FileStatus,
+  planSave,
+  type SaveFile,
+  type SaveScope,
   type SortMode,
   sortFiles,
   statusOf,
@@ -17,6 +20,12 @@ import {
 import schemaJson from "./schema.generated.json";
 import type { Severity } from "./structuralPrecheck";
 import "./style.css";
+import { buildZip } from "./zip";
+
+// A from-scratch file lands in the canonical Expand World location so the panel
+// shows the same folder > file shape as a real mod upload.
+const DEFAULT_FOLDER = "expand_world";
+const DEFAULT_FILE_NAME = "expand_world_prefabs.yaml";
 
 (self as unknown as { MonacoEnvironment: monaco.Environment }).MonacoEnvironment = {
   getWorker(_moduleId: string, label: string) {
@@ -40,6 +49,9 @@ const ICONS = {
   dragArrow: '<path d="M9 10 4 15l5 5"/><path d="M4 15h11a5 5 0 0 0 5-5V4"/>',
   arrowUp: '<path d="M12 20V6"/><path d="m6 12 6-6 6 6"/>',
   arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  // Classic floppy disk: shutter notch at the top, label at the bottom.
+  save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h6V4"/><path d="M8 13h8v6H8z"/>',
 };
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
@@ -60,8 +72,8 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <div class="sidebar-header">
           <span>Loaded files</span>
           <span class="sidebar-actions">
-            <button class="icon-btn" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.file)}</button>
-            <button class="icon-btn" id="add-folder-btn" title="Upload folders" aria-label="Upload folders">${icon(ICONS.folder)}</button>
+            <button class="icon-btn has-plus" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.file)}<span class="plus-sup">+</span></button>
+            <button class="icon-btn has-plus" id="add-folder-btn" title="Upload folders" aria-label="Upload folders">${icon(ICONS.folder)}<span class="plus-sup">+</span></button>
             <div class="sortfilter">
               <button class="icon-btn" id="sortfilter-btn" title="Sort & filter" aria-label="Sort and filter">${icon(ICONS.funnel)}</button>
               <div class="sortfilter-menu" id="sortfilter-menu" hidden></div>
@@ -72,7 +84,16 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       </div>
       <div class="resizer-x" id="resizer-x" title="Drag to resize"></div>
       <div class="main">
-        <div class="active-file-name" id="active-file-name"></div>
+        <div class="active-file-name" id="active-file-name">
+          <span class="filename-text" id="filename-text" title="Click to rename"></span>
+          <span class="filename-actions">
+            <button class="icon-btn" id="new-file-btn" title="New file" aria-label="New file">${icon(ICONS.plus)}</button>
+            <div class="savemenu">
+              <button class="icon-btn" id="save-btn" title="Save" aria-label="Save">${icon(ICONS.save)}</button>
+              <div class="save-menu" id="save-menu" hidden></div>
+            </div>
+          </span>
+        </div>
         <div id="editor"></div>
         <div class="resizer-y" id="resizer-y" title="Drag to resize"></div>
         <div class="problems">
@@ -114,7 +135,10 @@ const fileManager = new FileManager(editor, render);
 
 const sidebarEl = document.getElementById("sidebar") as HTMLDivElement;
 const fileListEl = document.getElementById("file-list")!;
-const activeFileNameEl = document.getElementById("active-file-name")!;
+const filenameTextEl = document.getElementById("filename-text") as HTMLElement;
+const newFileBtn = document.getElementById("new-file-btn") as HTMLButtonElement;
+const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
+const saveMenu = document.getElementById("save-menu")!;
 const problemsTabsEl = document.getElementById("problems-tabs")!;
 const problemsListEl = document.getElementById("problems-list")!;
 
@@ -199,7 +223,15 @@ function renderFileList() {
 }
 
 function renderActiveFileName() {
-  activeFileNameEl.textContent = fileManager.activeFile?.name ?? "No file open";
+  const file = fileManager.activeFile;
+  // Don't stomp the text mid-rename (a background revalidation can re-render
+  // while the user is typing a new name into this same element).
+  if (document.activeElement !== filenameTextEl) {
+    filenameTextEl.textContent = file?.name ?? "No file open";
+  }
+  filenameTextEl.contentEditable = file ? "true" : "false";
+  filenameTextEl.classList.toggle("editable", !!file);
+  saveBtn.disabled = !file;
 }
 
 interface ProblemRow {
@@ -457,5 +489,97 @@ makeResizer(
   },
   () => problemsEl.offsetHeight,
 );
+
+// ---------- New file, edit-to-create fallback, and rename ----------
+
+function createNewFile() {
+  const file = fileManager.addFile(DEFAULT_FILE_NAME, "", DEFAULT_FOLDER);
+  fileManager.setActive(file.id);
+  editor.focus();
+}
+
+newFileBtn.addEventListener("click", () => createNewFile());
+
+// Focusing the empty editor is the intent to "start editing" — materialise a
+// default expand_world/expand_world_prefabs.yaml so the loose edits have a home.
+editor.onDidFocusEditorText(() => {
+  if (fileManager.allFiles.length === 0) createNewFile();
+});
+
+filenameTextEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    filenameTextEl.blur();
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    filenameTextEl.textContent = fileManager.activeFile?.name ?? "";
+    filenameTextEl.blur();
+  }
+});
+filenameTextEl.addEventListener("blur", () => {
+  const file = fileManager.activeFile;
+  if (!file) return;
+  fileManager.renameFile(file.id, (filenameTextEl.textContent ?? "").replace(/\s+/g, " "));
+});
+
+// ---------- Save (this file / this folder / all) ----------
+
+const SAVE_OPTIONS: { scope: SaveScope; label: string }[] = [
+  { scope: "file", label: "Save this file" },
+  { scope: "folder", label: "Save this folder" },
+  { scope: "all", label: "Save all" },
+];
+
+function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function doSave(scope: SaveScope) {
+  const toSaveFile = (f: LoadedFile): SaveFile => ({ name: f.name, folder: f.folder, content: f.model.getValue() });
+  const active = fileManager.activeFile;
+  const plan = planSave(fileManager.allFiles.map(toSaveFile), scope, active ? toSaveFile(active) : null);
+  if (!plan) return;
+  if (plan.kind === "single") {
+    downloadBlob(plan.filename, new Blob([plan.entries[0].content], { type: "text/yaml" }));
+  } else {
+    const bytes = buildZip(plan.entries);
+    downloadBlob(plan.filename, new Blob([bytes.buffer as ArrayBuffer], { type: "application/zip" }));
+  }
+}
+
+function renderSaveMenu() {
+  saveMenu.innerHTML = SAVE_OPTIONS.map(
+    (o) => `<button class="menu-item save-item" data-scope="${o.scope}"><span class="menu-label">${o.label}</span></button>`,
+  ).join("");
+  saveMenu.querySelectorAll<HTMLButtonElement>(".save-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      doSave(btn.dataset.scope as SaveScope);
+      saveMenu.setAttribute("hidden", "");
+    });
+  });
+}
+
+saveBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (saveBtn.disabled) return;
+  if (saveMenu.hasAttribute("hidden")) {
+    renderSaveMenu();
+    saveMenu.removeAttribute("hidden");
+  } else {
+    saveMenu.setAttribute("hidden", "");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!saveMenu.hasAttribute("hidden") && !saveMenu.contains(e.target as Node) && e.target !== saveBtn) {
+    saveMenu.setAttribute("hidden", "");
+  }
+});
 
 render();
