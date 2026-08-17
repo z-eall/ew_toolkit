@@ -166,7 +166,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "error",
         kind: "data-reference",
-        message: `Undefined data.yaml reference '${name}' — no entry with \`name: ${name}\` was found in the loaded files.`,
+        message: `Undefined data.yaml reference '${name}' — no \`name: ${name}\` entry in the loaded files.`,
         range: occ.range,
       });
     }
@@ -180,7 +180,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "info",
         kind: "data-reference",
-        message: `data.yaml entry '${name}' is defined but not used by any loaded file — may be unused, or referenced from a file outside this batch.`,
+        message: `data.yaml entry '${name}' is defined but unused in the loaded files — may be referenced from a file outside this batch.`,
         range: occ.range,
       });
     }
@@ -193,7 +193,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom saved key '${name}' is read here, but no <save_${name}_...> write for it was found in the loaded files — check expand_world/ewp_data.yaml to confirm its actual value before treating this as a bug (it may be set by another mod or a console command).`,
+        message: `Custom saved key '${name}' is read but never written (\`<save_${name}_…>\`) in the loaded files — check expand_world/ewp_data.yaml; may be set by another mod or console command.`,
         range: occ.range,
       });
     }
@@ -205,7 +205,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: occ.fileId,
         severity: "warning",
         kind: "custom-key",
-        message: `Custom saved key '${name}' is written here, but no keys:/bannedKeys:/type: key read for it was found in the loaded files — check expand_world/ewp_data.yaml to confirm its actual value before treating this as a bug.`,
+        message: `Custom saved key '${name}' is written but never read (keys:/bannedKeys:/type: key) in the loaded files — check expand_world/ewp_data.yaml; may be used elsewhere.`,
         range: occ.range,
       });
     }

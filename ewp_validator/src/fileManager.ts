@@ -11,6 +11,8 @@ import { runStructuralPrecheck, type Problem, type Severity } from "./structural
 export interface LoadedFile {
   id: string;
   name: string;
+  /** Immediate parent folder for the sidebar tree; "" for an individually-picked file. */
+  folder: string;
   model: monaco.editor.ITextModel;
   problems: Problem[];
 }
@@ -48,12 +50,12 @@ export class FileManager {
     return this.files;
   }
 
-  addFile(name: string, content: string): LoadedFile {
+  addFile(name: string, content: string, folder = ""): LoadedFile {
     const uniqueName = this.uniqueName(name);
     const id = `f${this.nextId++}`;
     const uri = monaco.Uri.parse(`file:///loaded/${id}/${encodeURIComponent(uniqueName)}`);
     const model = monaco.editor.createModel(content, "yaml", uri);
-    const file: LoadedFile = { id, name: uniqueName, model, problems: [] };
+    const file: LoadedFile = { id, name: uniqueName, folder, model, problems: [] };
     this.files.push(file);
     model.onDidChangeContent(() => this.scheduleRevalidateAll());
     this.revalidateAll();

@@ -93,7 +93,7 @@ function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   if (TYPES_WITHOUT_PREFAB.has(typeValue)) return null;
   if (typeof item.prefab === "string" && item.prefab.trim() !== "") return null;
   if ("prefab" in item && typeof item.prefab !== "string") return null; // malformed prefab is ajv's job to report
-  return `type '${typeValue || "(none)"}' expects a non-empty 'prefab' (only globalkey/key/custom/event/time/realtime can omit it).`;
+  return `type '${typeValue || "(none)"}' needs a non-empty 'prefab' (only globalkey/key/custom/event/time/realtime may omit it).`;
 }
 
 export function nodeRange(node: { range?: readonly [number, number, number] | null }): [number, number] {
@@ -158,7 +158,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
   if (!root || !isSeq(root)) {
     problems.push({
       severity: "error",
-      message: "Script files must be a YAML array (a list of `- ...` entries) at the top level.",
+      message: "Top level must be a YAML array — a list of `- ` entries.",
       branch: "(root)",
       range: root && (root as any).range ? nodeRange(root as any) : [0, text.length],
     });
@@ -169,7 +169,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
     if (!isMap(itemNode)) {
       problems.push({
         severity: "error",
-        message: "Each array entry must be a mapping (key: value pairs), not a bare scalar or list.",
+        message: "Each entry must be a mapping (key: value pairs), not a bare scalar or list.",
         branch: "(item)",
         range: nodeRange(itemNode as any),
       });
@@ -184,7 +184,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
       const r = findPairRange(itemNode, "data") ?? itemRange;
       problems.push({
         severity: "warning",
-        message: "WEC data entries use `name:` for the entry's name — `data:` here is a documented typo in WEC's own README, not a real alias, and this entry won't register.",
+        message: "WEC entries name themselves with `name:`, not `data:` — this entry won't register (documented WEC README typo).",
         branch: BRANCH_TITLES.wecDataEntry,
         range: r,
       });
@@ -198,7 +198,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
         // additionalProperties errors carry the bad key in params — use that
         // to build a message naming the key, instead of ajv's generic one.
         const message = error.params && "additionalProperty" in error.params
-          ? `Unknown key '${(error.params as { additionalProperty: string }).additionalProperty}' for a ${BRANCH_TITLES[branch]} — ${error.message}.`
+          ? `Unknown key '${(error.params as { additionalProperty: string }).additionalProperty}' for a ${BRANCH_TITLES[branch]}.`
           : `${error.instancePath || "(entry)"} ${error.message}`;
         problems.push({
           severity: "error",
