@@ -19,14 +19,16 @@ that umbrella, not the whole product.
 - Interim display name → "EW Toolkit". The final display name / tagline / visual
   branding is NOT settled here — see "Still open" below.
 
-**Still open (deliberately not resolved by this ticket — ongoing HITL discussion):**
+**Settled by [ticket 15](15-multi-tool-site-reframe.md) (the reframe grilling):**
 
-- Final display name + tagline (does "EW Toolkit" stay, or a friendlier brand?).
-- Whether the map's Destination formally widens from "an EWP validator" to "a
-  multi-tool EW site" — a re-charting act, tracked as fog in the map's
-  Not yet specified, not decided here.
-- Site layout / navigation / functionality for hosting multiple tools — its own
-  future ticket once the reframe firms up.
+- Display name → **"EW Toolkit"**, branded after the ExpandWorld flagship line.
+  "EW" = ExpandWorld; no separate scope-honest rename now (YAGNI on the
+  speculative far-future general-Valheim-world-editing scope).
+- The map's Destination does NOT widen — this map ships the validator standalone;
+  the multi-tool hub is a separate future map. So this rename is the *only*
+  reframe-driven change to this map.
+- Tagline (optional descriptive subtitle) is the one genuinely-open cosmetic bit;
+  can be decided during execution or left off.
 
 ## Rename plan — order of operations
 

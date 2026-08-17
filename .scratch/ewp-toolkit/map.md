@@ -9,6 +9,7 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 ## Notes
 
 - Domain: Valheim modding / EWP YAML scripting. See [CONTEXT.md](../../CONTEXT.md) for glossary (EWP, WEC, Scripter, Schema, Structural validation, Data-aware autocomplete, Cross-file reference, Batch validation).
+- **EW Toolkit** (umbrella/site name, post-rename) — the site branded after its flagship ExpandWorld line; **Tool** = a discrete utility hosted on it (the EWP validator is tool #1). Umbrella scope is tiered (ticket 15): now = Jere Kuusela's mods (ExpandWorld family + non-EW-named world-editing mods like WEC/SDC); future-only-if-required = general Valheim world editing. This map stays scoped to tool #1; the multi-tool hub is a separate future map.
 - Skills every session should consult: `/grilling` and `/domain-modeling` for any ticket touching terminology or open decisions; `/research` for the AFK research tickets.
 - Standing preference: cost stays at $0 — GitHub free tier only (Pages + Actions), no paid hosting/services.
 - Prefer reusing existing free/open tooling (Monaco + monaco-yaml) over building a custom editor/validator from scratch.
@@ -18,6 +19,7 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 
 ## Decisions so far
 
+- [Reframe: is EW Toolkit a single tool or a multi-tool site?](issues/15-multi-tool-site-reframe.md) — Widen the *vision* (a site hosting tools for Jere's Valheim mods, EWP validator = tool #1) but NOT this map: this map freezes at the standalone validator, the umbrella name `ew_toolkit` is adopted now, and the multi-tool hub becomes its own new map charted after the validator ships. Umbrella scope tiered (Jere's mods now; general Valheim world-editing only-if-required later); name branded after the ExpandWorld flagship line.
 - [Set up GitHub account and EWP Toolkit repo](issues/01-github-setup.md) — Repo created at https://github.com/z-eall/ewp_toolkit; local folder renamed to `ewp_toolkit` to match; remote wired, not yet pushed.
 - [What's the technical shape of a Monaco-based validator on GitHub Pages + Actions?](issues/05-web-app-mechanics.md) — Confirmed $0-forever. Vite as bundler (monaco-yaml requires one), schema bundled at build time, single combined `schedule`-triggered workflow (regen + build + deploy) — a two-workflow split would silently break since `GITHUB_TOKEN` can't chain workflows. Full findings: [research/05-web-app-mechanics.md](research/05-web-app-mechanics.md).
 - [Can key references be validated without full data-aware game data?](issues/04-reference-validation-feasibility.md) — Yes for `data.yaml` named templates (clean definition/usage pair, same-file and cross-file, no game data needed) — the concrete v1 feature. Custom saved keys are a weaker best-effort warning. Prefab names, global keys, and event names must wait. Full findings: [research/04-reference-validation-feasibility.md](research/04-reference-validation-feasibility.md).
@@ -36,9 +38,9 @@ Reaching the destination means: a scripter can hit a public URL, load one file o
 - **[User-test v1 and feed back validation corrections](issues/13-v1-user-testing-feedback.md)** — OPEN. The user exercises the deployed tool against real EWP/WEC YAML and reports where validation is wrong (false positives/negatives, bad messages/locations); each case becomes a targeted Schema/pre-check fix with a regression test. The real-world correctness pass the automated tests can't cover.
 - ~~Version-picker dropdown as a post-v1 fast-follow~~ — **DROPPED 2026-08-17.** Latest-only is sufficient; the generator already tracks the latest public release on every run. The fast-follow assumed a doc-parsing generator, but the shipped generator is hand-encoded, so faithful per-version schemas would cost far more than estimated. See ticket 03's updated decision.
 - **[Rebrand project id from `ewp_toolkit` to `ew_toolkit`](issues/14-rebrand-to-ew-toolkit.md)** — OPEN. The vision widened: the site becomes a home for multiple EW-mod tools (EWP validator = tool #1), so the EWP-specific name is renamed to the umbrella `ew_toolkit` / "EW Toolkit". Ticket holds the full rename order-of-operations; the load-bearing edit is `vite.config.ts`'s Pages `base`, which must match the renamed repo. Repo rename (GitHub settings) is the user's step; the rest is Claude's.
-- **Reframe the destination as a multi-tool EW site** (fog, ongoing HITL discussion) — the current Destination is scoped to a single tool (the EWP validator). The user now sees the site potentially hosting tools for other EW mods. Not yet sharp enough to ticket: needs a `/grilling` + `/domain-modeling` pass to decide whether the Destination formally widens, and if so, the site's layout / navigation / functionality for holding multiple tools. Surfaced 2026-08-17 alongside the [ew_toolkit rebrand](issues/14-rebrand-to-ew-toolkit.md).
-
 ## Out of scope
+
+- **Multi-tool EW Toolkit hub site** — its own future map, to be charted in a fresh chat via `/handoff` AFTER the validator ships + deploys (ticket 15, Q5). Out of scope for *this* map, not abandoned: this map ships the validator standalone; the hub shell / landing / navigation / which-other-tools decisions all belong to the new map. Scope tiered per ticket 15's Notes.
 
 - Goal 2 (AI-assisted YAML authoring/optimization prompts) — future map once Goal 1 ships.
 - Goal 3 (local + FTP live environment integration/organization) — future map once Goal 1 ships.
