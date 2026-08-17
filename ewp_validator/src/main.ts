@@ -17,6 +17,13 @@ const meta = (schemaJson as any)._meta as { ewpVersion: string | null; generated
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="app">
+    <nav class="site-nav">
+      <div class="site-nav-links">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link active" href="./">EWP Validator</a>
+        <a class="nav-link" href="../support/">Support</a>
+      </div>
+    </nav>
     <div class="app-header">
       <span><b>EWP Toolkit</b> — structural YAML validator</span>
       <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${new Date(meta.generatedAt).toLocaleString()}</span>

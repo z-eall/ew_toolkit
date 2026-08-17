@@ -1,8 +1,7 @@
 import "./style.css";
+import { navHtml, mountThemeToggle } from "./nav";
 
 // Hardcoded v1 Tool registration — see .scratch/ew_toolkit/hub-map.md Notes.
-// Visual design/layout is ticket 18's job; this is a minimal placeholder so
-// the hub has a working root page.
 interface Tool {
   name: string;
   subpath: string;
@@ -18,16 +17,28 @@ const tools: Tool[] = [
   },
 ];
 
+const tagline = "Tools for Jere Kuusela's Valheim mods.";
+
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
-  <h1>EW Toolkit</h1>
-  <ul id="tool-list"></ul>
+  ${navHtml("home")}
+  <div class="landing">
+    <h1>EW Toolkit</h1>
+    <p class="tagline">${tagline}</p>
+    <div class="tool-rows">
+      ${tools
+        .map(
+          (t) => `
+        <div class="tool-row">
+          <a class="tool-btn" href="${t.subpath}">${t.name}</a>
+          <span class="tool-desc">${t.description}</span>
+        </div>
+      `,
+        )
+        .join("")}
+    </div>
+  </div>
 `;
 
-const list = app.querySelector<HTMLUListElement>("#tool-list")!;
-for (const tool of tools) {
-  const item = document.createElement("li");
-  item.innerHTML = `<a href="${tool.subpath}">${tool.name}</a> — ${tool.description}`;
-  list.appendChild(item);
-}
+mountThemeToggle();

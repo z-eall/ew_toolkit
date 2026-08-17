@@ -33,6 +33,39 @@ body {
   height: 100%;
 }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+.site-nav-links {
+  display: flex;
+  gap: 6px;
+}
+
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.nav-link.active {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
 .app-header {
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);

@@ -25,12 +25,11 @@ Reaching the destination means: a visitor lands on the hub root, sees available 
 
 - [Rename repo to `ew_toolkit` and restructure into hub layout](issues/16-restructure-into-hub-layout.md) — subfolder is `ewp_validator`; validator moved in, minimal placeholder landing page added at root. GitHub rename, local folder rename, and remote repoint are all done; `.scratch/ewp-toolkit/` was also standardized to `.scratch/ew_toolkit/` (underscore, matching convention).
 - [Build the multi-tool build/deploy pipeline](issues/17-multi-tool-build-pipeline.md) — `scripts/build-hub.mjs` builds the landing page + each Tool and combines into `dist/<subpath>/`; CI updated to install/test/build both projects and deploy the combined artifact. Adding Tool #2 later just means adding it to the script's `tools` array. Still can't push/deploy until the GitHub rename happens (both `vite.config.ts` `base`s assume `ew_toolkit`).
+- [Prototype the landing page](issues/18-landing-page-prototype.md) — Row layout (button per Tool + description beside it, styled after https://valheimtools.stream/'s row list but in this map's own minimalist dark chrome, not that site's colors), a tagline subtitle under the h1, and a light/dark theme toggle (dark default, persisted in `localStorage`) — the toggle wasn't one of the original open questions, added during user review. Shipped directly to `src/main.ts`/`src/style.css`. Follow-on same session: fixed top nav (Home, Tools in order, Support always last) persistent across every page including the validator, plus a placeholder Support page (`/support/`, donation links TODO) — see ticket 18's Answer for the full breakdown.
 
 ## Not yet specified
 
 - **Does the Tool-adding mechanism actually hold up a second time?** Absorbing the validator as Tool #1 proves the mechanism once, but genuinely validating "adding a Tool" as repeatable needs a real Tool #2 — which is out of scope for this map (see below). Revisit once a Tool #2 is chosen.
-- **Landing page tagline/branding polish beyond layout** — carried over from the old map's ticket 14 as a still-open cosmetic bit; can be decided during ticket 18's prototyping or left off entirely.
-
 ## Out of scope
 
 - **Choosing or building Tool #2** — this map decides only the mechanism for adding a Tool, not which mod/utility comes next or how it works. Separate future map, mirroring how the validator got its own.
