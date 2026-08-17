@@ -23,7 +23,8 @@ Reaching the destination means: a visitor lands on the hub root, sees available 
 
 ## Decisions so far
 
-- [Rename repo to `ew_toolkit` and restructure into hub layout](issues/16-restructure-into-hub-layout.md) — subfolder is `ewp_validator`; validator moved in, minimal placeholder landing page added at root, tests/build confirmed unbroken. GitHub rename + remote repoint + local folder rename still outstanding (user-owned, non-blocking). Don't push to `main` until [ticket 17](issues/17-multi-tool-build-pipeline.md) updates CI — the current workflow only builds the landing page now.
+- [Rename repo to `ew_toolkit` and restructure into hub layout](issues/16-restructure-into-hub-layout.md) — subfolder is `ewp_validator`; validator moved in, minimal placeholder landing page added at root, tests/build confirmed unbroken. GitHub rename + remote repoint + local folder rename still outstanding (user-owned, non-blocking).
+- [Build the multi-tool build/deploy pipeline](issues/17-multi-tool-build-pipeline.md) — `scripts/build-hub.mjs` builds the landing page + each Tool and combines into `dist/<subpath>/`; CI updated to install/test/build both projects and deploy the combined artifact. Adding Tool #2 later just means adding it to the script's `tools` array. Still can't push/deploy until the GitHub rename happens (both `vite.config.ts` `base`s assume `ew_toolkit`).
 
 ## Not yet specified
 
