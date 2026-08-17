@@ -34,8 +34,10 @@ const navIcons: Record<string, string> = {
   ewp_validator: svgIcon(
     '<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v4h4"/><path d="M8 11h3"/><path d="M8 14h6"/><path d="M8 17h4"/>',
   ),
+  // "Buy me a coffee" cup — the donation convention, matching what the
+  // Support page actually links to.
   support: svgIcon(
-    '<path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3h4l3.61 1.63A1 1 0 0 1 11 5.5v3.42a1 1 0 0 1-1 1H6"/><path d="M3 4h2v10H3z"/>',
+    '<path d="M5 9h12v7a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9z"/><path d="M17 10.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M9 3c0 1-1 1-1 2s1 1 1 2"/><path d="M13 3c0 1-1 1-1 2s1 1 1 2"/>',
   ),
 };
 const defaultNavIcon = svgIcon(
