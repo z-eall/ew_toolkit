@@ -227,8 +227,12 @@ body {
 .menu-section-title {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   color: var(--muted);
+  /* The header itself stays uppercase (matches "Loaded files" elsewhere); only
+     the indented items below it — sort/filter labels — should read proper
+     case, which they get via the "none" reset on .sortfilter-menu above. */
+  text-transform: uppercase;
 }
 
 .menu-reset {

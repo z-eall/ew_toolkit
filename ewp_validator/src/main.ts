@@ -22,8 +22,10 @@ import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
 
-// A from-scratch loose file starts at the root (no folder). "Add a folder"
-// creates a folder holding one new file of the same default name.
+// A from-scratch file (typed draft, single upload, or single drag-drop with no
+// folder context) lands in this default folder rather than the root, so
+// nothing is ever left loose without the user explicitly placing it there.
+// "Add a folder" creates a new, uniquely-named one of the same base name.
 const DEFAULT_FILE_NAME = "unnamed.yaml";
 const DEFAULT_FOLDER_NAME = "unnamed";
 
@@ -35,6 +37,21 @@ const DEFAULT_FOLDER_NAME = "unnamed";
 };
 
 const meta = (schemaJson as any)._meta as { ewpVersion: string | null; generatedAt: string };
+
+// generatedAt is a UTC ISO string (schema/generate.mjs); render it in whatever
+// timezone the browser is actually in, with the zone spelled out, so it never
+// reads as "is this UTC or mine?" — Intl resolves the zone from the runtime
+// automatically, no timezone argument needed.
+function formatLocalTimestamp(isoUtc: string): string {
+  return new Date(isoUtc).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
 
 // Outline-only icons in the hub's minimalist style (viewBox 24, no fill,
 // currentColor stroke) so the toolbar reads the same as the site nav.
@@ -97,7 +114,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     </nav>
     <div class="app-header">
       <span><b>Expand World Prefabs YAML Validator</b></span>
-      <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${new Date(meta.generatedAt).toLocaleString()}</span>
+      <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${formatLocalTimestamp(meta.generatedAt)}</span>
     </div>
     <div class="app-body">
       <div class="sidebar" id="sidebar">
@@ -517,10 +534,14 @@ interface Ingestable {
 
 const isYaml = (name: string) => /\.ya?ml$/i.test(name);
 
-// The folder a newly-uploaded loose file (one the picker gives no path for)
-// lands in: the folder of the current active file, matching "append to the
-// current selected folder". Folder/drag uploads that carry a path keep it.
-const currentFolder = () => fileManager.activeFile?.folder ?? "";
+// The folder a newly-created or newly-uploaded loose item (one with no path/
+// folder context of its own) lands in: the active file's folder, matching
+// "append to the current selected folder" — but when nothing is loaded yet
+// (no active file to anchor to), default into DEFAULT_FOLDER_NAME rather than
+// the root, so a fresh upload/drop/typed draft is never left loose. Once a
+// file exists, its folder is respected as-is (including "" if the user
+// explicitly dragged something out to the root) rather than re-defaulted.
+const currentFolder = () => (fileManager.activeFile ? fileManager.activeFile.folder : DEFAULT_FOLDER_NAME);
 
 /**
  * Add uploaded files to the panel. `defaultFolder` is used for entries with no
@@ -620,10 +641,13 @@ sidebarEl.addEventListener("drop", async (e) => {
   sidebarEl.classList.remove("drag-over");
   if (!e.dataTransfer) return;
   // An internal file-row drag dropped on the sidebar (not on a folder) moves the
-  // file back out to the root; OS files dropped here upload at the root.
+  // file back out to the root — that's an explicit user placement, unaffected
+  // by the loose-upload default below. OS files/folders dropped here without a
+  // folder row target use the same "current folder, else default" fallback as
+  // the upload picker; a real dropped folder tree still keeps its own paths.
   const movedId = e.dataTransfer.getData(INTERNAL_DND_TYPE);
   if (movedId) fileManager.moveToFolder(movedId, "");
-  else ingest(await fromDataTransfer(e.dataTransfer));
+  else ingest(await fromDataTransfer(e.dataTransfer), currentFolder());
 });
 
 // ---------- Draggable dividers ----------
@@ -685,7 +709,10 @@ function newDraftModel(): monaco.editor.ITextModel {
   model.onDidChangeContent(() => {
     if (model !== draftModel || fileManager.allFiles.length !== 0) return; // stale draft, or already promoted
     if (model.getValue().trim() === "") return; // stray whitespace doesn't count as "started typing"
-    fileManager.adoptModel(model, DEFAULT_FILE_NAME, "", { ephemeral: true, dirty: true });
+    // A draft only ever fires while nothing is loaded (guarded above), so
+    // currentFolder() is always DEFAULT_FOLDER_NAME here — using it anyway
+    // keeps this in step with the other loose-creation paths.
+    fileManager.adoptModel(model, DEFAULT_FILE_NAME, currentFolder(), { ephemeral: true, dirty: true });
     draftModel = newDraftModel();
   });
   return model;
