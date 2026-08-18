@@ -60,6 +60,43 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(problems.some((p) => p.message.includes("undefined_loot"))).toBe(true);
   });
 
+  it("flags an undefined filter: reference the same way as data:", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: fireMineDispenserCheck\n" }];
+    const problems = runReferenceValidation(files);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", kind: "data-reference" });
+    expect(problems[0].message).toContain("fireMineDispenserCheck");
+  });
+
+  it("flags each undefined name in a filters: list, and resolves defined ones", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  filters:\n  - fireMineStopperCheck\n  - knownFilter\n" +
+          "\n- name: knownFilter\n  ints:\n  - a, 1\n",
+      },
+    ];
+    const problems = runReferenceValidation(files);
+    const refErrors = problems.filter((p) => p.kind === "data-reference" && p.severity === "error");
+    expect(refErrors).toHaveLength(1);
+    expect(refErrors[0].message).toContain("fireMineStopperCheck");
+    expect(refErrors.some((p) => p.message.includes("knownFilter"))).toBe(false);
+  });
+
+  it("does not treat an inline `filter: type, key, value` shorthand as a reference", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: string, boss, Bonemass\n" }];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("resolves a filter: reference defined as a data entry name", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: bossCheck\n" },
+      { id: "b", text: "- name: bossCheck\n  ints:\n  - boss, 1\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
   it("checks spawn[]/swap[] nested data: fields against the same namespace", () => {
     const files = [
       {
@@ -231,6 +268,71 @@ describe("custom saved key lint (ticket 06)", () => {
       },
     ];
     expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("tells a live read whose only <save_..> is commented out apart from a truly missing write", () => {
+    // The `truceday` case: `<load_truceday=0>` and `bannedKeys: truceday` are
+    // live reads, but the two `<save_truceday_..>` writes are toggled off in
+    // comments at the bottom of the file. The commented save must not count as a
+    // live write (round 2), but it *is* visible proof — so instead of the
+    // generic "no <save_..> found", the read is flagged with a message that
+    // points at the commented-out write specifically.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: poke, findFactionOfficers\n  objectRpc:\n" +
+          "  - name: Message\n    2: string, <msgOfficerScout_truce<eq_1_<load_truceday=0>>>\n\n" +
+          "- prefab: fx_siegebomb_explosion\n  type: create\n  bannedKeys: truceday 1\n\n" +
+          "# - type: key, bfvrealday 7,14,21\n  # exec: <save_truceday_1>\n\n" +
+          "# - type: key, bfvrealday 1;6,8;13,15;20\n  # exec: <save_truceday_0>\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.message.includes("truceday"));
+    // One per live read: <load_truceday> and bannedKeys: truceday.
+    expect(problems).toHaveLength(2);
+    for (const p of problems) {
+      expect(p).toMatchObject({ severity: "info", kind: "custom-key" });
+      expect(p.message).toContain("is read");
+      expect(p.message).toContain("commented out");
+      // Not the generic "there is no write anywhere" wording.
+      expect(p.message).not.toContain("no <save_..> found");
+    }
+  });
+
+  it("tells a live <save_..> whose only read is commented out apart from a truly unread write", () => {
+    // Mirror of the truceday case on the write side.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Beehive\n  type: create\n  command: <save_beacon_1>\n\n" +
+          "# - prefab: Chest\n  # type: create\n  # command: <load_beacon=0>\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.message.includes("beacon"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "info", kind: "custom-key" });
+    expect(problems[0].message).toContain("is written");
+    expect(problems[0].message).toContain("commented out");
+    expect(problems[0].message).not.toContain("never read");
+  });
+
+  it("detects a commented-out read in AST field form (# bannedKeys: / # keys: / # type: key), not just <load_..>", () => {
+    // The read exists only as a commented-out `bannedKeys:` line, which neither
+    // the YAML AST (comment-blind) nor the <load_..> template scan reaches —
+    // recovered from raw comment text so the write still gets the "read is
+    // commented out" message rather than the generic "never read".
+    for (const commentedRead of ["# bannedKeys: beacon 1", "# keys: beacon 1", "# - type: key, beacon 5;10"]) {
+      const files = [
+        { id: "a", text: `- prefab: Beehive\n  type: create\n  command: <save_beacon_1>\n\n${commentedRead}\n` },
+      ];
+      const problems = runReferenceValidation(files).filter((p) => p.message.includes("beacon"));
+      expect(problems).toHaveLength(1);
+      expect(problems[0].message).toContain("is written");
+      expect(problems[0].message).toContain("commented out");
+      expect(problems[0].message).not.toContain("never read");
+    }
   });
 
   it("does not blank out a '#' that follows real content — e.g. a chat command inside a block scalar", () => {

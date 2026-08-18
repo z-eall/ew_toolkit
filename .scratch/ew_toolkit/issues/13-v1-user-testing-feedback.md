@@ -89,3 +89,189 @@ Monaco-editor verification wasn't reliable to automate this round). Case 4
 verified via a rendered support page.
 
 (open for further rounds — awaiting more of the user's test cases)
+
+Closed for now on 2026-08-18: the scripter (user) has run enough self-testing
+rounds; further progress is blocked on external users trying the deployed
+tool and reporting back. Reopen (set back to `in-progress`) once new
+external-user feedback comes in.
+
+### Round 3 — leave-prompt, legacy-format category, comment-suppressed reads (reopened 2026-08-18)
+
+Reopened the same day with a mix of functionality and validation corrections
+from the scripter's continued self-testing:
+
+1. **Leave prompt never fired on the live site** (`main.ts`). The `beforeunload`
+   guard set `e.returnValue = ""`; an empty string is the legacy "no prompt"
+   signal, so Firefox/Safari/older Chrome silently skipped the native dialog —
+   the live site warned on neither tab-close nor a switch to another hub
+   sub-site. Set `returnValue` to a non-empty string so the dialog actually
+   raises. The separate `.nav-link` `confirm()` handler was removed: each
+   sub-site is its own document, so those links are full navigations already
+   covered by `beforeunload` — keeping both now double-prompted.
+2. **New "Legacy format entry" diagnosis category** (`structuralPrecheck.ts` +
+   `main.ts`). The legacy `delay:`/`spawn:`/`swap:` info notices previously rode
+   under the "EWP rule entry" category; they now carry their own
+   `LEGACY_FORMAT_CATEGORY` branch so the Problems panel can filter them apart.
+   Wording changed from "Old format:" to "Legacy format:" to match Jere's docs.
+3. **Live reads whose only `<save_..>` is commented out** (`referenceValidation.ts`).
+   The `truceday` case: `<load_truceday=0>` and `bannedKeys: truceday` are live
+   reads, but both `<save_truceday_..>` writes are toggled off in comments. Round
+   2 (rightly) stopped commented templates counting as *live* writes, which left
+   these live reads flagged as a generic "no `<save_..>` found". Rather than
+   silently suppress, the check now distinguishes "the counterpart is only
+   commented out" from "there is no counterpart anywhere" and emits a *different*
+   message for the former: **"'X' is read here, but its only `<save_..>` is
+   commented out — uncomment the write, or remove this read"**, and the mirror
+   **"'X' is written (`<save_..>`), but its only read is commented out …"**.
+   Detection: re-scan the raw text; since `stripLineComments` preserves offsets,
+   any raw `<save/load/clear>` occurrence whose start offset the live (stripped)
+   scan didn't yield is a commented one (`commentedWriteNames`/
+   `commentedReadNames`). Reads also have an AST field form
+   (`keys:`/`bannedKeys:`/`type: key`) the YAML parser never sees in a comment,
+   so `scanCommentedReadKeys` additionally recovers those key names from raw
+   comment lines — a commented `# bannedKeys: X` now yields the "read is
+   commented out" message too, not just `<load_..>` forms. (Writes have no AST
+   form, so no matching pass is needed.) This is the only rule that inspects
+   comments; the data.yaml-reference checks are AST-only, so nothing there
+   needed the same treatment.
+
+Regression tests added: `referenceValidation.test.ts` (truceday read side +
+write-side mirror + AST-field commented read), and
+`structuralPrecheck.test.ts` (legacy notices assert `Legacy format:` wording +
+`LEGACY_FORMAT_CATEGORY` branch). 99 tests passing, type-check + build clean.
+The "Legacy format entry" category was confirmed rendering live in the
+Problems-panel category filter.
+
+### Round 4 — filename gate (added 2026-08-18)
+
+Before this round the tool ran both diagnosis passes (structural pre-check +
+reference validation) on **every** loaded `.yaml`, classifying entries only by
+shape (`guessBranch`) — filenames were never inspected. EWP, however, only
+loads YAML whose name marks it a structural file, so the name is worth a check
+of its own. New pure module `fileNameCheck.ts` (+ `fileNameCheck.test.ts`),
+gated in `FileManager.revalidateAll`:
+
+1. **Current formats** — `expand_prefabs*.yaml` and `data*.yaml` classify as
+   `valid`; scanned exactly as before, no filename notice.
+2. **Legacy data-processor name** — `expand_data*.yaml` classifies as `legacy`.
+   It still works, so it's still fully scanned, but carries a blue info notice
+   under the shared `LEGACY_FORMAT_CATEGORY`: **"Legacy filename: '…' is the old
+   data-processor name … recommend renaming it to 'data<suffix>.yaml' in the
+   /config/data directory"** (suffix = whatever followed `expand_data`, casing
+   preserved). Worded as a filename recommendation, not an entry-format one.
+3. **Everything else** — a hard **"Invalid file"** error (new
+   `INVALID_FILE_CATEGORY`, registered in `main.ts`'s `DIAGNOSIS_CATEGORIES`):
+   **"'…' doesn't match an EWP structural filename … Allegedly not an EWP
+   structural file — recommended to remove it."** Both diagnosis passes are
+   **skipped** for an invalid file — it's excluded from the reference-validation
+   input entirely, so its (mis-filed) data/key namespace doesn't count either.
+
+Classification is `.yaml`-extension-required and case-insensitive on the
+prefix/extension; the singular `expand_prefab` is intentionally *not* accepted
+(only the real plural `expand_prefabs`). An unsaved draft (ephemeral, never
+saved — the `unnamed.yaml` editor buffer) is exempt from the gate so typing a
+new file isn't instantly flagged "Invalid file".
+
+Regression tests in `fileNameCheck.test.ts` (11 cases: valid/legacy/invalid
+classification, extension + casing handling, rename-target derivation, and the
+info/error `Problem` shapes). 110 tests passing, type-check + build clean.
+
+### Round 5 — value groups with numeric values (added 2026-08-18)
+
+A `valueGroup`'s `values:` list was schema-typed as `strArray` (every item a
+string), so a group of numeric parameter values —
+
+```
+- valueGroup: Hello
+  values: [hello, 123, 444, 555]
+```
+
+— raised six spurious `/values/N must be string` errors. Per Jere's
+`README_data.md` ("multiple parameter values"), a value group's values are
+parameter *values* and can be numeric (they're substituted as text in-game);
+YAML parses bare `123`/`4.5`/`true` as number/boolean, not string. Added a
+`scalar`/`scalarArray` helper in `schema/generate.mjs` (string | number |
+boolean — the same shape the raw-data entry's `additionalProperties` already
+uses) and switched `valueGroup.values` to `scalarArray`. Regression test in
+`structuralPrecheck.test.ts`. 111 tests passing, type-check clean.
+
+### Round 6 — punctuation/format lint (double colon) (added 2026-08-18)
+
+A `filter:: value` typo (double colon) is legal YAML: the `: ` after the first
+colon is the key/value separator, so YAML reads the key as literally `filter:`.
+ajv then rejected `filter:` as an unknown property — **"'filter:' is not a
+valid key in a EWP rule entry"** — and, because the key was nested in a `poke:`
+list, `ajvErrorRange` (which only searches the *top-level* map for the bad key)
+found nothing and fell back to the whole entry's range: **wrong message, wrong
+line**. The scripter had to eyeball the file to find the `::`.
+
+New module `formatLint.ts` (+ `formatLint.test.ts`): a punctuation/format lint
+that **walks the parsed YAML tree** (`yaml`'s `visit`) and inspects every
+mapping *key* — so it points at the key node's own range (right line, right
+span) and ignores values and comments. First check: a key containing *any*
+stray colon (the `: ` separator stops at the first colon-then-space, so a `::`
+folds the extra colon into the key — trailing `filter::` → key `filter:`, or
+mid-key `fil::ter:` → key `fil::ter`), reported as an **error** under a new
+filterable `FORMAT_CATEGORY` ("Formatting", registered in `main.ts`). The
+check registry
+is deliberately open so more key-punctuation checks can be added — the scripter
+asked for coverage "inclusive but not limited to `::`".
+
+Wired into `runStructuralPrecheck` (runs first, independent of schema
+validation). To stop the *same* typo double-reporting, the ajv loop now drops
+any `additionalProperties` error whose bad key contains a `:` — a real EWP/WEC
+key never does, so that error is always the `::` artifact the format lint
+already covers. (`formatLint` imports only the `Problem` *type* from
+`structuralPrecheck`, type-only so there's no runtime import cycle.)
+
+Regression tests: `formatLint.test.ts` (8 cases — nested key, mid-key colon,
+multiple hits, comment/value exclusion, clean + unparseable input) and a
+`structuralPrecheck` integration test asserting the misleading "not a valid
+key" is gone and one `Formatting` error lands on the right line. 120 tests
+passing, type-check + build clean; verified live against the scripter's
+dispenser snippet (two `::` flagged at their exact lines 25 & 38).
+
+### Round 7 — data-entry references, merged prefab rule, commented-out lists (added 2026-08-18)
+
+Three follow-on fixes from the same testing session.
+
+**1. `filter:`/`filters:` as data-entry references + category rename + dynamic
+filter menu.** `referenceValidation.ts` now treats a top-level `filter:` (single
+bareword) and `filters:` (a list, walked item by item so each undefined name
+points at its own line) as data-entry references, flagging undefined ones with
+the same "Undefined data entry reference" error as `data:`. Comma shorthand and
+`<...>` values still fall through (`isBarewordReference`). The category label was
+renamed **"data.yaml reference" → "Data entry reference"** — after the round-4
+filename gate, `expand_data*.yaml` files are also a source, so "data.yaml" was
+too narrow. The whole category vocabulary moved into a new unit-tested module
+`diagnosisCategories.ts` (branch titles single-sourced from
+`structuralPrecheck`'s `BRANCH_TITLES`), and the Problems-panel category filter
+is now **dynamic**: `presentSortedCategories` lists only the categories present
+in the current diagnoses, ascending alphabetical, and the labels are sentence
+("Proper") case except EWP/WEC abbreviations (fixing the old lowercase "custom
+saved key"/"object data").
+
+**2. Merged `type:`/`types:` prefab-requiredness, now a hard error.** The old
+check only looked at singular `type:`, so a `- types: [key, ...]` entry with no
+prefab was wrongly told it "needs a prefab". `collectTypeWords` now gathers the
+leading word of `type:` and of every `types:` item; a prefab satisfies all of
+them, and every prefab-less type (globalkey/key/custom/event/time/realtime —
+confirmed against docs/scripting.md, "There is no prefab or position for this
+type…") passes. A prefab-requiring type with no prefab is now an **error**
+(ticket 09 had it as a warning; the scripter asked to promote it), naming only
+the offending type(s) and anchored on the `type:`/`types:` field.
+
+**3. Commented-out typed-list fields.** A field emptied by commenting out its
+only item (`floats:` then `#  - fireMineStamp, <par_1>`) parses to null, so ajv
+emitted "/floats must be array" at the key. `commentedOutListItemRange` detects
+the commented-out list-item shape and, in the ajv loop, replaces that error with
+a warning pointing at the *disabled line* ("`floats:` has no entries — its only
+item is commented out…"). Narrowly guarded (array-type error, depth-1 field), so
+a genuinely empty field still gets the plain error.
+
+135 tests passing (was 120), type-check + build clean. Verified live: the two
+`[Data entry reference]` errors, the `type 'say'` error on the `types:` line,
+the commented-out `floats:` warning on the comment line, and the dynamic
+category menu (only present categories, sorted, "Data entry reference" renamed).
+Two-axis code review clean on Spec; Standards judgement-call refactors applied
+(single-sourced branch titles, DRY'd the reference-collection loops).

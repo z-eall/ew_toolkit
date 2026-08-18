@@ -18,6 +18,7 @@ import {
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
+import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, presentSortedCategories } from "./diagnosisCategories";
 import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
@@ -241,22 +242,10 @@ const collapsedFolders = new Set<string>();
 type ProblemTab = Severity | "thisfile";
 let activeTab: ProblemTab = "error";
 
-// The diagnostic categories that appear in a problem's `[branch]` tag — the
-// shared vocabulary behind the Problems-panel category filter and the report
-// dialog's "validation" sub-tag. Kept in one place so both stay in step with
-// what the checkers emit (structuralPrecheck's BRANCH_TITLES + fileManager's
-// reference-validation labels). Synthetic parse/root/item branches are left off
-// deliberately: they're rare fatal issues, always shown, never filtered.
-const DIAGNOSIS_CATEGORIES = [
-  "EWP rule entry",
-  "WEC data entry",
-  "Value entry",
-  "Value group",
-  "data.yaml reference",
-  "custom saved key",
-  "object data",
-] as const;
-const DIAGNOSIS_CATEGORY_SET = new Set<string>(DIAGNOSIS_CATEGORIES);
+// The diagnostic-category vocabulary now lives in ./diagnosisCategories (shared
+// with fileManager's reference labels and unit-tested there). Synthetic
+// parse/root/item branches are deliberately excluded: they're rare fatal issues,
+// always shown, never filtered.
 
 // Category multi-select filter for the Problems panel (all on by default).
 const categoryFilter = new Set<string>(DIAGNOSIS_CATEGORIES);
@@ -657,18 +646,30 @@ const reportMenu = document.getElementById("report-menu")!;
 
 function renderCatFilterMenu() {
   const reset = !categoriesAreDefault();
+  // Only offer categories that the current diagnoses actually produced, in
+  // ascending alphabetical order — a filter for a category that can't appear
+  // right now is just noise (ticket 13 round 7).
+  const present = presentSortedCategories(
+    fileManager.allFiles.flatMap((f) => f.problems.map((p) => p.branch)),
+  );
+  const items =
+    present.length > 0
+      ? present
+          .map(
+            (c) =>
+              `<label class="menu-item filter-item">
+          <input type="checkbox" data-cat="${escapeHtml(c)}" ${categoryFilter.has(c) ? "checked" : ""} />
+          <span class="menu-label">${escapeHtml(c)}</span>
+        </label>`,
+          )
+          .join("")
+      : `<div class="menu-empty">No categorised diagnoses.</div>`;
   catFilterMenu.innerHTML = `
     <div class="menu-section-head">
       <span class="menu-section-title">Categories</span>
       ${reset ? `<button class="menu-reset" data-reset="cat" title="Show all categories">${icon(ICONS.reset)}</button>` : ""}
     </div>
-    ${DIAGNOSIS_CATEGORIES.map(
-      (c) =>
-        `<label class="menu-item filter-item">
-          <input type="checkbox" data-cat="${escapeHtml(c)}" ${categoryFilter.has(c) ? "checked" : ""} />
-          <span class="menu-label">${escapeHtml(c)}</span>
-        </label>`,
-    ).join("")}
+    ${items}
   `;
   catFilterMenu.querySelectorAll<HTMLInputElement>("input[data-cat]").forEach((cb) => {
     cb.addEventListener("change", () => {
@@ -1060,25 +1061,20 @@ clearAllBtn.addEventListener("click", () => {
   if (ok) fileManager.clearAll();
 });
 
-// Leaving the page (closing the tab, or navigating to another hub tool) drops
-// the in-memory files, so warn while there is unsaved work.
+// Leaving the page drops the in-memory files, so warn while there is unsaved
+// work. This one handler covers every way out that clears them: closing the
+// tab, reloading, and clicking a hub nav link to another sub-site (each sub-site
+// is its own document, so those links are full navigations that fire unload).
 window.addEventListener("beforeunload", (e) => {
   if (fileManager.hasUnsavedWork()) {
     e.preventDefault();
-    e.returnValue = "";
+    // A non-empty returnValue is required to actually raise the native leave
+    // dialog: an empty string is the legacy signal for "no prompt", so several
+    // browsers (Firefox, Safari, older Chrome) silently skipped it — which is
+    // why closing/switching on the live site never warned. The text itself is
+    // ignored by modern browsers, but the value must be truthy.
+    e.returnValue = "You have unsaved changes.";
   }
-});
-// The in-app nav links are same-document navigations that beforeunload also
-// covers, but a same-origin click can feel abrupt — confirm explicitly first.
-document.querySelectorAll<HTMLAnchorElement>(".site-nav .nav-link").forEach((link) => {
-  if (link.classList.contains("active")) return;
-  link.addEventListener("click", (e) => {
-    if (!fileManager.hasUnsavedWork()) return;
-    const ok = confirm(
-      "You have unsaved changes.\n\nLeaving this tool clears the loaded files from memory. Save first if you want to keep them.\n\nLeave anyway?",
-    );
-    if (!ok) e.preventDefault();
-  });
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is

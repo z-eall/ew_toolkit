@@ -45,7 +45,12 @@ interface Occurrence {
 // `data:` fields are deliberately excluded: per PrefabData.cs, that field is
 // a single-filter shorthand (`Filters([data.data], ...)`), a different
 // semantic despite the same field name, and not scoped by ticket 06.
-const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops"];
+// `filter` names a data entry used as an object-data filter (docs/scripting.md):
+// same namespace as `data:`, and a comma value is the inline `type, key, value`
+// shorthand (isBarewordReference already excludes it). Its list sibling
+// `filters` is handled separately below, item by item.
+const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops", "filter"];
+const TOP_LEVEL_DATA_REF_LIST_FIELDS = ["filters"];
 
 function isBarewordReference(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
@@ -85,6 +90,34 @@ function parseTypeKeyParameter(raw: string): string | null {
   const param = rest.join(",").trim();
   if (!param) return null;
   return param.split(/\s+/)[0] ?? null;
+}
+
+// The live-code read sites (`keys:`/`bannedKeys:`/`type: key`) come from the
+// parsed YAML AST, which never sees comments — so a read that exists *only* as a
+// commented-out `# bannedKeys: X` line is invisible to both the AST walk and the
+// `<save/load/clear>` template scan. Recover those key names from raw comment
+// text so the write-orphan check can say "the read is commented out" instead of
+// the generic "never read". Whole-line comments only (a `#` preceded by nothing
+// but indentation), matching stripLineComments' rule so we read the same lines
+// it blanks. Best-effort text parsing, not a YAML parse: one field per line is
+// the shape these toggles take.
+const COMMENTED_READ_FIELD_RE = /(?:^|[\s-])(bannedKeys|keys|type)\s*:\s*(.*)$/;
+function scanCommentedReadKeys(text: string): string[] {
+  const names: string[] = [];
+  for (const line of text.split("\n")) {
+    const comment = /^\s*#(.*)$/.exec(line);
+    if (!comment) continue;
+    const match = COMMENTED_READ_FIELD_RE.exec(comment[1]);
+    if (!match) continue;
+    const [, field, rest] = match;
+    if (field === "type") {
+      const keyName = parseTypeKeyParameter(rest);
+      if (keyName && hasLiteral(keyName)) names.push(keyName);
+    } else {
+      for (const k of parseKeysField(rest)) if (hasLiteral(k)) names.push(k);
+    }
+  }
+  return names;
 }
 
 // Saved keys nest one or more balanced `<...>` dynamic parameters. Every scan
@@ -291,6 +324,15 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   const dataUsages: { name: string; occ: Occurrence }[] = [];
   const keyWrites = new Map<string, Occurrence[]>();
   const keyReads = new Map<string, Occurrence[]>();
+  // Key names that appear as a `<save_..>` write / `<load_..>`/`<clear_..>` read
+  // *inside a comment*. A commented-out template is not a live occurrence (round
+  // 2: it must not be flagged on its own, nor count as a live write/read), but
+  // it is still visible proof the scripter knows the key. Tracking it lets the
+  // orphan check tell "the counterpart is only commented out" (e.g. a `truceday`
+  // save toggled off at the bottom of the file) apart from "there is no
+  // counterpart anywhere" — the two get different messages below.
+  const commentedWriteNames = new Set<string>();
+  const commentedReadNames = new Set<string>();
 
   for (const file of files) {
     const doc = parseDocument(file.text);
@@ -302,8 +344,25 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
     for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
 
+    // Re-scan the raw text (comments intact). stripLineComments preserves
+    // offsets, so any raw occurrence whose start offset the live scan did not
+    // also yield is one that sits inside a comment. Those feed only the
+    // commented-name sets, never the flaggable maps above.
+    const liveWriteStarts = new Set(writes.map((w) => w.range[0]));
+    const liveReadStarts = new Set(reads.map((r) => r.range[0]));
+    const rawScan = scanKeyOccurrences(file.text);
+    for (const w of rawScan.writes) if (!liveWriteStarts.has(w.range[0])) commentedWriteNames.add(w.key);
+    for (const r of rawScan.reads) if (!liveReadStarts.has(r.range[0])) commentedReadNames.add(r.key);
+    // Reads only present as a commented-out AST field (`# bannedKeys: X`), which
+    // neither scan above reaches. Writes have no AST form, so there's no
+    // matching commented-write pass.
+    for (const name of scanCommentedReadKeys(file.text)) commentedReadNames.add(name);
+
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
+
+    const addDataUsage = (name: string, range: [number, number]) =>
+      dataUsages.push({ name: name.trim(), occ: { fileId: file.id, range } });
 
     for (const itemNode of root.items) {
       if (!isMap(itemNode)) continue;
@@ -325,8 +384,22 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         // neither is verifiable here, so both fall through unflagged.
         const isRef = field === "drops" ? isDropsReference(raw) : isBarewordReference(raw);
         if (!isRef) continue;
-        const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
-        dataUsages.push({ name: (raw as string).trim(), occ: { fileId: file.id, range } });
+        addDataUsage(raw as string, findPairRange(itemNode, field) ?? nodeRange(itemNode));
+      }
+
+      // List-valued reference fields (`filters:`): every bareword item names a
+      // data entry. Walk the AST seq so each undefined name points at its own
+      // line rather than at the whole field.
+      for (const field of TOP_LEVEL_DATA_REF_LIST_FIELDS) {
+        const seqNode = getPairValueNode(itemNode, field);
+        if (!seqNode || !isSeq(seqNode as any)) continue;
+        for (const itemScalar of (seqNode as any).items) {
+          const raw = (itemScalar as { value?: unknown })?.value;
+          if (!isBarewordReference(raw)) continue;
+          const itemHasRange = !!(itemScalar as any).range;
+          const range = itemHasRange ? nodeRange(itemScalar as any) : findPairRange(itemNode, field) ?? nodeRange(itemNode);
+          addDataUsage(raw, range);
+        }
       }
 
       if (typeof value.keys === "string") {
@@ -357,8 +430,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
           if (!isMap(nested)) continue;
           const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
           if (!isBarewordReference(nestedValue.data)) continue;
-          const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
-          dataUsages.push({ name: (nestedValue.data as string).trim(), occ: { fileId: file.id, range } });
+          addDataUsage(nestedValue.data as string, findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any));
         }
       }
     }
@@ -394,27 +466,37 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
   const writeKeyNames = [...keyWrites.keys()];
   const readKeyNames = [...keyReads.keys()];
+  const commentedWrites = [...commentedWriteNames];
+  const commentedReads = [...commentedReadNames];
 
   for (const [name, occs] of keyReads) {
     if (writeKeyNames.some((w) => keysCompatible(name, w))) continue;
+    // A compatible <save_..> exists but only inside a comment: point at that
+    // rather than sending the scripter off to check ewp_data.yaml.
+    const message = commentedWrites.some((w) => keysCompatible(name, w))
+      ? `Custom saved key '${name}' is read here, but its only <save_..> is commented out — uncomment the write, or remove this read.`
+      : `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message,
         range: occ.range,
       });
     }
   }
   for (const [name, occs] of keyWrites) {
     if (readKeyNames.some((r) => keysCompatible(name, r))) continue;
+    const message = commentedReads.some((r) => keysCompatible(name, r))
+      ? `Custom saved key '${name}' is written (<save_..>), but its only read is commented out — uncomment the read, or remove this write.`
+      : `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message,
         range: occ.range,
       });
     }
