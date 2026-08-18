@@ -40,9 +40,13 @@ const DEFAULT_FOLDER_NAME = "unnamed";
 const meta = (schemaJson as any)._meta as { ewpVersion: string | null; generatedAt: string };
 
 // generatedAt is a UTC ISO string (schema/generate.mjs); render it in whatever
-// timezone the browser is actually in, with the zone spelled out, so it never
-// reads as "is this UTC or mine?" — Intl resolves the zone from the runtime
-// automatically, no timezone argument needed.
+// timezone the browser is actually in — Intl resolves the zone from the
+// runtime automatically, no timezone argument needed.
+//
+// Full form (year/month/day/zone spelled out) is used as the hover title so
+// it never reads as "is this UTC or mine?"; the short form (just the time) is
+// what's shown inline, since the header line is tight on space and the date
+// is almost always "today" anyway.
 function formatLocalTimestamp(isoUtc: string): string {
   return new Date(isoUtc).toLocaleString(undefined, {
     year: "numeric",
@@ -52,6 +56,10 @@ function formatLocalTimestamp(isoUtc: string): string {
     minute: "2-digit",
     timeZoneName: "short",
   });
+}
+
+function formatShortLocalTime(isoUtc: string): string {
+  return new Date(isoUtc).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
 // Outline-only icons in the hub's minimalist style (viewBox 24, no fill,
@@ -120,11 +128,14 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <a class="nav-link active" href="./"><span class="nav-icon" aria-hidden="true">${icon(ICONS.file)}</span>EWP Validator</a>
         <a class="nav-link" href="../support/"><span class="nav-icon" aria-hidden="true">${icon(ICONS.support)}</span>Support</a>
       </div>
-      <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+      <div class="nav-right">
+        <a class="changelog-link" href="https://github.com/z-eall/ew_toolkit/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+      </div>
     </nav>
     <div class="app-header">
       <span><b>Expand World Prefabs YAML Validator</b></span>
-      <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${formatLocalTimestamp(meta.generatedAt)}</span>
+      <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · Schema last updated at <span title="${formatLocalTimestamp(meta.generatedAt)}">${formatShortLocalTime(meta.generatedAt)}</span></span>
     </div>
     <div class="app-body">
       <div class="sidebar" id="sidebar">

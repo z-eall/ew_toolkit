@@ -62,6 +62,12 @@ export function applyTheme(theme: Theme) {
   if (btn) btn.textContent = theme === "dark" ? "☾ Dark" : "☀ Light";
 }
 
+// Off-site link to the toolkit's changelog (GitHub Releases — see
+// .scratch/changelog-automation/issues/04-site-side-link.md). Lives beside the
+// theme toggle rather than as a full nav item: visible on every page without
+// scrolling, but reads as secondary utility chrome, not a peer of Home/Tools/Support.
+export const changelogUrl = "https://github.com/z-eall/ew_toolkit/releases";
+
 export function navHtml(current: string): string {
   return `
     <nav class="site-nav">
@@ -73,7 +79,10 @@ export function navHtml(current: string): string {
           )
           .join("")}
       </div>
-      <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+      <div class="nav-right">
+        <a class="changelog-link" href="${changelogUrl}" target="_blank" rel="noopener noreferrer">Changelog</a>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+      </div>
     </nav>
   `;
 }
