@@ -25,7 +25,7 @@ export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind: "data-reference" | "custom-key";
+  kind: "data-reference" | "custom-key" | "legacy-object-data";
   range: [start: number, end: number];
 }
 
@@ -49,15 +49,34 @@ interface Occurrence {
 // same namespace as `data:`, and a comma value is the inline `type, key, value`
 // shorthand (isBarewordReference already excludes it). Its list sibling
 // `filters` is handled separately below, item by item.
-const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops", "filter"];
-const TOP_LEVEL_DATA_REF_LIST_FIELDS = ["filters"];
+const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops", "filter", "bannedFilter"];
+const TOP_LEVEL_DATA_REF_LIST_FIELDS = ["filters", "bannedFilters"];
+
+// Nested object/poke filter fields (PrefabData.cs's ObjectData/PokeData, shared
+// by objects:/bannedObjects:/poke: array items): `filter`/`filters`/
+// `bannedFilter`/`bannedFilters` name a data.yaml entry the same way the
+// top-level fields do. `data` on these nested items is a different story — a
+// live-tested legacy alias for the singular `filter` (same underlying
+// property, not the top-level rule's own action `data:` field despite the
+// shared name) — so it's tracked separately below, alongside a "flag legacy
+// format, don't misreport it as unused" notice.
+const NESTED_FILTER_SCALAR_FIELDS = ["filter", "bannedFilter"];
+const NESTED_FILTER_LIST_FIELDS = ["filters", "bannedFilters"];
+const NESTED_LEGACY_DATA_FIELD = "data";
 
 function isBarewordReference(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
   const trimmed = raw.trim();
   if (trimmed === "") return false;
   if (trimmed.includes(",")) return false; // "type, key, value" / "itemid, amount" shorthand
-  if (trimmed.includes("<") || trimmed.includes(">")) return false; // a <function> value reads from ZDO data (functions.md), not a data.yaml name
+  // A value built purely from `<...>` parameters (e.g. `<string_isSpawningPrefabData>`)
+  // reads from the object's own ZDO data at runtime (functions.md) — nothing to
+  // check here. But a value that *mixes* literal text with a dynamic parameter
+  // (e.g. `newDeerDropLevel<par_1>`) names a family of data.yaml entries by a
+  // literal prefix/skeleton, the same best-effort wildcard idea already used
+  // for custom saved keys below (see keyToPattern) — worth a fuzzy-match check,
+  // not a silent skip.
+  if (/[<>]/.test(trimmed) && !hasLiteral(trimmed)) return false;
   return true;
 }
 
@@ -72,10 +91,16 @@ function recordOccurrence(map: Map<string, Occurrence[]>, name: string, occ: Occ
 }
 
 function parseKeysField(raw: string): string[] {
-  // Format: "key1 value1, key2 value2, ..." — first whitespace-separated
-  // token of each comma segment is the key name.
+  // Format: "key1 value1, key2 value2; key3 value3 ..." — entries are seen
+  // separated by comma OR semicolon in practice (a multi-line `keys: |` block
+  // separates its entries with ";\n", not ","), and the first
+  // whitespace-separated token of each segment is the key name. Splitting on
+  // comma alone left a semicolon-separated segment as one blob, so its first
+  // token came out with the next segment's leading key still glued on by a
+  // stray trailing ";" — e.g. "currentking; kingpossible 1" mis-read as the
+  // single key 'currentking;'.
   return raw
-    .split(",")
+    .split(/[,;]/)
     .map((segment) => segment.trim().split(/\s+/)[0])
     .filter((k): k is string => !!k);
 }
@@ -254,7 +279,14 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
       key = inner;
       if (key && hasLiteral(key)) reads.push({ key, range });
     }
-    i = end - 1;
+    // Deliberately no `i = end - 1` jump past the whole matched group here: a
+    // save/load/clear template can nest another one inside its own value
+    // (e.g. `<save_onlineplayer_<max_0_<add_-1_<load_onlineplayer=0>>>>`), and
+    // jumping past the outer match's range used to skip right over that
+    // nested occurrence, so its read/write was never recorded at all. Letting
+    // the loop's own `i++` continue char-by-char instead means the nested
+    // `<load_..>` gets its own pass through this same branch once the scan
+    // reaches it.
   }
   return { writes, reads };
 }
@@ -319,9 +351,39 @@ function keysCompatible(a: string, b: string): boolean {
   return aMatchesB || bMatchesA;
 }
 
+// The read-orphan and write-orphan messages below are mirror images of each
+// other (same shape, "read"/"write" swapped), and used to drift apart exactly
+// because they were two independently hand-written template strings: a wording
+// fix applied to one (e.g. the ewp_data.yaml path) silently didn't reach the
+// other. Single-sourcing the shared path here, and building both messages
+// from one function keyed by direction, makes that class of drift impossible
+// instead of just easy to remember to avoid.
+const CUSTOM_KEY_DATA_PATH_HINT = "expand_prefabs*/ewp_data.yaml";
+
+type KeyDirection = "read" | "write";
+
+function orphanKeyMessage(direction: KeyDirection, name: string, counterpartOnlyCommented: boolean): string {
+  const counterpart: KeyDirection = direction === "read" ? "write" : "read";
+  if (counterpartOnlyCommented) {
+    // "is read here, but its only <save_..> is commented out — uncomment the write, or remove this read."
+    // "is written (<save_..>), but its only read is commented out — uncomment the read, or remove this write."
+    const selfPhrase = direction === "read" ? "is read here" : "is written (<save_..>)";
+    const counterpartLabel = direction === "read" ? "<save_..>" : "read";
+    return (
+      `Custom saved key '${name}' ${selfPhrase}, but its only ${counterpartLabel} is commented out — ` +
+      `uncomment the ${counterpart}, or remove this ${direction}.`
+    );
+  }
+  if (direction === "read") {
+    return `Custom saved key '${name}' with no <save_..> found in the loaded files — Verify in ${CUSTOM_KEY_DATA_PATH_HINT}.`;
+  }
+  return `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check ${CUSTOM_KEY_DATA_PATH_HINT} before treating this as a bug.`;
+}
+
 export function runReferenceValidation(files: FileInput[]): FileProblem[] {
+  const problems: FileProblem[] = [];
   const definitions = new Map<string, Occurrence[]>();
-  const dataUsages: { name: string; occ: Occurrence }[] = [];
+  const dataUsages: { name: string; occ: Occurrence; suppressUndefinedError?: boolean }[] = [];
   const keyWrites = new Map<string, Occurrence[]>();
   const keyReads = new Map<string, Occurrence[]>();
   // Key names that appear as a `<save_..>` write / `<load_..>`/`<clear_..>` read
@@ -361,8 +423,8 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
 
-    const addDataUsage = (name: string, range: [number, number]) =>
-      dataUsages.push({ name: name.trim(), occ: { fileId: file.id, range } });
+    const addDataUsage = (name: string, range: [number, number], suppressUndefinedError?: boolean) =>
+      dataUsages.push({ name: name.trim(), occ: { fileId: file.id, range }, suppressUndefinedError });
 
     for (const itemNode of root.items) {
       if (!isMap(itemNode)) continue;
@@ -433,13 +495,84 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
           addDataUsage(nestedValue.data as string, findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any));
         }
       }
+
+      // objects:/bannedObjects:/poke: array items (ObjectData/PokeData in
+      // PrefabData.cs) carry their own filter fields, same data.yaml
+      // namespace as the top-level ones above. A string item is the legacy
+      // single-line object format (`Object(string line)`) — nothing
+      // structured to read a data-entry name out of, so it's skipped.
+      for (const arrKey of ["objects", "bannedObjects", "poke"]) {
+        const arrNode = getPairValueNode(itemNode, arrKey);
+        if (!arrNode || !isSeq(arrNode as any)) continue;
+        for (const nested of (arrNode as any).items) {
+          if (!isMap(nested)) continue;
+          const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
+
+          for (const field of NESTED_FILTER_SCALAR_FIELDS) {
+            const raw = nestedValue[field];
+            if (!isBarewordReference(raw)) continue;
+            addDataUsage(raw as string, findPairRange(nested as YAMLMap, field) ?? nodeRange(nested as any));
+          }
+          for (const field of NESTED_FILTER_LIST_FIELDS) {
+            const seqNode = getPairValueNode(nested as YAMLMap, field);
+            if (!seqNode || !isSeq(seqNode as any)) continue;
+            for (const itemScalar of (seqNode as any).items) {
+              const raw = (itemScalar as { value?: unknown })?.value;
+              if (!isBarewordReference(raw)) continue;
+              const itemHasRange = !!(itemScalar as any).range;
+              const range = itemHasRange
+                ? nodeRange(itemScalar as any)
+                : findPairRange(nested as YAMLMap, field) ?? nodeRange(nested as any);
+              addDataUsage(raw, range);
+            }
+          }
+
+          // `data:` here is the legacy alias for the singular `filter:`
+          // (still works — same underlying property, ticket 08) — counts as
+          // a real usage like `filter:` does (so a real entry it points at
+          // isn't wrongly flagged unused), but never as an "undefined
+          // reference" error of its own: the ask is to flag the legacy
+          // *format*, not raise a data-reference error on top of it, and this
+          // field's real-world value shapes are less battle-tested here than
+          // the modern `filter:` fields, so an unresolved name is left to the
+          // legacy-format notice alone rather than also getting a hard error.
+          const legacyRaw = nestedValue[NESTED_LEGACY_DATA_FIELD];
+          if (isBarewordReference(legacyRaw)) {
+            const range = findPairRange(nested as YAMLMap, NESTED_LEGACY_DATA_FIELD) ?? nodeRange(nested as any);
+            addDataUsage(legacyRaw as string, range, true);
+            problems.push({
+              fileId: file.id,
+              severity: "info",
+              kind: "legacy-object-data",
+              message:
+                `Legacy format: \`data:\` under \`${arrKey}:\` is an old alias for \`filter:\`. It still works, ` +
+                `but we recommend renaming it to \`filter:\`.`,
+              range,
+            });
+          }
+        }
+      }
     }
   }
 
-  const problems: FileProblem[] = [];
-
-  for (const { name, occ } of dataUsages) {
-    if (!definitions.has(name)) {
+  const usedNames = new Set<string>();
+  for (const { name, occ, suppressUndefinedError } of dataUsages) {
+    if (/[<>]/.test(name)) {
+      // Dynamic reference (a literal prefix/skeleton wrapped around a
+      // `<...>` parameter, e.g. `newDeerDropLevel<par_1>`): best-effort fuzzy
+      // match, the same wildcard idea as keysCompatible below. Ambiguous by
+      // nature — which concrete entry it resolves to depends on a runtime
+      // value — so it's never flagged undefined, but any definition its
+      // skeleton matches counts as used, so a real entry doesn't get a false
+      // "unused" hint just because every reference to it is dynamic.
+      const pattern = keyToPattern(name);
+      for (const defName of definitions.keys()) {
+        if (pattern.test(defName)) usedNames.add(defName);
+      }
+      continue;
+    }
+    usedNames.add(name);
+    if (!definitions.has(name) && !suppressUndefinedError) {
       problems.push({
         fileId: occ.fileId,
         severity: "error",
@@ -450,7 +583,6 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
 
-  const usedNames = new Set(dataUsages.map((u) => u.name));
   for (const [name, occs] of definitions) {
     if (usedNames.has(name)) continue;
     for (const occ of occs) {
@@ -473,9 +605,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     if (writeKeyNames.some((w) => keysCompatible(name, w))) continue;
     // A compatible <save_..> exists but only inside a comment: point at that
     // rather than sending the scripter off to check ewp_data.yaml.
-    const message = commentedWrites.some((w) => keysCompatible(name, w))
-      ? `Custom saved key '${name}' is read here, but its only <save_..> is commented out — uncomment the write, or remove this read.`
-      : `Custom saved key '${name}' with no <save_..> found in the loaded files — Verify in expand_prefabs*/ewp_data.yaml.`;
+    const message = orphanKeyMessage("read", name, commentedWrites.some((w) => keysCompatible(name, w)));
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
@@ -488,9 +618,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   }
   for (const [name, occs] of keyWrites) {
     if (readKeyNames.some((r) => keysCompatible(name, r))) continue;
-    const message = commentedReads.some((r) => keysCompatible(name, r))
-      ? `Custom saved key '${name}' is written (<save_..>), but its only read is commented out — uncomment the read, or remove this write.`
-      : `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
+    const message = orphanKeyMessage("write", name, commentedReads.some((r) => keysCompatible(name, r)));
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
