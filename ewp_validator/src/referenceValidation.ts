@@ -6,14 +6,18 @@
 // loaded file (vanilla game logic, other mods), which would make a
 // structural check mostly false positives.
 //
-// Three checks, all cross-file (every expand_prefabs_*.yaml + data.yaml in
+// Two checks, all cross-file (every expand_prefabs_*.yaml + data.yaml in
 // the loaded batch is one merged namespace, per the README):
 //   1. An undefined `data:`-shaped reference -> hard error.
 //   2. A data.yaml entry with zero usages anywhere loaded -> low-severity hint.
 //   3. A custom saved key read (keys:/bannedKeys:/type:key/<load_.../<clear_...)
 //      with no matching <save_...> write anywhere loaded, or vice versa -> warning.
 //      Best-effort by nature (ticket 04): a key can legitimately be written by
-//      another mod or a console command outside the loaded batch.
+//      another mod or a console command outside the loaded batch. Matching is
+//      "likely match", not exact: dynamic `<...>` parameters inside a saved key
+//      name (e.g. `<save_captureblockercity<int_isRadarCity=0>_<time>>`) are
+//      treated as wildcards, and only the key-name portion is compared — the
+//      trailing value/parameter of a save or a `type: key` trigger is ignored.
 import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
 
@@ -21,7 +25,7 @@ export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind: "data-reference" | "custom-key" | "data-function";
+  kind: "data-reference" | "custom-key";
   range: [start: number, end: number];
 }
 
@@ -52,13 +56,6 @@ function isBarewordReference(raw: unknown): raw is string {
   return true;
 }
 
-// `<...>` value expressions (docs/functions.md) read from the triggering
-// object's ZDO data rather than naming a data.yaml entry — never a broken
-// reference, but worth a blue flag to confirm the field exists in object data.
-function isFunctionExpression(raw: unknown): raw is string {
-  return typeof raw === "string" && /<[^>]+>/.test(raw);
-}
-
 function isDropsReference(raw: unknown): raw is string {
   return isBarewordReference(raw) && !/^(true|false)$/i.test(raw as string);
 }
@@ -79,21 +76,150 @@ function parseKeysField(raw: string): string[] {
 }
 
 function parseTypeKeyParameter(raw: string): string | null {
-  // `type: key, dataName` — the trigger's parameter is the custom key name.
+  // `type: key, dataName value` — per scripting.md, `type:` takes parameters
+  // (type, parameter1 parameter2). For a `key` trigger parameter1 is the custom
+  // key name and parameter2 is a user-defined value; only parameter1 names the
+  // key, so we ignore everything past the first whitespace token.
   const [head, ...rest] = raw.split(",");
   if (head.trim().toLowerCase() !== "key") return null;
   const param = rest.join(",").trim();
-  return param || null;
+  if (!param) return null;
+  return param.split(/\s+/)[0] ?? null;
 }
 
-const SAVE_WRITE_RE = /<save(?:\+\+|--)?_([A-Za-z0-9]+)[^>]*>/g;
-const LOAD_READ_RE = /<load_([A-Za-z0-9]+)[^>]*>/g;
-const CLEAR_READ_RE = /<clear_([A-Za-z0-9]+)>/g;
+// Split `s` on occurrences of `sep` that are not nested inside a `<...>` group.
+function splitTopLevel(s: string, sep: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of s) {
+    if (ch === "<") depth++;
+    else if (ch === ">") depth = Math.max(0, depth - 1);
+    if (ch === sep && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts;
+}
+
+interface RawKeyOccurrence {
+  key: string;
+  range: [number, number];
+}
+
+const KEY_HEAD_RE = /^<(save\+\+|save--|save|load|clear)_/;
+
+// A saved-key template can nest `<...>` inside its name (dynamic parameters) and
+// its name can contain `/`, so a flat character-class regex can't extract it.
+// Scan the whole document, balance the outer `<...>`, then keep only the
+// key-name portion: a `<save_..>` value is its last top-level `_` segment and a
+// `<load_..>` default is everything after the first top-level `=`.
+function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[] } {
+  const writes: RawKeyOccurrence[] = [];
+  const reads: RawKeyOccurrence[] = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "<") continue;
+    const head = KEY_HEAD_RE.exec(text.slice(i));
+    if (!head) continue;
+
+    let depth = 0;
+    let j = i;
+    for (; j < text.length; j++) {
+      if (text[j] === "<") depth++;
+      else if (text[j] === ">") {
+        depth--;
+        if (depth === 0) {
+          j++;
+          break;
+        }
+      }
+    }
+    if (depth !== 0) continue; // unbalanced, leave for the structural pre-check
+
+    const token = text.slice(i, j);
+    const inner = token.slice(head[0].length, -1); // between "<head_" and ">"
+    const range: [number, number] = [i, j];
+
+    let key: string;
+    if (head[1].startsWith("save")) {
+      const segs = splitTopLevel(inner, "_");
+      key = segs.length > 1 ? segs.slice(0, -1).join("_") : (segs[0] ?? "");
+      if (key) writes.push({ key, range });
+    } else if (head[1] === "load") {
+      key = splitTopLevel(inner, "=")[0] ?? inner;
+      if (key) reads.push({ key, range });
+    } else {
+      key = inner;
+      if (key) reads.push({ key, range });
+    }
+    i = j - 1;
+  }
+  return { writes, reads };
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Turn a key name into a matcher where each dynamic `<...>` parameter is a
+// wildcard, and into a literal subject where those parameters are a neutral
+// sentinel a wildcard can span.
+function keyToPattern(key: string): RegExp {
+  let out = "";
+  for (let i = 0; i < key.length; i++) {
+    if (key[i] === "<") {
+      let depth = 0;
+      for (; i < key.length; i++) {
+        if (key[i] === "<") depth++;
+        else if (key[i] === ">") {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      out += ".*";
+    } else {
+      out += escapeRegex(key[i]);
+    }
+  }
+  return new RegExp("^" + out + "$");
+}
+
+function keyToSubject(key: string): string {
+  let out = "";
+  for (let i = 0; i < key.length; i++) {
+    if (key[i] === "<") {
+      let depth = 0;
+      for (; i < key.length; i++) {
+        if (key[i] === "<") depth++;
+        else if (key[i] === ">") {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      out += "\x01";
+    } else {
+      out += key[i];
+    }
+  }
+  return out;
+}
+
+// "Likely match": an exact name match, or either key's dynamic-parameter
+// skeleton matching the other. This lets a read of `captureblockercity1` resolve
+// against a `<save_captureblockercity<int_isRadarCity=0>_..>` write, and a
+// `<pid>/teamlead` read against a `<save_<pid>/teamlead_<par_1>>` write.
+function keysCompatible(a: string, b: string): boolean {
+  if (a === b) return true;
+  return keyToPattern(a).test(keyToSubject(b)) || keyToPattern(b).test(keyToSubject(a));
+}
 
 export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   const definitions = new Map<string, Occurrence[]>();
   const dataUsages: { name: string; occ: Occurrence }[] = [];
-  const dataFunctions: { expr: string; occ: Occurrence }[] = [];
   const keyWrites = new Map<string, Occurrence[]>();
   const keyReads = new Map<string, Occurrence[]>();
 
@@ -103,15 +229,9 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
     // Custom-saved-key templates can appear inside any string field, so this
     // one part is a whole-document text scan rather than a node walk.
-    for (const m of file.text.matchAll(SAVE_WRITE_RE)) {
-      recordOccurrence(keyWrites, m[1], { fileId: file.id, range: [m.index, m.index + m[0].length] });
-    }
-    for (const m of file.text.matchAll(LOAD_READ_RE)) {
-      recordOccurrence(keyReads, m[1], { fileId: file.id, range: [m.index, m.index + m[0].length] });
-    }
-    for (const m of file.text.matchAll(CLEAR_READ_RE)) {
-      recordOccurrence(keyReads, m[1], { fileId: file.id, range: [m.index, m.index + m[0].length] });
-    }
+    const { writes, reads } = scanKeyOccurrences(file.text);
+    for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
+    for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
 
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
@@ -130,11 +250,10 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
       for (const field of TOP_LEVEL_DATA_REF_FIELDS) {
         const raw = value[field];
-        if (field === "data" && isFunctionExpression(raw)) {
-          const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
-          dataFunctions.push({ expr: raw.trim(), occ: { fileId: file.id, range } });
-          continue;
-        }
+        // A `data:` value carrying commas is the "type, key, value" injection
+        // shorthand (scripting.md), and a `<...>` value reads from the object's
+        // own ZDO data (functions.md) — neither names a data.yaml entry, and
+        // neither is verifiable here, so both fall through unflagged.
         const isRef = field === "drops" ? isDropsReference(raw) : isBarewordReference(raw);
         if (!isRef) continue;
         const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
@@ -164,11 +283,6 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         for (const nested of (arrNode as any).items) {
           if (!isMap(nested)) continue;
           const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
-          if (isFunctionExpression(nestedValue.data)) {
-            const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
-            dataFunctions.push({ expr: nestedValue.data.trim(), occ: { fileId: file.id, range } });
-            continue;
-          }
           if (!isBarewordReference(nestedValue.data)) continue;
           const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
           dataUsages.push({ name: (nestedValue.data as string).trim(), occ: { fileId: file.id, range } });
@@ -191,16 +305,6 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
 
-  for (const { expr, occ } of dataFunctions) {
-    problems.push({
-      fileId: occ.fileId,
-      severity: "info",
-      kind: "data-function",
-      message: `This reads \`${expr}\` from the object's data. Make sure that field is in the object data.`,
-      range: occ.range,
-    });
-  }
-
   const usedNames = new Set(dataUsages.map((u) => u.name));
   for (const [name, occs] of definitions) {
     if (usedNames.has(name)) continue;
@@ -215,8 +319,11 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
 
+  const writeKeyNames = [...keyWrites.keys()];
+  const readKeyNames = [...keyReads.keys()];
+
   for (const [name, occs] of keyReads) {
-    if (keyWrites.has(name)) continue;
+    if (writeKeyNames.some((w) => keysCompatible(name, w))) continue;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
@@ -228,7 +335,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
   for (const [name, occs] of keyWrites) {
-    if (keyReads.has(name)) continue;
+    if (readKeyNames.some((r) => keysCompatible(name, r))) continue;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,

@@ -71,22 +71,29 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(problems.some((p) => p.kind === "data-reference" && p.message.includes("missing_spawn_data"))).toBe(true);
   });
 
-  it("treats a data: <function> value as a blue object-data flag, not an undefined reference — ticket 13", () => {
+  it("does not flag a data: <function> value at all — it reads object data we can't inspect", () => {
+    // A `<string_isSpawningPrefabData>` value resolves, at runtime, to a data.yaml
+    // name pulled from the object's own ZDO data (functions.md). Validation can't
+    // read object data, so there is nothing to verify and nothing to flag.
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  data: <string_isSpawningPrefabData>\n" }];
-    const problems = runReferenceValidation(files);
-    expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ severity: "info", kind: "data-function" });
-    expect(problems[0].message).toContain("object data");
-    expect(problems.some((p) => p.severity === "error")).toBe(false);
+    expect(runReferenceValidation(files)).toEqual([]);
   });
 
-  it("also flags a spawn[] nested data: <function> value rather than erroring — ticket 13", () => {
+  it("does not flag a spawn[] nested data: <function> value either", () => {
     const files = [
       { id: "a", text: "- prefab: Bonemass\n  type: create\n  spawn:\n  - prefab: Skeleton\n    data: <string_foo>\n" },
     ];
-    const problems = runReferenceValidation(files);
-    expect(problems.some((p) => p.kind === "data-function")).toBe(true);
-    expect(problems.some((p) => p.severity === "error")).toBe(false);
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("does not flag a top-level data: type,key,value injection shorthand carrying a <function>", () => {
+    // `data: float, cooldownFrostseerBlobSpawner, <time>` is a single-value data
+    // injection into the trigger object (scripting.md shorthand), not a data.yaml
+    // reference and not an object-data read.
+    const files = [
+      { id: "a", text: "- prefab: Piece\n  type: poke, cooldownFrostseerBlobSpawner\n  data: float, cooldownFrostseerBlobSpawner, <time>\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
   });
 
   it("does not treat an object filter's data: shorthand as a data.yaml reference", () => {
@@ -142,6 +149,44 @@ describe("custom saved key lint (ticket 06)", () => {
     const names = problems.map((p) => p.message);
     expect(names.some((m) => m.includes("loadedFlag"))).toBe(true);
     expect(names.some((m) => m.includes("clearedFlag"))).toBe(true);
+  });
+
+  it("resolves a read against a save whose key has a dynamic <...> parameter (prefix/likely match)", () => {
+    // `<load_captureblockercity1=0>` reads captureblockercity1; the save builds
+    // the key name dynamically, so its static skeleton must match as a wildcard.
+    const files = [
+      { id: "a", text: "- prefab: A\n  type: create\n  command: <load_captureblockercity1=0>\n" },
+      {
+        id: "b",
+        text: "- prefab: B\n  type: poke\n  exec: |\n    <save_captureblockercity<int_isRadarCity=0>_<time>>\n",
+      },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("compares only parameter1 of a type: key trigger, ignoring the hand-written value", () => {
+    // `type: key, adminmoderecovery 30;99999` — parameter2 (30;99999) is a value,
+    // not part of the key name, so a <save_adminmoderecovery_..> should resolve it
+    // and the flag (if any) must name only 'adminmoderecovery'.
+    const resolved = [
+      { id: "a", text: "- type: key, adminmoderecovery 30;99999\n  exec: |\n    <save_adminmoderecovery_0>\n" },
+    ];
+    expect(runReferenceValidation(resolved)).toEqual([]);
+
+    const unresolved = [{ id: "a", text: "- type: key, adminmoderecovery 30;99999\n" }];
+    const problems = runReferenceValidation(unresolved);
+    expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("'adminmoderecovery'"))).toBe(true);
+    expect(problems.some((p) => p.message.includes("30;99999"))).toBe(false);
+  });
+
+  it("matches keys containing <...> and / on the name portion, ignoring the value", () => {
+    // keys: <pid>/teamlead 1 needs the key '<pid>/teamlead' to hold 1; the value
+    // is not part of the key, and the save writes the same <pid>/teamlead name.
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: state, action swing_sledge\n  keys: <pid>/teamlead 1\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, assignTeamLead 1,2 front\n  exec: |\n    <save_<pid>/teamlead_<par_1>>\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
   });
 
   it("does not cross-report between the data.yaml namespace and the custom-key namespace", () => {
