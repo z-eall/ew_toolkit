@@ -9,6 +9,7 @@
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
 import { runFormatLint } from "./formatLint";
+import { checkRpcParams, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
 
 export type Severity = "error" | "warning" | "info";
@@ -128,6 +129,14 @@ const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "ti
 // so the Problems panel can filter them apart — the wording follows Jere's
 // docs, which call these "Legacy format" rather than "Old format".
 export const LEGACY_FORMAT_CATEGORY = "Legacy format entry";
+// objectRpc:/clientRpc: parameter mismatches against Jere's RPCs.md docs
+// (see rpcValidation.ts) — always a warning, never a hard error, since an
+// undocumented or mistyped numbered parameter still works in-game.
+export const RPC_RULE_CATEGORY = "RPC rule entry";
+const RPC_FIELDS = [
+  ["objectRpc", OBJECT_RPC_PARAMS],
+  ["clientRpc", CLIENT_RPC_PARAMS],
+] as const;
 const LEGACY_DELAY_MESSAGE =
   "Legacy format: a top-level `delay:`. It still works, but we recommend using the latest format.";
 const legacySpawnMessage = (key: string) =>
@@ -200,8 +209,14 @@ export function getPairValueNode(map: YAMLMap, keyName: string): unknown {
   return pair ? pair.value : null;
 }
 
+// Loosely-stringified comparison (not strict ===): a YAML key written bare,
+// like `1:`, parses to the number 1, not the string "1" — matching it against
+// a lookup name of "1" needs this to find e.g. an rpc entry's numbered
+// parameter keys, not just its word keys (which were already strings).
 function isScalarKey(key: unknown, name: string): boolean {
-  return !!key && typeof key === "object" && (key as { value?: unknown }).value === name;
+  if (!key || typeof key !== "object") return false;
+  const v = (key as { value?: unknown }).value;
+  return v !== undefined && String(v) === name;
 }
 
 /** Range for an ajv error: prefer pointing at the specific offending key, fall back to the whole item. */
@@ -246,6 +261,14 @@ function commentedOutListItemRange(text: string, keyStart: number): [number, num
   return null;
 }
 
+// True when the file has *some* non-blank content but every bit of it is a
+// comment line — not a truly empty/blank file (that stays the existing hard
+// error; a brand-new file with nothing typed yet isn't "disabled on purpose").
+function isCommentOnly(text: string): boolean {
+  const lines = text.split("\n").map((l) => l.trim()).filter((l) => l !== "");
+  return lines.length > 0 && lines.every((l) => l.startsWith("#"));
+}
+
 export function runStructuralPrecheck(text: string): Problem[] {
   const problems: Problem[] = [];
 
@@ -269,6 +292,19 @@ export function runStructuralPrecheck(text: string): Problem[] {
 
   const root = doc.contents;
   if (!root || !isSeq(root)) {
+    // A file whose every non-blank line is commented out parses to no
+    // content at all, which would otherwise hit the same "must be a YAML
+    // list" wording a genuine syntax mistake gets — misleading for content
+    // that's disabled on purpose. Downgrade to a warning instead.
+    if (isCommentOnly(text)) {
+      problems.push({
+        severity: "warning",
+        message: "This file has no active content — every line is commented out. Uncomment what you want validated, or remove the file if it's no longer needed.",
+        branch: "(root)",
+        range: [0, text.length],
+      });
+      return problems;
+    }
     problems.push({
       severity: "error",
       message: "The top level must be a YAML list. Start each entry with `- `.",
@@ -335,10 +371,41 @@ export function runStructuralPrecheck(text: string): Problem[] {
       }
     }
 
+    // objectRpc:/clientRpc: numbered parameters get their own doc-aware check
+    // (rpcValidation.ts) instead of ajv's generic "must be string" — a
+    // mismatch there is a warning, not an error, so a `not-a-string` issue's
+    // ajv error (same instancePath) is suppressed below rather than doubled up.
+    const rpcSuppressPaths = new Set<string>();
+    if (branch === "ewpRuleEntry") {
+      for (const [field, table] of RPC_FIELDS) {
+        const seqNode = getPairValueNode(itemNode, field);
+        if (!isSeq(seqNode)) continue;
+        seqNode.items.forEach((entryNode: unknown, entryIdx: number) => {
+          if (!isMap(entryNode)) return;
+          const entryValue = (entryNode as YAMLMap).toJSON() as Record<string, unknown>;
+          if (typeof entryValue.name !== "string") return;
+          for (const issue of checkRpcParams(table, entryValue.name, entryValue)) {
+            problems.push({
+              severity: "warning",
+              message: issue.message,
+              branch: RPC_RULE_CATEGORY,
+              range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
+            });
+            // Any issue at all (including "extra" — out of documented range)
+            // already covers whatever ajv would say about this same key, so
+            // suppress it regardless of kind rather than only for "not-a-string".
+            rpcSuppressPaths.add(`/${field}/${entryIdx}/${issue.key}`);
+          }
+        });
+      }
+    }
+
     const validate = getValidator(branch);
     const valid = validate(toValidate);
     if (!valid && validate.errors) {
       for (const error of validate.errors) {
+        // Already covered by a clearer RPC-specific warning above.
+        if (rpcSuppressPaths.has(error.instancePath)) continue;
         // A `::` double colon makes YAML fold the extra colon into the key
         // (`filter::` → key `filter:`), which ajv then reports as an unknown
         // property with a misleading message and a wrong (fallback) range. The

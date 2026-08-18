@@ -6,7 +6,7 @@
 // pulling in main.ts's DOM/monaco entry point.
 import { INVALID_FILE_CATEGORY } from "./fileNameCheck";
 import { FORMAT_CATEGORY } from "./formatLint";
-import { BRANCH_TITLES, LEGACY_FORMAT_CATEGORY } from "./structuralPrecheck";
+import { BRANCH_TITLES, LEGACY_FORMAT_CATEGORY, RPC_RULE_CATEGORY } from "./structuralPrecheck";
 
 // Reference-validation labels (referenceValidation's `kind` maps to these).
 // Renamed from "data.yaml reference": `expand_data*.yaml` files are also a
@@ -26,6 +26,7 @@ export const DIAGNOSIS_CATEGORIES = [
   BRANCH_TITLES.valueEntry,
   BRANCH_TITLES.valueGroup,
   LEGACY_FORMAT_CATEGORY,
+  RPC_RULE_CATEGORY,
   INVALID_FILE_CATEGORY,
   FORMAT_CATEGORY,
   DATA_REFERENCE_CATEGORY,

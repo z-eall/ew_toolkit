@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guessBranch, LEGACY_FORMAT_CATEGORY, runStructuralPrecheck } from "./structuralPrecheck";
+import { guessBranch, LEGACY_FORMAT_CATEGORY, runStructuralPrecheck, RPC_RULE_CATEGORY } from "./structuralPrecheck";
 
 describe("guessBranch", () => {
   it("guesses valueGroup when valueGroup is present", () => {
@@ -245,5 +245,63 @@ describe("runStructuralPrecheck", () => {
     const yaml = "- name: x\n  floats:\n  strings:\n  - a, b\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.some((p) => p.message.includes("floats") && p.message.includes("array"))).toBe(true);
+  });
+
+  it("flags an objectRpc parameter beyond the documented shape as an RPC-rule warning, not ajv's raw 'must be string' error", () => {
+    // The reported repro: Player's "Message" RPC only documents params 1-3;
+    // "4: true" is both extra and non-string. Both should surface as one
+    // clear warning, not the raw "/objectRpc/0/4 must be string" ajv message.
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: Message\n" +
+      "    1: enum_message, 2\n" +
+      '    2: string, "hello"\n' +
+      "    3: int, 0\n" +
+      "    4: true\n" +
+      "    overwrite: true\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message.includes("must be string"))).toBe(false);
+    const flag = problems.find((p) => p.branch === RPC_RULE_CATEGORY);
+    expect(flag).toBeDefined();
+    expect(flag!.severity).toBe("warning");
+    expect(flag!.message).toContain("Message");
+    expect(flag!.message).toContain("'4'");
+  });
+
+  it("does not flag an objectRpc entry that matches its documented shape", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: Message\n" +
+      "    1: enum_message, 2\n" +
+      '    2: string, "hello"\n' +
+      "    3: int, 0\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.branch === RPC_RULE_CATEGORY)).toBe(false);
+  });
+
+  it("downgrades a file that is only commented-out content to a warning instead of a YAML-list lint error", () => {
+    const yaml =
+      "# - prefab: Player\n" +
+      "#  type: state, step\n" +
+      "#  objectRpc:\n" +
+      "#  - name: Message\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems).toHaveLength(1);
+    expect(problems[0].severity).toBe("warning");
+    expect(problems[0].message.toLowerCase()).toContain("commented out");
+  });
+
+  it("still hard-errors on a genuinely blank file (not just comments)", () => {
+    expect(runStructuralPrecheck("").some((p) => p.severity === "error")).toBe(true);
+  });
+
+  it("still hard-errors when the top level really isn't a list, even with a stray comment", () => {
+    const yaml = "# a note\nfoo: bar\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.severity === "error" && p.message.includes("must be a YAML list"))).toBe(true);
   });
 });
