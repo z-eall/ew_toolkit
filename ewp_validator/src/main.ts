@@ -18,7 +18,7 @@ import {
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
-import { pickHighestPriority, type Severity } from "./structuralPrecheck";
+import { LEGACY_FORMAT_CATEGORY, pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
 
@@ -252,6 +252,7 @@ const DIAGNOSIS_CATEGORIES = [
   "WEC data entry",
   "Value entry",
   "Value group",
+  LEGACY_FORMAT_CATEGORY,
   "data.yaml reference",
   "custom saved key",
   "object data",
@@ -1060,25 +1061,20 @@ clearAllBtn.addEventListener("click", () => {
   if (ok) fileManager.clearAll();
 });
 
-// Leaving the page (closing the tab, or navigating to another hub tool) drops
-// the in-memory files, so warn while there is unsaved work.
+// Leaving the page drops the in-memory files, so warn while there is unsaved
+// work. This one handler covers every way out that clears them: closing the
+// tab, reloading, and clicking a hub nav link to another sub-site (each sub-site
+// is its own document, so those links are full navigations that fire unload).
 window.addEventListener("beforeunload", (e) => {
   if (fileManager.hasUnsavedWork()) {
     e.preventDefault();
-    e.returnValue = "";
+    // A non-empty returnValue is required to actually raise the native leave
+    // dialog: an empty string is the legacy signal for "no prompt", so several
+    // browsers (Firefox, Safari, older Chrome) silently skipped it — which is
+    // why closing/switching on the live site never warned. The text itself is
+    // ignored by modern browsers, but the value must be truthy.
+    e.returnValue = "You have unsaved changes.";
   }
-});
-// The in-app nav links are same-document navigations that beforeunload also
-// covers, but a same-origin click can feel abrupt — confirm explicitly first.
-document.querySelectorAll<HTMLAnchorElement>(".site-nav .nav-link").forEach((link) => {
-  if (link.classList.contains("active")) return;
-  link.addEventListener("click", (e) => {
-    if (!fileManager.hasUnsavedWork()) return;
-    const ok = confirm(
-      "You have unsaved changes.\n\nLeaving this tool clears the loaded files from memory. Save first if you want to keep them.\n\nLeave anyway?",
-    );
-    if (!ok) e.preventDefault();
-  });
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is

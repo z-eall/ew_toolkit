@@ -118,11 +118,15 @@ const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "ti
 
 // Undocumented/legacy constructs on an EWP rule entry that are live-tested to
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
-// notices and stripped before ajv so they don't also raise a hard error.
+// notices and stripped before ajv so they don't also raise a hard error. They
+// carry their own "Legacy format entry" category (not the EWP-rule-entry one)
+// so the Problems panel can filter them apart — the wording follows Jere's
+// docs, which call these "Legacy format" rather than "Old format".
+export const LEGACY_FORMAT_CATEGORY = "Legacy format entry";
 const LEGACY_DELAY_MESSAGE =
-  "Old format: a top-level `delay:`. It still works, but we recommend using the latest format.";
+  "Legacy format: a top-level `delay:`. It still works, but we recommend using the latest format.";
 const legacySpawnMessage = (key: string) =>
-  `Old format: a single-line \`${key}:\`. It still works, but we recommend using the latest format.`;
+  `Legacy format: a single-line \`${key}:\`. It still works, but we recommend using the latest format.`;
 
 function checkPrefabRequiredness(item: Record<string, unknown>): string | null {
   const typeValue = typeof item.type === "string" ? item.type.split(",")[0].trim() : "";
@@ -237,7 +241,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
         problems.push({
           severity: "info",
           message: LEGACY_DELAY_MESSAGE,
-          branch: BRANCH_TITLES.ewpRuleEntry,
+          branch: LEGACY_FORMAT_CATEGORY,
           range: findPairRange(itemNode, "delay") ?? itemRange,
         });
       }
@@ -247,7 +251,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
           problems.push({
             severity: "info",
             message: legacySpawnMessage(key),
-            branch: BRANCH_TITLES.ewpRuleEntry,
+            branch: LEGACY_FORMAT_CATEGORY,
             range: findPairRange(itemNode, key) ?? itemRange,
           });
         }

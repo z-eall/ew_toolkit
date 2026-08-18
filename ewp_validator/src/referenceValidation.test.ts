@@ -233,6 +233,54 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(runReferenceValidation(files)).toEqual([]);
   });
 
+  it("tells a live read whose only <save_..> is commented out apart from a truly missing write", () => {
+    // The `truceday` case: `<load_truceday=0>` and `bannedKeys: truceday` are
+    // live reads, but the two `<save_truceday_..>` writes are toggled off in
+    // comments at the bottom of the file. The commented save must not count as a
+    // live write (round 2), but it *is* visible proof — so instead of the
+    // generic "no <save_..> found", the read is flagged with a message that
+    // points at the commented-out write specifically.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: poke, findFactionOfficers\n  objectRpc:\n" +
+          "  - name: Message\n    2: string, <msgOfficerScout_truce<eq_1_<load_truceday=0>>>\n\n" +
+          "- prefab: fx_siegebomb_explosion\n  type: create\n  bannedKeys: truceday 1\n\n" +
+          "# - type: key, bfvrealday 7,14,21\n  # exec: <save_truceday_1>\n\n" +
+          "# - type: key, bfvrealday 1;6,8;13,15;20\n  # exec: <save_truceday_0>\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.message.includes("truceday"));
+    // One per live read: <load_truceday> and bannedKeys: truceday.
+    expect(problems).toHaveLength(2);
+    for (const p of problems) {
+      expect(p).toMatchObject({ severity: "info", kind: "custom-key" });
+      expect(p.message).toContain("is read");
+      expect(p.message).toContain("commented out");
+      // Not the generic "there is no write anywhere" wording.
+      expect(p.message).not.toContain("no <save_..> found");
+    }
+  });
+
+  it("tells a live <save_..> whose only read is commented out apart from a truly unread write", () => {
+    // Mirror of the truceday case on the write side.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Beehive\n  type: create\n  command: <save_beacon_1>\n\n" +
+          "# - prefab: Chest\n  # type: create\n  # command: <load_beacon=0>\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.message.includes("beacon"));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "info", kind: "custom-key" });
+    expect(problems[0].message).toContain("is written");
+    expect(problems[0].message).toContain("commented out");
+    expect(problems[0].message).not.toContain("never read");
+  });
+
   it("does not blank out a '#' that follows real content — e.g. a chat command inside a block scalar", () => {
     // `s Say #hello` is live block-scalar content, not a comment (YAML would
     // only treat a leading or whitespace-preceded '#' as a comment starter on

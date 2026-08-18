@@ -291,6 +291,15 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   const dataUsages: { name: string; occ: Occurrence }[] = [];
   const keyWrites = new Map<string, Occurrence[]>();
   const keyReads = new Map<string, Occurrence[]>();
+  // Key names that appear as a `<save_..>` write / `<load_..>`/`<clear_..>` read
+  // *inside a comment*. A commented-out template is not a live occurrence (round
+  // 2: it must not be flagged on its own, nor count as a live write/read), but
+  // it is still visible proof the scripter knows the key. Tracking it lets the
+  // orphan check tell "the counterpart is only commented out" (e.g. a `truceday`
+  // save toggled off at the bottom of the file) apart from "there is no
+  // counterpart anywhere" — the two get different messages below.
+  const commentedWriteNames = new Set<string>();
+  const commentedReadNames = new Set<string>();
 
   for (const file of files) {
     const doc = parseDocument(file.text);
@@ -301,6 +310,16 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const { writes, reads } = scanKeyOccurrences(stripLineComments(file.text));
     for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
     for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
+
+    // Re-scan the raw text (comments intact). stripLineComments preserves
+    // offsets, so any raw occurrence whose start offset the live scan did not
+    // also yield is one that sits inside a comment. Those feed only the
+    // commented-name sets, never the flaggable maps above.
+    const liveWriteStarts = new Set(writes.map((w) => w.range[0]));
+    const liveReadStarts = new Set(reads.map((r) => r.range[0]));
+    const rawScan = scanKeyOccurrences(file.text);
+    for (const w of rawScan.writes) if (!liveWriteStarts.has(w.range[0])) commentedWriteNames.add(w.key);
+    for (const r of rawScan.reads) if (!liveReadStarts.has(r.range[0])) commentedReadNames.add(r.key);
 
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
@@ -394,27 +413,37 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
   const writeKeyNames = [...keyWrites.keys()];
   const readKeyNames = [...keyReads.keys()];
+  const commentedWrites = [...commentedWriteNames];
+  const commentedReads = [...commentedReadNames];
 
   for (const [name, occs] of keyReads) {
     if (writeKeyNames.some((w) => keysCompatible(name, w))) continue;
+    // A compatible <save_..> exists but only inside a comment: point at that
+    // rather than sending the scripter off to check ewp_data.yaml.
+    const message = commentedWrites.some((w) => keysCompatible(name, w))
+      ? `Custom saved key '${name}' is read here, but its only <save_..> is commented out — uncomment the write, or remove this read.`
+      : `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message,
         range: occ.range,
       });
     }
   }
   for (const [name, occs] of keyWrites) {
     if (readKeyNames.some((r) => keysCompatible(name, r))) continue;
+    const message = commentedReads.some((r) => keysCompatible(name, r))
+      ? `Custom saved key '${name}' is written (<save_..>), but its only read is commented out — uncomment the read, or remove this write.`
+      : `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
         severity: "info",
         kind: "custom-key",
-        message: `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`,
+        message,
         range: occ.range,
       });
     }

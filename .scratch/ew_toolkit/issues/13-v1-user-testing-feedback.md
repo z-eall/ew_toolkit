@@ -89,3 +89,52 @@ Monaco-editor verification wasn't reliable to automate this round). Case 4
 verified via a rendered support page.
 
 (open for further rounds — awaiting more of the user's test cases)
+
+Closed for now on 2026-08-18: the scripter (user) has run enough self-testing
+rounds; further progress is blocked on external users trying the deployed
+tool and reporting back. Reopen (set back to `in-progress`) once new
+external-user feedback comes in.
+
+### Round 3 — leave-prompt, legacy-format category, comment-suppressed reads (reopened 2026-08-18)
+
+Reopened the same day with a mix of functionality and validation corrections
+from the scripter's continued self-testing:
+
+1. **Leave prompt never fired on the live site** (`main.ts`). The `beforeunload`
+   guard set `e.returnValue = ""`; an empty string is the legacy "no prompt"
+   signal, so Firefox/Safari/older Chrome silently skipped the native dialog —
+   the live site warned on neither tab-close nor a switch to another hub
+   sub-site. Set `returnValue` to a non-empty string so the dialog actually
+   raises. The separate `.nav-link` `confirm()` handler was removed: each
+   sub-site is its own document, so those links are full navigations already
+   covered by `beforeunload` — keeping both now double-prompted.
+2. **New "Legacy format entry" diagnosis category** (`structuralPrecheck.ts` +
+   `main.ts`). The legacy `delay:`/`spawn:`/`swap:` info notices previously rode
+   under the "EWP rule entry" category; they now carry their own
+   `LEGACY_FORMAT_CATEGORY` branch so the Problems panel can filter them apart.
+   Wording changed from "Old format:" to "Legacy format:" to match Jere's docs.
+3. **Live reads whose only `<save_..>` is commented out** (`referenceValidation.ts`).
+   The `truceday` case: `<load_truceday=0>` and `bannedKeys: truceday` are live
+   reads, but both `<save_truceday_..>` writes are toggled off in comments. Round
+   2 (rightly) stopped commented templates counting as *live* writes, which left
+   these live reads flagged as a generic "no `<save_..>` found". Rather than
+   silently suppress, the check now distinguishes "the counterpart is only
+   commented out" from "there is no counterpart anywhere" and emits a *different*
+   message for the former: **"'X' is read here, but its only `<save_..>` is
+   commented out — uncomment the write, or remove this read"**, and the mirror
+   **"'X' is written (`<save_..>`), but its only read is commented out …"**.
+   Detection: re-scan the raw text; since `stripLineComments` preserves offsets,
+   any raw `<save/load/clear>` occurrence whose start offset the live (stripped)
+   scan didn't yield is a commented one (`commentedWriteNames`/
+   `commentedReadNames`). Scoped to the `<...>` template forms that comment-
+   stripping already governs — a commented `keys:`/`type: key` read (never seen
+   by the YAML AST or the raw scan) still falls to the generic message. This is
+   the only rule that inspects comments; the data.yaml-reference checks are
+   AST-only, so nothing there needed the same treatment.
+
+Regression tests added: `referenceValidation.test.ts` (truceday read side +
+write-side mirror), and
+`structuralPrecheck.test.ts` (legacy notices assert `Legacy format:` wording +
+`LEGACY_FORMAT_CATEGORY` branch). 98 tests passing, type-check + build clean.
+The "Legacy format entry" category was confirmed rendering live in the
+Problems-panel category filter.

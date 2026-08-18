@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
+import { guessBranch, LEGACY_FORMAT_CATEGORY, runStructuralPrecheck } from "./structuralPrecheck";
 
 describe("guessBranch", () => {
   it("guesses valueGroup when valueGroup is present", () => {
@@ -93,20 +93,27 @@ describe("runStructuralPrecheck", () => {
     expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
   });
 
-  it("flags a legacy top-level delay: as a blue notice, not an error — ticket 13", () => {
+  it("flags a legacy top-level delay: under the Legacy format entry category, not an error — ticket 13", () => {
     const yaml = "- prefab: dungeon_queen_door_custom\n  type: change, state true\n  delay: 18\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
     const flag = problems.find((p) => p.severity === "info" && p.message.includes("delay"));
     expect(flag).toBeDefined();
     expect(yaml.slice(...flag!.range).trim()).toBe("delay: 18");
+    // Renamed to match Jere's docs, and carries its own filterable category.
+    expect(flag!.message).toContain("Legacy format:");
+    expect(flag!.message).not.toContain("Old format");
+    expect(flag!.branch).toBe(LEGACY_FORMAT_CATEGORY);
   });
 
-  it("flags a legacy single-line spawn: string as a blue notice, not an error — ticket 13", () => {
+  it("flags a legacy single-line spawn: string under the Legacy format entry category, not an error — ticket 13", () => {
     const yaml = "- prefab: Beehive\n  type: create\n  spawn: fx_BonusYield, 0,0,1\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
-    expect(problems.some((p) => p.severity === "info" && p.message.includes("spawn"))).toBe(true);
+    const flag = problems.find((p) => p.severity === "info" && p.message.includes("spawn"));
+    expect(flag).toBeDefined();
+    expect(flag!.message).toContain("Legacy format:");
+    expect(flag!.branch).toBe(LEGACY_FORMAT_CATEGORY);
   });
 
   it("reports YAML syntax errors and skips downstream structural checks for that file", () => {
