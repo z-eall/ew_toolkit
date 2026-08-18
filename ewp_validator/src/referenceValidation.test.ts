@@ -233,6 +233,17 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(runReferenceValidation(files)).toEqual([]);
   });
 
+  it("does not blank out a '#' that follows real content — e.g. a chat command inside a block scalar", () => {
+    // `s Say #hello` is live block-scalar content, not a comment (YAML would
+    // only treat a leading or whitespace-preceded '#' as a comment starter on
+    // an otherwise-empty line prefix); the write here must still be tracked.
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: poke\n  exec: |\n    s Say #hello <save_greeted_1>\n" },
+      { id: "b", text: "- prefab: Player\n  type: create\n  keys: greeted 1\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
   it("does not cross-report between the data.yaml namespace and the custom-key namespace", () => {
     const files = [{ id: "a", text: "- name: some_data\n  ints:\n  - level, 1\n" }];
     const problems = runReferenceValidation(files);

@@ -159,24 +159,33 @@ interface RawKeyOccurrence {
 
 const KEY_HEAD_RE = /^<(save\+\+|save--|save|load|clear)_/;
 
-// A `#` starts a YAML comment when it's at the start of a line or preceded by
-// whitespace (the spec's rule); anywhere else it's literal content (e.g. inside
-// a block scalar). scanKeyOccurrences is a raw text scan with no comment
-// awareness of its own, so a save/load/clear template written inside a
-// commented-out line would otherwise still be picked up as live — blank out
-// comment text first, preserving length/offsets so ranges stay valid.
+// scanKeyOccurrences is a raw text scan with no comment awareness of its own,
+// so a save/load/clear template written inside a commented-out line would
+// otherwise still be picked up as live. Blank out whole-line comments only —
+// a line whose only content before `#` is indentation — preserving
+// length/offsets so ranges stay valid. Deliberately narrower than YAML's full
+// comment rule (which also allows a trailing `# comment` after real content):
+// a `#` following real content on the same line is left untouched, because
+// that's exactly the shape of a block scalar's literal content (`exec: |` /
+// in-game chat commands like `s Say #hello`), which must never be blanked.
 function stripLineComments(text: string): string {
   const out = text.split("");
+  let lineStart = 0;
   let i = 0;
   while (i < text.length) {
-    if (text[i] === "#" && (i === 0 || /\s/.test(text[i - 1]))) {
+    if (text[i] === "\n") {
+      lineStart = i + 1;
+      i++;
+      continue;
+    }
+    if (text[i] === "#" && /^\s*$/.test(text.slice(lineStart, i))) {
       while (i < text.length && text[i] !== "\n") {
         out[i] = " ";
         i++;
       }
-    } else {
-      i++;
+      continue;
     }
+    i++;
   }
   return out.join("");
 }
