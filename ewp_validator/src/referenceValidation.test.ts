@@ -154,8 +154,7 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "custom-key" });
     expect(problems[0].message).toContain("myFlag");
     expect(problems[0].message).toContain("ewp_data.yaml");
-    // Restored wording — ticket 13
-    expect(problems[0].message).toContain("before treating this as a bug");
+    expect(problems[0].message).toContain("Verify in expand_prefabs*/ewp_data.yaml");
   });
 
   it("flags a <save_...> write with no matching read anywhere loaded as a blue notice, not a warning — ticket 13", () => {

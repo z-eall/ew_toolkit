@@ -1073,19 +1073,14 @@ clearAllBtn.addEventListener("click", () => {
 });
 
 // Leaving the page drops the in-memory files, so warn while there is unsaved
-// work. Two complementary guards:
-//
-// 1. beforeunload covers closing the tab and reloading — the only ways out a
-//    script can't intercept ahead of time. Kept as a backstop even though (2)
-//    now handles nav-link clicks directly, because it's the only guard that
-//    fires for those cases at all.
-// 2. An explicit confirm() on same-tab nav-link clicks (Home, EWP Validator,
-//    Support — the hub's other sub-sites) below. Browsers have grown
-//    increasingly inconsistent about *whether* they actually surface the
-//    native beforeunload dialog (sticky-activation requirements, per-browser
-//    policy changes over time) even when preventDefault()/returnValue are set
-//    correctly — so for the one case we can intercept ourselves, don't depend
-//    on it.
+// work. Nav-link clicks (Home, EWP Validator, Support) are plain <a href>
+// navigations to a different page, not SPA routing — so they unload the page
+// exactly like closing the tab or reloading does, and this single native
+// handler covers all of those paths. (An earlier version added a second,
+// explicit confirm() just for nav-link clicks, reasoning that beforeunload
+// was unreliable — but that stacked a second native "Leave site?" dialog on
+// top of it, since the click's own navigation still triggers beforeunload
+// underneath. Removed once the real beforeunload bug below was fixed.)
 window.addEventListener("beforeunload", (e) => {
   if (fileManager.hasUnsavedWork()) {
     e.preventDefault();
@@ -1096,16 +1091,6 @@ window.addEventListener("beforeunload", (e) => {
     // ignored by modern browsers, but the value must be truthy.
     e.returnValue = "You have unsaved changes.";
   }
-});
-
-document.querySelectorAll<HTMLAnchorElement>(".site-nav-links .nav-link").forEach((link) => {
-  link.addEventListener("click", (e) => {
-    if (!fileManager.hasUnsavedWork()) return;
-    const ok = confirm(
-      "Leave the validator?\n\nYou have unsaved changes. Make sure you've saved anything you want to keep — leaving now discards it.",
-    );
-    if (!ok) e.preventDefault();
-  });
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is

@@ -58,8 +58,8 @@ export function checkFileName(name: string): FileNameCheck {
         severity: "info",
         branch: LEGACY_FORMAT_CATEGORY,
         message:
-          `Legacy filename: '${name}' is the old data-processor name. It still works, ` +
-          `but we recommend renaming it to '${target}' in the /config/data directory.`,
+          `Legacy filename: 'expand_data*.yaml' is the old data file name. It still works, ` +
+          `but we recommend renaming it to '${target}' and move into the '/config/data' directory.`,
         range: [0, 0],
       },
     };

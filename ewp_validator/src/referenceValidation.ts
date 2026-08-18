@@ -475,7 +475,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     // rather than sending the scripter off to check ewp_data.yaml.
     const message = commentedWrites.some((w) => keysCompatible(name, w))
       ? `Custom saved key '${name}' is read here, but its only <save_..> is commented out — uncomment the write, or remove this read.`
-      : `Custom saved key '${name}' with no <save_..> found in the loaded files — check expand_world/ewp_data.yaml before treating this as a bug.`;
+      : `Custom saved key '${name}' with no <save_..> found in the loaded files — Verify in expand_prefabs*/ewp_data.yaml.`;
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
