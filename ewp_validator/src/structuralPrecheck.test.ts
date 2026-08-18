@@ -61,14 +61,16 @@ describe("runStructuralPrecheck", () => {
   });
 
   it("scopes a typo'd key to a single error naming the guessed branch, not the raw oneOf noise", () => {
-    const yaml = "- prefeb: Bonemass\n  type: create\n  chance: 0.1\n";
+    // A real prefab is present so the only fault is the typo'd key — isolating
+    // it from the (now hard-error) missing-prefab check.
+    const yaml = "- prefab: Bonemass\n  type: create\n  chace: 0.1\n";
     const problems = runStructuralPrecheck(yaml);
     const errors = problems.filter((p) => p.severity === "error");
     expect(errors).toHaveLength(1);
     expect(errors[0].branch).toBe("EWP rule entry");
-    expect(errors[0].message).toContain("prefeb");
+    expect(errors[0].message).toContain("chace");
     // range should point at the bad key: value pair, not the whole entry
-    expect(yaml.slice(...errors[0].range).trim()).toBe("prefeb: Bonemass");
+    expect(yaml.slice(...errors[0].range).trim()).toBe("chace: 0.1");
   });
 
   it("surfaces the ticket 07 data:/name: hint as a warning instead of a generic mismatch error", () => {
@@ -158,16 +160,90 @@ describe("runStructuralPrecheck", () => {
     expect(problems[0].message).toContain("must be a YAML list");
   });
 
-  it("warns on a missing prefab for a type that requires one, per ticket 09", () => {
+  it("errors on a missing prefab for a type that requires one (was a warning, now hard error)", () => {
     const yaml = "- type: create\n  chance: 0.1\n";
     const problems = runStructuralPrecheck(yaml);
-    expect(problems.some((p) => p.severity === "warning" && p.message.includes("prefab"))).toBe(true);
+    const err = problems.find((p) => p.message.includes("prefab"));
+    expect(err).toBeDefined();
+    expect(err!.severity).toBe("error");
+    expect(err!.message).toContain("'create'");
+    // Points at the `type:` field, not the whole entry.
+    expect(yaml.slice(...err!.range).trim()).toBe("type: create");
   });
 
-  it("does not warn on a missing prefab for the documented prefab-less types", () => {
+  it("errors with '(none)' when there is neither a prefab nor any trigger type", () => {
+    const yaml = "- chance: 0.1\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.message.includes("prefab"));
+    expect(err).toBeDefined();
+    expect(err!.severity).toBe("error");
+    expect(err!.message).toContain("(none)");
+  });
+
+  it("does not flag a missing prefab for the documented prefab-less singular types", () => {
     for (const type of ["globalkey", "key", "custom", "event", "time", "realtime"]) {
       const problems = runStructuralPrecheck(`- type: ${type}\n`);
-      expect(problems.some((p) => p.message.includes("expects a non-empty 'prefab'"))).toBe(false);
+      expect(problems.some((p) => p.message.includes("needs a 'prefab'"))).toBe(false);
     }
+  });
+
+  it("does not flag a prefab-less `types:` list (key/custom/event/realtime) — merged type/types rule", () => {
+    const samples = [
+      "- types:\n  - key, *missionsuccess 5\n",
+      "- types:\n  - custom, *\n",
+      "- types:\n  - event, hello\n  - realtime, minute 0,5\n",
+    ];
+    for (const yaml of samples) {
+      expect(runStructuralPrecheck(yaml).some((p) => p.message.includes("needs a 'prefab'"))).toBe(false);
+    }
+  });
+
+  it("errors on a `types:` list that includes a prefab-requiring type (say), naming it", () => {
+    const yaml = "- types:\n  - say, hello\n  - realtime, minute 0,5\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.message.includes("prefab"));
+    expect(err).toBeDefined();
+    expect(err!.severity).toBe("error");
+    expect(err!.message).toContain("'say'");
+    expect(err!.message).not.toContain("'realtime'"); // realtime is prefab-less, not named
+    // Range points at the `types:` field.
+    expect(yaml.slice(err!.range[0], err!.range[0] + 6)).toBe("types:");
+  });
+
+  it("does not flag the round example: prefab-less `types:` with a poke block", () => {
+    const yaml =
+      "- types:\n" +
+      "  - key, *missionsuccess 5\n" +
+      "  poke:\n" +
+      "  - prefab: Player\n" +
+      "    maxDistance: 20000\n" +
+      "    parameter: 5starsMessage\n" +
+      "    delay: 10\n";
+    expect(runStructuralPrecheck(yaml).some((p) => p.message.includes("needs a 'prefab'"))).toBe(false);
+  });
+
+  it("diagnoses a typed-list field emptied by a commented-out item, pointing at the comment line", () => {
+    // `floats:` parses to null because its only item is commented out; ajv just
+    // says "/floats must be array" at the key. Recognize the commented-out shape
+    // and point at the disabled line instead.
+    const yaml =
+      "- name: fireMineRemoveCheck\n" + //
+      "  ints:\n" +
+      "  - firemine, 1\n" +
+      "  floats:\n" +
+      "#  - fireMineStamp, <par_1>\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message === "/floats must be array")).toBe(false);
+    const flag = problems.find((p) => p.message.includes("floats") && p.message.includes("commented out"));
+    expect(flag).toBeDefined();
+    // Points at the commented-out line (line 5), not the `floats:` key on line 4.
+    expect(yaml.slice(0, flag!.range[0]).split("\n").length).toBe(5);
+    expect(yaml.slice(...flag!.range)).toContain("fireMineStamp");
+  });
+
+  it("still errors plainly on an empty typed-list field with no commented-out item", () => {
+    const yaml = "- name: x\n  floats:\n  strings:\n  - a, b\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message.includes("floats") && p.message.includes("array"))).toBe(true);
   });
 });

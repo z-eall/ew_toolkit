@@ -45,7 +45,12 @@ interface Occurrence {
 // `data:` fields are deliberately excluded: per PrefabData.cs, that field is
 // a single-filter shorthand (`Filters([data.data], ...)`), a different
 // semantic despite the same field name, and not scoped by ticket 06.
-const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops"];
+// `filter` names a data entry used as an object-data filter (docs/scripting.md):
+// same namespace as `data:`, and a comma value is the inline `type, key, value`
+// shorthand (isBarewordReference already excludes it). Its list sibling
+// `filters` is handled separately below, item by item.
+const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops", "filter"];
+const TOP_LEVEL_DATA_REF_LIST_FIELDS = ["filters"];
 
 function isBarewordReference(raw: unknown): raw is string {
   if (typeof raw !== "string") return false;
@@ -356,6 +361,9 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
 
+    const addDataUsage = (name: string, range: [number, number]) =>
+      dataUsages.push({ name: name.trim(), occ: { fileId: file.id, range } });
+
     for (const itemNode of root.items) {
       if (!isMap(itemNode)) continue;
       const value = itemNode.toJSON() as Record<string, unknown>;
@@ -376,8 +384,22 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         // neither is verifiable here, so both fall through unflagged.
         const isRef = field === "drops" ? isDropsReference(raw) : isBarewordReference(raw);
         if (!isRef) continue;
-        const range = findPairRange(itemNode, field) ?? nodeRange(itemNode);
-        dataUsages.push({ name: (raw as string).trim(), occ: { fileId: file.id, range } });
+        addDataUsage(raw as string, findPairRange(itemNode, field) ?? nodeRange(itemNode));
+      }
+
+      // List-valued reference fields (`filters:`): every bareword item names a
+      // data entry. Walk the AST seq so each undefined name points at its own
+      // line rather than at the whole field.
+      for (const field of TOP_LEVEL_DATA_REF_LIST_FIELDS) {
+        const seqNode = getPairValueNode(itemNode, field);
+        if (!seqNode || !isSeq(seqNode as any)) continue;
+        for (const itemScalar of (seqNode as any).items) {
+          const raw = (itemScalar as { value?: unknown })?.value;
+          if (!isBarewordReference(raw)) continue;
+          const itemHasRange = !!(itemScalar as any).range;
+          const range = itemHasRange ? nodeRange(itemScalar as any) : findPairRange(itemNode, field) ?? nodeRange(itemNode);
+          addDataUsage(raw, range);
+        }
       }
 
       if (typeof value.keys === "string") {
@@ -408,8 +430,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
           if (!isMap(nested)) continue;
           const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
           if (!isBarewordReference(nestedValue.data)) continue;
-          const range = findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any);
-          dataUsages.push({ name: (nestedValue.data as string).trim(), occ: { fileId: file.id, range } });
+          addDataUsage(nestedValue.data as string, findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any));
         }
       }
     }

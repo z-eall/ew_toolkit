@@ -60,6 +60,43 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(problems.some((p) => p.message.includes("undefined_loot"))).toBe(true);
   });
 
+  it("flags an undefined filter: reference the same way as data:", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: fireMineDispenserCheck\n" }];
+    const problems = runReferenceValidation(files);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", kind: "data-reference" });
+    expect(problems[0].message).toContain("fireMineDispenserCheck");
+  });
+
+  it("flags each undefined name in a filters: list, and resolves defined ones", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  filters:\n  - fireMineStopperCheck\n  - knownFilter\n" +
+          "\n- name: knownFilter\n  ints:\n  - a, 1\n",
+      },
+    ];
+    const problems = runReferenceValidation(files);
+    const refErrors = problems.filter((p) => p.kind === "data-reference" && p.severity === "error");
+    expect(refErrors).toHaveLength(1);
+    expect(refErrors[0].message).toContain("fireMineStopperCheck");
+    expect(refErrors.some((p) => p.message.includes("knownFilter"))).toBe(false);
+  });
+
+  it("does not treat an inline `filter: type, key, value` shorthand as a reference", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: string, boss, Bonemass\n" }];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("resolves a filter: reference defined as a data entry name", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: bossCheck\n" },
+      { id: "b", text: "- name: bossCheck\n  ints:\n  - boss, 1\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
   it("checks spawn[]/swap[] nested data: fields against the same namespace", () => {
     const files = [
       {

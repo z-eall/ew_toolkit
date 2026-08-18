@@ -7,6 +7,7 @@
 import * as monaco from "monaco-editor";
 import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
+import { CUSTOM_KEY_CATEGORY, DATA_REFERENCE_CATEGORY } from "./diagnosisCategories";
 import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 
 export interface LoadedFile {
@@ -45,8 +46,8 @@ const MARKER_OWNER = "ewp-toolkit";
 const VALIDATE_DEBOUNCE_MS = 200;
 
 const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key", string> = {
-  "data-reference": "data.yaml reference",
-  "custom-key": "custom saved key",
+  "data-reference": DATA_REFERENCE_CATEGORY,
+  "custom-key": CUSTOM_KEY_CATEGORY,
 };
 
 export class FileManager {

@@ -230,3 +230,48 @@ multiple hits, comment/value exclusion, clean + unparseable input) and a
 key" is gone and one `Formatting` error lands on the right line. 120 tests
 passing, type-check + build clean; verified live against the scripter's
 dispenser snippet (two `::` flagged at their exact lines 25 & 38).
+
+### Round 7 — data-entry references, merged prefab rule, commented-out lists (added 2026-08-18)
+
+Three follow-on fixes from the same testing session.
+
+**1. `filter:`/`filters:` as data-entry references + category rename + dynamic
+filter menu.** `referenceValidation.ts` now treats a top-level `filter:` (single
+bareword) and `filters:` (a list, walked item by item so each undefined name
+points at its own line) as data-entry references, flagging undefined ones with
+the same "Undefined data entry reference" error as `data:`. Comma shorthand and
+`<...>` values still fall through (`isBarewordReference`). The category label was
+renamed **"data.yaml reference" → "Data entry reference"** — after the round-4
+filename gate, `expand_data*.yaml` files are also a source, so "data.yaml" was
+too narrow. The whole category vocabulary moved into a new unit-tested module
+`diagnosisCategories.ts` (branch titles single-sourced from
+`structuralPrecheck`'s `BRANCH_TITLES`), and the Problems-panel category filter
+is now **dynamic**: `presentSortedCategories` lists only the categories present
+in the current diagnoses, ascending alphabetical, and the labels are sentence
+("Proper") case except EWP/WEC abbreviations (fixing the old lowercase "custom
+saved key"/"object data").
+
+**2. Merged `type:`/`types:` prefab-requiredness, now a hard error.** The old
+check only looked at singular `type:`, so a `- types: [key, ...]` entry with no
+prefab was wrongly told it "needs a prefab". `collectTypeWords` now gathers the
+leading word of `type:` and of every `types:` item; a prefab satisfies all of
+them, and every prefab-less type (globalkey/key/custom/event/time/realtime —
+confirmed against docs/scripting.md, "There is no prefab or position for this
+type…") passes. A prefab-requiring type with no prefab is now an **error**
+(ticket 09 had it as a warning; the scripter asked to promote it), naming only
+the offending type(s) and anchored on the `type:`/`types:` field.
+
+**3. Commented-out typed-list fields.** A field emptied by commenting out its
+only item (`floats:` then `#  - fireMineStamp, <par_1>`) parses to null, so ajv
+emitted "/floats must be array" at the key. `commentedOutListItemRange` detects
+the commented-out list-item shape and, in the ajv loop, replaces that error with
+a warning pointing at the *disabled line* ("`floats:` has no entries — its only
+item is commented out…"). Narrowly guarded (array-type error, depth-1 field), so
+a genuinely empty field still gets the plain error.
+
+135 tests passing (was 120), type-check + build clean. Verified live: the two
+`[Data entry reference]` errors, the `type 'say'` error on the `types:` line,
+the commented-out `floats:` warning on the comment line, and the dynamic
+category menu (only present categories, sorted, "Data entry reference" renamed).
+Two-axis code review clean on Spec; Standards judgement-call refactors applied
+(single-sourced branch titles, DRY'd the reference-collection loops).
