@@ -159,6 +159,28 @@ interface RawKeyOccurrence {
 
 const KEY_HEAD_RE = /^<(save\+\+|save--|save|load|clear)_/;
 
+// A `#` starts a YAML comment when it's at the start of a line or preceded by
+// whitespace (the spec's rule); anywhere else it's literal content (e.g. inside
+// a block scalar). scanKeyOccurrences is a raw text scan with no comment
+// awareness of its own, so a save/load/clear template written inside a
+// commented-out line would otherwise still be picked up as live — blank out
+// comment text first, preserving length/offsets so ranges stay valid.
+function stripLineComments(text: string): string {
+  const out = text.split("");
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === "#" && (i === 0 || /\s/.test(text[i - 1]))) {
+      while (i < text.length && text[i] !== "\n") {
+        out[i] = " ";
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+  return out.join("");
+}
+
 // A saved-key template can nest `<...>` inside its name (dynamic parameters) and
 // its name can contain `/`, so a flat character-class regex can't extract it.
 // Scan the whole document, balance the outer `<...>`, then keep only the
@@ -182,13 +204,13 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
     if (head[1].startsWith("save")) {
       const segs = splitTopLevel(inner, "_");
       key = segs.length > 1 ? segs.slice(0, -1).join("_") : (segs[0] ?? "");
-      if (key) writes.push({ key, range });
+      if (key && hasLiteral(key)) writes.push({ key, range });
     } else if (head[1] === "load") {
       key = splitTopLevel(inner, "=")[0] ?? inner;
-      if (key) reads.push({ key, range });
+      if (key && hasLiteral(key)) reads.push({ key, range });
     } else {
       key = inner;
-      if (key) reads.push({ key, range });
+      if (key && hasLiteral(key)) reads.push({ key, range });
     }
     i = end - 1;
   }
@@ -227,8 +249,11 @@ function keyToSubject(key: string): string {
 }
 
 // Does the key have any character outside a `<...>` group? A key that is purely
-// dynamic (e.g. `<pid>`) compiles to the `^.*$` matcher, which would match every
-// other key — so such a key is never allowed to drive a wildcard match.
+// dynamic (e.g. `<pid>`, `<par_1>`) compiles to the `^.*$` matcher, which would
+// match every other key — so such a key is never allowed to drive a wildcard
+// match (keysCompatible), and is skipped entirely at occurrence-recording time:
+// its real name is only known at runtime (a passed parameter or function
+// result), so there is nothing concrete here to check a read/write against.
 function hasLiteral(key: string): boolean {
   let found = false;
   walkKeySegments(
@@ -264,7 +289,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
     // Custom-saved-key templates can appear inside any string field, so this
     // one part is a whole-document text scan rather than a node walk.
-    const { writes, reads } = scanKeyOccurrences(file.text);
+    const { writes, reads } = scanKeyOccurrences(stripLineComments(file.text));
     for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
     for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
 
@@ -297,15 +322,19 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
       if (typeof value.keys === "string") {
         const range = findPairRange(itemNode, "keys") ?? nodeRange(itemNode);
-        for (const k of parseKeysField(value.keys)) recordOccurrence(keyReads, k, { fileId: file.id, range });
+        for (const k of parseKeysField(value.keys)) {
+          if (hasLiteral(k)) recordOccurrence(keyReads, k, { fileId: file.id, range });
+        }
       }
       if (typeof value.bannedKeys === "string") {
         const range = findPairRange(itemNode, "bannedKeys") ?? nodeRange(itemNode);
-        for (const k of parseKeysField(value.bannedKeys)) recordOccurrence(keyReads, k, { fileId: file.id, range });
+        for (const k of parseKeysField(value.bannedKeys)) {
+          if (hasLiteral(k)) recordOccurrence(keyReads, k, { fileId: file.id, range });
+        }
       }
       if (typeof value.type === "string") {
         const keyName = parseTypeKeyParameter(value.type);
-        if (keyName) {
+        if (keyName && hasLiteral(keyName)) {
           const range = findPairRange(itemNode, "type") ?? nodeRange(itemNode);
           recordOccurrence(keyReads, keyName, { fileId: file.id, range });
         }

@@ -51,4 +51,41 @@ regression tests in `referenceValidation.test.ts`:
    `<save_<pid>/teamlead_<par_1>>` now match on the name portion only, ignoring
    the value.
 
+### Round 2 — purely-dynamic saved keys, commented-out templates, filter/UI polish
+
+Two more `referenceValidation.ts` cases, plus two Hub UI items and one
+Problems-panel bug, reported together:
+
+1. **A saved key built entirely from passed params** — `<save_<par_1>_<par_2>>`,
+   `<clear_<rest_1>>`, `<save_<pid>_<long_playerID>>` — extract a key name that
+   is *purely* a dynamic `<...>` group with no literal characters at all. The
+   real name only exists at runtime (a passed parameter or function result), so
+   there's nothing concrete to check a read/write against. `scanKeyOccurrences`
+   and the `keys:`/`bannedKeys:`/`type: key` extraction points now all skip
+   recording an occurrence when `hasLiteral(key)` is false, instead of recording
+   it and then flagging it as an orphan.
+2. **A `<save_..>`/`type: key` pair written inside a YAML comment** — the
+   key-template scanner reads raw file text with no comment awareness, so a
+   `# exec: <save_realtimesecond_..>` was still counted as a live write even
+   though the matching `# - type: key, realtimesecond ...` read (correctly
+   skipped, since the parsed-YAML AST skips comments) wasn't — producing a false
+   "written but never read". Added `stripLineComments`, which blanks out `#...`
+   to end-of-line (comment start = start-of-line or preceded by whitespace, per
+   the YAML spec) before the raw-text scan runs, preserving offsets so ranges
+   stay valid.
+3. **Problems-panel tab counts didn't respect the category filter** —
+   `renderProblemsPanel` computed the Errors/Warnings/Info tab badges from every
+   loaded problem, then applied the category filter only when deciding which
+   rows to *list*. Narrowing the category filter left the badges showing the
+   unfiltered total. Counts are now derived from the same category-filtered
+   pool the list itself uses.
+4. **Support page**: "Expand World mods" now links to
+   https://thunderstore.io/c/valheim/p/JereKuusela/; "Jere Kuusela" shortened to
+   "Jere" to match his casual Discord IGN.
+
+Regression tests added to `referenceValidation.test.ts` for cases 1 and 2 (95
+tests passing). Case 3 verified by code inspection + type-check (interactive
+Monaco-editor verification wasn't reliable to automate this round). Case 4
+verified via a rendered support page.
+
 (open for further rounds — awaiting more of the user's test cases)
