@@ -5,6 +5,7 @@
 // one file can make a `data:` reference in another valid or invalid — so it
 // always re-runs across every loaded file, not just the one that changed).
 import * as monaco from "monaco-editor";
+import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
 import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 
@@ -276,11 +277,26 @@ export class FileManager {
   }
 
   private revalidateAll() {
+    // Filename gate (ticket 13 round 4): an "Invalid file" name skips both
+    // diagnosis passes entirely — it isn't an EWP structural file, so its
+    // shape and its data/key namespace shouldn't count. A legacy `expand_data*`
+    // name still gets fully scanned, just with an added rename notice. An
+    // unsaved draft (ephemeral, never saved) is exempt: it's an in-progress
+    // buffer named `unnamed.yaml`, not a claimed EWP file.
+    const scannable: LoadedFile[] = [];
     for (const file of this.files) {
+      const isDraft = file.ephemeral && !file.savedOnce;
+      const nameCheck = isDraft ? null : checkFileName(file.name);
+      if (nameCheck && nameCheck.verdict === "invalid") {
+        file.problems = nameCheck.problem ? [nameCheck.problem] : [];
+        continue;
+      }
       file.problems = runStructuralPrecheck(file.model.getValue());
+      if (nameCheck && nameCheck.problem) file.problems.push(nameCheck.problem);
+      scannable.push(file);
     }
 
-    const refProblems = runReferenceValidation(this.files.map((f) => ({ id: f.id, text: f.model.getValue() })));
+    const refProblems = runReferenceValidation(scannable.map((f) => ({ id: f.id, text: f.model.getValue() })));
     for (const rp of refProblems) {
       const file = this.files.find((f) => f.id === rp.fileId);
       if (!file) continue;

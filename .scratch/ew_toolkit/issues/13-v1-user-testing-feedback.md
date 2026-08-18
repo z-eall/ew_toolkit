@@ -141,3 +141,37 @@ write-side mirror + AST-field commented read), and
 `LEGACY_FORMAT_CATEGORY` branch). 99 tests passing, type-check + build clean.
 The "Legacy format entry" category was confirmed rendering live in the
 Problems-panel category filter.
+
+### Round 4 — filename gate (added 2026-08-18)
+
+Before this round the tool ran both diagnosis passes (structural pre-check +
+reference validation) on **every** loaded `.yaml`, classifying entries only by
+shape (`guessBranch`) — filenames were never inspected. EWP, however, only
+loads YAML whose name marks it a structural file, so the name is worth a check
+of its own. New pure module `fileNameCheck.ts` (+ `fileNameCheck.test.ts`),
+gated in `FileManager.revalidateAll`:
+
+1. **Current formats** — `expand_prefabs*.yaml` and `data*.yaml` classify as
+   `valid`; scanned exactly as before, no filename notice.
+2. **Legacy data-processor name** — `expand_data*.yaml` classifies as `legacy`.
+   It still works, so it's still fully scanned, but carries a blue info notice
+   under the shared `LEGACY_FORMAT_CATEGORY`: **"Legacy filename: '…' is the old
+   data-processor name … recommend renaming it to 'data<suffix>.yaml' in the
+   /config/data directory"** (suffix = whatever followed `expand_data`, casing
+   preserved). Worded as a filename recommendation, not an entry-format one.
+3. **Everything else** — a hard **"Invalid file"** error (new
+   `INVALID_FILE_CATEGORY`, registered in `main.ts`'s `DIAGNOSIS_CATEGORIES`):
+   **"'…' doesn't match an EWP structural filename … Allegedly not an EWP
+   structural file — recommended to remove it."** Both diagnosis passes are
+   **skipped** for an invalid file — it's excluded from the reference-validation
+   input entirely, so its (mis-filed) data/key namespace doesn't count either.
+
+Classification is `.yaml`-extension-required and case-insensitive on the
+prefix/extension; the singular `expand_prefab` is intentionally *not* accepted
+(only the real plural `expand_prefabs`). An unsaved draft (ephemeral, never
+saved — the `unnamed.yaml` editor buffer) is exempt from the gate so typing a
+new file isn't instantly flagged "Invalid file".
+
+Regression tests in `fileNameCheck.test.ts` (11 cases: valid/legacy/invalid
+classification, extension + casing handling, rename-target derivation, and the
+info/error `Problem` shapes). 110 tests passing, type-check + build clean.
