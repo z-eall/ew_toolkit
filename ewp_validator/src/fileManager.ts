@@ -4,6 +4,9 @@
 // and the ticket 06 reference validation (cross-file by nature — a change in
 // one file can make a `data:` reference in another valid or invalid — so it
 // always re-runs across every loaded file, not just the one that changed).
+// The typing debounce always runs both passes; add/remove/upload can be
+// deferred in "manual" validation mode (see ValidationMode) so loading or
+// rearranging a big batch doesn't re-scan the whole file set once per file.
 import * as monaco from "monaco-editor";
 import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
@@ -36,6 +39,16 @@ interface AddOptions {
   unique?: boolean;
 }
 
+/**
+ * Auto validates on every add/remove/move (plus the existing typing debounce,
+ * unaffected by this switch). Manual defers the add/remove-triggered pass —
+ * meant for loading/rearranging a big batch as one task before checking it —
+ * and leaves `validationStatus` "stale" until the user calls `validateNow()`.
+ */
+export type ValidationMode = "auto" | "manual";
+/** "none" = never validated yet; "clean" = matches the current file set; "stale" = an add/remove was deferred since the last pass. */
+export type ValidationStatus = "none" | "clean" | "stale";
+
 const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
   error: monaco.MarkerSeverity.Error,
   warning: monaco.MarkerSeverity.Warning,
@@ -56,6 +69,8 @@ export class FileManager {
   private activeId: string | null = null;
   private nextId = 1;
   private debounceHandle: ReturnType<typeof setTimeout> | undefined;
+  private validationMode: ValidationMode = "auto";
+  private validationStatus: ValidationStatus = "none";
 
   constructor(
     private editor: monaco.editor.IStandaloneCodeEditor,
@@ -70,7 +85,54 @@ export class FileManager {
     return this.files;
   }
 
-  addFile(name: string, content: string, folder = "", opts: AddOptions = {}): LoadedFile {
+  get mode(): ValidationMode {
+    return this.validationMode;
+  }
+
+  get status(): ValidationStatus {
+    return this.validationStatus;
+  }
+
+  /** Whether clicking Validate right now would do anything — single-sourced so the button's disabled state and its click guard can't drift apart. */
+  get canValidateNow(): boolean {
+    return this.validationMode === "manual" && this.files.length > 0;
+  }
+
+  /** Switching back to auto immediately runs a deferred pass so nothing is left stale. */
+  setValidationMode(mode: ValidationMode): void {
+    this.validationMode = mode;
+    if (mode === "auto" && this.validationStatus === "stale") this.revalidateAll();
+    this.onChange();
+  }
+
+  /** The Validate button's action: run the full pass on demand, regardless of mode. */
+  validateNow(): void {
+    this.revalidateAll();
+    this.onChange();
+  }
+
+  /** Runs the pass in auto mode; in manual mode, defers it and marks status "stale" instead. */
+  private revalidateOrDefer(): void {
+    if (this.validationMode === "manual") {
+      this.validationStatus = "stale";
+      return;
+    }
+    this.revalidateAll();
+  }
+
+  /**
+   * The shape every add/remove-adjacent mutator ends with: run (or defer)
+   * the validation pass, then either activate the given fallback file (first
+   * file loaded into an empty panel) or just re-render. Shared so the two
+   * halves can't drift out of sync at one call site but not another.
+   */
+  private revalidateThenSettle(fallbackId: string | null): void {
+    this.revalidateOrDefer();
+    if (this.activeId === null && fallbackId !== null) this.setActive(fallbackId);
+    else this.onChange();
+  }
+
+  private createFile(name: string, content: string, folder: string, opts: AddOptions): LoadedFile {
     const finalName = opts.unique === false ? name : this.uniqueName(name, folder);
     const id = `f${this.nextId++}`;
     const uri = monaco.Uri.parse(`file:///loaded/${id}/${encodeURIComponent(finalName)}`);
@@ -87,27 +149,35 @@ export class FileManager {
     };
     this.files.push(file);
     model.onDidChangeContent(() => this.onContentChanged(file));
-    this.revalidateAll();
-    if (this.activeId === null) this.setActive(id);
-    else this.onChange();
+    return file;
+  }
+
+  addFile(name: string, content: string, folder = "", opts: AddOptions = {}): LoadedFile {
+    const file = this.createFile(name, content, folder, opts);
+    this.revalidateThenSettle(file.id);
     return file;
   }
 
   /**
-   * Overwrite the file with the same name+folder if one exists, else add it.
-   * Uploads take this path (no ` (n)` suffixing); the caller has already
-   * confirmed any overwrite with the user.
+   * Add or overwrite a whole batch of uploaded files as one unit: every file
+   * lands before a single validation pass runs (or is deferred, in manual
+   * mode) — not one pass per file, which used to make a big upload re-scan
+   * an ever-growing file set once per file added.
    */
-  upsertUploaded(name: string, content: string, folder: string): LoadedFile {
-    const existing = this.files.find((f) => f.name === name && f.folder === folder);
-    if (existing) {
-      existing.model.setValue(content);
-      existing.dirty = false;
-      this.revalidateAll();
-      this.onChange();
-      return existing;
+  upsertUploadedBatch(entries: { name: string; content: string; folder: string }[]): LoadedFile[] {
+    const results: LoadedFile[] = [];
+    for (const { name, content, folder } of entries) {
+      const existing = this.files.find((f) => f.name === name && f.folder === folder);
+      if (existing) {
+        existing.model.setValue(content);
+        existing.dirty = false;
+        results.push(existing);
+      } else {
+        results.push(this.createFile(name, content, folder, { dirty: false, unique: false }));
+      }
     }
-    return this.addFile(name, content, folder, { dirty: false, unique: false });
+    this.revalidateThenSettle(results.length > 0 ? results[0].id : null);
+    return results;
   }
 
   /** True if a loaded file already occupies this name within this folder. */
@@ -139,7 +209,7 @@ export class FileManager {
     const activeRemoved = inFolder.some((f) => f.id === this.activeId);
     for (const f of inFolder) f.model.dispose();
     this.files = this.files.filter((f) => f.folder !== folder);
-    this.revalidateAll();
+    this.revalidateOrDefer();
     if (activeRemoved) this.setActive(this.files[0]?.id ?? null);
     else this.onChange();
   }
@@ -149,6 +219,7 @@ export class FileManager {
     for (const f of this.files) f.model.dispose();
     this.files = [];
     this.activeId = null;
+    this.validationStatus = "none";
     this.editor.setModel(null);
     this.onChange();
   }
@@ -188,7 +259,7 @@ export class FileManager {
     if (idx === -1) return;
     const [removed] = this.files.splice(idx, 1);
     removed.model.dispose();
-    this.revalidateAll(); // a removed file's data.yaml entries/keys may have been the only definition/write for something
+    this.revalidateOrDefer(); // a removed file's data.yaml entries/keys may have been the only definition/write for something
     if (this.activeId === id) {
       const next = this.files[idx] ?? this.files[idx - 1] ?? null;
       this.setActive(next?.id ?? null);
@@ -227,9 +298,7 @@ export class FileManager {
     };
     this.files.push(file);
     model.onDidChangeContent(() => this.onContentChanged(file));
-    this.revalidateAll();
-    if (this.activeId === null) this.setActive(id);
-    else this.onChange();
+    this.revalidateThenSettle(id);
     return file;
   }
 
@@ -311,6 +380,7 @@ export class FileManager {
     }
 
     for (const file of this.files) this.applyMarkers(file);
+    this.validationStatus = "clean";
   }
 
   private applyMarkers(file: LoadedFile) {

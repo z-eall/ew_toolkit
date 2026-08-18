@@ -2,7 +2,7 @@ import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import { configureMonacoYaml } from "monaco-yaml";
 import yamlWorker from "monaco-yaml/yaml.worker?worker";
-import { errorCount, FileManager, type LoadedFile, warningCount } from "./fileManager";
+import { errorCount, FileManager, type LoadedFile, type ValidationMode, warningCount } from "./fileManager";
 import {
   buildTree,
   DEFAULT_UPLOAD_SORT,
@@ -151,7 +151,20 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
             <button class="icon-btn" id="clear-all-btn" title="Clear all loaded files" aria-label="Clear all loaded files">${icon(ICONS.trash)}</button>
           </span>
         </div>
+        <div class="upload-banner" id="upload-banner">
+          <span class="spinner" id="upload-spinner" hidden></span>
+          <span id="upload-banner-text"></span>
+        </div>
         <div id="file-list"></div>
+        <div class="sidebar-footer" id="sidebar-footer">
+          <div class="mode-toggle" id="mode-toggle">
+            <button type="button" data-mode="auto" id="mode-auto-btn">Auto</button>
+            <button type="button" data-mode="manual" id="mode-manual-btn">Manual</button>
+          </div>
+          <button type="button" class="validate-btn" id="validate-btn" title="Run validation now">
+            <span class="validate-dot"></span>Validate
+          </button>
+        </div>
       </div>
       <div class="resizer-x" id="resizer-x" title="Drag to resize"></div>
       <div class="main">
@@ -228,6 +241,12 @@ const fileManager = new FileManager(editor, render);
 
 const sidebarEl = document.getElementById("sidebar") as HTMLDivElement;
 const fileListEl = document.getElementById("file-list")!;
+const uploadBannerEl = document.getElementById("upload-banner") as HTMLDivElement;
+const uploadSpinnerEl = document.getElementById("upload-spinner") as HTMLSpanElement;
+const uploadBannerTextEl = document.getElementById("upload-banner-text") as HTMLSpanElement;
+const modeAutoBtn = document.getElementById("mode-auto-btn") as HTMLButtonElement;
+const modeManualBtn = document.getElementById("mode-manual-btn") as HTMLButtonElement;
+const validateBtn = document.getElementById("validate-btn") as HTMLButtonElement;
 const filenameTextEl = document.getElementById("filename-text") as HTMLElement;
 const newFileBtn = document.getElementById("new-file-btn") as HTMLButtonElement;
 const newMenu = document.getElementById("new-menu")!;
@@ -276,6 +295,26 @@ function render() {
   renderFileList();
   renderActiveFileName();
   renderProblemsPanel();
+  renderValidationControls();
+}
+
+// True for the duration of a visible validation pass (upload, mode-switch
+// catch-up, or a manual Validate click) — guards against a rapid double-click
+// kicking off a second pass before the first one has applied its results.
+let validating = false;
+
+function renderValidationControls() {
+  const mode = fileManager.mode;
+  modeAutoBtn.classList.toggle("active", mode === "auto");
+  modeManualBtn.classList.toggle("active", mode === "manual");
+  modeAutoBtn.disabled = validating;
+  modeManualBtn.disabled = validating;
+
+  const status = fileManager.status;
+  validateBtn.classList.toggle("dot-clean", status === "clean");
+  validateBtn.classList.toggle("dot-stale", status === "stale");
+  // Nothing to trigger manually in auto mode — the pass already runs on its own.
+  validateBtn.disabled = validating || !fileManager.canValidateNow;
 }
 
 function toViewFile(file: LoadedFile): ViewFile {
@@ -823,6 +862,50 @@ interface Ingestable {
 
 const isYaml = (name: string) => /\.ya?ml$/i.test(name);
 
+// ---------- Upload/validation progress banner ----------
+// Reused for two moments: an upload's own read+check pass, and a manual
+// Validate click (or an auto-mode catch-up when switching off manual) — same
+// "here's what's happening" affordance either way.
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+// A macrotask tick, not requestAnimationFrame: rAF never fires while the tab
+// isn't actively compositing (backgrounded/minimized), which would hang the
+// validation pass forever waiting for a paint that never comes. setTimeout
+// keeps firing regardless, so the "Checking…" banner still gets its paint
+// window without depending on tab visibility.
+const nextTick = () => sleep(0);
+
+function showUploadBanner(text: string, opts: { spinner?: boolean; done?: boolean } = {}) {
+  uploadBannerTextEl.textContent = text;
+  uploadSpinnerEl.hidden = !opts.spinner;
+  uploadBannerEl.classList.add("visible");
+  uploadBannerEl.classList.toggle("done", !!opts.done);
+}
+
+function hideUploadBanner() {
+  uploadBannerEl.classList.remove("visible", "done");
+}
+
+/**
+ * Runs `pass` (the actual, synchronous validation call) with a visible
+ * "Checking…" banner around it. The `await nextTick()` before calling it
+ * matters: without it the banner text would never get painted before the
+ * (potentially chunky, cross-file) pass blocks the main thread.
+ */
+async function runVisibleValidation(total: number, pass: () => void) {
+  validating = true;
+  renderValidationControls();
+  showUploadBanner(`Checking ${plural(total, "file")} for errors…`, { spinner: true });
+  await nextTick();
+  pass();
+  showUploadBanner(`Checked ${plural(total, "file")}`, { done: true });
+  validating = false;
+  renderValidationControls();
+  await sleep(1100);
+  hideUploadBanner();
+}
+
 // The folder a newly-created or newly-uploaded loose item (one with no path/
 // folder context of its own) lands in: the active file's folder, matching
 // "append to the current selected folder" — but when nothing is loaded yet
@@ -841,7 +924,9 @@ const currentFolder = () => (fileManager.activeFile ? fileManager.activeFile.fol
 async function ingest(entries: Ingestable[], defaultFolder = "") {
   const yamls = entries.filter((e) => isYaml(e.file.name));
   if (yamls.length === 0) return;
+  const total = yamls.length;
 
+  showUploadBanner(`Loaded 0 of ${plural(total, "file")}`);
   const prepared: { name: string; content: string; folder: string }[] = [];
   for (const { file, relPath } of yamls) {
     prepared.push({
@@ -849,6 +934,9 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
       content: await file.text(),
       folder: folderFromRelativePath(relPath) || defaultFolder,
     });
+    // Reading is fast enough that this mostly just confirms the count once
+    // it's done — the real wait, if any, is the validation pass below.
+    showUploadBanner(`Loaded ${prepared.length} of ${plural(total, "file")}`);
   }
 
   const dups = prepared.filter((p) => fileManager.exists(p.name, p.folder));
@@ -858,10 +946,24 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
       `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:\n  ${names}\n\n` +
         `Overwrite ${dups.length > 1 ? "them" : "it"} with the uploaded version? Click Cancel to abort the whole upload.`,
     );
-    if (!ok) return;
+    if (!ok) {
+      hideUploadBanner();
+      return;
+    }
   }
 
-  for (const p of prepared) fileManager.upsertUploaded(p.name, p.content, p.folder);
+  // One batched add + one validation pass for the whole upload (or one
+  // deferred "stale" mark in manual mode), not one pass per file — the old
+  // per-file upsert re-scanned every already-loaded file once per new file.
+  if (fileManager.mode === "manual") {
+    fileManager.upsertUploadedBatch(prepared);
+    showUploadBanner(`Loaded ${plural(total, "file")} — not checked yet`, { done: true });
+    await sleep(1100);
+    hideUploadBanner();
+  } else {
+    await runVisibleValidation(total, () => fileManager.upsertUploadedBatch(prepared));
+  }
+
   // Every upload resets the panel to the one-time Error > Warning > Valid sort.
   currentSort = DEFAULT_UPLOAD_SORT;
   renderFileList();
@@ -918,6 +1020,33 @@ fileInput.addEventListener("change", () => {
 folderInput.addEventListener("change", () => {
   if (folderInput.files) ingest(fromFileList(folderInput.files));
   folderInput.value = "";
+});
+
+// ---------- Validation mode: Auto/Manual toggle + Validate button ----------
+// Manual mode is validator-specific, not shared with the hub's theme key.
+const VALIDATION_MODE_KEY = "ewp-validator-validation-mode";
+const storedValidationMode = (): ValidationMode =>
+  localStorage.getItem(VALIDATION_MODE_KEY) === "manual" ? "manual" : "auto";
+
+async function applyValidationMode(mode: ValidationMode) {
+  localStorage.setItem(VALIDATION_MODE_KEY, mode);
+  // Switching back to auto must catch up on anything deferred while in
+  // manual — but that catch-up pass is exactly the kind of batch re-scan the
+  // banner exists to narrate, so show it here rather than leaving Auto's own
+  // silent catch-up (fileManager.setValidationMode) to run invisibly.
+  const willCatchUp = mode === "auto" && fileManager.status === "stale";
+  if (!willCatchUp) {
+    fileManager.setValidationMode(mode);
+    return;
+  }
+  await runVisibleValidation(fileManager.allFiles.length, () => fileManager.setValidationMode(mode));
+}
+
+modeAutoBtn.addEventListener("click", () => applyValidationMode("auto"));
+modeManualBtn.addEventListener("click", () => applyValidationMode("manual"));
+validateBtn.addEventListener("click", () => {
+  if (validating || !fileManager.canValidateNow) return;
+  void runVisibleValidation(fileManager.allFiles.length, () => fileManager.validateNow());
 });
 
 sidebarEl.addEventListener("dragover", (e) => {
@@ -1202,4 +1331,5 @@ document.addEventListener("click", (e) => {
   }
 });
 
+fileManager.setValidationMode(storedValidationMode());
 render();

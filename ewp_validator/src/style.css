@@ -348,6 +348,48 @@ body {
   background: #4fd18b;
 }
 
+/* ---- Upload progress banner (sits above #file-list, pushes it down while visible) ---- */
+
+.upload-banner {
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.16s ease, opacity 0.16s ease, padding 0.16s ease;
+}
+
+.upload-banner.visible {
+  max-height: 32px;
+  opacity: 1;
+  padding: 7px 10px;
+}
+
+.upload-banner.done {
+  color: var(--muted);
+}
+
+.upload-banner .spinner {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--info);
+  flex: none;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 #file-list {
   flex: 1;
   overflow-y: auto;
@@ -490,6 +532,101 @@ body {
 
 .remove-btn:hover {
   color: var(--error);
+}
+
+/* ---- Pinned footer: Auto/Manual validation mode + Validate button ---- */
+
+.sidebar-footer {
+  flex: none;
+  border-top: 1px solid var(--border);
+  padding: 7px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-toggle {
+  display: inline-flex;
+  /* Ambient chrome background, matching .site-nav — the active button below
+     fills with --bg instead, the same pairing .nav-link.active uses against
+     .site-nav for its contrast. Both sharing one token (a bug fixed after
+     code review) made the active state invisible against its own container. */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  flex: none;
+}
+
+.mode-toggle button {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Matches .nav-link.active in the top nav rather than introducing a new
+   accent fill for what's otherwise a quiet, always-visible control. */
+.mode-toggle button.active {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.mode-toggle button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.validate-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.validate-btn:hover:not(:disabled) {
+  border-color: var(--info);
+}
+
+.validate-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.validate-btn .validate-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: none;
+  flex: none;
+}
+
+/* Green stays once a pass has run clean; yellow appears the instant an
+   add/remove/upload is deferred (manual mode) until the next pass. Reuses
+   the same green/warning tones as the file badges (.badge.ok / .badge.warn)
+   rather than introducing new semantic colors. */
+.validate-btn.dot-clean .validate-dot {
+  display: inline-block;
+  background: #4fd18b;
+}
+.validate-btn.dot-stale .validate-dot {
+  display: inline-block;
+  background: var(--warning);
 }
 
 .empty-state {
