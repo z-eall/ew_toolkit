@@ -686,10 +686,13 @@ function syncFocusedProblem(): boolean {
   const key = best && file ? `${file.id}:${best.range[0]}` : null;
   const keyChanged = key !== focusedProblemKey;
   focusedProblemKey = key;
-  // Follow the caret onto the matching severity tab — but never yank the user
-  // off the "This file" view, which already shows every severity for this file.
+  // Follow the caret onto the matching severity tab — but only when the caret
+  // actually moved to a different problem. Gating on keyChanged (rather than
+  // running on every render) keeps a manual tab click from being immediately
+  // overridden back to the cursor's severity on the re-render it triggers.
+  // Never yank the user off "This file" either, which shows every severity.
   let tabChanged = false;
-  if (best && activeTab !== "thisfile" && activeTab !== best.severity) {
+  if (keyChanged && best && activeTab !== "thisfile" && activeTab !== best.severity) {
     activeTab = best.severity;
     tabChanged = true;
   }
