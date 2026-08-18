@@ -418,8 +418,13 @@ function renderProblemsPanel() {
   }
 
   const activeId = fileManager.activeFile?.id ?? null;
+  // Category filter narrows the pool before counts/tabs are derived, so a hidden
+  // category's rows never inflate the tab badges — counts must match what's shown.
+  const categoryPassing = rows.filter(
+    (r) => !DIAGNOSIS_CATEGORY_SET.has(r.problem.branch) || categoryFilter.has(r.problem.branch),
+  );
   const counts: Record<ProblemTab, number> = { error: 0, warning: 0, info: 0, thisfile: 0 };
-  for (const { file, problem } of rows) {
+  for (const { file, problem } of categoryPassing) {
     counts[problem.severity]++;
     if (file.id === activeId) counts.thisfile++;
   }
@@ -438,9 +443,10 @@ function renderProblemsPanel() {
     activeTab === "thisfile"
       ? rows.filter((r) => r.file.id === activeId)
       : rows.filter((r) => r.problem.severity === activeTab);
-  const shown = bySeverity.filter(
-    (r) => !DIAGNOSIS_CATEGORY_SET.has(r.problem.branch) || categoryFilter.has(r.problem.branch),
-  );
+  const shown =
+    activeTab === "thisfile"
+      ? categoryPassing.filter((r) => r.file.id === activeId)
+      : categoryPassing.filter((r) => r.problem.severity === activeTab);
   if (shown.length === 0) {
     const label = activeTab === "thisfile" ? "problems in this file" : `${TAB_LABEL[activeTab].toLowerCase()} to report`;
     const suffix = bySeverity.length > 0 && !categoriesAreDefault() ? " match the category filter" : "";

@@ -12,8 +12,8 @@ const base = import.meta.env.BASE_URL;
 
 const primary: SupportEntry[] = [
   {
-    name: "Jere Kuusela",
-    desc: 'Creator of Expand World mods and owner of Valheim World Editing discord.<br />He is also a master of the art of speaking... "very efficiently".',
+    name: "Jere",
+    desc: 'Creator of <a class="mention-link" href="https://thunderstore.io/c/valheim/p/JereKuusela/" target="_blank" rel="noopener noreferrer">Expand World mods</a> and owner of Valheim World Editing discord.<br />He is also a master of the art of speaking... "very efficiently".',
     url: "https://buymeacoffee.com/jerekuusela",
     img: "https://github.com/JereKuusela.png",
   },

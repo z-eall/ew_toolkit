@@ -201,6 +201,49 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("'someFlag'"))).toBe(true);
   });
 
+  it("does not flag save/load/clear keys built entirely from passed params — nothing concrete to check", () => {
+    // <save_<par_1>_<par_2>>, <clear_<rest_1>>, and <save_<pid>_<long_playerID>>
+    // all extract a key name that is purely a dynamic <...> group (no literal
+    // characters) — the real name only exists at runtime, so there's nothing to
+    // match a read/write against and it must not be flagged either way.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: say, !savedata\n  exec: <save_<par_1>_<par_2>>\n\n" +
+          "- prefab: Player\n  type: say, !cleardata\n  exec: <clear_<rest_1>>\n\n" +
+          "- prefab: Player\n  type: state, join\n  exec: |\n    <save_<pid>_<long_playerID>>;\n    <save_<long_playerID>_<pname>>\n",
+      },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("ignores saved-key templates written inside a YAML comment", () => {
+    // A commented-out `<save_..>` isn't live code — it must not count as a real
+    // write, or an unrelated live read of the same name gets a false "written
+    // but never read" flag reversed onto a phantom match, or vice versa.
+    const files = [
+      {
+        id: "a",
+        text:
+          "# - type: realtime, second\n  # exec: <save_realtimesecond_<modlong_<par_1>_60>>\n\n" +
+          "# - type: key, realtimesecond 0,5,10,15,20,25,30,35,40,45,50,55\n  # bannedKeys: bfvworldlevel 0\n  # exec: <save++_cargospawnfactor>\n",
+      },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
+  it("does not blank out a '#' that follows real content — e.g. a chat command inside a block scalar", () => {
+    // `s Say #hello` is live block-scalar content, not a comment (YAML would
+    // only treat a leading or whitespace-preceded '#' as a comment starter on
+    // an otherwise-empty line prefix); the write here must still be tracked.
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: poke\n  exec: |\n    s Say #hello <save_greeted_1>\n" },
+      { id: "b", text: "- prefab: Player\n  type: create\n  keys: greeted 1\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
   it("does not cross-report between the data.yaml namespace and the custom-key namespace", () => {
     const files = [{ id: "a", text: "- name: some_data\n  ints:\n  - level, 1\n" }];
     const problems = runReferenceValidation(files);
