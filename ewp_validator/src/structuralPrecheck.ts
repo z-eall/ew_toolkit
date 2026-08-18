@@ -425,7 +425,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
           if (commentRange) {
             problems.push({
               severity: "warning",
-              message: `\`${field[0]}:\` has no entries — its only item is commented out. Uncomment it, or remove the empty \`${field[0]}:\`.`,
+              message: `\`${field[0]}:\` has no entries — all its items are commented out. Uncomment it, or remove the empty \`${field[0]}:\`.`,
               branch: BRANCH_TITLES[branch],
               range: commentRange,
             });

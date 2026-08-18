@@ -14,7 +14,6 @@ import { BRANCH_TITLES, LEGACY_FORMAT_CATEGORY, RPC_RULE_CATEGORY } from "./stru
 // narrow — it's any data-entry reference now (ticket 13 round 7).
 export const DATA_REFERENCE_CATEGORY = "Data entry reference";
 export const CUSTOM_KEY_CATEGORY = "Custom saved key";
-export const OBJECT_DATA_CATEGORY = "Object data";
 
 // Labels are sentence-case ("Proper case") except where they lead with an
 // established abbreviation (EWP/WEC), which stays upper-case.
@@ -31,7 +30,6 @@ export const DIAGNOSIS_CATEGORIES = [
   FORMAT_CATEGORY,
   DATA_REFERENCE_CATEGORY,
   CUSTOM_KEY_CATEGORY,
-  OBJECT_DATA_CATEGORY,
 ] as const;
 
 export const DIAGNOSIS_CATEGORY_SET: ReadonlySet<string> = new Set(DIAGNOSIS_CATEGORIES);
