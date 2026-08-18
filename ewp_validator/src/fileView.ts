@@ -43,11 +43,22 @@ const STATUS_ORDER: Record<SortMode, FileStatus[]> = {
   valid: ["valid", "warning", "error"],
 };
 
+// Order two files by folder, keeping the root/loose group ("") last in both
+// directions so named folders always lead. `dir` is +1 for A–Z, -1 for Z–A.
+function compareFolder(a: ViewFile, b: ViewFile, dir: 1 | -1): number {
+  if (a.folder === b.folder) return 0;
+  if (a.folder === "") return 1;
+  if (b.folder === "") return -1;
+  return dir * a.folder.localeCompare(b.folder);
+}
+
 export function sortFiles(files: readonly ViewFile[], mode: SortMode): ViewFile[] {
   const byName = (a: ViewFile, b: ViewFile) => a.name.localeCompare(b.name);
   const sorted = [...files];
-  if (mode === "az") return sorted.sort(byName);
-  if (mode === "za") return sorted.sort((a, b) => byName(b, a));
+  // A–Z / Z–A order folders first, then files within each folder (ticket: sort
+  // rework). Status sorts stay flat and let buildTree group by first appearance.
+  if (mode === "az") return sorted.sort((a, b) => compareFolder(a, b, 1) || byName(a, b));
+  if (mode === "za") return sorted.sort((a, b) => compareFolder(a, b, -1) || byName(b, a));
   const rank = STATUS_ORDER[mode];
   return sorted.sort((a, b) => {
     const ra = rank.indexOf(a.status);

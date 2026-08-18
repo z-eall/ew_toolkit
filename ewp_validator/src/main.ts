@@ -22,10 +22,10 @@ import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
 
-// A from-scratch file lands in the canonical Expand World location so the panel
-// shows the same folder > file shape as a real mod upload.
-const DEFAULT_FOLDER = "expand_world";
-const DEFAULT_FILE_NAME = "expand_world_prefabs.yaml";
+// A from-scratch loose file starts at the root (no folder). "Add a folder"
+// creates a folder holding one new file of the same default name.
+const DEFAULT_FILE_NAME = "unnamed.yaml";
+const DEFAULT_FOLDER_NAME = "unnamed";
 
 (self as unknown as { MonacoEnvironment: monaco.Environment }).MonacoEnvironment = {
   getWorker(_moduleId: string, label: string) {
@@ -45,11 +45,22 @@ const ICONS = {
   // Notepad with a folded corner + ruled lines — same glyph as the nav's tool icon.
   file: '<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v4h4"/><path d="M8 11h3"/><path d="M8 14h6"/><path d="M8 17h4"/>',
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  // Upload glyphs: the document/folder outline with the "+" drawn as part of the
+  // same stroke (currentColor), so the plus reads as one with the icon rather
+  // than a tacked-on blue superscript. Used identically in the toolbar and the
+  // drag-and-drop empty state.
+  filePlus:
+    '<path d="M15 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z"/><path d="M15 3v4h4"/><path d="M12 11v6"/><path d="M9 14h6"/>',
+  folderPlus:
+    '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6"/><path d="M9 13h6"/>',
   funnel: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
+  trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
   dragArrow: '<path d="M9 10 4 15l5 5"/><path d="M4 15h11a5 5 0 0 0 5-5V4"/>',
   arrowUp: '<path d="M12 20V6"/><path d="m6 12 6-6 6 6"/>',
   arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
   // Classic floppy disk: shutter notch at the top, label at the bottom.
   save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h6V4"/><path d="M8 13h8v6H8z"/>',
   // Nav glyphs — copied from the hub's nav.ts so the toolbar reads the same.
@@ -93,12 +104,13 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <div class="sidebar-header">
           <span>Loaded files</span>
           <span class="sidebar-actions">
-            <button class="icon-btn has-plus" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.file)}<span class="plus-sup">+</span></button>
-            <button class="icon-btn has-plus" id="add-folder-btn" title="Upload folders" aria-label="Upload folders">${icon(ICONS.folder)}<span class="plus-sup">+</span></button>
+            <button class="icon-btn" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.filePlus)}</button>
+            <button class="icon-btn" id="add-folder-btn" title="Upload folders" aria-label="Upload folders">${icon(ICONS.folderPlus)}</button>
             <div class="sortfilter">
               <button class="icon-btn" id="sortfilter-btn" title="Sort & filter" aria-label="Sort and filter">${icon(ICONS.funnel)}</button>
               <div class="sortfilter-menu" id="sortfilter-menu" hidden></div>
             </div>
+            <button class="icon-btn" id="clear-all-btn" title="Clear all loaded files" aria-label="Clear all loaded files">${icon(ICONS.trash)}</button>
           </span>
         </div>
         <div id="file-list"></div>
@@ -108,7 +120,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <div class="active-file-name" id="active-file-name">
           <span class="filename-text" id="filename-text" title="Click to rename"></span>
           <span class="filename-actions">
-            <button class="icon-btn" id="new-file-btn" title="New file" aria-label="New file">${icon(ICONS.plus)}</button>
+            <div class="newmenu">
+              <button class="icon-btn" id="new-file-btn" title="Add new" aria-label="Add new">${icon(ICONS.plus)}</button>
+              <div class="new-menu" id="new-menu" hidden></div>
+            </div>
             <div class="savemenu">
               <button class="icon-btn" id="save-btn" title="Save" aria-label="Save">${icon(ICONS.save)}</button>
               <div class="save-menu" id="save-menu" hidden></div>
@@ -165,6 +180,8 @@ const sidebarEl = document.getElementById("sidebar") as HTMLDivElement;
 const fileListEl = document.getElementById("file-list")!;
 const filenameTextEl = document.getElementById("filename-text") as HTMLElement;
 const newFileBtn = document.getElementById("new-file-btn") as HTMLButtonElement;
+const newMenu = document.getElementById("new-menu")!;
+const clearAllBtn = document.getElementById("clear-all-btn") as HTMLButtonElement;
 const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
 const saveMenu = document.getElementById("save-menu")!;
 const problemsTabsEl = document.getElementById("problems-tabs")!;
@@ -172,16 +189,28 @@ const problemsListEl = document.getElementById("problems-list")!;
 
 // ---------- Sidebar view state (sort + filter behind the funnel menu) ----------
 
+const DEFAULT_FILTERS: FileStatus[] = ["error", "warning", "valid"];
 let currentSort: SortMode = DEFAULT_UPLOAD_SORT;
-const sidebarFilters = new Set<FileStatus>(["error", "warning", "valid"]);
+const sidebarFilters = new Set<FileStatus>(DEFAULT_FILTERS);
 
-// ---------- Problems panel tab state (error / warning / info) ----------
-// The "info" tab is the blue data.yaml/custom-key/legacy-format hints.
+// Folders the user has collapsed in the sidebar tree (by folder name).
+const collapsedFolders = new Set<string>();
 
-let activeTab: Severity = "error";
-const TAB_LABEL: Record<Severity, string> = { error: "Errors", warning: "Warnings", info: "Info" };
+// ---------- Problems panel tab state (error / warning / info / this file) ----------
+// The "info" tab is the blue data.yaml/custom-key/legacy-format hints; the
+// "thisfile" tab isolates every severity for the active file only.
+
+type ProblemTab = Severity | "thisfile";
+let activeTab: ProblemTab = "error";
+const TAB_LABEL: Record<ProblemTab, string> = {
+  error: "Errors",
+  warning: "Warnings",
+  info: "Info",
+  thisfile: "This file",
+};
 
 function render() {
+  showDraftIfEmpty();
   renderFileList();
   renderActiveFileName();
   renderProblemsPanel();
@@ -204,8 +233,8 @@ function renderFileList() {
   if (all.length === 0) {
     fileListEl.innerHTML = `
       <div class="empty-state" id="empty-state" title="Click to upload">
-        <p data-open="files"><span class="hint-icon has-plus">${icon(ICONS.file)}<span class="plus-sup">+</span></span> Upload one or multiple files</p>
-        <p data-open="folders"><span class="hint-icon has-plus">${icon(ICONS.folder)}<span class="plus-sup">+</span></span> Upload one or multiple folders</p>
+        <p data-open="files"><span class="hint-icon">${icon(ICONS.filePlus)}</span> Upload one or multiple files</p>
+        <p data-open="folders"><span class="hint-icon">${icon(ICONS.folderPlus)}</span> Upload one or multiple folders</p>
         <p><span class="hint-icon">${icon(ICONS.dragArrow)}</span> Or drag &amp; drop here</p>
       </div>`;
     document.getElementById("empty-state")!.addEventListener("click", (e) => {
@@ -227,18 +256,27 @@ function renderFileList() {
   }
 
   for (const group of tree) {
+    const collapsed = group.folder !== "" && collapsedFolders.has(group.folder);
     if (group.folder) {
       const header = document.createElement("div");
-      header.className = "folder-row";
-      header.innerHTML = `<span class="folder-icon">${icon(ICONS.folder)}</span><span class="folder-name" title="${escapeHtml(group.folder)}">${escapeHtml(group.folder)}</span>`;
+      header.className = `folder-row ${collapsed ? "collapsed" : ""}`;
+      header.innerHTML = `<span class="folder-caret">${icon(ICONS.chevron)}</span><span class="folder-icon">${icon(ICONS.folder)}</span><span class="folder-name" title="${escapeHtml(group.folder)}">${escapeHtml(group.folder)}</span><span class="folder-count">${group.files.length}</span>`;
+      header.addEventListener("click", () => {
+        if (collapsed) collapsedFolders.delete(group.folder);
+        else collapsedFolders.add(group.folder);
+        renderFileList();
+      });
+      wireFolderDropTarget(header, group.folder);
       fileListEl.appendChild(header);
     }
+    if (collapsed) continue;
     for (const vf of group.files) {
       const file = byId.get(vf.id)!;
       const errors = errorCount(file);
       const warnings = warningCount(file);
       const row = document.createElement("div");
       row.className = `file-row ${vf.id === active?.id ? "active" : ""} ${group.folder ? "nested" : ""}`;
+      row.draggable = true;
       row.innerHTML = `
         <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
         ${statusBadge(vf.status, errors, warnings)}
@@ -250,9 +288,37 @@ function renderFileList() {
         e.stopPropagation();
         fileManager.removeFile(vf.id);
       });
+      row.addEventListener("dragstart", (e) => {
+        e.dataTransfer?.setData(INTERNAL_DND_TYPE, vf.id);
+        if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      });
       fileListEl.appendChild(row);
     }
   }
+}
+
+// A private MIME type marks a drag that started on a sidebar file row, so a
+// folder drop can tell "move this loaded file" from "upload these OS files".
+const INTERNAL_DND_TYPE = "application/x-ewp-file-id";
+
+function wireFolderDropTarget(el: HTMLElement, folder: string) {
+  el.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.add("folder-drop");
+  });
+  el.addEventListener("dragleave", () => el.classList.remove("folder-drop"));
+  el.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove("folder-drop");
+    const movedId = e.dataTransfer?.getData(INTERNAL_DND_TYPE);
+    if (movedId) {
+      fileManager.moveToFolder(movedId, folder);
+    } else if (e.dataTransfer) {
+      await ingest(await fromDataTransfer(e.dataTransfer), folder);
+    }
+  });
 }
 
 function renderActiveFileName() {
@@ -278,8 +344,12 @@ function renderProblemsPanel() {
     for (const problem of file.problems) rows.push({ file, problem });
   }
 
-  const counts: Record<Severity, number> = { error: 0, warning: 0, info: 0 };
-  for (const { problem } of rows) counts[problem.severity]++;
+  const activeId = fileManager.activeFile?.id ?? null;
+  const counts: Record<ProblemTab, number> = { error: 0, warning: 0, info: 0, thisfile: 0 };
+  for (const { file, problem } of rows) {
+    counts[problem.severity]++;
+    if (file.id === activeId) counts.thisfile++;
+  }
 
   renderTabs(counts);
 
@@ -288,9 +358,14 @@ function renderProblemsPanel() {
     return;
   }
 
-  const shown = rows.filter((r) => r.problem.severity === activeTab);
+  // "This file" isolates every severity for the active file; the others filter by severity.
+  const shown =
+    activeTab === "thisfile"
+      ? rows.filter((r) => r.file.id === activeId)
+      : rows.filter((r) => r.problem.severity === activeTab);
   if (shown.length === 0) {
-    problemsListEl.innerHTML = `<div class="problems-empty">No ${TAB_LABEL[activeTab].toLowerCase()} to report.</div>`;
+    const label = activeTab === "thisfile" ? "problems in this file" : `${TAB_LABEL[activeTab].toLowerCase()} to report`;
+    problemsListEl.innerHTML = `<div class="problems-empty">No ${label}.</div>`;
     return;
   }
 
@@ -314,14 +389,15 @@ function renderProblemsPanel() {
 // so the panel can follow the caret onto a flagged line and highlight its note.
 let focusedProblemKey: string | null = null;
 
-function renderTabs(counts: Record<Severity, number>) {
-  const tabs: Severity[] = ["error", "warning", "info"];
+function renderTabs(counts: Record<ProblemTab, number>) {
+  const tabs: ProblemTab[] = ["error", "warning", "info", "thisfile"];
   problemsTabsEl.innerHTML = "";
   for (const tab of tabs) {
     const btn = document.createElement("button");
     btn.className = `problem-tab ${tab} ${tab === activeTab ? "active" : ""}`;
-    btn.title = `Show ${TAB_LABEL[tab].toLowerCase()}`;
-    btn.innerHTML = `<span class="tab-dot"></span>${TAB_LABEL[tab]}<span class="tab-count">${counts[tab]}</span>`;
+    btn.title = tab === "thisfile" ? "Show only the active file's problems" : `Show ${TAB_LABEL[tab].toLowerCase()}`;
+    const dot = tab === "thisfile" ? `<span class="tab-icon">${icon(ICONS.file)}</span>` : `<span class="tab-dot"></span>`;
+    btn.innerHTML = `${dot}${TAB_LABEL[tab]}<span class="tab-count">${counts[tab]}</span>`;
     btn.addEventListener("click", () => {
       activeTab = tab;
       renderProblemsPanel();
@@ -337,8 +413,8 @@ function escapeHtml(s: string): string {
 // ---------- Sort & filter menu ----------
 
 const SORT_OPTIONS: { mode: SortMode; label: string; symbol: string }[] = [
-  { mode: "az", label: "A–Z", symbol: icon(ICONS.arrowUp, 'class="sort-arrow"') },
-  { mode: "za", label: "Z–A", symbol: icon(ICONS.arrowDown, 'class="sort-arrow"') },
+  { mode: "az", label: "A - Z", symbol: icon(ICONS.arrowUp, 'class="sort-arrow"') },
+  { mode: "za", label: "Z - A", symbol: icon(ICONS.arrowDown, 'class="sort-arrow"') },
   { mode: "errors", label: "Errors first", symbol: '<span class="status-dot error"></span>' },
   { mode: "warnings", label: "Warnings first", symbol: '<span class="status-dot warning"></span>' },
   { mode: "valid", label: "Passing first", symbol: '<span class="status-dot valid"></span>' },
@@ -353,9 +429,18 @@ const FILTER_OPTIONS: { status: FileStatus; label: string }[] = [
 const sortFilterBtn = document.getElementById("sortfilter-btn")!;
 const sortFilterMenu = document.getElementById("sortfilter-menu")!;
 
+const filtersAreDefault = () =>
+  sidebarFilters.size === DEFAULT_FILTERS.length && DEFAULT_FILTERS.every((s) => sidebarFilters.has(s));
+
 function renderSortFilterMenu() {
+  const sortReset = currentSort !== DEFAULT_UPLOAD_SORT;
+  const filterReset = !filtersAreDefault();
+  const resetBtn = (kind: string) =>
+    `<button class="menu-reset" data-reset="${kind}" title="Reset to default">${icon(ICONS.close)}</button>`;
   sortFilterMenu.innerHTML = `
-    <div class="menu-section-title">Sort</div>
+    <div class="menu-section-head">
+      <span class="menu-section-title">Sort</span>${sortReset ? resetBtn("sort") : ""}
+    </div>
     ${SORT_OPTIONS.map(
       (o) =>
         `<button class="menu-item sort-item ${o.mode === currentSort ? "active" : ""}" data-sort="${o.mode}">
@@ -364,7 +449,9 @@ function renderSortFilterMenu() {
         </button>`,
     ).join("")}
     <div class="menu-divider"></div>
-    <div class="menu-section-title">Filter</div>
+    <div class="menu-section-head">
+      <span class="menu-section-title">Filter</span>${filterReset ? resetBtn("filter") : ""}
+    </div>
     ${FILTER_OPTIONS.map(
       (o) =>
         `<label class="menu-item filter-item">
@@ -386,6 +473,20 @@ function renderSortFilterMenu() {
       const status = cb.dataset.filter as FileStatus;
       if (cb.checked) sidebarFilters.add(status);
       else sidebarFilters.delete(status);
+      renderSortFilterMenu();
+      renderFileList();
+    });
+  });
+  sortFilterMenu.querySelectorAll<HTMLButtonElement>(".menu-reset").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (btn.dataset.reset === "sort") {
+        currentSort = DEFAULT_UPLOAD_SORT;
+      } else {
+        sidebarFilters.clear();
+        for (const s of DEFAULT_FILTERS) sidebarFilters.add(s);
+      }
+      renderSortFilterMenu();
       renderFileList();
     });
   });
@@ -416,13 +517,41 @@ interface Ingestable {
 
 const isYaml = (name: string) => /\.ya?ml$/i.test(name);
 
-async function ingest(entries: Ingestable[]) {
+// The folder a newly-uploaded loose file (one the picker gives no path for)
+// lands in: the folder of the current active file, matching "append to the
+// current selected folder". Folder/drag uploads that carry a path keep it.
+const currentFolder = () => fileManager.activeFile?.folder ?? "";
+
+/**
+ * Add uploaded files to the panel. `defaultFolder` is used for entries with no
+ * captured directory (the plain file picker, or a loose drop). Uploaded files
+ * are never silently renamed on collision — a name+folder clash with an already
+ * loaded file prompts a single overwrite/cancel decision for the whole batch.
+ */
+async function ingest(entries: Ingestable[], defaultFolder = "") {
   const yamls = entries.filter((e) => isYaml(e.file.name));
   if (yamls.length === 0) return;
+
+  const prepared: { name: string; content: string; folder: string }[] = [];
   for (const { file, relPath } of yamls) {
-    const content = await file.text();
-    fileManager.addFile(file.name, content, folderFromRelativePath(relPath));
+    prepared.push({
+      name: file.name,
+      content: await file.text(),
+      folder: folderFromRelativePath(relPath) || defaultFolder,
+    });
   }
+
+  const dups = prepared.filter((p) => fileManager.exists(p.name, p.folder));
+  if (dups.length > 0) {
+    const names = dups.map((d) => (d.folder ? `${d.folder}/${d.name}` : d.name)).join("\n  ");
+    const ok = confirm(
+      `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:\n  ${names}\n\n` +
+        `Overwrite ${dups.length > 1 ? "them" : "it"} with the uploaded version? Click Cancel to abort the whole upload.`,
+    );
+    if (!ok) return;
+  }
+
+  for (const p of prepared) fileManager.upsertUploaded(p.name, p.content, p.folder);
   // Every upload resets the panel to the one-time Error > Warning > Valid sort.
   currentSort = DEFAULT_UPLOAD_SORT;
   renderFileList();
@@ -471,7 +600,9 @@ const folderInput = document.getElementById("folder-input") as HTMLInputElement;
 document.getElementById("add-files-btn")!.addEventListener("click", () => fileInput.click());
 document.getElementById("add-folder-btn")!.addEventListener("click", () => folderInput.click());
 fileInput.addEventListener("change", () => {
-  if (fileInput.files) ingest(fromFileList(fileInput.files));
+  // "+ upload files" appends to the current selected folder (browsers strip the
+  // real directory from individually-picked files, so there is nothing to capture).
+  if (fileInput.files) ingest(fromFileList(fileInput.files), currentFolder());
   fileInput.value = "";
 });
 folderInput.addEventListener("change", () => {
@@ -487,7 +618,12 @@ sidebarEl.addEventListener("dragleave", () => sidebarEl.classList.remove("drag-o
 sidebarEl.addEventListener("drop", async (e) => {
   e.preventDefault();
   sidebarEl.classList.remove("drag-over");
-  if (e.dataTransfer) ingest(await fromDataTransfer(e.dataTransfer));
+  if (!e.dataTransfer) return;
+  // An internal file-row drag dropped on the sidebar (not on a folder) moves the
+  // file back out to the root; OS files dropped here upload at the root.
+  const movedId = e.dataTransfer.getData(INTERNAL_DND_TYPE);
+  if (movedId) fileManager.moveToFolder(movedId, "");
+  else ingest(await fromDataTransfer(e.dataTransfer));
 });
 
 // ---------- Draggable dividers ----------
@@ -535,18 +671,110 @@ makeResizer(
 
 // ---------- New file, edit-to-create fallback, and rename ----------
 
-function createNewFile() {
-  const file = fileManager.addFile(DEFAULT_FILE_NAME, "", DEFAULT_FOLDER);
+// When nothing is loaded the editor shows a throwaway draft model so the user
+// can type. The loose file is only *created* once they type a real character
+// (not merely by focusing/clicking in): the first keystroke promotes the draft
+// model itself into a real file (adoptModel, no model swap — swapping mid-
+// keystroke drops the rest of the input) and a fresh draft is minted for next
+// time. A yaml URI keeps completion/hover working while it's still a draft.
+let draftSeq = 0;
+let draftModel: monaco.editor.ITextModel;
+
+function newDraftModel(): monaco.editor.ITextModel {
+  const model = monaco.editor.createModel("", "yaml", monaco.Uri.parse(`file:///draft/${draftSeq++}/unnamed.yaml`));
+  model.onDidChangeContent(() => {
+    if (model !== draftModel || fileManager.allFiles.length !== 0) return; // stale draft, or already promoted
+    if (model.getValue().trim() === "") return; // stray whitespace doesn't count as "started typing"
+    fileManager.adoptModel(model, DEFAULT_FILE_NAME, "", { ephemeral: true, dirty: true });
+    draftModel = newDraftModel();
+  });
+  return model;
+}
+draftModel = newDraftModel();
+
+function showDraftIfEmpty() {
+  if (fileManager.allFiles.length === 0 && editor.getModel() !== draftModel) {
+    editor.setModel(draftModel);
+  }
+}
+
+// The explicit "+ Add a file" — a deliberate empty file that persists (unlike a
+// typed draft, it isn't auto-removed when empty).
+function addBlankFile(folder: string) {
+  const file = fileManager.addFile(DEFAULT_FILE_NAME, "", folder);
   fileManager.setActive(file.id);
   editor.focus();
 }
 
-newFileBtn.addEventListener("click", () => createNewFile());
+// "Add a folder" makes a new folder holding one fresh file (the app has no
+// empty-folder state — a folder exists only as long as it has a file).
+function addFolder() {
+  const folder = fileManager.uniqueFolderName(DEFAULT_FOLDER_NAME);
+  addBlankFile(folder);
+}
 
-// Focusing the empty editor is the intent to "start editing" — materialise a
-// default expand_world/expand_world_prefabs.yaml so the loose edits have a home.
-editor.onDidFocusEditorText(() => {
-  if (fileManager.allFiles.length === 0) createNewFile();
+const NEW_OPTIONS: { action: "file" | "folder"; label: string }[] = [
+  { action: "file", label: "Add a file" },
+  { action: "folder", label: "Add a folder" },
+];
+
+function renderNewMenu() {
+  newMenu.innerHTML = NEW_OPTIONS.map(
+    (o) => `<button class="menu-item new-item" data-new="${o.action}"><span class="menu-label">${o.label}</span></button>`,
+  ).join("");
+  newMenu.querySelectorAll<HTMLButtonElement>(".new-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.new === "folder") addFolder();
+      else addBlankFile(currentFolder());
+      newMenu.setAttribute("hidden", "");
+    });
+  });
+}
+
+newFileBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (newMenu.hasAttribute("hidden")) {
+    renderNewMenu();
+    newMenu.removeAttribute("hidden");
+  } else {
+    newMenu.setAttribute("hidden", "");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!newMenu.hasAttribute("hidden") && !newMenu.contains(e.target as Node) && e.target !== newFileBtn) {
+    newMenu.setAttribute("hidden", "");
+  }
+});
+
+// ---------- Clear all (trash) + leave guards ----------
+
+clearAllBtn.addEventListener("click", () => {
+  if (fileManager.allFiles.length === 0) return;
+  const ok = confirm(
+    "Clear all loaded files?\n\nThis empties the panel and the editor. Make sure you've saved anything you want to keep — cleared files can't be recovered.",
+  );
+  if (ok) fileManager.clearAll();
+});
+
+// Leaving the page (closing the tab, or navigating to another hub tool) drops
+// the in-memory files, so warn while there is unsaved work.
+window.addEventListener("beforeunload", (e) => {
+  if (fileManager.hasUnsavedWork()) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+// The in-app nav links are same-document navigations that beforeunload also
+// covers, but a same-origin click can feel abrupt — confirm explicitly first.
+document.querySelectorAll<HTMLAnchorElement>(".site-nav .nav-link").forEach((link) => {
+  if (link.classList.contains("active")) return;
+  link.addEventListener("click", (e) => {
+    if (!fileManager.hasUnsavedWork()) return;
+    const ok = confirm(
+      "You have unsaved changes.\n\nLeaving this tool clears the loaded files from memory. Save first if you want to keep them.\n\nLeave anyway?",
+    );
+    if (!ok) e.preventDefault();
+  });
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is
@@ -566,7 +794,9 @@ editor.onDidChangeCursorPosition((e) => {
   const key = best && file ? `${file.id}:${best.range[0]}` : null;
   if (key === focusedProblemKey) return;
   focusedProblemKey = key;
-  if (best && activeTab !== best.severity) activeTab = best.severity;
+  // Follow the caret onto the matching severity tab — but never yank the user
+  // off the "This file" view, which already shows every severity for this file.
+  if (best && activeTab !== "thisfile" && activeTab !== best.severity) activeTab = best.severity;
   renderProblemsPanel();
 });
 
@@ -605,6 +835,15 @@ function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url);
 }
 
+// The loaded files a given save scope writes, so they can be marked saved
+// (clears their unsaved flag; protects a typed draft from auto-removal).
+function savedByScope(scope: SaveScope): LoadedFile[] {
+  const active = fileManager.activeFile;
+  if (scope === "all") return [...fileManager.allFiles];
+  if (scope === "file") return active ? [active] : [];
+  return active ? fileManager.allFiles.filter((f) => f.folder === active.folder) : [];
+}
+
 function doSave(scope: SaveScope) {
   const toSaveFile = (f: LoadedFile): SaveFile => ({ name: f.name, folder: f.folder, content: f.model.getValue() });
   const active = fileManager.activeFile;
@@ -616,6 +855,7 @@ function doSave(scope: SaveScope) {
     const bytes = buildZip(plan.entries);
     downloadBlob(plan.filename, new Blob([bytes.buffer as ArrayBuffer], { type: "application/zip" }));
   }
+  fileManager.markSaved(savedByScope(scope).map((f) => f.id));
 }
 
 function renderSaveMenu() {

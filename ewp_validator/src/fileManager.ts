@@ -15,6 +15,23 @@ export interface LoadedFile {
   folder: string;
   model: monaco.editor.ITextModel;
   problems: Problem[];
+  /**
+   * A file materialised by typing into the empty editor (not the "+ Add a file"
+   * button, not an upload). Emptying it again undoes the creation — until it has
+   * been saved at least once, after which it is kept like any other file.
+   */
+  ephemeral: boolean;
+  /** True once the file has been included in a Save. Protects an ephemeral file from auto-removal. */
+  savedOnce: boolean;
+  /** Unsaved edits since the last save/load — drives the "save before leaving" prompt. */
+  dirty: boolean;
+}
+
+interface AddOptions {
+  ephemeral?: boolean;
+  dirty?: boolean;
+  /** Skip the ` (n)` collision suffix — used for uploads, which resolve duplicates by overwrite/cancel instead. */
+  unique?: boolean;
 }
 
 const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
@@ -51,18 +68,96 @@ export class FileManager {
     return this.files;
   }
 
-  addFile(name: string, content: string, folder = ""): LoadedFile {
-    const uniqueName = this.uniqueName(name);
+  addFile(name: string, content: string, folder = "", opts: AddOptions = {}): LoadedFile {
+    const finalName = opts.unique === false ? name : this.uniqueName(name);
     const id = `f${this.nextId++}`;
-    const uri = monaco.Uri.parse(`file:///loaded/${id}/${encodeURIComponent(uniqueName)}`);
+    const uri = monaco.Uri.parse(`file:///loaded/${id}/${encodeURIComponent(finalName)}`);
     const model = monaco.editor.createModel(content, "yaml", uri);
-    const file: LoadedFile = { id, name: uniqueName, folder, model, problems: [] };
+    const file: LoadedFile = {
+      id,
+      name: finalName,
+      folder,
+      model,
+      problems: [],
+      ephemeral: !!opts.ephemeral,
+      savedOnce: false,
+      dirty: !!opts.dirty,
+    };
     this.files.push(file);
-    model.onDidChangeContent(() => this.scheduleRevalidateAll());
+    model.onDidChangeContent(() => this.onContentChanged(file));
     this.revalidateAll();
     if (this.activeId === null) this.setActive(id);
     else this.onChange();
     return file;
+  }
+
+  /**
+   * Overwrite the file with the same name+folder if one exists, else add it.
+   * Uploads take this path (no ` (n)` suffixing); the caller has already
+   * confirmed any overwrite with the user.
+   */
+  upsertUploaded(name: string, content: string, folder: string): LoadedFile {
+    const existing = this.files.find((f) => f.name === name && f.folder === folder);
+    if (existing) {
+      existing.model.setValue(content);
+      existing.dirty = false;
+      this.revalidateAll();
+      this.onChange();
+      return existing;
+    }
+    return this.addFile(name, content, folder, { dirty: false, unique: false });
+  }
+
+  /** True if a loaded file already occupies this name within this folder. */
+  exists(name: string, folder: string): boolean {
+    return this.files.some((f) => f.name === name && f.folder === folder);
+  }
+
+  /** Re-file a loaded file under a different folder (drag-to-folder). */
+  moveToFolder(id: string, folder: string): void {
+    const file = this.files.find((f) => f.id === id);
+    if (!file || file.folder === folder) return;
+    file.folder = folder;
+    this.onChange();
+  }
+
+  /** Drop every loaded file (the trash action). The caller confirms first. */
+  clearAll(): void {
+    for (const f of this.files) f.model.dispose();
+    this.files = [];
+    this.activeId = null;
+    this.editor.setModel(null);
+    this.onChange();
+  }
+
+  /** Mark the given files saved: protects ephemerals and clears their unsaved flag. */
+  markSaved(ids: readonly string[]): void {
+    for (const id of ids) {
+      const f = this.files.find((x) => x.id === id);
+      if (f) {
+        f.savedOnce = true;
+        f.dirty = false;
+      }
+    }
+    this.onChange();
+  }
+
+  /** True if any file with content still has unsaved edits (drives leave prompts). */
+  hasUnsavedWork(): boolean {
+    return this.files.some((f) => f.dirty && f.model.getValue().trim() !== "");
+  }
+
+  private onContentChanged(file: LoadedFile): void {
+    // An ephemeral, never-saved file emptied back out undoes its own creation.
+    // Deferred a tick so we don't dispose the model from inside its change event.
+    if (file.ephemeral && !file.savedOnce && file.model.getValue().trim() === "") {
+      setTimeout(() => {
+        if (this.files.includes(file) && file.model.getValue().trim() === "") this.removeFile(file.id);
+      }, 0);
+      return;
+    }
+    file.dirty = true;
+    this.scheduleRevalidateAll();
   }
 
   removeFile(id: string) {
@@ -82,11 +177,40 @@ export class FileManager {
   setActive(id: string | null) {
     this.activeId = id;
     const file = this.activeFile;
-    this.editor.setModel(file ? file.model : null);
+    const nextModel = file ? file.model : null;
+    // Skip the setModel when it's already showing — re-setting the same model
+    // instance would stomp the caret/selection (matters when adopting a draft).
+    if (this.editor.getModel() !== nextModel) this.editor.setModel(nextModel);
     this.onChange();
   }
 
-  /** Rename a loaded file. Blank names are rejected; collisions get a ` (n)` suffix. */
+  /**
+   * Turn an existing model into a tracked file. Used to promote the editor's
+   * throwaway draft model on the first keystroke without swapping models — a
+   * swap mid-keystroke drops the rest of the input.
+   */
+  adoptModel(model: monaco.editor.ITextModel, name: string, folder = "", opts: AddOptions = {}): LoadedFile {
+    const finalName = opts.unique === false ? name : this.uniqueName(name);
+    const id = `f${this.nextId++}`;
+    const file: LoadedFile = {
+      id,
+      name: finalName,
+      folder,
+      model,
+      problems: [],
+      ephemeral: !!opts.ephemeral,
+      savedOnce: false,
+      dirty: !!opts.dirty,
+    };
+    this.files.push(file);
+    model.onDidChangeContent(() => this.onContentChanged(file));
+    this.revalidateAll();
+    if (this.activeId === null) this.setActive(id);
+    else this.onChange();
+    return file;
+  }
+
+  /** Rename a loaded file. Blank names are rejected; collisions get a `(n)` suffix from (1). */
   renameFile(id: string, rawName: string): void {
     const file = this.files.find((f) => f.id === id);
     if (!file) return;
@@ -173,9 +297,18 @@ export class FileManager {
     const dot = name.lastIndexOf(".");
     const base = dot === -1 ? name : name.slice(0, dot);
     const ext = dot === -1 ? "" : name.slice(dot);
-    let n = 2;
-    while (existing.has(`${base} (${n})${ext}`)) n++;
-    return `${base} (${n})${ext}`;
+    let n = 1;
+    while (existing.has(`${base}(${n})${ext}`)) n++;
+    return `${base}(${n})${ext}`;
+  }
+
+  /** A folder name not already in use, suffixed `(n)` from (1) on collision. */
+  uniqueFolderName(name: string): string {
+    const existing = new Set(this.files.map((f) => f.folder));
+    if (!existing.has(name)) return name;
+    let n = 1;
+    while (existing.has(`${name}(${n})`)) n++;
+    return `${name}(${n})`;
   }
 }
 

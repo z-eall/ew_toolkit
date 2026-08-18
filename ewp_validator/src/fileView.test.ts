@@ -88,6 +88,36 @@ describe("sortFiles", () => {
     sortFiles(files, "az");
     expect(files).toEqual(copy);
   });
+
+  it("A-Z orders folders alphabetically first, then files within, root/loose group last", () => {
+    const mixed = [
+      vf("1", "z.yaml", "valid", "beta"),
+      vf("2", "a.yaml", "valid", "beta"),
+      vf("3", "m.yaml", "valid", "alpha"),
+      vf("4", "loose.yaml", "valid", ""),
+    ];
+    expect(sortFiles(mixed, "az").map((f) => [f.folder, f.name])).toEqual([
+      ["alpha", "m.yaml"],
+      ["beta", "a.yaml"],
+      ["beta", "z.yaml"],
+      ["", "loose.yaml"],
+    ]);
+  });
+
+  it("Z-A reverses folder and file order but still keeps root/loose group last", () => {
+    const mixed = [
+      vf("1", "a.yaml", "valid", "alpha"),
+      vf("2", "z.yaml", "valid", "beta"),
+      vf("3", "a.yaml", "valid", "beta"),
+      vf("4", "loose.yaml", "valid", ""),
+    ];
+    expect(sortFiles(mixed, "za").map((f) => [f.folder, f.name])).toEqual([
+      ["beta", "z.yaml"],
+      ["beta", "a.yaml"],
+      ["alpha", "a.yaml"],
+      ["", "loose.yaml"],
+    ]);
+  });
   it("default upload sort is errors-first", () => {
     expect(DEFAULT_UPLOAD_SORT).toBe("errors");
   });
