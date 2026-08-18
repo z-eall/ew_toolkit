@@ -175,3 +175,22 @@ new file isn't instantly flagged "Invalid file".
 Regression tests in `fileNameCheck.test.ts` (11 cases: valid/legacy/invalid
 classification, extension + casing handling, rename-target derivation, and the
 info/error `Problem` shapes). 110 tests passing, type-check + build clean.
+
+### Round 5 — value groups with numeric values (added 2026-08-18)
+
+A `valueGroup`'s `values:` list was schema-typed as `strArray` (every item a
+string), so a group of numeric parameter values —
+
+```
+- valueGroup: Hello
+  values: [hello, 123, 444, 555]
+```
+
+— raised six spurious `/values/N must be string` errors. Per Jere's
+`README_data.md` ("multiple parameter values"), a value group's values are
+parameter *values* and can be numeric (they're substituted as text in-game);
+YAML parses bare `123`/`4.5`/`true` as number/boolean, not string. Added a
+`scalar`/`scalarArray` helper in `schema/generate.mjs` (string | number |
+boolean — the same shape the raw-data entry's `additionalProperties` already
+uses) and switched `valueGroup.values` to `scalarArray`. Regression test in
+`structuralPrecheck.test.ts`. 111 tests passing, type-check clean.

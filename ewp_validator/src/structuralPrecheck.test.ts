@@ -116,6 +116,14 @@ describe("runStructuralPrecheck", () => {
     expect(flag!.branch).toBe(LEGACY_FORMAT_CATEGORY);
   });
 
+  it("accepts a value group whose values are numbers, not just strings — ticket 13", () => {
+    // README_data.md "multiple parameter values": a valueGroup's values are
+    // parameter values and can be numeric (they're substituted as text in-game).
+    // YAML parses bare `123` as a number, so the schema must accept scalars.
+    const yaml = "- valueGroup: Hello\n  values:\n  - hello\n  - 123\n  - 4.5\n  - true\n";
+    expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
+  });
+
   it("reports YAML syntax errors and skips downstream structural checks for that file", () => {
     const yaml = "- prefab: Bonemass\n  type: create\n\tbad: true\n";
     const problems = runStructuralPrecheck(yaml);

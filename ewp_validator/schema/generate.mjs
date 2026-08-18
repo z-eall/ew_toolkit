@@ -36,6 +36,11 @@ const numberOrString = { anyOf: [{ type: "number" }, { type: "string" }] };
 
 const str = { type: "string" };
 const strArray = { type: "array", items: { type: "string" } };
+// A YAML scalar that isn't necessarily a string: bare `123`/`4.5`/`true` parse
+// as number/boolean. Used where a field holds parameter *values* rather than
+// `key, value` text (e.g. a value group's `values`).
+const scalar = { anyOf: [{ type: "string" }, { type: "number" }, { type: "boolean" }] };
+const scalarArray = { type: "array", items: scalar };
 
 // filter/bannedFilter singular forms are real (live-tested, not a typo — see
 // ticket 08) even though the current C# source only declares the plural
@@ -398,7 +403,7 @@ const valueEntry = {
 const valueGroup = {
   title: "Value group",
   type: "object",
-  properties: { valueGroup: str, values: strArray },
+  properties: { valueGroup: str, values: scalarArray },
   required: ["valueGroup", "values"],
   additionalProperties: false,
 };
