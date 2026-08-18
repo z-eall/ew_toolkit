@@ -194,3 +194,39 @@ YAML parses bare `123`/`4.5`/`true` as number/boolean, not string. Added a
 boolean — the same shape the raw-data entry's `additionalProperties` already
 uses) and switched `valueGroup.values` to `scalarArray`. Regression test in
 `structuralPrecheck.test.ts`. 111 tests passing, type-check clean.
+
+### Round 6 — punctuation/format lint (double colon) (added 2026-08-18)
+
+A `filter:: value` typo (double colon) is legal YAML: the `: ` after the first
+colon is the key/value separator, so YAML reads the key as literally `filter:`.
+ajv then rejected `filter:` as an unknown property — **"'filter:' is not a
+valid key in a EWP rule entry"** — and, because the key was nested in a `poke:`
+list, `ajvErrorRange` (which only searches the *top-level* map for the bad key)
+found nothing and fell back to the whole entry's range: **wrong message, wrong
+line**. The scripter had to eyeball the file to find the `::`.
+
+New module `formatLint.ts` (+ `formatLint.test.ts`): a punctuation/format lint
+that **walks the parsed YAML tree** (`yaml`'s `visit`) and inspects every
+mapping *key* — so it points at the key node's own range (right line, right
+span) and ignores values and comments. First check: a key containing *any*
+stray colon (the `: ` separator stops at the first colon-then-space, so a `::`
+folds the extra colon into the key — trailing `filter::` → key `filter:`, or
+mid-key `fil::ter:` → key `fil::ter`), reported as an **error** under a new
+filterable `FORMAT_CATEGORY` ("Formatting", registered in `main.ts`). The
+check registry
+is deliberately open so more key-punctuation checks can be added — the scripter
+asked for coverage "inclusive but not limited to `::`".
+
+Wired into `runStructuralPrecheck` (runs first, independent of schema
+validation). To stop the *same* typo double-reporting, the ajv loop now drops
+any `additionalProperties` error whose bad key contains a `:` — a real EWP/WEC
+key never does, so that error is always the `::` artifact the format lint
+already covers. (`formatLint` imports only the `Problem` *type* from
+`structuralPrecheck`, type-only so there's no runtime import cycle.)
+
+Regression tests: `formatLint.test.ts` (8 cases — nested key, mid-key colon,
+multiple hits, comment/value exclusion, clean + unparseable input) and a
+`structuralPrecheck` integration test asserting the misleading "not a valid
+key" is gone and one `Formatting` error lands on the right line. 120 tests
+passing, type-check + build clean; verified live against the scripter's
+dispenser snippet (two `::` flagged at their exact lines 25 & 38).

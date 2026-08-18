@@ -8,6 +8,7 @@
 // prototype/oneof-union-error-quality branch.
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
+import { runFormatLint } from "./formatLint";
 import schemaJson from "./schema.generated.json";
 
 export type Severity = "error" | "warning" | "info";
@@ -182,6 +183,13 @@ function ajvErrorRange(itemNode: YAMLMap, itemRange: [number, number], error: Er
 
 export function runStructuralPrecheck(text: string): Problem[] {
   const problems: Problem[] = [];
+
+  // Punctuation/format lint runs first and independently of schema validation:
+  // it catches typos that are legal YAML but clearly wrong (e.g. a `::` double
+  // colon), pointing at the exact key. Its findings also let us suppress the
+  // misleading ajv message the same typo would otherwise produce (below).
+  problems.push(...runFormatLint(text));
+
   const doc = parseDocument(text, { keepSourceTokens: false });
 
   for (const err of doc.errors) {
@@ -266,6 +274,13 @@ export function runStructuralPrecheck(text: string): Problem[] {
     const valid = validate(toValidate);
     if (!valid && validate.errors) {
       for (const error of validate.errors) {
+        // A `::` double colon makes YAML fold the extra colon into the key
+        // (`filter::` → key `filter:`), which ajv then reports as an unknown
+        // property with a misleading message and a wrong (fallback) range. The
+        // format lint already flags that typo precisely, so drop ajv's version
+        // here — a real EWP/WEC key never contains a colon.
+        const badKey = (error.params as { additionalProperty?: string })?.additionalProperty;
+        if (badKey?.includes(":")) continue;
         // additionalProperties errors carry the bad key in params — use that
         // to build a message naming the key, instead of ajv's generic one.
         const message = error.params && "additionalProperty" in error.params

@@ -19,6 +19,7 @@ import {
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
 import { INVALID_FILE_CATEGORY } from "./fileNameCheck";
+import { FORMAT_CATEGORY } from "./formatLint";
 import { LEGACY_FORMAT_CATEGORY, pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
@@ -255,6 +256,7 @@ const DIAGNOSIS_CATEGORIES = [
   "Value group",
   LEGACY_FORMAT_CATEGORY,
   INVALID_FILE_CATEGORY,
+  FORMAT_CATEGORY,
   "data.yaml reference",
   "custom saved key",
   "object data",

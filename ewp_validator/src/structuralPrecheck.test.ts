@@ -124,6 +124,27 @@ describe("runStructuralPrecheck", () => {
     expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
   });
 
+  it("flags a `::` double colon as a format error, not a misleading 'not a valid key' — ticket 13", () => {
+    // `filter:: X` inside a nested poke: YAML reads the key as `filter:`; ajv
+    // used to call it an invalid key and point at the whole entry (wrong line).
+    const yaml =
+      "- prefab: blackmarble_column_2\n" +
+      "  type: poke, fireMineStop\n" +
+      "  poke:\n" +
+      "  - prefab: WearNTear\n" +
+      "    filter:: fireMineDispenserCheck\n" +
+      "    limit: 28\n";
+    const problems = runStructuralPrecheck(yaml);
+    // No misleading additionalProperties error survives.
+    expect(problems.some((p) => p.message.includes("not a valid key"))).toBe(false);
+    // Exactly one format error, pointing at the offending `filter:` key on line 5.
+    const format = problems.filter((p) => p.branch === "Formatting");
+    expect(format).toHaveLength(1);
+    expect(format[0].severity).toBe("error");
+    expect(yaml.slice(...format[0].range)).toBe("filter:");
+    expect(yaml.slice(0, format[0].range[0]).split("\n").length).toBe(5);
+  });
+
   it("reports YAML syntax errors and skips downstream structural checks for that file", () => {
     const yaml = "- prefab: Bonemass\n  type: create\n\tbad: true\n";
     const problems = runStructuralPrecheck(yaml);
