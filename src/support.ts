@@ -40,7 +40,7 @@ const hivemind: SupportEntry[] = [
   },
   {
     name: "JPValheim",
-    desc: "Diplomat officer, he fetch people to VWE using flying bonemaw.",
+    desc: "Diplomat officer, his flying bonemaws fetch people to VWE.",
     url: "https://www.patreon.com/JPValheim",
     img: `${base}support/jpvalheim.png`,
   },
