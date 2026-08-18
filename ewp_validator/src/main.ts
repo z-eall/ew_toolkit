@@ -1073,9 +1073,19 @@ clearAllBtn.addEventListener("click", () => {
 });
 
 // Leaving the page drops the in-memory files, so warn while there is unsaved
-// work. This one handler covers every way out that clears them: closing the
-// tab, reloading, and clicking a hub nav link to another sub-site (each sub-site
-// is its own document, so those links are full navigations that fire unload).
+// work. Two complementary guards:
+//
+// 1. beforeunload covers closing the tab and reloading — the only ways out a
+//    script can't intercept ahead of time. Kept as a backstop even though (2)
+//    now handles nav-link clicks directly, because it's the only guard that
+//    fires for those cases at all.
+// 2. An explicit confirm() on same-tab nav-link clicks (Home, EWP Validator,
+//    Support — the hub's other sub-sites) below. Browsers have grown
+//    increasingly inconsistent about *whether* they actually surface the
+//    native beforeunload dialog (sticky-activation requirements, per-browser
+//    policy changes over time) even when preventDefault()/returnValue are set
+//    correctly — so for the one case we can intercept ourselves, don't depend
+//    on it.
 window.addEventListener("beforeunload", (e) => {
   if (fileManager.hasUnsavedWork()) {
     e.preventDefault();
@@ -1086,6 +1096,16 @@ window.addEventListener("beforeunload", (e) => {
     // ignored by modern browsers, but the value must be truthy.
     e.returnValue = "You have unsaved changes.";
   }
+});
+
+document.querySelectorAll<HTMLAnchorElement>(".site-nav-links .nav-link").forEach((link) => {
+  link.addEventListener("click", (e) => {
+    if (!fileManager.hasUnsavedWork()) return;
+    const ok = confirm(
+      "Leave the validator?\n\nYou have unsaved changes. Make sure you've saved anything you want to keep — leaving now discards it.",
+    );
+    if (!ok) e.preventDefault();
+  });
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is
