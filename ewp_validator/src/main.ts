@@ -19,6 +19,7 @@ import {
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
 import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, presentSortedCategories } from "./diagnosisCategories";
+import { INVALID_FILE_CATEGORY } from "./fileNameCheck";
 import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import "./style.css";
 import { buildZip } from "./zip";
@@ -148,7 +149,10 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
               <button class="icon-btn" id="sortfilter-btn" title="Sort & filter" aria-label="Sort and filter">${icon(ICONS.funnel)}</button>
               <div class="sortfilter-menu" id="sortfilter-menu" hidden></div>
             </div>
-            <button class="icon-btn" id="clear-all-btn" title="Clear all loaded files" aria-label="Clear all loaded files">${icon(ICONS.trash)}</button>
+            <div class="clearall">
+              <button class="icon-btn" id="clear-all-btn" title="Clear files" aria-label="Clear files">${icon(ICONS.trash)}</button>
+              <div class="sortfilter-menu" id="clearall-menu" hidden></div>
+            </div>
           </span>
         </div>
         <div class="upload-banner" id="upload-banner">
@@ -251,6 +255,7 @@ const filenameTextEl = document.getElementById("filename-text") as HTMLElement;
 const newFileBtn = document.getElementById("new-file-btn") as HTMLButtonElement;
 const newMenu = document.getElementById("new-menu")!;
 const clearAllBtn = document.getElementById("clear-all-btn") as HTMLButtonElement;
+const clearAllMenu = document.getElementById("clearall-menu")!;
 const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
 const saveMenu = document.getElementById("save-menu")!;
 const problemsTabsEl = document.getElementById("problems-tabs")!;
@@ -264,6 +269,25 @@ const sidebarFilters = new Set<FileStatus>(DEFAULT_FILTERS);
 
 // Folders the user has collapsed in the sidebar tree (by folder name).
 const collapsedFolders = new Set<string>();
+
+// The file panel's row order, frozen between the two points that are allowed to
+// resort it: upload-complete and an explicit sort-menu pick. Every other
+// render (in particular the live-validation renders that fire as the user
+// types) must not reshuffle rows just because a status changed — see
+// validator-ui-polish ticket 03.
+let fileOrder: string[] = [];
+
+function recomputeFileOrder(): void {
+  fileOrder = sortFiles(fileManager.allFiles.map(toViewFile), currentSort).map((f) => f.id);
+}
+
+// Keep fileOrder in sync without resorting it: drop ids that no longer exist,
+// append any new id (e.g. a lone drag-drop outside the upload flow) at the end.
+function syncFileOrder(): void {
+  const ids = new Set(fileManager.allFiles.map((f) => f.id));
+  fileOrder = fileOrder.filter((id) => ids.has(id));
+  for (const f of fileManager.allFiles) if (!fileOrder.includes(f.id)) fileOrder.push(f.id);
+}
 
 // ---------- Problems panel tab state (error / warning / info / this file) ----------
 // The "info" tab is the blue data.yaml/custom-key/legacy-format hints; the
@@ -321,6 +345,19 @@ function toViewFile(file: LoadedFile): ViewFile {
   return { id: file.id, name: file.name, folder: file.folder, status: statusOf(errorCount(file), warningCount(file)) };
 }
 
+// Scrolls the file panel to the row for `fileId` — expanding its folder first
+// if collapsed, since a collapsed folder never renders its rows at all.
+// Used when a Problems-panel diagnosis is clicked (item 10): the highlight
+// already jumps there, this makes the file panel follow along too.
+function scrollFileRowIntoView(fileId: string): void {
+  const file = fileManager.allFiles.find((f) => f.id === fileId);
+  if (file?.folder && collapsedFolders.has(file.folder)) {
+    collapsedFolders.delete(file.folder);
+    renderFileList();
+  }
+  fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "nearest" });
+}
+
 function statusBadge(status: FileStatus, errors: number, warnings: number): string {
   if (status === "error") return `<span class="badge err">${errors}</span>`;
   if (status === "warning") return `<span class="badge warn">${warnings}</span>`;
@@ -328,6 +365,7 @@ function statusBadge(status: FileStatus, errors: number, warnings: number): stri
 }
 
 function renderFileList() {
+  updateSortFilterIndicator();
   fileListEl.innerHTML = "";
   const all = fileManager.allFiles;
 
@@ -348,7 +386,9 @@ function renderFileList() {
 
   const active = fileManager.activeFile;
   const byId = new Map(all.map((f) => [f.id, f]));
-  const view = sortFiles(filterFiles(all.map(toViewFile), sidebarFilters), currentSort);
+  syncFileOrder();
+  const ordered = fileOrder.map((id) => byId.get(id)).filter((f): f is LoadedFile => !!f);
+  const view = filterFiles(ordered.map(toViewFile), sidebarFilters);
   const tree = buildTree(view);
 
   if (view.length === 0) {
@@ -388,6 +428,7 @@ function renderFileList() {
       const warnings = warningCount(file);
       const row = document.createElement("div");
       row.className = `file-row ${vf.id === active?.id ? "active" : ""} ${group.folder ? "nested" : ""}`;
+      row.dataset.fileId = vf.id;
       row.draggable = true;
       row.innerHTML = `
         <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
@@ -507,20 +548,23 @@ function renderProblemsPanel() {
     g.rows.push(r);
   }
 
-  // Keep the file that owns the caret-focused note expanded, so following the
-  // cursor never lands the highlight inside a collapsed group.
-  const focusedFileId = focusedProblemKey ? focusedProblemKey.split(":")[0] : null;
-
   problemsListEl.innerHTML = "";
   for (const group of groups) {
-    const collapsed = collapsedProblemFiles.has(group.file.id) && group.file.id !== focusedFileId;
+    // A user's manual collapse always wins — cursor-follow still tracks
+    // focusedProblemKey (below) and switches tabs, but never force-opens a
+    // group the user closed (validator-ui-polish ticket 02).
+    const collapsed = collapsedProblemFiles.has(group.file.id);
     const header = document.createElement("div");
     header.className = `problem-file ${collapsed ? "collapsed" : ""}`;
-    header.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="pf-name" title="${escapeHtml(group.file.name)}">${escapeHtml(group.file.name)}</span><span class="pf-count">${group.rows.length}</span>`;
+    header.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="pf-name" title="${escapeHtml(group.file.name)}">${escapeHtml(group.file.name)}</span><span class="pf-count">[${group.rows.length}]</span><button class="pf-remove-btn" title="Remove file">×</button>`;
     header.addEventListener("click", () => {
       if (collapsedProblemFiles.has(group.file.id)) collapsedProblemFiles.delete(group.file.id);
       else collapsedProblemFiles.add(group.file.id);
       renderProblemsPanel();
+    });
+    header.querySelector(".pf-remove-btn")!.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileManager.removeFile(group.file.id);
     });
     problemsListEl.appendChild(header);
     if (collapsed) continue;
@@ -532,7 +576,10 @@ function renderProblemsPanel() {
       row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
       row.dataset.key = key;
       row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
-      row.addEventListener("click", () => fileManager.revealProblem(file.id, problem.range[0]));
+      row.addEventListener("click", () => {
+        fileManager.revealProblem(file.id, problem.range[0]);
+        scrollFileRowIntoView(file.id);
+      });
       row.querySelector<HTMLButtonElement>(".copy-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
         copyDiagnosis(e.currentTarget as HTMLButtonElement, file, problem, start.lineNumber);
@@ -611,9 +658,17 @@ const sortFilterMenu = document.getElementById("sortfilter-menu")!;
 const filtersAreDefault = () =>
   sidebarFilters.size === DEFAULT_FILTERS.length && DEFAULT_FILTERS.every((s) => sidebarFilters.has(s));
 
+// Fills the funnel glyph whenever sort or filter has moved off its default, so
+// the toolbar shows at a glance that the file panel isn't in its default view
+// — independent of whether the menu itself is open.
+function updateSortFilterIndicator(): void {
+  sortFilterBtn.classList.toggle("funnel-active", currentSort !== DEFAULT_UPLOAD_SORT || !filtersAreDefault());
+}
+
 function renderSortFilterMenu() {
   const sortReset = currentSort !== DEFAULT_UPLOAD_SORT;
   const filterReset = !filtersAreDefault();
+  updateSortFilterIndicator();
   const resetBtn = (kind: string) =>
     `<button class="menu-reset" data-reset="${kind}" title="Reset to default">${icon(ICONS.reset)}</button>`;
   sortFilterMenu.innerHTML = `
@@ -643,6 +698,7 @@ function renderSortFilterMenu() {
   sortFilterMenu.querySelectorAll<HTMLButtonElement>(".sort-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       currentSort = btn.dataset.sort as SortMode;
+      recomputeFileOrder();
       renderSortFilterMenu();
       renderFileList();
     });
@@ -661,6 +717,7 @@ function renderSortFilterMenu() {
       e.stopPropagation();
       if (btn.dataset.reset === "sort") {
         currentSort = DEFAULT_UPLOAD_SORT;
+        recomputeFileOrder();
       } else {
         sidebarFilters.clear();
         for (const s of DEFAULT_FILTERS) sidebarFilters.add(s);
@@ -696,6 +753,7 @@ const reportMenu = document.getElementById("report-menu")!;
 
 function renderCatFilterMenu() {
   const reset = !categoriesAreDefault();
+  catFilterBtn.classList.toggle("funnel-active", reset);
   // Only offer categories that the current diagnoses actually produced, in
   // ascending alphabetical order — a filter for a category that can't appear
   // right now is just noise (ticket 13 round 7).
@@ -1191,14 +1249,48 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// ---------- Clear all (trash) + leave guards ----------
+// ---------- Clear all (trash dropdown: clear all / clear invalid) + leave guards ----------
 
-clearAllBtn.addEventListener("click", () => {
-  if (fileManager.allFiles.length === 0) return;
-  const ok = confirm(
-    "Clear all loaded files?\n\nThis empties the panel and the editor. Make sure you've saved anything you want to keep — cleared files can't be recovered.",
-  );
-  if (ok) fileManager.clearAll();
+function renderClearAllMenu(): void {
+  clearAllMenu.innerHTML = `
+    <button class="menu-item" data-clear="all"><span class="menu-label">Clear all files</span></button>
+    <button class="menu-item" data-clear="invalid"><span class="menu-label">Clear invalid files</span></button>
+  `;
+  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="all"]')!.addEventListener("click", () => {
+    clearAllMenu.setAttribute("hidden", "");
+    if (fileManager.allFiles.length === 0) return;
+    const ok = confirm(
+      "Clear all loaded files?\n\nThis empties the panel and the editor. Make sure you've saved anything you want to keep — cleared files can't be recovered.",
+    );
+    if (ok) fileManager.clearAll();
+  });
+  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="invalid"]')!.addEventListener("click", () => {
+    clearAllMenu.setAttribute("hidden", "");
+    const invalid = fileManager.allFiles.filter((f) => f.problems.some((p) => p.branch === INVALID_FILE_CATEGORY));
+    if (invalid.length === 0) return;
+    const names = invalid.map((f) => (f.folder ? `${f.folder}/${f.name}` : f.name)).join("\n  ");
+    const ok = confirm(
+      `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n  ${names}\n\n` +
+        `These aren't EWP-structured files. Make sure you've saved anything you want to keep — cleared files can't be recovered.`,
+    );
+    if (ok) fileManager.removeFiles(invalid.map((f) => f.id));
+  });
+}
+
+clearAllBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const opening = clearAllMenu.hasAttribute("hidden");
+  if (opening) {
+    renderClearAllMenu();
+    clearAllMenu.removeAttribute("hidden");
+  } else {
+    clearAllMenu.setAttribute("hidden", "");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!clearAllMenu.hasAttribute("hidden") && !clearAllMenu.contains(e.target as Node) && e.target !== clearAllBtn) {
+    clearAllMenu.setAttribute("hidden", "");
+  }
 });
 
 // Leaving the page drops the in-memory files, so warn while there is unsaved

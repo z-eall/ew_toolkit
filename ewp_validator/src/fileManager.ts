@@ -214,6 +214,24 @@ export class FileManager {
     else this.onChange();
   }
 
+  /**
+   * Remove a specific set of loaded files (the "Clear invalid files" action).
+   * The caller confirms first and re-validates for the same reason as
+   * removeFilesInFolder — a removed file's data.yaml entries may have been
+   * the only definition/write behind a reference elsewhere.
+   */
+  removeFiles(ids: readonly string[]): void {
+    const idSet = new Set(ids);
+    const removing = this.files.filter((f) => idSet.has(f.id));
+    if (removing.length === 0) return;
+    const activeRemoved = removing.some((f) => f.id === this.activeId);
+    for (const f of removing) f.model.dispose();
+    this.files = this.files.filter((f) => !idSet.has(f.id));
+    this.revalidateOrDefer();
+    if (activeRemoved) this.setActive(this.files[0]?.id ?? null);
+    else this.onChange();
+  }
+
   /** Drop every loaded file (the trash action). The caller confirms first. */
   clearAll(): void {
     for (const f of this.files) f.model.dispose();

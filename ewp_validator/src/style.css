@@ -211,9 +211,21 @@ body {
   background: var(--bg);
 }
 
+/* Fills the funnel glyph when its sort/filter is off the default, so the
+   toolbar shows at a glance that the view isn't showing everything. */
+.icon-btn.funnel-active {
+  color: var(--text);
+}
+
+.icon-btn.funnel-active svg {
+  fill: currentColor;
+  fill-opacity: 0.35;
+}
+
 /* ---- Sort & filter menu ---- */
 
-.sortfilter {
+.sortfilter,
+.clearall {
   position: relative;
 }
 
@@ -1106,7 +1118,7 @@ body {
 }
 
 .problem-file .pf-name {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1118,6 +1130,27 @@ body {
   font-size: 10px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  margin-right: auto;
+}
+
+.problem-file .pf-remove-btn {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  visibility: hidden;
+}
+
+.problem-file:hover .pf-remove-btn {
+  visibility: visible;
+}
+
+.problem-file .pf-remove-btn:hover {
+  color: var(--error);
 }
 
 /* ---- Per-problem copy button (before the [category] tag) ---- */
