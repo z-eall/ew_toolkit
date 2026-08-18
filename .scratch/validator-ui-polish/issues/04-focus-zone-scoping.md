@@ -1,5 +1,5 @@
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -10,10 +10,19 @@ This must be checked against the existing cursor-highlight-sync behavior for con
 - Clicking a file row (`main.ts:397-398`) calls `fileManager.revealTopProblem(vf.id)`, which presumably moves the editor cursor (needs tracing in `fileManager.ts`).
 - Clicking a diagnosis row (`main.ts:535`) calls `fileManager.revealProblem(file.id, problem.range[0])`, which moves the editor cursor to that diagnosis (and is the same code path item 10 wants to also scroll the file panel to the owning file).
 
-Open sub-questions to resolve in this ticket:
-1. What are the "zones" — editor, file panel, problems panel — and what exactly does each one drive/receive today?
-2. When "focus" is in the problems panel, should the editor cursor moving (e.g. from a stale timer, or Monaco's own click-to-navigate) still be suppressed from re-triggering panel highlight/scroll? Or does zone-scoping only gate the *panel-driven* pushes (file-panel scroll, tab switch), not the editor-driven pull?
-3. Interaction with item 5/8's fix ([Collapse vs cursor-follow precedence](02-collapse-cursor-follow-precedence.md)) and item 10 (notice-click should scroll the file panel) — do those still fire once focus-zone gating exists, or do they become zone-conditional too?
-4. Does clicking a *diagnosis row* (which intentionally drives the editor) count as "clicking into the problems panel" for zone purposes, or does it momentarily hand focus to the editor since it just moved the caret there?
+## Answer
 
-Likely needs a throwaway prototype (per the /prototype skill) to feel out whether a simple "last-active-zone" flag is enough, or whether the sync graph is tangled enough to need a different model (e.g. an explicit "user-initiated" vs "programmatic" flag on cursor/scroll events instead of a spatial zone).
+Tracing the actual mechanics collapsed this from a stateful "zone" design into one surgical fix — no zone-tracking machinery needed:
+
+**What's really there today**: there is no continuous "auto cursor" driven by clicking in the Problems panel — the only two things a diagnosis-row click does that could feel like unwanted "auto" behavior are (a) `editor.focus()` inside `fileManager.revealProblem`, which steals keyboard focus to the editor on every click, and (b) `scrollFileRowIntoView` (item 10), which scrolls the file panel on every click. Everything else (the editor→Problems-panel highlight sync) is one-directional and needed for the click's own visual feedback — suppressing it would make clicking a diagnosis look like nothing happened.
+
+**Decisions**:
+1. Suppress only (a) — `editor.focus()` — when the reveal was triggered by a diagnosis-row click. Since a diagnosis-row click is *by definition* an interaction inside the Problems panel, this doesn't need a stateful "zone" flag: `fileManager.revealProblem` takes an optional `{ focus?: boolean }` (default `true`, preserving today's behavior for file-row clicks / `revealTopProblem`), and the diagnosis-row click handler passes `{ focus: false }`. The cursor still moves and is visible in the editor — the user just isn't kicked into typing mode there, so they can keep clicking/arrowing through diagnoses without focus bouncing away.
+2. Do **not** suppress (b), the file-panel scroll from item 10 — instead fix its underlying bug: it uses `scrollIntoView({ block: "nearest" })`, which only scrolls the minimum distance needed, so a target below the fold lands stuck at the bottom edge instead of being clearly shown. Same bug affects the Problems panel's own cursor-follow highlight scroll (`main.ts:543-545`, also `block: "nearest"`). Both should scroll their target to the top of the visible area (`block: "start"`) instead.
+3. The editor's own `revealLineInCenter` stays as-is (centered) — that's normal jump-to-line behavior showing context both above and below, and doesn't have the "stuck at the edge" bug the two panels have with `block: "nearest"`.
+4. No zone-reset question applies — there's no zone state to reset.
+
+**Net implementation**: 
+- `fileManager.ts`: `revealProblem(fileId, offset, opts: { focus?: boolean } = {})` — `if (opts.focus ?? true) this.editor.focus();`
+- `main.ts` diagnosis-row click handler: `fileManager.revealProblem(file.id, problem.range[0], { focus: false })`.
+- `main.ts:543-545` (Problems-panel highlight scroll) and `scrollFileRowIntoView` (item 10): change `block: "nearest"` → `block: "start"`.

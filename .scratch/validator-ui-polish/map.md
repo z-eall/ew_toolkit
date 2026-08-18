@@ -2,7 +2,7 @@ Label: wayfinder:map
 
 ## Destination
 
-Ship the ten sidebar/problems-panel UI-polish behaviors the user listed for the EWP Validator (`ewp_validator/src`, mainly `main.ts`). Six are mechanical (funnel-fill indicator, count-badge reposition, group remove-button, notice-click-scroll, Clear-All dropdown, collapse bug fix) and go straight to implementation once their small open questions are settled here. Three had real ambiguity; two settled during charting (Clear Invalid scope, collapse-vs-cursor-follow precedence, order-freeze scope). One — focus-zone scoping (item 9) — is a genuine feasibility/conflict question against the existing cursor-sync code and is this map's one live ticket.
+Ship the ten sidebar/problems-panel UI-polish behaviors the user listed for the EWP Validator (`ewp_validator/src`, mainly `main.ts`). Six are mechanical (funnel-fill indicator, count-badge reposition, group remove-button, notice-click-scroll, Clear-All dropdown, collapse bug fix) and go straight to implementation once their small open questions are settled here. Three had real ambiguity, all now settled: Clear Invalid scope, collapse-vs-cursor-follow precedence, order-freeze scope, and focus-zone scoping. All four decision tickets are resolved — nothing left on the frontier.
 
 ## Notes
 
@@ -16,6 +16,7 @@ Ship the ten sidebar/problems-panel UI-polish behaviors the user listed for the 
 - [Clear Invalid scope](issues/01-clear-invalid-scope.md) — "Clear Invalid" removes files carrying the existing `INVALID_FILE_CATEGORY` ("Invalid file") diagnosis branch — non-EWP-structured filenames — not files with validation errors/warnings.
 - [Collapse vs cursor-follow precedence](issues/02-collapse-cursor-follow-precedence.md) — a user's manual collapse of a diagnosis group always wins; cursor-follow updates `focusedProblemKey`/tab internally but never force-opens a group the user closed. Fixes the collapse bug (item 5) and satisfies item 8 in one change: drop the `&& group.file.id !== focusedFileId` override in `main.ts:516`.
 - [Order-freeze scope for removing live-edit auto-sort](issues/03-order-freeze-scope.md) — file-panel row order freezes between the two real trigger points (upload-complete, explicit sort-menu pick). Filtering just hides/shows frozen rows; removing a file drops it from the frozen order; a file added outside upload appends at the end. Only upload-complete and an explicit dropdown pick recompute the sort.
+- [Focus-zone scoping](issues/04-focus-zone-scoping.md) — no stateful "zone" needed: suppress `editor.focus()` only when a reveal is triggered by a diagnosis-row click (`revealProblem` gets an optional `{ focus?: boolean }`), leave the file-panel scroll (item 10) and Problems-panel highlight scroll as-is but fix both from `block: "nearest"` to `block: "start"` (they were landing the target stuck at the bottom edge instead of clearly in view), and leave the editor's `revealLineInCenter` centered.
 
 ## Not yet specified
 

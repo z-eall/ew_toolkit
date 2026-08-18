@@ -277,16 +277,32 @@ const collapsedFolders = new Set<string>();
 // validator-ui-polish ticket 03.
 let fileOrder: string[] = [];
 
+// A folder's position in the list is otherwise an incidental side effect of
+// "whichever of its files happens to appear first" in fileOrder — a status
+// sort (the default) interleaves folders by status, not grouped, so removing
+// that one anchor file could hand another folder the earlier slot and the
+// whole folder would visibly jump. Freeze folder position the same way file
+// position is frozen, keyed by folder name ("" = root/loose files).
+let folderOrder: string[] = [];
+
 function recomputeFileOrder(): void {
-  fileOrder = sortFiles(fileManager.allFiles.map(toViewFile), currentSort).map((f) => f.id);
+  const sorted = sortFiles(fileManager.allFiles.map(toViewFile), currentSort);
+  fileOrder = sorted.map((f) => f.id);
+  folderOrder = [];
+  for (const f of sorted) if (!folderOrder.includes(f.folder)) folderOrder.push(f.folder);
 }
 
-// Keep fileOrder in sync without resorting it: drop ids that no longer exist,
-// append any new id (e.g. a lone drag-drop outside the upload flow) at the end.
+// Keep fileOrder/folderOrder in sync without resorting them: drop ids/folders
+// that no longer exist, append any new one (e.g. a lone drag-drop outside the
+// upload flow) at the end.
 function syncFileOrder(): void {
   const ids = new Set(fileManager.allFiles.map((f) => f.id));
   fileOrder = fileOrder.filter((id) => ids.has(id));
   for (const f of fileManager.allFiles) if (!fileOrder.includes(f.id)) fileOrder.push(f.id);
+
+  const folders = new Set(fileManager.allFiles.map((f) => f.folder));
+  folderOrder = folderOrder.filter((folder) => folders.has(folder));
+  for (const f of fileManager.allFiles) if (!folderOrder.includes(f.folder)) folderOrder.push(f.folder);
 }
 
 // ---------- Problems panel tab state (error / warning / info / this file) ----------
@@ -355,7 +371,7 @@ function scrollFileRowIntoView(fileId: string): void {
     collapsedFolders.delete(file.folder);
     renderFileList();
   }
-  fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "nearest" });
+  fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "start" });
 }
 
 function statusBadge(status: FileStatus, errors: number, warnings: number): string {
@@ -389,7 +405,11 @@ function renderFileList() {
   syncFileOrder();
   const ordered = fileOrder.map((id) => byId.get(id)).filter((f): f is LoadedFile => !!f);
   const view = filterFiles(ordered.map(toViewFile), sidebarFilters);
-  const tree = buildTree(view);
+  // buildTree groups by first appearance in `view`, which — under a status
+  // sort — is an incidental side effect of whichever file happens to survive
+  // filtering/removal first; reorder by the frozen folderOrder instead so a
+  // folder's position doesn't jump when its earliest-appearing file is gone.
+  const tree = buildTree(view).sort((a, b) => folderOrder.indexOf(a.folder) - folderOrder.indexOf(b.folder));
 
   if (view.length === 0) {
     fileListEl.innerHTML = `<div class="empty-state"><p>No files match the current filter.</p></div>`;
@@ -577,7 +597,7 @@ function renderProblemsPanel() {
       row.dataset.key = key;
       row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
       row.addEventListener("click", () => {
-        fileManager.revealProblem(file.id, problem.range[0]);
+        fileManager.revealProblem(file.id, problem.range[0], { focus: false });
         scrollFileRowIntoView(file.id);
       });
       row.querySelector<HTMLButtonElement>(".copy-btn")!.addEventListener("click", (e) => {
@@ -588,7 +608,7 @@ function renderProblemsPanel() {
     }
   }
   if (focusedProblemKey) {
-    problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "nearest" });
+    problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "start" });
   }
 }
 
@@ -1024,6 +1044,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
 
   // Every upload resets the panel to the one-time Error > Warning > Valid sort.
   currentSort = DEFAULT_UPLOAD_SORT;
+  recomputeFileOrder();
   renderFileList();
 }
 

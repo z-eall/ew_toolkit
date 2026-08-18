@@ -17,3 +17,10 @@ Freeze everywhere except the two real trigger points: upload-complete (`main.ts:
 - Status changes from live validation (error count going up/down) never move a row.
 
 Implementation shape is left to the build (see map's "Not yet specified") — likely a stored array of file ids that `renderFileList` reads instead of calling `sortFiles` every time, recomputed only at the two trigger points and patched (not resorted) on add/remove.
+
+## Follow-up fixes (found during the focus-zone-scoping session)
+
+Two bugs surfaced while re-testing this decision against real usage, both fixed in the same pass:
+
+1. **`recomputeFileOrder()` was never wired into the upload-completion trigger** — only into the sort-menu handlers. So a fresh upload never actually applied the errors-first sort; the panel just showed raw insertion order from the first render. Fixed: `ingest()`'s tail (`currentSort = DEFAULT_UPLOAD_SORT; renderFileList();`) now also calls `recomputeFileOrder()`.
+2. **Folder position wasn't frozen, only file position was** — a status sort interleaves folders (doesn't group by folder), so a folder's list position was an incidental side effect of "whichever of its files happens to appear first" in the flat order. Removing that one anchor file could hand an unrelated folder the earlier slot, making the whole folder visibly jump — reproduced with two folders, each with one error + one valid file: removing the error file in the first folder moved the second folder above it. Fixed with a second frozen array, `folderOrder`, recomputed alongside `fileOrder` at the same two trigger points, and used to reorder `buildTree`'s output instead of trusting its first-appearance grouping.

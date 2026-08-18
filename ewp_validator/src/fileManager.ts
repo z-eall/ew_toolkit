@@ -333,15 +333,21 @@ export class FileManager {
     this.onChange();
   }
 
-  /** Switch to `fileId` and move the cursor to the character offset within its model. */
-  revealProblem(fileId: string, offset: number) {
+  /**
+   * Switch to `fileId` and move the cursor to the character offset within its
+   * model. `focus: false` (validator-ui-polish ticket 04) skips stealing
+   * keyboard focus into the editor — used for a Problems-panel diagnosis
+   * click, so clicking through several diagnoses doesn't bounce focus away
+   * from the panel each time. The cursor still moves either way.
+   */
+  revealProblem(fileId: string, offset: number, opts: { focus?: boolean } = {}) {
     const file = this.files.find((f) => f.id === fileId);
     if (!file) return;
     this.setActive(fileId);
     const pos = file.model.getPositionAt(offset);
     this.editor.revealLineInCenter(pos.lineNumber);
     this.editor.setPosition(pos);
-    this.editor.focus();
+    if (opts.focus ?? true) this.editor.focus();
   }
 
   /**
