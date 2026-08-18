@@ -78,6 +78,15 @@ const ICONS = {
   arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
+  // Circular two-arrow refresh — the "reset to default" affordance (clearer than
+  // a bare × for "put this back the way it was").
+  reset: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
+  // Two stacked sheets — the universal "copy to clipboard" glyph.
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1"/>',
+  // Ladybird beetle: antennae, a split domed shell, and four spots — the
+  // "file a report" affordance (bug report).
+  ladybug:
+    '<path d="M12 6c1.4 0 2.6.9 3.1 2.2"/><path d="M12 6c-1.4 0-2.6.9-3.1 2.2"/><path d="m6 8-1.8-1.4"/><path d="m18 8 1.8-1.4"/><ellipse cx="12" cy="13.5" rx="6.5" ry="7"/><path d="M12 7v13"/><circle cx="8.6" cy="12" r=".7"/><circle cx="15.4" cy="12" r=".7"/><circle cx="8.9" cy="16.5" r=".7"/><circle cx="15.1" cy="16.5" r=".7"/>',
   // Classic floppy disk: shutter notch at the top, label at the bottom.
   save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h6V4"/><path d="M8 13h8v6H8z"/>',
   // Nav glyphs — copied from the hub's nav.ts so the toolbar reads the same.
@@ -122,7 +131,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
           <span>Loaded files</span>
           <span class="sidebar-actions">
             <button class="icon-btn" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.filePlus)}</button>
-            <button class="icon-btn" id="add-folder-btn" title="Upload folders" aria-label="Upload folders">${icon(ICONS.folderPlus)}</button>
+            <button class="icon-btn" id="add-folder-btn" title="Upload a folder (drag &amp; drop to add several at once)" aria-label="Upload a folder">${icon(ICONS.folderPlus)}</button>
             <div class="sortfilter">
               <button class="icon-btn" id="sortfilter-btn" title="Sort & filter" aria-label="Sort and filter">${icon(ICONS.funnel)}</button>
               <div class="sortfilter-menu" id="sortfilter-menu" hidden></div>
@@ -150,7 +159,19 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <div id="editor"></div>
         <div class="resizer-y" id="resizer-y" title="Drag to resize"></div>
         <div class="problems">
-          <div class="problems-tabs" id="problems-tabs"></div>
+          <div class="problems-header">
+            <div class="problems-tabs" id="problems-tabs"></div>
+            <div class="problems-actions">
+              <div class="catfilter">
+                <button class="icon-btn" id="catfilter-btn" title="Filter by category" aria-label="Filter diagnoses by category">${icon(ICONS.funnel)}</button>
+                <div class="catfilter-menu" id="catfilter-menu" hidden></div>
+              </div>
+              <div class="report">
+                <button class="icon-btn" id="report-btn" title="File a report" aria-label="File a report">${icon(ICONS.ladybug)}</button>
+                <div class="report-menu" id="report-menu" hidden></div>
+              </div>
+            </div>
+          </div>
           <div id="problems-list"></div>
         </div>
       </div>
@@ -219,6 +240,30 @@ const collapsedFolders = new Set<string>();
 
 type ProblemTab = Severity | "thisfile";
 let activeTab: ProblemTab = "error";
+
+// The diagnostic categories that appear in a problem's `[branch]` tag — the
+// shared vocabulary behind the Problems-panel category filter and the report
+// dialog's "validation" sub-tag. Kept in one place so both stay in step with
+// what the checkers emit (structuralPrecheck's BRANCH_TITLES + fileManager's
+// reference-validation labels). Synthetic parse/root/item branches are left off
+// deliberately: they're rare fatal issues, always shown, never filtered.
+const DIAGNOSIS_CATEGORIES = [
+  "EWP rule entry",
+  "WEC data entry",
+  "Value entry",
+  "Value group",
+  "data.yaml reference",
+  "custom saved key",
+  "object data",
+] as const;
+const DIAGNOSIS_CATEGORY_SET = new Set<string>(DIAGNOSIS_CATEGORIES);
+
+// Category multi-select filter for the Problems panel (all on by default).
+const categoryFilter = new Set<string>(DIAGNOSIS_CATEGORIES);
+const categoriesAreDefault = () => categoryFilter.size === DIAGNOSIS_CATEGORIES.length;
+
+// Files whose diagnosis group the user has collapsed in the Problems panel.
+const collapsedProblemFiles = new Set<string>();
 const TAB_LABEL: Record<ProblemTab, string> = {
   error: "Errors",
   warning: "Warnings",
@@ -251,8 +296,8 @@ function renderFileList() {
     fileListEl.innerHTML = `
       <div class="empty-state" id="empty-state" title="Click to upload">
         <p data-open="files"><span class="hint-icon">${icon(ICONS.filePlus)}</span> Upload one or multiple files</p>
-        <p data-open="folders"><span class="hint-icon">${icon(ICONS.folderPlus)}</span> Upload one or multiple folders</p>
-        <p><span class="hint-icon">${icon(ICONS.dragArrow)}</span> Or drag &amp; drop here</p>
+        <p data-open="folders"><span class="hint-icon">${icon(ICONS.folderPlus)}</span> Upload a folder</p>
+        <p><span class="hint-icon">${icon(ICONS.dragArrow)}</span> Or drag &amp; drop files or folders here (several at once)</p>
       </div>`;
     document.getElementById("empty-state")!.addEventListener("click", (e) => {
       const which = (e.target as HTMLElement).closest("[data-open]")?.getAttribute("data-open");
@@ -277,11 +322,22 @@ function renderFileList() {
     if (group.folder) {
       const header = document.createElement("div");
       header.className = `folder-row ${collapsed ? "collapsed" : ""}`;
-      header.innerHTML = `<span class="folder-caret">${icon(ICONS.chevron)}</span><span class="folder-icon">${icon(ICONS.folder)}</span><span class="folder-name" title="${escapeHtml(group.folder)}">${escapeHtml(group.folder)}</span><span class="folder-count">${group.files.length}</span>`;
+      header.innerHTML = `<span class="folder-caret">${icon(ICONS.chevron)}</span><span class="folder-icon">${icon(ICONS.folder)}</span><span class="folder-name" title="${escapeHtml(group.folder)}">${escapeHtml(group.folder)}</span><span class="folder-count">${group.files.length}</span><button class="folder-remove-btn" title="Remove folder">×</button>`;
       header.addEventListener("click", () => {
         if (collapsed) collapsedFolders.delete(group.folder);
         else collapsedFolders.add(group.folder);
         renderFileList();
+      });
+      header.querySelector(".folder-remove-btn")!.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // Count every file in the folder, not just the ones passing the current
+        // sidebar filter — the remove clears the whole folder regardless of view.
+        const total = fileManager.allFiles.filter((f) => f.folder === group.folder).length;
+        const ok = confirm(
+          `Remove folder "${group.folder}" and its ${total} file${total > 1 ? "s" : ""}?\n\n` +
+            `Make sure you've saved anything you want to keep — removed files can't be recovered.`,
+        );
+        if (ok) fileManager.removeFilesInFolder(group.folder);
       });
       wireFolderDropTarget(header, group.folder);
       fileListEl.appendChild(header);
@@ -375,31 +431,92 @@ function renderProblemsPanel() {
     return;
   }
 
-  // "This file" isolates every severity for the active file; the others filter by severity.
-  const shown =
+  // "This file" isolates every severity for the active file; the others filter by
+  // severity. The category multi-select then narrows further — but only touches
+  // the defined categories, so parse/root/item branches always stay visible.
+  const bySeverity =
     activeTab === "thisfile"
       ? rows.filter((r) => r.file.id === activeId)
       : rows.filter((r) => r.problem.severity === activeTab);
+  const shown = bySeverity.filter(
+    (r) => !DIAGNOSIS_CATEGORY_SET.has(r.problem.branch) || categoryFilter.has(r.problem.branch),
+  );
   if (shown.length === 0) {
     const label = activeTab === "thisfile" ? "problems in this file" : `${TAB_LABEL[activeTab].toLowerCase()} to report`;
-    problemsListEl.innerHTML = `<div class="problems-empty">No ${label}.</div>`;
+    const suffix = bySeverity.length > 0 && !categoriesAreDefault() ? " match the category filter" : "";
+    problemsListEl.innerHTML = `<div class="problems-empty">No ${label}${suffix}.</div>`;
     return;
   }
 
+  // Group by file so each file's diagnosis collapses independently, preserving
+  // the incoming (tab-sorted) order of both files and their problems.
+  const groups: { file: LoadedFile; rows: ProblemRow[] }[] = [];
+  const byFile = new Map<string, (typeof groups)[number]>();
+  for (const r of shown) {
+    let g = byFile.get(r.file.id);
+    if (!g) {
+      g = { file: r.file, rows: [] };
+      byFile.set(r.file.id, g);
+      groups.push(g);
+    }
+    g.rows.push(r);
+  }
+
+  // Keep the file that owns the caret-focused note expanded, so following the
+  // cursor never lands the highlight inside a collapsed group.
+  const focusedFileId = focusedProblemKey ? focusedProblemKey.split(":")[0] : null;
+
   problemsListEl.innerHTML = "";
-  for (const { file, problem } of shown) {
-    const start = file.model.getPositionAt(problem.range[0]);
-    const row = document.createElement("div");
-    const key = `${file.id}:${problem.range[0]}`;
-    row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
-    row.dataset.key = key;
-    row.innerHTML = `<span class="loc">${escapeHtml(file.name)}:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
-    row.addEventListener("click", () => fileManager.revealProblem(file.id, problem.range[0]));
-    problemsListEl.appendChild(row);
+  for (const group of groups) {
+    const collapsed = collapsedProblemFiles.has(group.file.id) && group.file.id !== focusedFileId;
+    const header = document.createElement("div");
+    header.className = `problem-file ${collapsed ? "collapsed" : ""}`;
+    header.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="pf-name" title="${escapeHtml(group.file.name)}">${escapeHtml(group.file.name)}</span><span class="pf-count">${group.rows.length}</span>`;
+    header.addEventListener("click", () => {
+      if (collapsedProblemFiles.has(group.file.id)) collapsedProblemFiles.delete(group.file.id);
+      else collapsedProblemFiles.add(group.file.id);
+      renderProblemsPanel();
+    });
+    problemsListEl.appendChild(header);
+    if (collapsed) continue;
+
+    for (const { file, problem } of group.rows) {
+      const start = file.model.getPositionAt(problem.range[0]);
+      const row = document.createElement("div");
+      const key = `${file.id}:${problem.range[0]}`;
+      row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
+      row.dataset.key = key;
+      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
+      row.addEventListener("click", () => fileManager.revealProblem(file.id, problem.range[0]));
+      row.querySelector<HTMLButtonElement>(".copy-btn")!.addEventListener("click", (e) => {
+        e.stopPropagation();
+        copyDiagnosis(e.currentTarget as HTMLButtonElement, file, problem, start.lineNumber);
+      });
+      problemsListEl.appendChild(row);
+    }
   }
   if (focusedProblemKey) {
     problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "nearest" });
   }
+}
+
+// Copy a single diagnosis as `name.yaml:12 — message [Category]`, the shape a
+// user pastes into a validation report's description. Briefly marks the button
+// so the copy registers without a disruptive toast.
+function copyDiagnosis(
+  btn: HTMLButtonElement,
+  file: LoadedFile,
+  problem: LoadedFile["problems"][number],
+  line: number,
+): void {
+  const text = `${file.name}:${line} — ${problem.message} [${problem.branch}]`;
+  navigator.clipboard?.writeText(text).then(
+    () => {
+      btn.classList.add("copied");
+      setTimeout(() => btn.classList.remove("copied"), 1000);
+    },
+    () => {},
+  );
 }
 
 // The problem row the editor cursor is currently sitting on (file id + offset),
@@ -453,7 +570,7 @@ function renderSortFilterMenu() {
   const sortReset = currentSort !== DEFAULT_UPLOAD_SORT;
   const filterReset = !filtersAreDefault();
   const resetBtn = (kind: string) =>
-    `<button class="menu-reset" data-reset="${kind}" title="Reset to default">${icon(ICONS.close)}</button>`;
+    `<button class="menu-reset" data-reset="${kind}" title="Reset to default">${icon(ICONS.reset)}</button>`;
   sortFilterMenu.innerHTML = `
     <div class="menu-section-head">
       <span class="menu-section-title">Sort</span>${sortReset ? resetBtn("sort") : ""}
@@ -522,6 +639,160 @@ sortFilterBtn.addEventListener("click", (e) => {
 document.addEventListener("click", (e) => {
   if (!sortFilterMenu.hasAttribute("hidden") && !sortFilterMenu.contains(e.target as Node) && e.target !== sortFilterBtn) {
     sortFilterMenu.setAttribute("hidden", "");
+  }
+});
+
+// ---------- Problems panel: category filter + "file a report" ----------
+
+const catFilterBtn = document.getElementById("catfilter-btn")!;
+const catFilterMenu = document.getElementById("catfilter-menu")!;
+const reportBtn = document.getElementById("report-btn")!;
+const reportMenu = document.getElementById("report-menu")!;
+
+function renderCatFilterMenu() {
+  const reset = !categoriesAreDefault();
+  catFilterMenu.innerHTML = `
+    <div class="menu-section-head">
+      <span class="menu-section-title">Categories</span>
+      ${reset ? `<button class="menu-reset" data-reset="cat" title="Show all categories">${icon(ICONS.reset)}</button>` : ""}
+    </div>
+    ${DIAGNOSIS_CATEGORIES.map(
+      (c) =>
+        `<label class="menu-item filter-item">
+          <input type="checkbox" data-cat="${escapeHtml(c)}" ${categoryFilter.has(c) ? "checked" : ""} />
+          <span class="menu-label">${escapeHtml(c)}</span>
+        </label>`,
+    ).join("")}
+  `;
+  catFilterMenu.querySelectorAll<HTMLInputElement>("input[data-cat]").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const c = cb.dataset.cat!;
+      if (cb.checked) categoryFilter.add(c);
+      else categoryFilter.delete(c);
+      renderCatFilterMenu();
+      renderProblemsPanel();
+    });
+  });
+  catFilterMenu.querySelector<HTMLButtonElement>(".menu-reset")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    categoryFilter.clear();
+    for (const c of DIAGNOSIS_CATEGORIES) categoryFilter.add(c);
+    renderCatFilterMenu();
+    renderProblemsPanel();
+  });
+}
+
+catFilterBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  reportMenu.setAttribute("hidden", "");
+  if (catFilterMenu.hasAttribute("hidden")) {
+    renderCatFilterMenu();
+    catFilterMenu.removeAttribute("hidden");
+  } else {
+    catFilterMenu.setAttribute("hidden", "");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!catFilterMenu.hasAttribute("hidden") && !catFilterMenu.contains(e.target as Node) && e.target !== catFilterBtn) {
+    catFilterMenu.setAttribute("hidden", "");
+  }
+});
+
+// ---- File a report (opens a prefilled GitHub issue) ----
+
+const REPORT_TYPES = ["Bug", "Validation", "Feedback"] as const;
+type ReportType = (typeof REPORT_TYPES)[number];
+const REPORT_LABEL: Record<ReportType, string> = { Bug: "bug", Validation: "validation", Feedback: "feedback" };
+const REPORT_ISSUE_URL = "https://github.com/z-eall/ew_toolkit/issues/new";
+
+let reportType: ReportType = "Bug";
+let reportCategory: string = DIAGNOSIS_CATEGORIES[0];
+let reportDescription = "";
+
+function renderReportMenu() {
+  const showCategory = reportType === "Validation";
+  reportMenu.innerHTML = `
+    <div class="report-heading">File a report</div>
+    <label class="report-field">
+      <span class="report-label">Tag</span>
+      <select class="report-select" id="report-type">
+        ${REPORT_TYPES.map((t) => `<option ${t === reportType ? "selected" : ""}>${t}</option>`).join("")}
+      </select>
+    </label>
+    ${
+      showCategory
+        ? `<label class="report-field">
+            <span class="report-label">Category</span>
+            <select class="report-select" id="report-category">
+              ${DIAGNOSIS_CATEGORIES.map((c) => `<option ${c === reportCategory ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+            </select>
+          </label>`
+        : ""
+    }
+    <label class="report-field">
+      <span class="report-label">Description</span>
+      <textarea class="report-textarea" id="report-desc" rows="4" placeholder="Describe the issue. For a validation report, paste the copied diagnosis here.">${escapeHtml(reportDescription)}</textarea>
+    </label>
+    <div class="report-foot">
+      <button class="report-submit" id="report-submit">Open GitHub issue</button>
+      <span class="report-note">Opens a prefilled issue in a new tab — review before submitting.</span>
+    </div>
+  `;
+
+  const typeSel = reportMenu.querySelector<HTMLSelectElement>("#report-type")!;
+  typeSel.addEventListener("change", () => {
+    reportType = typeSel.value as ReportType;
+    renderReportMenu();
+  });
+  reportMenu.querySelector<HTMLSelectElement>("#report-category")?.addEventListener("change", (e) => {
+    reportCategory = (e.currentTarget as HTMLSelectElement).value;
+  });
+  const desc = reportMenu.querySelector<HTMLTextAreaElement>("#report-desc")!;
+  desc.addEventListener("input", () => {
+    reportDescription = desc.value;
+  });
+  reportMenu.querySelector<HTMLButtonElement>("#report-submit")!.addEventListener("click", (e) => {
+    e.stopPropagation();
+    submitReport();
+  });
+}
+
+function submitReport() {
+  const isValidation = reportType === "Validation";
+  const catPart = isValidation ? `: ${reportCategory}` : "";
+  const title = `[${reportType}${catPart}] EWP Validator report`;
+  const body = [
+    `**Tag:** ${reportType}`,
+    isValidation ? `**Category:** ${reportCategory}` : "",
+    "",
+    "**Description:**",
+    reportDescription.trim() || "_(no description provided)_",
+    "",
+    "---",
+    `_${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${meta.generatedAt}_`,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+  const url =
+    `${REPORT_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}` +
+    `&labels=${encodeURIComponent(REPORT_LABEL[reportType])}`;
+  window.open(url, "_blank", "noopener");
+  reportMenu.setAttribute("hidden", "");
+}
+
+reportBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  catFilterMenu.setAttribute("hidden", "");
+  if (reportMenu.hasAttribute("hidden")) {
+    renderReportMenu();
+    reportMenu.removeAttribute("hidden");
+  } else {
+    reportMenu.setAttribute("hidden", "");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!reportMenu.hasAttribute("hidden") && !reportMenu.contains(e.target as Node) && e.target !== reportBtn) {
+    reportMenu.setAttribute("hidden", "");
   }
 });
 

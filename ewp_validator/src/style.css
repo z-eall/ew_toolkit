@@ -629,12 +629,144 @@ body {
   font-family: Consolas, Menlo, monospace;
 }
 
+.problems-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
 .problems-tabs {
   display: flex;
   gap: 2px;
   padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+/* Filter + report buttons pinned to the right of the panel header. */
+.problems-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
   flex: none;
+}
+
+.catfilter,
+.report {
+  position: relative;
+}
+
+/* Anchored to the panel header at the bottom of the window, so both open
+   UPWARD (over the editor) rather than off the bottom edge. */
+.catfilter-menu,
+.report-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  z-index: 30;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  text-transform: none;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.catfilter-menu {
+  min-width: 180px;
+}
+
+/* `display: flex` on .report-menu would otherwise beat the `hidden` attribute's
+   UA `display: none`, so restore hiding explicitly for both popovers. */
+.catfilter-menu[hidden],
+.report-menu[hidden] {
+  display: none;
+}
+
+/* ---- File a report dialog ---- */
+
+.report-menu {
+  width: 300px;
+  max-width: min(300px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.report-heading {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-label {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.report-select,
+.report-textarea {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+}
+
+.report-textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.report-select:focus,
+.report-textarea:focus {
+  outline: none;
+  border-color: var(--info);
+}
+
+.report-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.report-submit {
+  background: var(--info);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.report-submit:hover {
+  filter: brightness(1.08);
+}
+
+.report-note {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .problem-tab {
@@ -748,4 +880,126 @@ body {
 .problems-empty {
   padding: 10px 12px;
   color: var(--muted);
+}
+
+/* ---- Folder-row remove button (mirrors the file-row ×) ---- */
+
+.folder-row .folder-remove-btn {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  visibility: hidden;
+}
+
+.folder-row:hover .folder-remove-btn {
+  visibility: visible;
+}
+
+.folder-row .folder-remove-btn:hover {
+  color: var(--error);
+}
+
+/* ---- Per-file diagnosis group header (expand / collapse) ---- */
+
+.problem-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.problem-file:first-child {
+  border-top: none;
+}
+
+.problem-file:hover {
+  background: var(--hover);
+}
+
+.problem-file .pf-caret {
+  display: inline-flex;
+  transition: transform 0.12s ease;
+}
+
+.problem-file:not(.collapsed) .pf-caret {
+  transform: rotate(90deg);
+}
+
+.problem-file .pf-caret svg {
+  width: 12px;
+  height: 12px;
+  color: var(--muted);
+  display: block;
+}
+
+.problem-file .pf-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.problem-file .pf-count {
+  flex: none;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Per-problem copy button (before the [category] tag) ---- */
+
+.problem {
+  align-items: center;
+}
+
+.problem .copy-btn {
+  flex: none;
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  visibility: hidden;
+}
+
+.problem .copy-btn svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+
+.problem:hover .copy-btn {
+  visibility: visible;
+}
+
+.problem .copy-btn:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.problem .copy-btn.copied {
+  color: #4fd18b;
+  visibility: visible;
+}
+
+/* The message keeps the flexible width; the copy button hugs the branch tag. */
+.problem .branch {
+  flex: none;
 }

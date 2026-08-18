@@ -69,7 +69,7 @@ export class FileManager {
   }
 
   addFile(name: string, content: string, folder = "", opts: AddOptions = {}): LoadedFile {
-    const finalName = opts.unique === false ? name : this.uniqueName(name);
+    const finalName = opts.unique === false ? name : this.uniqueName(name, folder);
     const id = `f${this.nextId++}`;
     const uri = monaco.Uri.parse(`file:///loaded/${id}/${encodeURIComponent(finalName)}`);
     const model = monaco.editor.createModel(content, "yaml", uri);
@@ -113,12 +113,33 @@ export class FileManager {
     return this.files.some((f) => f.name === name && f.folder === folder);
   }
 
-  /** Re-file a loaded file under a different folder (drag-to-folder). */
+  /**
+   * Re-file a loaded file under a different folder (drag-to-folder). Renamed
+   * with a `(n)` suffix if the destination folder already has that name —
+   * names are only guaranteed unique within a folder, not globally.
+   */
   moveToFolder(id: string, folder: string): void {
     const file = this.files.find((f) => f.id === id);
     if (!file || file.folder === folder) return;
+    file.name = this.uniqueName(file.name, folder, id);
     file.folder = folder;
     this.onChange();
+  }
+
+  /**
+   * Remove every loaded file in `folder` (the folder-row × action). The caller
+   * confirms first. Re-validates because a dropped folder's data.yaml entries
+   * may have been the only definition/write behind references in other folders.
+   */
+  removeFilesInFolder(folder: string): void {
+    const inFolder = this.files.filter((f) => f.folder === folder);
+    if (inFolder.length === 0) return;
+    const activeRemoved = inFolder.some((f) => f.id === this.activeId);
+    for (const f of inFolder) f.model.dispose();
+    this.files = this.files.filter((f) => f.folder !== folder);
+    this.revalidateAll();
+    if (activeRemoved) this.setActive(this.files[0]?.id ?? null);
+    else this.onChange();
   }
 
   /** Drop every loaded file (the trash action). The caller confirms first. */
@@ -190,7 +211,7 @@ export class FileManager {
    * swap mid-keystroke drops the rest of the input.
    */
   adoptModel(model: monaco.editor.ITextModel, name: string, folder = "", opts: AddOptions = {}): LoadedFile {
-    const finalName = opts.unique === false ? name : this.uniqueName(name);
+    const finalName = opts.unique === false ? name : this.uniqueName(name, folder);
     const id = `f${this.nextId++}`;
     const file: LoadedFile = {
       id,
@@ -219,7 +240,7 @@ export class FileManager {
       this.onChange();
       return;
     }
-    file.name = this.uniqueName(trimmed, id);
+    file.name = this.uniqueName(trimmed, file.folder, id);
     this.onChange();
   }
 
@@ -291,8 +312,15 @@ export class FileManager {
     monaco.editor.setModelMarkers(file.model, MARKER_OWNER, markers);
   }
 
-  private uniqueName(name: string, exceptId?: string): string {
-    const existing = new Set(this.files.filter((f) => f.id !== exceptId).map((f) => f.name));
+  /**
+   * A name not already used within `folder`, suffixed `(n)` from (1) on
+   * collision. Scoped per-folder to match `exists`/`upsertUploaded` — two
+   * different folders can each hold their own `unnamed.yaml`.
+   */
+  private uniqueName(name: string, folder: string, exceptId?: string): string {
+    const existing = new Set(
+      this.files.filter((f) => f.id !== exceptId && f.folder === folder).map((f) => f.name),
+    );
     if (!existing.has(name)) return name;
     const dot = name.lastIndexOf(".");
     const base = dot === -1 ? name : name.slice(0, dot);
