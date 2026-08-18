@@ -189,6 +189,18 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(runReferenceValidation(files)).toEqual([]);
   });
 
+  it("does not let a purely-dynamic saved key mask unrelated reads", () => {
+    // <save_<pid>_1> extracts the key name '<pid>', which is all wildcard. It
+    // must not be treated as a write for every other key, or it would suppress
+    // the genuine missing-write flag on someFlag.
+    const files = [
+      { id: "a", text: "- prefab: Beehive\n  type: create\n  keys: someFlag 1\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke\n  exec: |\n    <save_<pid>_1>\n" },
+    ];
+    const problems = runReferenceValidation(files);
+    expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("'someFlag'"))).toBe(true);
+  });
+
   it("does not cross-report between the data.yaml namespace and the custom-key namespace", () => {
     const files = [{ id: "a", text: "- name: some_data\n  ints:\n  - level, 1\n" }];
     const problems = runReferenceValidation(files);

@@ -87,19 +87,65 @@ function parseTypeKeyParameter(raw: string): string | null {
   return param.split(/\s+/)[0] ?? null;
 }
 
+// Saved keys nest one or more balanced `<...>` dynamic parameters. Every scan
+// below (token extraction, top-level splitting, wildcard matching) needs the
+// same primitive: from the `<` at `start`, find the index just past its matching
+// `>`. Returns -1 if the brackets never balance.
+function findGroupEnd(text: string, start: number): number {
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "<") depth++;
+    else if (text[i] === ">") {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+// Walk a key name, calling `onGroup` once per balanced `<...>` parameter and
+// `onLiteral` for every character outside a group. Trailing unbalanced text is
+// treated as literal. This is the one place the group/literal split is decided;
+// keyToPattern, keyToSubject, and hasLiteral all defer to it.
+function walkKeySegments(key: string, onLiteral: (ch: string) => void, onGroup: () => void): void {
+  let i = 0;
+  while (i < key.length) {
+    if (key[i] === "<") {
+      const end = findGroupEnd(key, i);
+      if (end === -1) {
+        for (; i < key.length; i++) onLiteral(key[i]);
+        return;
+      }
+      onGroup();
+      i = end;
+    } else {
+      onLiteral(key[i]);
+      i++;
+    }
+  }
+}
+
 // Split `s` on occurrences of `sep` that are not nested inside a `<...>` group.
 function splitTopLevel(s: string, sep: string): string[] {
   const parts: string[] = [];
-  let depth = 0;
   let cur = "";
-  for (const ch of s) {
-    if (ch === "<") depth++;
-    else if (ch === ">") depth = Math.max(0, depth - 1);
-    if (ch === sep && depth === 0) {
+  let i = 0;
+  while (i < s.length) {
+    if (s[i] === "<") {
+      const end = findGroupEnd(s, i);
+      if (end === -1) {
+        cur += s.slice(i);
+        break;
+      }
+      cur += s.slice(i, end); // keep the group intact, seps inside it don't count
+      i = end;
+    } else if (s[i] === sep) {
       parts.push(cur);
       cur = "";
+      i++;
     } else {
-      cur += ch;
+      cur += s[i];
+      i++;
     }
   }
   parts.push(cur);
@@ -126,23 +172,11 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
     const head = KEY_HEAD_RE.exec(text.slice(i));
     if (!head) continue;
 
-    let depth = 0;
-    let j = i;
-    for (; j < text.length; j++) {
-      if (text[j] === "<") depth++;
-      else if (text[j] === ">") {
-        depth--;
-        if (depth === 0) {
-          j++;
-          break;
-        }
-      }
-    }
-    if (depth !== 0) continue; // unbalanced, leave for the structural pre-check
+    const end = findGroupEnd(text, i);
+    if (end === -1) continue; // unbalanced, leave for the structural pre-check
 
-    const token = text.slice(i, j);
-    const inner = token.slice(head[0].length, -1); // between "<head_" and ">"
-    const range: [number, number] = [i, j];
+    const inner = text.slice(i + head[0].length, end - 1); // between "<head_" and ">"
+    const range: [number, number] = [i, end];
 
     let key: string;
     if (head[1].startsWith("save")) {
@@ -156,7 +190,7 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
       key = inner;
       if (key) reads.push({ key, range });
     }
-    i = j - 1;
+    i = end - 1;
   }
   return { writes, reads };
 }
@@ -165,56 +199,57 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// A neutral placeholder standing in for a dynamic `<...>` parameter in a literal
+// subject string — a control char no real key contains, that a `.*` can span.
+const GROUP_SENTINEL = "\x01";
+
 // Turn a key name into a matcher where each dynamic `<...>` parameter is a
-// wildcard, and into a literal subject where those parameters are a neutral
+// wildcard, and into a literal subject where those parameters become the
 // sentinel a wildcard can span.
 function keyToPattern(key: string): RegExp {
   let out = "";
-  for (let i = 0; i < key.length; i++) {
-    if (key[i] === "<") {
-      let depth = 0;
-      for (; i < key.length; i++) {
-        if (key[i] === "<") depth++;
-        else if (key[i] === ">") {
-          depth--;
-          if (depth === 0) break;
-        }
-      }
-      out += ".*";
-    } else {
-      out += escapeRegex(key[i]);
-    }
-  }
+  walkKeySegments(
+    key,
+    (ch) => (out += escapeRegex(ch)),
+    () => (out += ".*"),
+  );
   return new RegExp("^" + out + "$");
 }
 
 function keyToSubject(key: string): string {
   let out = "";
-  for (let i = 0; i < key.length; i++) {
-    if (key[i] === "<") {
-      let depth = 0;
-      for (; i < key.length; i++) {
-        if (key[i] === "<") depth++;
-        else if (key[i] === ">") {
-          depth--;
-          if (depth === 0) break;
-        }
-      }
-      out += "\x01";
-    } else {
-      out += key[i];
-    }
-  }
+  walkKeySegments(
+    key,
+    (ch) => (out += ch),
+    () => (out += GROUP_SENTINEL),
+  );
   return out;
+}
+
+// Does the key have any character outside a `<...>` group? A key that is purely
+// dynamic (e.g. `<pid>`) compiles to the `^.*$` matcher, which would match every
+// other key — so such a key is never allowed to drive a wildcard match.
+function hasLiteral(key: string): boolean {
+  let found = false;
+  walkKeySegments(
+    key,
+    () => (found = true),
+    () => {},
+  );
+  return found;
 }
 
 // "Likely match": an exact name match, or either key's dynamic-parameter
 // skeleton matching the other. This lets a read of `captureblockercity1` resolve
 // against a `<save_captureblockercity<int_isRadarCity=0>_..>` write, and a
-// `<pid>/teamlead` read against a `<save_<pid>/teamlead_<par_1>>` write.
+// `<pid>/teamlead` read against a `<save_<pid>/teamlead_<par_1>>` write. A
+// wildcard match only counts from the side that has at least one literal anchor,
+// so a purely-dynamic key can't silently suppress unrelated read/write flags.
 function keysCompatible(a: string, b: string): boolean {
   if (a === b) return true;
-  return keyToPattern(a).test(keyToSubject(b)) || keyToPattern(b).test(keyToSubject(a));
+  const aMatchesB = hasLiteral(a) && keyToPattern(a).test(keyToSubject(b));
+  const bMatchesA = hasLiteral(b) && keyToPattern(b).test(keyToSubject(a));
+  return aMatchesB || bMatchesA;
 }
 
 export function runReferenceValidation(files: FileInput[]): FileProblem[] {
