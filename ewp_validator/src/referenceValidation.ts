@@ -87,6 +87,34 @@ function parseTypeKeyParameter(raw: string): string | null {
   return param.split(/\s+/)[0] ?? null;
 }
 
+// The live-code read sites (`keys:`/`bannedKeys:`/`type: key`) come from the
+// parsed YAML AST, which never sees comments — so a read that exists *only* as a
+// commented-out `# bannedKeys: X` line is invisible to both the AST walk and the
+// `<save/load/clear>` template scan. Recover those key names from raw comment
+// text so the write-orphan check can say "the read is commented out" instead of
+// the generic "never read". Whole-line comments only (a `#` preceded by nothing
+// but indentation), matching stripLineComments' rule so we read the same lines
+// it blanks. Best-effort text parsing, not a YAML parse: one field per line is
+// the shape these toggles take.
+const COMMENTED_READ_FIELD_RE = /(?:^|[\s-])(bannedKeys|keys|type)\s*:\s*(.*)$/;
+function scanCommentedReadKeys(text: string): string[] {
+  const names: string[] = [];
+  for (const line of text.split("\n")) {
+    const comment = /^\s*#(.*)$/.exec(line);
+    if (!comment) continue;
+    const match = COMMENTED_READ_FIELD_RE.exec(comment[1]);
+    if (!match) continue;
+    const [, field, rest] = match;
+    if (field === "type") {
+      const keyName = parseTypeKeyParameter(rest);
+      if (keyName && hasLiteral(keyName)) names.push(keyName);
+    } else {
+      for (const k of parseKeysField(rest)) if (hasLiteral(k)) names.push(k);
+    }
+  }
+  return names;
+}
+
 // Saved keys nest one or more balanced `<...>` dynamic parameters. Every scan
 // below (token extraction, top-level splitting, wildcard matching) needs the
 // same primitive: from the `<` at `start`, find the index just past its matching
@@ -320,6 +348,10 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const rawScan = scanKeyOccurrences(file.text);
     for (const w of rawScan.writes) if (!liveWriteStarts.has(w.range[0])) commentedWriteNames.add(w.key);
     for (const r of rawScan.reads) if (!liveReadStarts.has(r.range[0])) commentedReadNames.add(r.key);
+    // Reads only present as a commented-out AST field (`# bannedKeys: X`), which
+    // neither scan above reaches. Writes have no AST form, so there's no
+    // matching commented-write pass.
+    for (const name of scanCommentedReadKeys(file.text)) commentedReadNames.add(name);
 
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;

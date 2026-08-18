@@ -126,15 +126,18 @@ from the scripter's continued self-testing:
    Detection: re-scan the raw text; since `stripLineComments` preserves offsets,
    any raw `<save/load/clear>` occurrence whose start offset the live (stripped)
    scan didn't yield is a commented one (`commentedWriteNames`/
-   `commentedReadNames`). Scoped to the `<...>` template forms that comment-
-   stripping already governs — a commented `keys:`/`type: key` read (never seen
-   by the YAML AST or the raw scan) still falls to the generic message. This is
-   the only rule that inspects comments; the data.yaml-reference checks are
-   AST-only, so nothing there needed the same treatment.
+   `commentedReadNames`). Reads also have an AST field form
+   (`keys:`/`bannedKeys:`/`type: key`) the YAML parser never sees in a comment,
+   so `scanCommentedReadKeys` additionally recovers those key names from raw
+   comment lines — a commented `# bannedKeys: X` now yields the "read is
+   commented out" message too, not just `<load_..>` forms. (Writes have no AST
+   form, so no matching pass is needed.) This is the only rule that inspects
+   comments; the data.yaml-reference checks are AST-only, so nothing there
+   needed the same treatment.
 
 Regression tests added: `referenceValidation.test.ts` (truceday read side +
-write-side mirror), and
+write-side mirror + AST-field commented read), and
 `structuralPrecheck.test.ts` (legacy notices assert `Legacy format:` wording +
-`LEGACY_FORMAT_CATEGORY` branch). 98 tests passing, type-check + build clean.
+`LEGACY_FORMAT_CATEGORY` branch). 99 tests passing, type-check + build clean.
 The "Legacy format entry" category was confirmed rendering live in the
 Problems-panel category filter.

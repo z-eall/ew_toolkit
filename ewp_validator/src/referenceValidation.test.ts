@@ -281,6 +281,23 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems[0].message).not.toContain("never read");
   });
 
+  it("detects a commented-out read in AST field form (# bannedKeys: / # keys: / # type: key), not just <load_..>", () => {
+    // The read exists only as a commented-out `bannedKeys:` line, which neither
+    // the YAML AST (comment-blind) nor the <load_..> template scan reaches —
+    // recovered from raw comment text so the write still gets the "read is
+    // commented out" message rather than the generic "never read".
+    for (const commentedRead of ["# bannedKeys: beacon 1", "# keys: beacon 1", "# - type: key, beacon 5;10"]) {
+      const files = [
+        { id: "a", text: `- prefab: Beehive\n  type: create\n  command: <save_beacon_1>\n\n${commentedRead}\n` },
+      ];
+      const problems = runReferenceValidation(files).filter((p) => p.message.includes("beacon"));
+      expect(problems).toHaveLength(1);
+      expect(problems[0].message).toContain("is written");
+      expect(problems[0].message).toContain("commented out");
+      expect(problems[0].message).not.toContain("never read");
+    }
+  });
+
   it("does not blank out a '#' that follows real content — e.g. a chat command inside a block scalar", () => {
     // `s Say #hello` is live block-scalar content, not a comment (YAML would
     // only treat a leading or whitespace-preceded '#' as a comment starter on
