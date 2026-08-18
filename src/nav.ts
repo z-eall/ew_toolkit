@@ -40,12 +40,12 @@ const navIcons: Record<string, string> = {
     '<path d="M5 9h12v7a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9z"/><path d="M17 10.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M9 3c0 1-1 1-1 2s1 1 1 2"/><path d="M13 3c0 1-1 1-1 2s1 1 1 2"/>',
   ),
 };
-const defaultNavIcon = svgIcon(
+export const toolboxIcon = svgIcon(
   '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M2 13h20"/><path d="M10 13v1a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-1"/>',
 );
 
 export function iconFor(key: string): string {
-  return navIcons[key] ?? defaultNavIcon;
+  return navIcons[key] ?? toolboxIcon;
 }
 
 export type Theme = "dark" | "light";

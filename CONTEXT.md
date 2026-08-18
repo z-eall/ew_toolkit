@@ -1,15 +1,15 @@
 # EW Toolkit
 
-QoL tooling for scripters who write YAML for Jere's ExpandWorld mod series in Valheim. This context covers the terminology for the tooling project itself, not Valheim or the mods' in-game mechanics.
+QoL tooling for scripters who write YAML for Jere's Expand World mod series in Valheim. This context covers the terminology for the tooling project itself, not Valheim or the mods' in-game mechanics.
 
 ## Language
 
-**ExpandWorld (EW)**:
-Jere Kuusela's family of Valheim mods (ExpandWorld Data, Prefabs, Events, etc.) that let users customize world/creature/item behavior via YAML config files.
+**Expand World (EW)**:
+Jere Kuusela's family of Valheim mods (Expand World Data, Prefabs, Events, etc.) that let users customize world/creature/item behavior via YAML config files.
 _Avoid_: "the mod series" (be specific about which plugin when it matters)
 
-**EWP (ExpandWorld Prefab)**:
-The specific ExpandWorld plugin for defining and customizing prefabs (spawned objects, custom systems) via YAML. The primary target of this toolkit.
+**EWP (Expand World Prefabs)**:
+The specific Expand World plugin for defining and customizing prefabs (spawned objects, custom systems) via YAML. The primary target of this toolkit.
 _Avoid_: "the prefab mod"
 
 **WEC (World Edit Commands)**:
@@ -60,7 +60,7 @@ WEC's `value:` and `valueGroup:` list-item shapes — a value entry defines a si
 The fact that EWP rule entries, WEC data entries, value entries, and value groups all share one YAML list with no tag/type field distinguishing them — entry kind must be inferred structurally (which keys are present), not read off a field. Central constraint on how the schema's top-level shape has to work (a `oneOf` union, not one flat object).
 
 **EW Toolkit** (umbrella/site):
-The public site hosting all Tools for Jere Kuusela's Valheim mods, branded after the ExpandWorld flagship line. Umbrella scope is tiered: now/near-term = Jere's mods (ExpandWorld family + non-EW-named world-editing mods like WEC/SDC); future-only-if-required = general Valheim world editing. Distinct from the [[EWP Toolkit]] project, which is this specific Tool's own map/repo before the reframe.
+The public site hosting all Tools for Jere Kuusela's Valheim mods, branded after the Expand World flagship line. Umbrella scope is tiered: now/near-term = Jere's mods (Expand World family + non-EW-named world-editing mods like WEC/SDC); future-only-if-required = general Valheim world editing. Distinct from the [[EWP Toolkit]] project, which is this specific Tool's own map/repo before the reframe.
 
 **Tool**:
 A discrete utility hosted on the [[Hub]], reachable at its own [[Subpath]]. The EWP validator is Tool #1.

@@ -159,6 +159,12 @@ body {
   font-size: 13.5px;
 }
 
+.mentions-section {
+  /* Reserve room for ~5 more Tool rows (each ~44px incl. gap) before this
+     section starts, so future Tools don't visually collide with it. */
+  margin-top: 220px;
+}
+
 .support-links {
   display: flex;
   flex-direction: column;
@@ -166,10 +172,35 @@ body {
 }
 
 .support-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 14px 16px;
+}
+
+.support-card-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--border);
+}
+
+.support-card-body {
+  min-width: 0;
+}
+
+.mention-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mention-link:hover {
+  text-decoration: underline;
 }
 
 .support-card-name {
@@ -189,4 +220,63 @@ body {
   border: 1px dashed var(--border);
   border-radius: 4px;
   padding: 3px 8px;
+}
+
+.support-link {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  text-decoration: none;
+}
+
+.support-link:hover {
+  border-color: var(--fg);
+}
+
+.support-section-label {
+  margin: 22px 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.support-section-desc {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 0 0 10px;
+}
+
+.support-discord {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 26px 0 0;
+  padding: 8px 14px;
+  background: #5865f2;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.support-discord:hover {
+  background: #4752c4;
+}
+
+.support-discord-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.support-discord-icon svg {
+  width: 100%;
+  height: 100%;
 }

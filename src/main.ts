@@ -1,5 +1,5 @@
 import "./style.css";
-import { navHtml, mountThemeToggle, iconFor } from "./nav";
+import { navHtml, mountThemeToggle, iconFor, toolboxIcon } from "./nav";
 
 // Hardcoded v1 Tool registration — see .scratch/ew_toolkit/hub-map.md Notes.
 // `key` matches the corresponding entry in nav.ts's navItems and picks the
@@ -17,12 +17,27 @@ const tools: Tool[] = [
     key: "ewp_validator",
     name: "EWP Validator",
     subpath: "./ewp_validator/",
-    description:
-      "Validate EWP YAML files for Jere Kuusela's ExpandWorld Prefab mod.",
+    description: "Validate Expand World Prefabs YAML files.",
   },
 ];
 
-const tagline = "Tools for Jere Kuusela's Valheim mods.";
+interface Mention {
+  icon: string;
+  name: string;
+  url: string;
+  description: string;
+}
+
+const mentions: Mention[] = [
+  {
+    icon: toolboxIcon,
+    name: "Valheim Tools by Haloa",
+    url: "https://valheimtools.stream/",
+    description: "Another collection kit of useful Valheim world editing tools.",
+  },
+];
+
+const tagline = "QoL tools for Valheim world editing.";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -42,6 +57,22 @@ app.innerHTML = `
       `,
         )
         .join("")}
+    </div>
+
+    <div class="mentions-section">
+      <div class="support-section-label">Also Worth a Look</div>
+      <div class="tool-rows">
+        ${mentions
+          .map(
+            (m) => `
+          <div class="tool-row">
+            <a class="tool-btn" href="${m.url}" target="_blank" rel="noopener noreferrer"><span class="nav-icon" aria-hidden="true">${m.icon}</span>${m.name}</a>
+            <span class="tool-desc">${m.description}</span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
     </div>
   </div>
 `;
