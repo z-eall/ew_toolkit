@@ -9,6 +9,7 @@ import {
   filterFiles,
   folderFromRelativePath,
   type FileStatus,
+  pickNextAfterRemoval,
   planSave,
   type SaveFile,
   type SaveScope,
@@ -305,6 +306,16 @@ function syncFileOrder(): void {
   for (const f of fileManager.allFiles) if (!folderOrder.includes(f.folder)) folderOrder.push(f.folder);
 }
 
+// The file panel's current on-screen file order (post filter, pre folder-
+// collapse — a collapsed folder's files still count as "in the panel"),
+// refreshed on every renderFileList(). Used to pick a sensible "next active
+// file" when removing from the file panel — see pickNextAfterRemoval.
+let visibleFileIds: string[] = [];
+
+// Same idea for the Problems panel: its current on-screen file-group order
+// (post tab/category filter), refreshed on every renderProblemsPanel().
+let visibleProblemFileIds: string[] = [];
+
 // ---------- Problems panel tab state (error / warning / info / this file) ----------
 // The "info" tab is the blue data.yaml/custom-key/legacy-format hints; the
 // "thisfile" tab isolates every severity for the active file only.
@@ -386,6 +397,7 @@ function renderFileList() {
   const all = fileManager.allFiles;
 
   if (all.length === 0) {
+    visibleFileIds = [];
     fileListEl.innerHTML = `
       <div class="empty-state" id="empty-state" title="Click to upload">
         <p data-open="files"><span class="hint-icon">${icon(ICONS.filePlus)}</span> Upload one or multiple files</p>
@@ -410,6 +422,7 @@ function renderFileList() {
   // filtering/removal first; reorder by the frozen folderOrder instead so a
   // folder's position doesn't jump when its earliest-appearing file is gone.
   const tree = buildTree(view).sort((a, b) => folderOrder.indexOf(a.folder) - folderOrder.indexOf(b.folder));
+  visibleFileIds = tree.flatMap((g) => g.files.map((f) => f.id));
 
   if (view.length === 0) {
     fileListEl.innerHTML = `<div class="empty-state"><p>No files match the current filter.</p></div>`;
@@ -431,12 +444,17 @@ function renderFileList() {
         e.stopPropagation();
         // Count every file in the folder, not just the ones passing the current
         // sidebar filter — the remove clears the whole folder regardless of view.
-        const total = fileManager.allFiles.filter((f) => f.folder === group.folder).length;
+        const removedIds = new Set(fileManager.allFiles.filter((f) => f.folder === group.folder).map((f) => f.id));
+        const total = removedIds.size;
         const ok = confirm(
           `Remove folder "${group.folder}" and its ${total} file${total > 1 ? "s" : ""}?\n\n` +
             `Make sure you've saved anything you want to keep — removed files can't be recovered.`,
         );
-        if (ok) fileManager.removeFilesInFolder(group.folder);
+        if (ok) {
+          const pivot = visibleFileIds.findIndex((id) => removedIds.has(id));
+          const nextId = pivot === -1 ? null : pickNextAfterRemoval(visibleFileIds, removedIds, pivot);
+          fileManager.removeFilesInFolder(group.folder, { nextId });
+        }
       });
       wireFolderDropTarget(header, group.folder);
       fileListEl.appendChild(header);
@@ -459,7 +477,8 @@ function renderFileList() {
       row.querySelector(".badge")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
       row.querySelector(".remove-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
-        fileManager.removeFile(vf.id);
+        const nextId = pickNextAfterRemoval(visibleFileIds, new Set([vf.id]), visibleFileIds.indexOf(vf.id));
+        fileManager.removeFile(vf.id, { nextId });
       });
       row.addEventListener("dragstart", (e) => {
         e.dataTransfer?.setData(INTERNAL_DND_TYPE, vf.id);
@@ -532,6 +551,7 @@ function renderProblemsPanel() {
   renderTabs(counts);
 
   if (fileManager.allFiles.length === 0) {
+    visibleProblemFileIds = [];
     problemsListEl.innerHTML = `<div class="problems-empty">Upload .yaml files to validate them.</div>`;
     return;
   }
@@ -548,6 +568,7 @@ function renderProblemsPanel() {
       ? categoryPassing.filter((r) => r.file.id === activeId)
       : categoryPassing.filter((r) => r.problem.severity === activeTab);
   if (shown.length === 0) {
+    visibleProblemFileIds = [];
     const label = activeTab === "thisfile" ? "problems in this file" : `${TAB_LABEL[activeTab].toLowerCase()} to report`;
     const suffix = bySeverity.length > 0 && !categoriesAreDefault() ? " match the category filter" : "";
     problemsListEl.innerHTML = `<div class="problems-empty">No ${label}${suffix}.</div>`;
@@ -567,6 +588,7 @@ function renderProblemsPanel() {
     }
     g.rows.push(r);
   }
+  visibleProblemFileIds = groups.map((g) => g.file.id);
 
   problemsListEl.innerHTML = "";
   for (const group of groups) {
@@ -584,7 +606,9 @@ function renderProblemsPanel() {
     });
     header.querySelector(".pf-remove-btn")!.addEventListener("click", (e) => {
       e.stopPropagation();
-      fileManager.removeFile(group.file.id);
+      const pivot = visibleProblemFileIds.indexOf(group.file.id);
+      const nextId = pickNextAfterRemoval(visibleProblemFileIds, new Set([group.file.id]), pivot);
+      fileManager.removeFile(group.file.id, { nextId });
     });
     problemsListEl.appendChild(header);
     if (collapsed) continue;
@@ -1294,7 +1318,13 @@ function renderClearAllMenu(): void {
       `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n  ${names}\n\n` +
         `These aren't EWP-structured files. Make sure you've saved anything you want to keep — cleared files can't be recovered.`,
     );
-    if (ok) fileManager.removeFiles(invalid.map((f) => f.id));
+    if (ok) {
+      const removedIds = new Set(invalid.map((f) => f.id));
+      const activeId = fileManager.activeFile?.id;
+      const pivot = activeId ? visibleFileIds.indexOf(activeId) : -1;
+      const nextId = pivot === -1 ? null : pickNextAfterRemoval(visibleFileIds, removedIds, pivot);
+      fileManager.removeFiles(invalid.map((f) => f.id), { nextId });
+    }
   });
 }
 

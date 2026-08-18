@@ -4,6 +4,7 @@ import {
   DEFAULT_UPLOAD_SORT,
   filterFiles,
   folderFromRelativePath,
+  pickNextAfterRemoval,
   planSave,
   type SaveFile,
   sortFiles,
@@ -198,5 +199,35 @@ describe("buildTree", () => {
     );
     // error file (folder B) sorts first, so its group leads
     expect(buildTree(files).map((g) => g.folder)).toEqual(["B", "A"]);
+  });
+});
+
+describe("pickNextAfterRemoval", () => {
+  const order = ["a", "b", "c", "d"];
+
+  it("prefers the item that slides up into the removed spot", () => {
+    expect(pickNextAfterRemoval(order, new Set(["b"]), 1)).toBe("c");
+  });
+
+  it("falls back to the previous item when the removed one was last", () => {
+    expect(pickNextAfterRemoval(order, new Set(["d"]), 3)).toBe("c");
+  });
+
+  it("skips past every removed id in a contiguous batch (folder removal)", () => {
+    // "b" and "c" removed together (e.g. a whole folder); pivot at "b"'s index
+    expect(pickNextAfterRemoval(order, new Set(["b", "c"]), 1)).toBe("d");
+  });
+
+  it("falls back past a trailing contiguous batch", () => {
+    expect(pickNextAfterRemoval(order, new Set(["c", "d"]), 2)).toBe("b");
+  });
+
+  it("returns null when every id is removed", () => {
+    expect(pickNextAfterRemoval(order, new Set(order), 0)).toBeNull();
+  });
+
+  it("handles a scattered (non-contiguous) removal set, e.g. Clear Invalid", () => {
+    // "a" and "c" removed; pivot is the active file "c" at index 2
+    expect(pickNextAfterRemoval(order, new Set(["a", "c"]), 2)).toBe("d");
   });
 });

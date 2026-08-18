@@ -202,15 +202,19 @@ export class FileManager {
    * Remove every loaded file in `folder` (the folder-row × action). The caller
    * confirms first. Re-validates because a dropped folder's data.yaml entries
    * may have been the only definition/write behind references in other folders.
+   * `nextId` (validator-ui-polish: "next item" selection) is the file the
+   * caller has already picked as the visual neighbor of the removed folder —
+   * the caller knows the displayed order, this class doesn't. Falls back to
+   * whatever's first internally if the caller doesn't supply one.
    */
-  removeFilesInFolder(folder: string): void {
+  removeFilesInFolder(folder: string, opts: { nextId?: string | null } = {}): void {
     const inFolder = this.files.filter((f) => f.folder === folder);
     if (inFolder.length === 0) return;
     const activeRemoved = inFolder.some((f) => f.id === this.activeId);
     for (const f of inFolder) f.model.dispose();
     this.files = this.files.filter((f) => f.folder !== folder);
     this.revalidateOrDefer();
-    if (activeRemoved) this.setActive(this.files[0]?.id ?? null);
+    if (activeRemoved) this.setActive(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
     else this.onChange();
   }
 
@@ -218,9 +222,10 @@ export class FileManager {
    * Remove a specific set of loaded files (the "Clear invalid files" action).
    * The caller confirms first and re-validates for the same reason as
    * removeFilesInFolder — a removed file's data.yaml entries may have been
-   * the only definition/write behind a reference elsewhere.
+   * the only definition/write behind a reference elsewhere. `nextId` — see
+   * removeFilesInFolder.
    */
-  removeFiles(ids: readonly string[]): void {
+  removeFiles(ids: readonly string[], opts: { nextId?: string | null } = {}): void {
     const idSet = new Set(ids);
     const removing = this.files.filter((f) => idSet.has(f.id));
     if (removing.length === 0) return;
@@ -228,7 +233,7 @@ export class FileManager {
     for (const f of removing) f.model.dispose();
     this.files = this.files.filter((f) => !idSet.has(f.id));
     this.revalidateOrDefer();
-    if (activeRemoved) this.setActive(this.files[0]?.id ?? null);
+    if (activeRemoved) this.setActive(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
     else this.onChange();
   }
 
@@ -272,15 +277,24 @@ export class FileManager {
     this.scheduleRevalidateAll();
   }
 
-  removeFile(id: string) {
+  /**
+   * `nextId` (validator-ui-polish: "next item" selection) is the file the
+   * caller has already picked as the visual neighbor of `id` in whichever
+   * panel the remove was triggered from — this class only knows its own
+   * internal (upload-order) array, not the displayed order, so it can't pick
+   * a sensible neighbor itself. Falls back to the old internal-array
+   * neighbor when the caller doesn't supply one (e.g. the ephemeral-draft
+   * auto-remove in onContentChanged, which has no panel click to anchor to).
+   */
+  removeFile(id: string, opts: { nextId?: string | null } = {}) {
     const idx = this.files.findIndex((f) => f.id === id);
     if (idx === -1) return;
     const [removed] = this.files.splice(idx, 1);
     removed.model.dispose();
     this.revalidateOrDefer(); // a removed file's data.yaml entries/keys may have been the only definition/write for something
     if (this.activeId === id) {
-      const next = this.files[idx] ?? this.files[idx - 1] ?? null;
-      this.setActive(next?.id ?? null);
+      const next = opts.nextId !== undefined ? opts.nextId : (this.files[idx]?.id ?? this.files[idx - 1]?.id ?? null);
+      this.setActive(next);
     } else {
       this.onChange();
     }

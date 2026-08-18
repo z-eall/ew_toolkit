@@ -71,6 +71,27 @@ export function filterFiles(files: readonly ViewFile[], enabled: ReadonlySet<Fil
   return files.filter((f) => enabled.has(f.status));
 }
 
+/**
+ * Pick which id becomes active after removing one or more ids from a
+ * currently-displayed order, so the next selection always lands on a visual
+ * neighbor of what was removed rather than an arbitrary internal-array
+ * survivor (validator-ui-polish: "next item" selection). Scans forward from
+ * `pivotIndex` for the first surviving id (the one that visually slides up
+ * into the removed spot), then falls back to scanning backward from just
+ * before it. `pivotIndex` is the position removal is anchored at — the
+ * removed id's own index for a single file, or the first index belonging to
+ * a removed folder/batch.
+ */
+export function pickNextAfterRemoval(
+  order: readonly string[],
+  removedIds: ReadonlySet<string>,
+  pivotIndex: number,
+): string | null {
+  for (let i = pivotIndex; i < order.length; i++) if (!removedIds.has(order[i])) return order[i];
+  for (let i = Math.min(pivotIndex, order.length) - 1; i >= 0; i--) if (!removedIds.has(order[i])) return order[i];
+  return null;
+}
+
 export interface TreeGroup {
   folder: string;
   files: ViewFile[];
