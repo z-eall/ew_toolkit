@@ -214,7 +214,7 @@ export class FileManager {
     for (const f of inFolder) f.model.dispose();
     this.files = this.files.filter((f) => f.folder !== folder);
     this.revalidateOrDefer();
-    if (activeRemoved) this.setActive(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
+    if (activeRemoved) this.activateNext(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
     else this.onChange();
   }
 
@@ -233,7 +233,7 @@ export class FileManager {
     for (const f of removing) f.model.dispose();
     this.files = this.files.filter((f) => !idSet.has(f.id));
     this.revalidateOrDefer();
-    if (activeRemoved) this.setActive(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
+    if (activeRemoved) this.activateNext(opts.nextId !== undefined ? opts.nextId : (this.files[0]?.id ?? null));
     else this.onChange();
   }
 
@@ -294,7 +294,7 @@ export class FileManager {
     this.revalidateOrDefer(); // a removed file's data.yaml entries/keys may have been the only definition/write for something
     if (this.activeId === id) {
       const next = opts.nextId !== undefined ? opts.nextId : (this.files[idx]?.id ?? this.files[idx - 1]?.id ?? null);
-      this.setActive(next);
+      this.activateNext(next);
     } else {
       this.onChange();
     }
@@ -375,6 +375,17 @@ export class FileManager {
     if (!file) return;
     const top = pickHighestPriority(file.problems, (a, b) => a.range[0] - b.range[0]);
     if (top) this.revealProblem(fileId, top.range[0]);
+  }
+
+  /**
+   * Switch to whichever file a removal handed the caret to. Reuses
+   * revealTopProblem so landing on a "next" file after a remove behaves the
+   * same as clicking that file's row — jump to its top error > warning >
+   * info, not just swap the model with the cursor wherever it last was.
+   */
+  private activateNext(id: string | null): void {
+    if (id) this.revealTopProblem(id);
+    else this.setActive(null);
   }
 
   private scheduleRevalidateAll() {

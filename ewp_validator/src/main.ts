@@ -382,7 +382,7 @@ function scrollFileRowIntoView(fileId: string): void {
     collapsedFolders.delete(file.folder);
     renderFileList();
   }
-  fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "start" });
+  fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "nearest" });
 }
 
 function statusBadge(status: FileStatus, errors: number, warnings: number): string {
@@ -531,6 +531,7 @@ interface ProblemRow {
 }
 
 function renderProblemsPanel() {
+  syncFocusedProblem();
   const rows: ProblemRow[] = [];
   for (const file of fileManager.allFiles) {
     for (const problem of file.problems) rows.push({ file, problem });
@@ -632,7 +633,7 @@ function renderProblemsPanel() {
     }
   }
   if (focusedProblemKey) {
-    problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "start" });
+    problemsListEl.querySelector(".problem.cursor-focus")?.scrollIntoView({ block: "nearest" });
   }
 }
 
@@ -658,6 +659,42 @@ function copyDiagnosis(
 // The problem row the editor cursor is currently sitting on (file id + offset),
 // so the panel can follow the caret onto a flagged line and highlight its note.
 let focusedProblemKey: string | null = null;
+
+// Recomputes focusedProblemKey (and the active severity tab) from the editor's
+// CURRENT actual cursor position, rather than trusting a cursor-changed event
+// to have fired. Monaco's onDidChangeCursorPosition doesn't fire when
+// setPosition lands on the same line/column the cursor already occupies —
+// which happens whenever a revealed top problem sits at a fresh model's
+// default position (line 1, e.g. a file whose only problem is right at its
+// start): switching files would otherwise leave focusedProblemKey stale and
+// nothing would highlight. Called unconditionally at the top of
+// renderProblemsPanel so every path that ends in a render (typing, a reveal,
+// a removal picking a "next" file) ends up correct, not just direct cursor
+// moves. Returns true if the key or tab actually changed.
+function syncFocusedProblem(): boolean {
+  const file = fileManager.activeFile;
+  const line = editor.getPosition()?.lineNumber ?? 1;
+  let best: LoadedFile["problems"][number] | null = null;
+  if (file) {
+    const onLine = file.problems.filter((p) => {
+      const startLine = file.model.getPositionAt(p.range[0]).lineNumber;
+      const endLine = file.model.getPositionAt(Math.max(p.range[1], p.range[0])).lineNumber;
+      return line >= startLine && line <= endLine;
+    });
+    best = pickHighestPriority(onLine);
+  }
+  const key = best && file ? `${file.id}:${best.range[0]}` : null;
+  const keyChanged = key !== focusedProblemKey;
+  focusedProblemKey = key;
+  // Follow the caret onto the matching severity tab — but never yank the user
+  // off the "This file" view, which already shows every severity for this file.
+  let tabChanged = false;
+  if (best && activeTab !== "thisfile" && activeTab !== best.severity) {
+    activeTab = best.severity;
+    tabChanged = true;
+  }
+  return keyChanged || tabChanged;
+}
 
 function renderTabs(counts: Record<ProblemTab, number>) {
   const tabs: ProblemTab[] = ["error", "warning", "info", "thisfile"];
@@ -1366,26 +1403,12 @@ window.addEventListener("beforeunload", (e) => {
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is
-// selected (and, if needed, its tab opened) in the panel below.
-editor.onDidChangeCursorPosition((e) => {
-  const file = fileManager.activeFile;
-  const line = e.position.lineNumber;
-  let best: LoadedFile["problems"][number] | null = null;
-  if (file) {
-    const onLine = file.problems.filter((p) => {
-      const startLine = file.model.getPositionAt(p.range[0]).lineNumber;
-      const endLine = file.model.getPositionAt(Math.max(p.range[1], p.range[0])).lineNumber;
-      return line >= startLine && line <= endLine;
-    });
-    best = pickHighestPriority(onLine);
-  }
-  const key = best && file ? `${file.id}:${best.range[0]}` : null;
-  if (key === focusedProblemKey) return;
-  focusedProblemKey = key;
-  // Follow the caret onto the matching severity tab — but never yank the user
-  // off the "This file" view, which already shows every severity for this file.
-  if (best && activeTab !== "thisfile" && activeTab !== best.severity) activeTab = best.severity;
-  renderProblemsPanel();
+// selected (and, if needed, its tab opened) in the panel below. Direct cursor
+// moves (typing, arrow keys, clicking in the editor) only reach the panel
+// through this event — renderProblemsPanel() re-syncs from scratch too, but
+// nothing else calls it when the cursor moves without any other state change.
+editor.onDidChangeCursorPosition(() => {
+  if (syncFocusedProblem()) renderProblemsPanel();
 });
 
 filenameTextEl.addEventListener("keydown", (e) => {

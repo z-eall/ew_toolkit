@@ -481,6 +481,10 @@ body {
   gap: 6px;
   cursor: pointer;
   border-bottom: 1px solid #2a2a2a;
+  /* Breathing room so scrollIntoView({block:"nearest"}) never leaves a
+     scrolled-to row flush against the panel's edge. */
+  scroll-margin-top: 8px;
+  scroll-margin-bottom: 8px;
 }
 
 .file-row.nested {
@@ -1005,6 +1009,11 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* .problem-file group headers are sticky at top:0 within this container —
+     give both the header an exact height and every .problem row a matching
+     scroll-margin-top, so scrollIntoView({block:"nearest"}) never lands a
+     row underneath its own sticky header (validator-ui-polish follow-up). */
+  --group-header-h: 30px;
 }
 
 .problem {
@@ -1013,6 +1022,8 @@ body {
   cursor: pointer;
   display: flex;
   gap: 8px;
+  scroll-margin-top: calc(var(--group-header-h) + 4px);
+  scroll-margin-bottom: 8px;
 }
 
 .problem .msg {
@@ -1083,7 +1094,9 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 0 12px;
+  height: var(--group-header-h);
+  box-sizing: border-box;
   cursor: pointer;
   color: var(--text);
   background: var(--bg);
