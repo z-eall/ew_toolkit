@@ -13,12 +13,12 @@ const base = import.meta.env.BASE_URL;
 const primary: SupportEntry[] = [
   {
     name: "Jere Kuusela",
-    desc: "Creator of Expand World mods and owner of Valheim World Editing discord.",
+    desc: 'Creator of Expand World mods and owner of Valheim World Editing discord.<br />He is also a master of the art of speaking... "very efficiently".',
     url: "https://buymeacoffee.com/jerekuusela",
     img: "https://github.com/JereKuusela.png",
   },
   {
-    name: "Zeall",
+    name: "Z e a l l",
     desc: "Creator of EW Toolkit site, accepting donations to support my modded Valheim projects and vibe-coding projects.",
     url: "https://ko-fi.com/zeall",
     img: "https://github.com/z-eall.png",
@@ -45,7 +45,7 @@ const hivemind: SupportEntry[] = [
     img: `${base}support/jpvalheim.png`,
   },
   {
-    name: "fire",
+    name: ":fire:",
     desc: "Vibe codding maniac, he builds crazy tools and he doesn't sleep.",
     url: "https://paypal.me/tjt1013",
     img: `${base}support/fire.png`,
@@ -55,7 +55,7 @@ const hivemind: SupportEntry[] = [
 const special: SupportEntry[] = [
   {
     name: "Haloa",
-    desc: 'Creator of the <a class="mention-link" href="https://valheimtools.stream/" target="_blank" rel="noopener noreferrer">Valheim Tools site</a>, he is also an enthusiastic Valheim builder.',
+    desc: 'Creator of the <a class="mention-link" href="https://valheimtools.stream/" target="_blank" rel="noopener noreferrer">Valheim Tools site</a>, and a phenomenal Valheim builder for those in the know.',
     url: null,
     img: `${base}support/haloa.png`,
   },
@@ -100,9 +100,10 @@ app.innerHTML = `
       ${special.map(card).join("")}
     </div>
 
+    <div class="support-section-label">Find us here</div>
     <a class="support-discord" href="https://discord.gg/VFRJcPwUdm" target="_blank" rel="noopener noreferrer">
       <span class="support-discord-icon" aria-hidden="true">${discordIcon}</span>
-      Find us here: Valheim World Editing
+      Valheim World Editing
     </a>
   </div>
 `;
