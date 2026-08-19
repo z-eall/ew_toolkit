@@ -46,6 +46,14 @@ describe("ewpRuleEntry", () => {
     expect(new RegExp(typeSchema.pattern).test("nonsense")).toBe(false);
   });
 
+  it("accepts any casing of a type word, not just lowercase — EWP resolves it via Enum.TryParse(value, true, ...), ignoreCase: true (ticket 13 round 8)", () => {
+    const typeSchema = ewpRuleEntry.properties.type;
+    for (const value of ["globalKey", "GLOBALKEY", "GlobalKey", "Say", "COMMAND"]) {
+      expect(new RegExp(typeSchema.pattern).test(value)).toBe(true);
+      expect(new RegExp(typeSchema.pattern).test(`${value}, someParam`)).toBe(true);
+    }
+  });
+
   it("accepts filter/bannedFilter singular alongside filters/bannedFilters plural (ticket 08)", () => {
     expect(ewpRuleEntry.properties.filter).toEqual({ type: "string" });
     expect(ewpRuleEntry.properties.bannedFilter).toEqual({ type: "string" });
@@ -66,6 +74,19 @@ describe("ewpRuleEntry", () => {
     const terrainPaint = terrainData.properties.paint.anyOf[0].enum;
     expect(terrainPaint).toContain("Reset");
     expect(terrainPaint).not.toContain("cultivated");
+  });
+
+  it("has the shared spawn/swap default delay field (schema-source-audit ticket 01: PrefabData.cs delay, missing before)", () => {
+    expect(ewpRuleEntry.properties.delay).toEqual({ anyOf: [{ type: "number" }, { type: "string" }] });
+  });
+
+  it("accepts spawn/swap as either an array of entries or the legacy single-line string form (schema-source-audit ticket 01: Yaml.cs PreParse rewrites a scalar spawn:/swap: line)", () => {
+    for (const field of ["spawn", "swap"]) {
+      const schema = ewpRuleEntry.properties[field];
+      expect(schema.oneOf).toBeDefined();
+      expect(schema.oneOf.some((s) => s.type === "array")).toBe(true);
+      expect(schema.oneOf.some((s) => s.type === "string")).toBe(true);
+    }
   });
 
   it("includes fields confirmed only in live source, missed by docs (ticket 02: separate, terrainHeight)", () => {
@@ -128,5 +149,12 @@ describe("object/poke filter fields (ticket 08)", () => {
     expect(pokeData.properties.prefab).toBeDefined(); // inherited from objectData
     expect(pokeData.properties.target).toBeDefined(); // poke-only
     expect(objectData.properties.target).toBeUndefined();
+  });
+});
+
+describe("itemEntry (nested under wecDataEntry.items)", () => {
+  it("types customData as a key-value object, not a string (schema-source-audit ticket 06: Dictionary<string, string> in source)", () => {
+    const itemSchema = wecDataEntry.properties.items.items;
+    expect(itemSchema.properties.customData).toEqual({ type: "object", additionalProperties: { type: "string" } });
   });
 });

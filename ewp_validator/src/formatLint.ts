@@ -14,11 +14,10 @@
 // `::`". Keys are examined (never values or comments), so a `::` inside a value
 // or a `#` comment is left alone.
 import { isScalar, parseDocument, visit } from "yaml";
+import { STRUCTURE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 // Type-only import (erased at compile) so there's no runtime cycle with
 // structuralPrecheck, which imports runFormatLint from here.
 import type { Problem } from "./structuralPrecheck";
-
-export const FORMAT_CATEGORY = "Formatting";
 
 // Each check inspects a mapping key's text and returns a user-facing message if
 // it's malformed, or null if the key is fine. Add a check here to cover a new
@@ -51,7 +50,7 @@ export function runFormatLint(text: string): Problem[] {
       const range: [number, number] = r ? [r[0], r[2] ?? r[1]] : [0, 0];
       for (const check of KEY_CHECKS) {
         const message = check(key);
-        if (message) problems.push({ severity: "error", message, branch: FORMAT_CATEGORY, range });
+        if (message) problems.push({ severity: "error", message, branch: STRUCTURE_PROBLEM_CATEGORY, range });
       }
     },
   });

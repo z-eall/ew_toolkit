@@ -8,9 +8,11 @@
 // prototype/oneof-union-error-quality branch.
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
+import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
+import { translateYamlError } from "./yamlErrorMessages";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -41,7 +43,10 @@ export function pickHighestPriority<T extends { severity: Severity }>(
 export interface Problem {
   severity: Severity;
   message: string;
+  /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Legacy but working) — see diagnosisCategories.ts. */
   branch: string;
+  /** Which of the 4 schema shapes this is on (EWP rule entry, WEC data entry, ...), shown as the tag's subtitle. Absent for checks that aren't scoped to one shape (format lint, file-name, legacy-filename, reference/custom-key checks). */
+  entryType?: string;
   /** Character offsets into the source text, for mapping to editor positions. */
   range: [start: number, end: number];
 }
@@ -61,7 +66,11 @@ const TYPED_LIST_KEYS = [
   "items",
 ];
 
-export const BRANCH_TITLES: Record<BranchName, string> = {
+// Which of the schema's 4 discriminator-less-array shapes an entry is on —
+// no longer a filterable category itself (see diagnosisCategories.ts's 5
+// kind-based categories), but still shown as a diagnosis tag's subtitle so
+// "which shape" stays visible at a glance.
+export const ENTRY_TYPE_TITLES: Record<BranchName, string> = {
   ewpRuleEntry: "EWP rule entry",
   wecDataEntry: "WEC data entry",
   valueEntry: "Value entry",
@@ -122,17 +131,43 @@ export function guessBranch(item: unknown): Guess {
 // conditional-requiredness case, not a full per-type field-relevance matrix.
 const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "time", "realtime"]);
 
+// Mirrors schema/generate.mjs's TYPE_ENUM (kept as a separate literal rather
+// than a shared import — one's an .mjs schema-builder, this is the app
+// bundle). Used only to tell a genuinely unknown `type`/`types` word (already
+// flagged by ajv's pattern check) apart from a known one that's missing its
+// prefab, so the two checks don't double-diagnose the same typo (duplicate/
+// clash audit following the Schema Source Audit map).
+const KNOWN_TYPES = new Set([
+  "create",
+  "destroy",
+  "change",
+  "state",
+  "say",
+  "command",
+  "poke",
+  "globalkey",
+  "key",
+  "custom",
+  "event",
+  "time",
+  "realtime",
+]);
+const KNOWN_TYPES_LIST = [...KNOWN_TYPES].join(", ");
+
+// True for a `type:`/`types:` value's own instancePath ("/type", "/types/0",
+// ...) — the only place the schema's `typeValue` pattern (schema/generate.mjs)
+// is used, so the only place its `pattern`-keyword ajv error needs the
+// friendlier message below instead of the raw generated regex.
+function isTypeValuePath(instancePath: string): boolean {
+  const head = instancePath.split("/").filter(Boolean)[0];
+  return head === "type" || head === "types";
+}
+
 // Undocumented/legacy constructs on an EWP rule entry that are live-tested to
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
 // notices and stripped before ajv so they don't also raise a hard error. They
-// carry their own "Legacy format entry" category (not the EWP-rule-entry one)
-// so the Problems panel can filter them apart — the wording follows Jere's
-// docs, which call these "Legacy format" rather than "Old format".
-export const LEGACY_FORMAT_CATEGORY = "Legacy format entry";
-// objectRpc:/clientRpc: parameter mismatches against Jere's RPCs.md docs
-// (see rpcValidation.ts) — always a warning, never a hard error, since an
-// undocumented or mistyped numbered parameter still works in-game.
-export const RPC_RULE_CATEGORY = "RPC rule entry";
+// carry the "Legacy but working" category — the wording follows Jere's docs,
+// which call these "Legacy format" rather than "Old format".
 const RPC_FIELDS = [
   ["objectRpc", OBJECT_RPC_PARAMS],
   ["clientRpc", CLIENT_RPC_PARAMS],
@@ -177,8 +212,22 @@ function checkPrefabRequiredness(item: Record<string, unknown>): PrefabHint | nu
   if (typeWords.length === 0) {
     return { message: `type '(none)' needs a 'prefab'. ${tail}`, field };
   }
-  const requiring = [...new Set(typeWords.filter((t) => t !== "" && !TYPES_WITHOUT_PREFAB.has(t)))];
-  if (requiring.length === 0) return null; // every declared type is prefab-less — fine
+  // Case-insensitive: EWP resolves `type`/`types` via Enum.TryParse(value, true, ...)
+  // (ignoreCase: true, confirmed against EWP 1.58 source — ticket 13 round 8), so
+  // `globalKey` and `globalkey` are equally prefab-less at runtime.
+  //
+  // A word that isn't a known type at all (typo, or garbage) is already ajv's
+  // job to report via the `type`/`types` pattern mismatch — counting it here
+  // too would double-diagnose the same mistake as an unrelated "needs a
+  // prefab" error (duplicate/clash audit).
+  const requiring = [
+    ...new Set(
+      typeWords.filter(
+        (t) => t !== "" && KNOWN_TYPES.has(t.toLowerCase()) && !TYPES_WITHOUT_PREFAB.has(t.toLowerCase()),
+      ),
+    ),
+  ];
+  if (requiring.length === 0) return null; // every declared type is prefab-less, unknown, or absent
 
   const label =
     requiring.length === 1
@@ -282,11 +331,11 @@ export function runStructuralPrecheck(text: string): Problem[] {
 
   for (const err of doc.errors) {
     const [start, end] = err.pos ?? [0, 0];
-    problems.push({ severity: "error", message: `YAML syntax error: ${err.message}`, branch: "(parse)", range: [start, end] });
+    problems.push({ severity: "error", message: `YAML syntax error: ${translateYamlError(err)}`, branch: "(parse)", range: [start, end] });
   }
   for (const warn of doc.warnings) {
     const [start, end] = warn.pos ?? [0, 0];
-    problems.push({ severity: "warning", message: warn.message, branch: "(parse)", range: [start, end] });
+    problems.push({ severity: "warning", message: translateYamlError(warn), branch: "(parse)", range: [start, end] });
   }
   if (doc.errors.length > 0) return problems; // downstream checks need a parseable document
 
@@ -334,7 +383,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
       problems.push({
         severity: "warning",
         message: "Use `name:`, not `data:`, to name a data entry. This entry will not register (a known WEC README typo).",
-        branch: BRANCH_TITLES.wecDataEntry,
+        branch: STRUCTURE_PROBLEM_CATEGORY,
+        entryType: ENTRY_TYPE_TITLES.wecDataEntry,
         range: r,
       });
       continue; // skip ajv validation against wecDataEntry: it would just repeat "required: name"
@@ -350,7 +400,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
         problems.push({
           severity: "info",
           message: LEGACY_DELAY_MESSAGE,
-          branch: LEGACY_FORMAT_CATEGORY,
+          branch: LEGACY_CATEGORY,
+          entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
           range: findPairRange(itemNode, "delay") ?? itemRange,
         });
       }
@@ -360,7 +411,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
           problems.push({
             severity: "info",
             message: legacySpawnMessage(key),
-            branch: LEGACY_FORMAT_CATEGORY,
+            branch: LEGACY_CATEGORY,
+            entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
             range: findPairRange(itemNode, key) ?? itemRange,
           });
         }
@@ -388,7 +440,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
             problems.push({
               severity: "warning",
               message: issue.message,
-              branch: RPC_RULE_CATEGORY,
+              branch: VALUE_PROBLEM_CATEGORY,
+              entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
               range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
             });
             // Any issue at all (including "extra" — out of documented range)
@@ -426,7 +479,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
             problems.push({
               severity: "warning",
               message: `\`${field[0]}:\` has no entries — all its items are commented out. Uncomment it, or remove the empty \`${field[0]}:\`.`,
-              branch: BRANCH_TITLES[branch],
+              branch: STRUCTURE_PROBLEM_CATEGORY,
+              entryType: ENTRY_TYPE_TITLES[branch],
               range: commentRange,
             });
             continue;
@@ -434,13 +488,33 @@ export function runStructuralPrecheck(text: string): Problem[] {
         }
         // additionalProperties errors carry the bad key in params — use that
         // to build a message naming the key, instead of ajv's generic one.
-        const message = error.params && "additionalProperty" in error.params
-          ? `'${(error.params as { additionalProperty: string }).additionalProperty}' is not a valid key in a ${BRANCH_TITLES[branch]}.`
-          : `${error.instancePath || "(entry)"} ${error.message}`;
+        // A `type:`/`types:` value that fails the case-insensitive enum
+        // pattern (ticket 13 round 8's `ci()` fix) would otherwise fall
+        // through to ajv's raw message, which dumps the generated bracket-
+        // class regex (`^([cC][rR][eE]...)`) verbatim — unreadable, and a UX
+        // regression introduced by that fix. Name the valid words instead.
+        //
+        // The `kind` (filterable category) split follows the same idea as the
+        // message split: an unknown/misspelled key or a missing required
+        // field is a Structure problem (something about which keys exist is
+        // wrong); a known field holding the wrong value is a Value problem.
+        let kind: string;
+        let message: string;
+        if (error.keyword === "pattern" && isTypeValuePath(error.instancePath)) {
+          kind = VALUE_PROBLEM_CATEGORY;
+          message = `'${error.instancePath}' must be one of: ${KNOWN_TYPES_LIST} (any case), optionally followed by ", param1 param2".`;
+        } else if (error.params && "additionalProperty" in error.params) {
+          kind = STRUCTURE_PROBLEM_CATEGORY;
+          message = `'${(error.params as { additionalProperty: string }).additionalProperty}' is not a valid key in a ${ENTRY_TYPE_TITLES[branch]}.`;
+        } else {
+          kind = error.keyword === "required" ? STRUCTURE_PROBLEM_CATEGORY : VALUE_PROBLEM_CATEGORY;
+          message = `${error.instancePath || "(entry)"} ${error.message}`;
+        }
         problems.push({
           severity: "error",
           message,
-          branch: BRANCH_TITLES[branch],
+          branch: kind,
+          entryType: ENTRY_TYPE_TITLES[branch],
           range: ajvErrorRange(itemNode, itemRange, error),
         });
       }
@@ -451,7 +525,13 @@ export function runStructuralPrecheck(text: string): Problem[] {
       if (hint) {
         const r =
           (hint.field ? findPairRange(itemNode, hint.field) : null) ?? findPairRange(itemNode, "prefab") ?? itemRange;
-        problems.push({ severity: "error", message: hint.message, branch: BRANCH_TITLES.ewpRuleEntry, range: r });
+        problems.push({
+          severity: "error",
+          message: hint.message,
+          branch: STRUCTURE_PROBLEM_CATEGORY,
+          entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
+          range: r,
+        });
       }
     }
   }

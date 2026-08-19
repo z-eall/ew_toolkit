@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { guessBranch, LEGACY_FORMAT_CATEGORY, runStructuralPrecheck, RPC_RULE_CATEGORY } from "./structuralPrecheck";
+import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
 
 describe("guessBranch", () => {
   it("guesses valueGroup when valueGroup is present", () => {
@@ -67,7 +68,8 @@ describe("runStructuralPrecheck", () => {
     const problems = runStructuralPrecheck(yaml);
     const errors = problems.filter((p) => p.severity === "error");
     expect(errors).toHaveLength(1);
-    expect(errors[0].branch).toBe("EWP rule entry");
+    expect(errors[0].branch).toBe(STRUCTURE_PROBLEM_CATEGORY);
+    expect(errors[0].entryType).toBe("EWP rule entry");
     expect(errors[0].message).toContain("chace");
     // range should point at the bad key: value pair, not the whole entry
     expect(yaml.slice(...errors[0].range).trim()).toBe("chace: 0.1");
@@ -85,7 +87,9 @@ describe("runStructuralPrecheck", () => {
   it("scopes garbage input to the default-guessed branch instead of every branch", () => {
     const yaml = "- foo: bar\n  baz: 1\n";
     const problems = runStructuralPrecheck(yaml);
-    expect(problems.every((p) => p.branch === "EWP rule entry")).toBe(true);
+    expect(problems.every((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.entryType === "EWP rule entry")).toBe(
+      true,
+    );
     expect(problems.some((p) => p.message.includes("foo"))).toBe(true);
     expect(problems.some((p) => p.message.includes("baz"))).toBe(true);
   });
@@ -95,7 +99,7 @@ describe("runStructuralPrecheck", () => {
     expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
   });
 
-  it("flags a legacy top-level delay: under the Legacy format entry category, not an error — ticket 13", () => {
+  it("flags a legacy top-level delay: under the Legacy but working category, not an error — ticket 13", () => {
     const yaml = "- prefab: dungeon_queen_door_custom\n  type: change, state true\n  delay: 18\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
@@ -105,17 +109,30 @@ describe("runStructuralPrecheck", () => {
     // Renamed to match Jere's docs, and carries its own filterable category.
     expect(flag!.message).toContain("Legacy format:");
     expect(flag!.message).not.toContain("Old format");
-    expect(flag!.branch).toBe(LEGACY_FORMAT_CATEGORY);
+    expect(flag!.branch).toBe(LEGACY_CATEGORY);
+    expect(flag!.entryType).toBe("EWP rule entry");
   });
 
-  it("flags a legacy single-line spawn: string under the Legacy format entry category, not an error — ticket 13", () => {
+  it("flags a legacy single-line spawn: string under the Legacy but working category, not an error — ticket 13", () => {
     const yaml = "- prefab: Beehive\n  type: create\n  spawn: fx_BonusYield, 0,0,1\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
     const flag = problems.find((p) => p.severity === "info" && p.message.includes("spawn"));
     expect(flag).toBeDefined();
     expect(flag!.message).toContain("Legacy format:");
-    expect(flag!.branch).toBe(LEGACY_FORMAT_CATEGORY);
+    expect(flag!.branch).toBe(LEGACY_CATEGORY);
+  });
+
+  it("classifies a missing required field as a Structure problem, not a Value problem (category-grouping ticket)", () => {
+    // A `- value:`-less item guesses valueEntry (no distinguishing key at all
+    // falls through to ewpRuleEntry instead — use an explicit valueGroup with
+    // its required `values:` list missing).
+    const yaml = "- valueGroup: biome_pool\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.message.includes("required"));
+    expect(err).toBeDefined();
+    expect(err!.branch).toBe(STRUCTURE_PROBLEM_CATEGORY);
+    expect(err!.entryType).toBe("Value group");
   });
 
   it("accepts a value group whose values are numbers, not just strings — ticket 13", () => {
@@ -140,7 +157,7 @@ describe("runStructuralPrecheck", () => {
     // No misleading additionalProperties error survives.
     expect(problems.some((p) => p.message.includes("not a valid key"))).toBe(false);
     // Exactly one format error, pointing at the offending `filter:` key on line 5.
-    const format = problems.filter((p) => p.branch === "Formatting");
+    const format = problems.filter((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.message.includes("colon"));
     expect(format).toHaveLength(1);
     expect(format[0].severity).toBe("error");
     expect(yaml.slice(...format[0].range)).toBe("filter:");
@@ -152,6 +169,17 @@ describe("runStructuralPrecheck", () => {
     const problems = runStructuralPrecheck(yaml);
     expect(problems.length).toBeGreaterThan(0);
     expect(problems[0].message).toContain("YAML syntax error");
+  });
+
+  it("translates a raw YAML parser error into plain language instead of the library's technical wording", () => {
+    // A duplicate key is one of the easiest real parse errors to trigger reliably.
+    const yaml = "- prefab: Bonemass\n  prefab: Eikthyr\n  type: create\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.branch === "(parse)");
+    expect(err).toBeDefined();
+    expect(err!.message).toContain("YAML syntax error:");
+    expect(err!.message).toContain("appears more than once");
+    expect(err!.message).not.toMatch(/^YAML syntax error: Map keys must be unique/i); // not the raw yaml-package wording verbatim
   });
 
   it("rejects a non-array top-level document", () => {
@@ -187,6 +215,13 @@ describe("runStructuralPrecheck", () => {
     }
   });
 
+  it("is case-insensitive on prefab-less types — EWP resolves `type` via Enum.TryParse(value, true, ...), ignoreCase: true (ticket 13 round 8)", () => {
+    for (const type of ["globalKey", "GLOBALKEY", "Key", "Custom", "EVENT"]) {
+      const problems = runStructuralPrecheck(`- type: ${type}\n`);
+      expect(problems.some((p) => p.message.includes("needs a 'prefab'"))).toBe(false);
+    }
+  });
+
   it("does not flag a prefab-less `types:` list (key/custom/event/realtime) — merged type/types rule", () => {
     const samples = [
       "- types:\n  - key, *missionsuccess 5\n",
@@ -208,6 +243,26 @@ describe("runStructuralPrecheck", () => {
     expect(err!.message).not.toContain("'realtime'"); // realtime is prefab-less, not named
     // Range points at the `types:` field.
     expect(yaml.slice(err!.range[0], err!.range[0] + 6)).toBe("types:");
+  });
+
+  it("gives a plain-language message for a bad type: value instead of the raw generated bracket-class regex", () => {
+    const yaml = "- type: nonsense\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.severity === "error");
+    expect(err).toBeDefined();
+    expect(err!.message).not.toContain("[cC]"); // no leaked ci() bracket-class regex
+    expect(err!.message).toContain("must be one of");
+    expect(err!.message).toContain("create");
+  });
+
+  it("does not double-diagnose an invalid type word as also missing a prefab (duplicate/clash audit)", () => {
+    // "nonsense" fails ajv's `type` pattern (an invalid enum word) — the
+    // prefab-requiredness check must not pile on a second, unrelated "needs a
+    // prefab" error for the same typo.
+    const yaml = "- type: nonsense\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message.includes("needs a 'prefab'"))).toBe(false);
+    expect(problems.some((p) => p.severity === "error")).toBe(true); // ajv's pattern error still fires
   });
 
   it("does not flag the round example: prefab-less `types:` with a poke block", () => {
@@ -247,7 +302,7 @@ describe("runStructuralPrecheck", () => {
     expect(problems.some((p) => p.message.includes("floats") && p.message.includes("array"))).toBe(true);
   });
 
-  it("flags an objectRpc parameter beyond the documented shape as an RPC-rule warning, not ajv's raw 'must be string' error", () => {
+  it("flags an objectRpc parameter beyond the documented shape as a Value problem warning, not ajv's raw 'must be string' error", () => {
     // The reported repro: Player's "Message" RPC only documents params 1-3;
     // "4: true" is both extra and non-string. Both should surface as one
     // clear warning, not the raw "/objectRpc/0/4 must be string" ajv message.
@@ -263,7 +318,7 @@ describe("runStructuralPrecheck", () => {
       "    overwrite: true\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.some((p) => p.message.includes("must be string"))).toBe(false);
-    const flag = problems.find((p) => p.branch === RPC_RULE_CATEGORY);
+    const flag = problems.find((p) => p.branch === VALUE_PROBLEM_CATEGORY);
     expect(flag).toBeDefined();
     expect(flag!.severity).toBe("warning");
     expect(flag!.message).toContain("Message");
@@ -280,7 +335,7 @@ describe("runStructuralPrecheck", () => {
       '    2: string, "hello"\n' +
       "    3: int, 0\n";
     const problems = runStructuralPrecheck(yaml);
-    expect(problems.some((p) => p.branch === RPC_RULE_CATEGORY)).toBe(false);
+    expect(problems.some((p) => p.branch === VALUE_PROBLEM_CATEGORY)).toBe(false);
   });
 
   it("downgrades a file that is only commented-out content to a warning instead of a YAML-list lint error", () => {

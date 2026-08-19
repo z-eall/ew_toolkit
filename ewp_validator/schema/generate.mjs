@@ -73,11 +73,22 @@ const TYPE_ENUM = [
   "time",
   "realtime",
 ];
+// Case-insensitive per-letter bracket class, e.g. "key" -> "[kK][eE][yY]" —
+// JSON Schema's `pattern` keyword carries no regex flags, so Ajv compiles it
+// with `new RegExp(pattern)` and no "i" flag. `type`/`types` resolve via C#'s
+// `Enum.TryParse(value, true, out Type)` (ignoreCase: true — confirmed live
+// against EWP 1.58 source, ticket 13 round 8), so any casing is accepted at
+// runtime and the schema must accept it too, not just the documented lowercase.
+const ci = (word) =>
+  word
+    .split("")
+    .map((ch) => (/[a-z]/i.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : ch))
+    .join("");
 // `type` (and each item of `types`) is documented as `"type, param1 param2"` —
 // the enum word optionally followed by trigger parameters after a comma.
 const typeValue = {
   type: "string",
-  pattern: `^(${TYPE_ENUM.join("|")})(\\s*,.*)?$`,
+  pattern: `^(${TYPE_ENUM.map(ci).join("|")})(\\s*,.*)?$`,
 };
 
 // Two unrelated paint enums share the field name "paint" in different
@@ -224,9 +235,21 @@ const terrainData = {
 };
 
 // objects/bannedObjects array items accept either a nested ObjectData object
-// or a legacy single-line string (Object(string line) constructor in
-// PrefabData.cs) — a true per-item dual-format union.
+// or a legacy compact-string line ("id, distance, data, weight, height") — a
+// true per-item dual-format union. Both C# fields are typed ObjectData[]-only
+// (PrefabData.cs); the compact-string form is accepted via Yaml.cs's PreParse
+// text-preprocessing (HandleObjects), which rewrites each compact line into a
+// full ObjectData mapping before YamlDotNet ever sees it — not, as it might
+// look, the separate Object(string line) constructor (that one is only
+// reachable via the legacy `pokes: string[]` field, schema-source-audit
+// ticket 01).
 const objectOrLegacyString = { oneOf: [objectData, { type: "string" }] };
+// spawn/swap are typed SpawnData[]-only in C# (PrefabData.cs), but Yaml.cs's
+// PreParse rewrites a scalar `spawn:`/`swap:` line into the spawns:/swaps:
+// array form before deserialization — the documented single-line legacy
+// shorthand (docs/legacy.md) — so the field itself must accept either shape
+// (schema-source-audit ticket 01).
+const spawnOrLegacyString = { oneOf: [{ type: "array", items: spawnData }, { type: "string" }] };
 
 // ---------- EWP rule entry (PrefabData.cs: Data class, ~70 fields) ----------
 // Grouped to mirror docs/scripting.md's own section headers.
@@ -246,6 +269,10 @@ const ewpRuleEntry = {
     weight: numberOrString,
     fallback: boolOrString,
     separate: boolOrString,
+    // Shared default delay applied to every spawn/swap/spawns/swaps entry
+    // that doesn't set its own per-item delay (PrefabLoading.cs, combined
+    // with spawnDelay via Math.Max) — schema-source-audit ticket 01.
+    delay: numberOrString,
 
     // Scalar filters
     admin: boolOrString,
@@ -310,8 +337,8 @@ const ewpRuleEntry = {
     triggerRules: boolOrString,
 
     // Spawns
-    spawn: { type: "array", items: spawnData },
-    swap: { type: "array", items: spawnData },
+    spawn: spawnOrLegacyString,
+    swap: spawnOrLegacyString,
     spawns: strArray,
     swaps: strArray,
     spawnDelay: numberOrString,
@@ -353,7 +380,9 @@ const itemEntry = {
     worldLevel: numberOrString,
     equipped: boolOrString,
     pickedUp: boolOrString,
-    customData: str,
+    // Dictionary<string, string> in source (DataData.cs), a YAML mapping of
+    // key-value pairs — not a scalar string (schema-source-audit ticket 06).
+    customData: { type: "object", additionalProperties: str },
   },
   additionalProperties: false,
 };

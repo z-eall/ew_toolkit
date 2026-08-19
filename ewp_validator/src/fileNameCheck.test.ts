@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { LEGACY_CATEGORY } from "./diagnosisCategories";
 import { checkFileName, classifyFileName, INVALID_FILE_CATEGORY } from "./fileNameCheck";
-import { LEGACY_FORMAT_CATEGORY } from "./structuralPrecheck";
 
 describe("classifyFileName", () => {
   it("accepts the current-format prefixes as valid", () => {
@@ -51,7 +51,7 @@ describe("checkFileName", () => {
     expect(verdict).toBe("legacy");
     expect(problem).not.toBeNull();
     expect(problem!.severity).toBe("info");
-    expect(problem!.branch).toBe(LEGACY_FORMAT_CATEGORY);
+    expect(problem!.branch).toBe(LEGACY_CATEGORY);
     expect(problem!.message).toContain("Legacy filename");
     expect(problem!.message).toContain("data_mydata.yaml");
     expect(problem!.message).toContain("/config/data");

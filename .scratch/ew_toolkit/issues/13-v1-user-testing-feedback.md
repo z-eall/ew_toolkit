@@ -275,3 +275,130 @@ the commented-out `floats:` warning on the comment line, and the dynamic
 category menu (only present categories, sorted, "Data entry reference" renamed).
 Two-axis code review clean on Spec; Standards judgement-call refactors applied
 (single-sourced branch titles, DRY'd the reference-collection loops).
+
+### Round 8 — `type`/`types` case-sensitivity false positive (added 2026-08-19)
+
+The scripter live-tested EWP 1.58 in-game and confirmed `type: globalKey` and
+`type: globalkey` behave identically, but the validator rejected the camelCase
+form with two errors: a pattern-mismatch on `type` (`schema/generate.mjs`'s
+`TYPE_ENUM` regex was lowercase-only) and a spurious "needs a 'prefab'"
+(`structuralPrecheck.ts`'s `TYPES_WITHOUT_PREFAB` Set lookup was an exact-case
+match, so `globalKey` didn't match its own lowercase `globalkey` entry).
+
+Root cause confirmed against EWP's actual C# source (not docs) via a research
+pass: [research/13-round8-type-case-sensitivity.md](../research/13-round8-type-case-sensitivity.md).
+`type`/`types` resolves through `Enum.TryParse(types.Key, true, out Type)`
+(`PrefabData.cs:722`) — the `true` is `ignoreCase`. This is the house style,
+not special-cased: every other EWP enum-bound field parsed via
+`service/Parse.cs` uses the identical `Enum.TryParse(arg, true, ...)` pattern
+(`terrain[].paint`, RPC hit types, etc.), and the non-enum `paint`/`minPaint`/
+`maxPaint` word-list achieves the same case-insensitivity via
+`arg.ToLowerInvariant()` against a lowercase-keyed dictionary. Docs
+(`docs/scripting.md`) only ever show lowercase, which is why the schema was
+hand-encoded lowercase-only — the docs aren't wrong, just incomplete on what
+the parser actually accepts. Same shape as ticket 08's `filter`/`bannedFilter`
+correction.
+
+Fix: `generate.mjs`'s `typeValue` pattern now builds a per-letter bracket
+class (`ci()` helper — JSON Schema's `pattern` keyword carries no regex flags,
+so case-insensitivity has to be baked into the pattern string itself) instead
+of the plain-lowercase `TYPE_ENUM` alternation. `structuralPrecheck.ts`'s
+`TYPES_WITHOUT_PREFAB.has(t)` now lowercases `t` before the Set lookup.
+Lowercase stays the suggested/documented style (unchanged), but any casing now
+validates. `terrain[].paint` and the top-level `paint`/`minPaint`/`maxPaint`
+fields were checked too — both already accept any string via an `anyOf`
+fallback branch, so they were never actually case-sensitive; no fix needed
+there.
+
+Regression tests added: `schema/generate.test.mjs` (pattern accepts
+`globalKey`/`GLOBALKEY`/`GlobalKey`/`Say`/`COMMAND`) and
+`structuralPrecheck.test.ts` (prefab-less check accepts mixed-case type
+words). 164 tests passing (was 162), type-check clean. Verified live: the
+scripter's exact `type: globalKey, removeskydrops` / `remove: true` snippet
+now validates with 0 errors/warnings/info, while a genuine typo
+(`nonsenseType`) still correctly raises both errors.
+
+### Round 9 — audited the other casing mechanism: property/key names (added 2026-08-19)
+
+Follow-up to round 8: the scripter asked whether other hand-encoded validation
+might have the same doc-vs-source gap. Value-level enum casing was already
+exhausted by round 8 (`type` was the only truly strict enum; the two `paint`
+enums already accept any string via an `anyOf` fallback, so were never
+strict). The one other unverified mechanism was YAML **key** matching —
+`additionalProperties: false` appears 8 times across the schema's object
+shapes and rejects any key that isn't an exact-case match.
+
+Research: [research/13-round9-key-case-sensitivity.md](../research/13-round9-key-case-sensitivity.md).
+Confirmed from EWP's `Yaml.cs` + YamlDotNet source: EWP's deserializer only
+sets `.WithNamingConvention(CamelCaseNamingConvention.Instance)`, never
+YamlDotNet's separate `caseInsensitivePropertyMatching` flag (defaults
+`false`). So unlike `type`'s value, a wrong-case **key** (`Prefab:` vs
+`prefab:`) is not accepted by EWP itself — it's silently dropped by EWP's own
+deserializer. **No fix needed**: `additionalProperties: false`'s exact-case
+matching already models EWP's real behavior correctly here.
+
+Net result of rounds 8+9: both casing mechanisms EWP actually has (value
+parsing via `Enum.TryParse(x, true, ...)`, key matching via YamlDotNet's
+property binder) are now source-verified — one had a real gap (fixed), one
+didn't (confirmed clean). No further casing-audit surface remains; broader
+doc-vs-source drift outside casing continues to be caught by this ticket's
+ordinary live-testing rounds rather than a separate audit effort.
+
+### Round 10 — diagnosis-message UX pass: duplicate/clash + a hub-wide message-quality standard (added 2026-08-19)
+
+Follow-up to the [Schema Source Audit map](../../schema-source-audit/map.md):
+the scripter asked (1) whether the validator's several diagnosis-producing
+mechanisms ever double-diagnose the same root cause, and (2) whether a
+standing quality bar should exist for diagnosis-message readability, including
+translating the raw `yaml` npm package parser errors (e.g. "Nested mappings
+are not allowed in compact mappings at line 2, column 9") into plain language.
+A grilling session settled the shape of both asks (kept as two separate,
+independently-resolved items per the scripter's explicit instruction — the
+duplicate/clash question was not folded into the bigger message-quality
+effort) and both were then implemented directly, no formal map/tickets, since
+the grilling surfaced no fog.
+
+**1. Duplicate/clash audit.** Found one confirmed real case:
+`checkPrefabRequiredness` (`structuralPrecheck.ts`) counted *any* `type:`/
+`types:` word toward "needs a prefab", including a word that fails ajv's
+enum-pattern check entirely (a typo) — so a single bad `type:` value produced
+*two* unrelated errors (an ajv pattern mismatch, plus a spurious "needs a
+prefab"). Fixed by adding a `KNOWN_TYPES` set (mirrors `generate.mjs`'s
+`TYPE_ENUM`) and excluding any word not in it from the "requiring a prefab"
+count — an unknown word is already ajv's job to flag. The other diagnosis
+sources (`formatLint.ts`, `referenceValidation.ts`, `rpcValidation.ts`, the
+ajv loop's existing suppressions for RPC/`::`/commented-out-list errors) were
+re-checked and found already non-overlapping by design.
+
+**2. Raw ajv `pattern`-error UX regression (introduced by round 8's fix).**
+The `ci()` case-insensitivity fix made a bad `type:`/`types:` value's ajv
+error *worse*, not better — it now dumps the generated bracket-class regex
+(`^([cC][rR][eE][aA][tT][eE]|...)`) verbatim via the generic fallback
+message. Added a targeted override in the ajv error loop
+(`structuralPrecheck.ts`): a `pattern`-keyword error on a `type`/`types`
+instancePath now reads `'/type' must be one of: create, destroy, ... (any
+case), optionally followed by ", param1 param2"` instead.
+
+**3. YAML-parser-error translator.** New module `yamlErrorMessages.ts`:
+`translateYamlError` maps all 23 values of the `yaml` package's closed
+`ErrorCode` union (`node_modules/yaml/dist/errors.d.ts`) to a plain-language
+sentence, with a friendly-but-generic wrapper (never the raw message shown
+bare) for any future/unmatched code. Wired into both `doc.errors` and
+`doc.warnings` handling in `runStructuralPrecheck`. Chosen over the
+originally-floated "translate only the common few" approach — the scripter
+explicitly rejected that as not future-proof, and a closed enum union is
+cheap to cover exhaustively rather than partially.
+
+**4. Standing message-quality checklist.** Added to the
+[EW Toolkit map](../map.md)'s Notes, deliberately **hub-wide** (applies to
+every tool this hub ever hosts, not scoped to `ewp_validator`) per the
+scripter's explicit choice: name the offending value, say what to do next, no
+raw schema/regex/parser jargon in user-facing text, one diagnosis per root
+cause, exhaustive tables for closed upstream error sets, and a regression test
+for every message-quality fix.
+
+Regression tests added: `structuralPrecheck.test.ts` (duplicate/clash
+suppression, plain-language `type:` pattern message, translated-YAML-error
+integration case) and a new `yamlErrorMessages.test.ts` (all 23 codes produce
+a distinct non-raw message, plus fallback-wrapper and missing-code cases). 173
+tests passing (was 167), type-check clean.

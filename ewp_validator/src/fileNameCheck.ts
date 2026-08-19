@@ -8,15 +8,28 @@
 //   - anything else            — allegedly not an EWP structural file: a hard
 //     "Invalid file" error, and the diagnosis passes are skipped for it
 //     entirely (see FileManager.revalidateAll).
-import { LEGACY_FORMAT_CATEGORY, type Problem } from "./structuralPrecheck";
+import { INVALID_FILE_CATEGORY, LEGACY_CATEGORY } from "./diagnosisCategories";
+import type { Problem } from "./structuralPrecheck";
 
-export const INVALID_FILE_CATEGORY = "Invalid file";
+export { INVALID_FILE_CATEGORY };
 
 export type FileNameVerdict = "valid" | "legacy" | "invalid";
 
 const REQUIRED_EXT = ".yaml";
 const LEGACY_PREFIX = "expand_data";
-/** Current-format prefixes; the legacy `expand_data` prefix is handled separately. */
+/**
+ * Current-format prefixes; the legacy `expand_data` prefix is handled separately.
+ *
+ * Note on `"data"`: EWP's real source rule for data files is folder-based
+ * (any `.yaml` under its `config/data` folder, any name), not a name prefix —
+ * see ticket 08 (validator-round2). This tool has no reliable access to a
+ * scripter's real disk folder (our own `folder` field is a UI-only label for
+ * export organization, not their EWP install path), so a folder-based check
+ * isn't buildable here. The `"data"` prefix stays as a deliberate practical
+ * heuristic — scripters conventionally don't name data-entry files anything
+ * else — not a source-verified EWP rule. Revisit if that habit turns out to
+ * be unreliable in practice.
+ */
 const VALID_PREFIXES = ["expand_prefabs", "data"];
 
 export function classifyFileName(name: string): FileNameVerdict {
@@ -56,10 +69,11 @@ export function checkFileName(name: string): FileNameCheck {
       verdict,
       problem: {
         severity: "info",
-        branch: LEGACY_FORMAT_CATEGORY,
+        branch: LEGACY_CATEGORY,
         message:
           `Legacy filename: 'expand_data*.yaml' is the old data file name. It still works, ` +
-          `but we recommend renaming it to '${target}' and move into the '/config/data' directory.`,
+          `but we recommend renaming it to '${target}' and move into the '/config/data' directory ` +
+          `— click the filename above to rename it.`,
         range: [0, 0],
       },
     };
@@ -73,7 +87,8 @@ export function checkFileName(name: string): FileNameCheck {
       message:
         `Invalid file: '${name}' doesn't match an EWP structural filename ` +
         `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml). ` +
-        `Allegedly not an EWP structural file — recommended to remove it.`,
+        `Allegedly not an EWP structural file — use the "Clear invalid files" trash icon ` +
+        `to remove it.`,
       range: [0, 0],
     },
   };

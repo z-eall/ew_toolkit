@@ -16,14 +16,18 @@ import {
   type SortMode,
   sortFiles,
   statusOf,
+  toggleAllSelection,
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
 import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, presentSortedCategories } from "./diagnosisCategories";
-import { INVALID_FILE_CATEGORY } from "./fileNameCheck";
+import { INVALID_FILE_CATEGORY, checkFileName, classifyFileName } from "./fileNameCheck";
 import { pickHighestPriority, type Severity } from "./structuralPrecheck";
+import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
+import { showConfirmModal } from "./confirmModal";
 import "./style.css";
-import { buildZip } from "./zip";
+import type { ZipEntry } from "./zip";
+import type { ZipWorkerRequest, ZipWorkerResponse } from "./zipWorker";
 
 // A from-scratch file (typed draft, single upload, or single drag-drop with no
 // folder context) lands in this default folder rather than the root, so
@@ -64,49 +68,39 @@ function formatShortLocalTime(isoUtc: string): string {
   return new Date(isoUtc).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-// Outline-only icons in the hub's minimalist style (viewBox 24, no fill,
-// currentColor stroke) so the toolbar reads the same as the site nav.
-const icon = (paths: string, extra = "") =>
-  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" ${extra}>${paths}</svg>`;
+// Icon glyphs live in shared/icons.ts (Hub-wide, imported not copied —
+// message-quality checklist item 8). ICON_NAMES lists which shared keys
+// this Tool's toolbar actually uses; icon(key, extra) below wraps the same
+// way call sites already expect (a bare key name, plus an optional extra
+// attribute string for one-off cases like the sort-direction arrows).
+const ICON_NAMES = [
+  "file",
+  "folder",
+  "filePlus",
+  "folderPlus",
+  "funnel",
+  "trash",
+  "chevron",
+  "dragArrow",
+  "arrowUp",
+  "arrowDown",
+  "plus",
+  "close",
+  "reset",
+  "copy",
+  "ladybug",
+  "save",
+  "export",
+  "home",
+  "support",
+] as const satisfies readonly IconKey[];
 
-const ICONS = {
-  // Notepad with a folded corner + ruled lines — same glyph as the nav's tool icon.
-  file: '<path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v4h4"/><path d="M8 11h3"/><path d="M8 14h6"/><path d="M8 17h4"/>',
-  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
-  // Upload glyphs: the document/folder outline with the "+" drawn as part of the
-  // same stroke (currentColor), so the plus reads as one with the icon rather
-  // than a tacked-on blue superscript. Used identically in the toolbar and the
-  // drag-and-drop empty state.
-  filePlus:
-    '<path d="M15 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7z"/><path d="M15 3v4h4"/><path d="M12 11v6"/><path d="M9 14h6"/>',
-  folderPlus:
-    '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6"/><path d="M9 13h6"/>',
-  funnel: '<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
-  trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/>',
-  chevron: '<path d="m9 6 6 6-6 6"/>',
-  dragArrow: '<path d="M9 10 4 15l5 5"/><path d="M4 15h11a5 5 0 0 0 5-5V4"/>',
-  arrowUp: '<path d="M12 20V6"/><path d="m6 12 6-6 6 6"/>',
-  arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
-  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
-  close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
-  // Circular two-arrow refresh — the "reset to default" affordance (clearer than
-  // a bare × for "put this back the way it was").
-  reset: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',
-  // Two stacked sheets — the universal "copy to clipboard" glyph.
-  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M6 15a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1"/>',
-  // Ladybird beetle: antennae, a split domed shell, and four spots — the
-  // "file a report" affordance (bug report).
-  ladybug:
-    '<path d="M12 6c1.4 0 2.6.9 3.1 2.2"/><path d="M12 6c-1.4 0-2.6.9-3.1 2.2"/><path d="m6 8-1.8-1.4"/><path d="m18 8 1.8-1.4"/><ellipse cx="12" cy="13.5" rx="6.5" ry="7"/><path d="M12 7v13"/><circle cx="8.6" cy="12" r=".7"/><circle cx="15.4" cy="12" r=".7"/><circle cx="8.9" cy="16.5" r=".7"/><circle cx="15.1" cy="16.5" r=".7"/>',
-  // Classic floppy disk: shutter notch at the top, label at the bottom.
-  save: '<path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 4v5h6V4"/><path d="M8 13h8v6H8z"/>',
-  // Nav glyphs — copied from the hub's nav.ts so the toolbar reads the same.
-  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-9"/><path d="M9.5 20v-6h5v6"/>',
-  // "Buy me a coffee" cup — the donation convention, matching what the
-  // Support page actually links to.
-  support:
-    '<path d="M5 9h12v7a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9z"/><path d="M17 10.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M9 3c0 1-1 1-1 2s1 1 1 2"/><path d="M13 3c0 1-1 1-1 2s1 1 1 2"/>',
-};
+const ICONS = Object.fromEntries(ICON_NAMES.map((key) => [key, ICON_PATHS[key]])) as Record<
+  (typeof ICON_NAMES)[number],
+  string
+>;
+
+const icon = (paths: string, extra = "") => svgIcon(paths, extra);
 
 // Theme is shared with the hub via the same localStorage key, so a choice made
 // on either page carries over. The chrome follows the earthy hub palette (CSS
@@ -141,7 +135,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     </div>
     <div class="app-body">
       <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
+        <div class="sidebar-header panel-header">
           <span>Loaded files</span>
           <span class="sidebar-actions">
             <button class="icon-btn" id="add-files-btn" title="Upload files" aria-label="Upload files">${icon(ICONS.filePlus)}</button>
@@ -173,24 +167,23 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
       </div>
       <div class="resizer-x" id="resizer-x" title="Drag to resize"></div>
       <div class="main">
-        <div class="active-file-name" id="active-file-name">
-          <span class="filename-text" id="filename-text" title="Click to rename"></span>
+        <div class="active-file-name panel-header" id="active-file-name">
           <span class="filename-actions">
             <div class="newmenu">
               <button class="icon-btn" id="new-file-btn" title="Add new" aria-label="Add new">${icon(ICONS.plus)}</button>
               <div class="new-menu" id="new-menu" hidden></div>
             </div>
             <div class="savemenu">
-              <button class="icon-btn" id="save-btn" title="Save" aria-label="Save">${icon(ICONS.save)}</button>
+              <button class="icon-btn" id="save-btn" title="Export" aria-label="Export">${icon(ICONS.export)}</button>
               <div class="save-menu" id="save-menu" hidden></div>
             </div>
           </span>
+          <span class="filename-text" id="filename-text" title="Click to rename"></span>
         </div>
         <div id="editor"></div>
         <div class="resizer-y" id="resizer-y" title="Drag to resize"></div>
         <div class="problems">
           <div class="problems-header">
-            <div class="problems-tabs" id="problems-tabs"></div>
             <div class="problems-actions">
               <div class="catfilter">
                 <button class="icon-btn" id="catfilter-btn" title="Filter by category" aria-label="Filter diagnoses by category">${icon(ICONS.funnel)}</button>
@@ -201,13 +194,14 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
                 <div class="report-menu" id="report-menu" hidden></div>
               </div>
             </div>
+            <div class="problems-tabs" id="problems-tabs"></div>
           </div>
           <div id="problems-list"></div>
         </div>
       </div>
     </div>
   </div>
-  <input type="file" id="file-input" multiple accept=".yaml,.yml" hidden />
+  <input type="file" id="file-input" multiple accept=".yaml" hidden />
   <input type="file" id="folder-input" webkitdirectory multiple hidden />
 `;
 
@@ -440,17 +434,23 @@ function renderFileList() {
         else collapsedFolders.add(group.folder);
         renderFileList();
       });
-      header.querySelector(".folder-remove-btn")!.addEventListener("click", (e) => {
+      header.querySelector(".folder-remove-btn")!.addEventListener("click", async (e) => {
         e.stopPropagation();
         // Count every file in the folder, not just the ones passing the current
         // sidebar filter — the remove clears the whole folder regardless of view.
         const removedIds = new Set(fileManager.allFiles.filter((f) => f.folder === group.folder).map((f) => f.id));
         const total = removedIds.size;
-        const ok = confirm(
-          `Remove folder "${group.folder}" and its ${total} file${total > 1 ? "s" : ""}?\n\n` +
+        const choice = await showConfirmModal({
+          message:
+            `Remove folder "${group.folder}" and its ${total} file${total > 1 ? "s" : ""}?\n\n` +
             `Make sure you've saved anything you want to keep — removed files can't be recovered.`,
-        );
-        if (ok) {
+          buttons: [
+            { label: "Cancel", value: "cancel", primary: true },
+            { label: "Remove", value: "remove", danger: true },
+          ],
+          cancelValue: "cancel",
+        });
+        if (choice === "remove") {
           const pivot = visibleFileIds.findIndex((id) => removedIds.has(id));
           const nextId = pivot === -1 ? null : pickNextAfterRemoval(visibleFileIds, removedIds, pivot);
           fileManager.removeFilesInFolder(group.folder, { nextId });
@@ -620,7 +620,10 @@ function renderProblemsPanel() {
       const key = `${file.id}:${problem.range[0]}`;
       row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
       row.dataset.key = key;
-      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch">[${escapeHtml(problem.branch)}]</span>`;
+      const entryTypeTag = problem.entryType
+        ? `<span class="branch-entry">${escapeHtml(problem.entryType)}</span>`
+        : "";
+      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch"><span class="branch-kind">${escapeHtml(problem.branch)}</span>${entryTypeTag}</span>`;
       row.addEventListener("click", () => {
         fileManager.revealProblem(file.id, problem.range[0], { focus: false });
         scrollFileRowIntoView(file.id);
@@ -646,7 +649,8 @@ function copyDiagnosis(
   problem: LoadedFile["problems"][number],
   line: number,
 ): void {
-  const text = `${file.name}:${line} — ${problem.message} [${problem.branch}]`;
+  const tag = problem.entryType ? `${problem.branch} · ${problem.entryType}` : problem.branch;
+  const text = `${file.name}:${line} — ${problem.message} [${tag}]`;
   navigator.clipboard?.writeText(text).then(
     () => {
       btn.classList.add("copied");
@@ -736,6 +740,15 @@ const FILTER_OPTIONS: { status: FileStatus; label: string }[] = [
   { status: "valid", label: "Passing" },
 ];
 
+// Single button that flips label + behavior based on whether every checkbox
+// in its list is currently checked — shared by both FILTER menus so a
+// scripter doesn't have to click each option individually.
+function renderToggleAllButton(allSelected: boolean, kind: string): string {
+  return `<button class="menu-item menu-toggle-all" data-toggle-all="${kind}">
+    <span class="menu-label">${allSelected ? "Deselect all" : "Select all"}</span>
+  </button>`;
+}
+
 const sortFilterBtn = document.getElementById("sortfilter-btn")!;
 const sortFilterMenu = document.getElementById("sortfilter-menu")!;
 
@@ -777,6 +790,10 @@ function renderSortFilterMenu() {
           <span class="status-dot ${o.status}"></span><span class="menu-label">${o.label}</span>
         </label>`,
     ).join("")}
+    ${renderToggleAllButton(
+      FILTER_OPTIONS.every((o) => sidebarFilters.has(o.status)),
+      "filter",
+    )}
   `;
 
   sortFilterMenu.querySelectorAll<HTMLButtonElement>(".sort-item").forEach((btn) => {
@@ -795,6 +812,16 @@ function renderSortFilterMenu() {
       renderSortFilterMenu();
       renderFileList();
     });
+  });
+  sortFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="filter"]')?.addEventListener("click", () => {
+    const next = toggleAllSelection(
+      sidebarFilters,
+      FILTER_OPTIONS.map((o) => o.status),
+    );
+    sidebarFilters.clear();
+    for (const s of next) sidebarFilters.add(s);
+    renderSortFilterMenu();
+    renderFileList();
   });
   sortFilterMenu.querySelectorAll<HTMLButtonElement>(".menu-reset").forEach((btn) => {
     btn.addEventListener("click", (e) => {
@@ -854,7 +881,7 @@ function renderCatFilterMenu() {
           <span class="menu-label">${escapeHtml(c)}</span>
         </label>`,
           )
-          .join("")
+          .join("") + renderToggleAllButton(present.every((c) => categoryFilter.has(c)), "cat")
       : `<div class="menu-empty">No categorised diagnoses.</div>`;
   catFilterMenu.innerHTML = `
     <div class="menu-section-head">
@@ -871,6 +898,15 @@ function renderCatFilterMenu() {
       renderCatFilterMenu();
       renderProblemsPanel();
     });
+  });
+  catFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="cat"]')?.addEventListener("click", () => {
+    const next = toggleAllSelection(categoryFilter, present);
+    for (const c of present) {
+      if (next.has(c)) categoryFilter.add(c);
+      else categoryFilter.delete(c);
+    }
+    renderCatFilterMenu();
+    renderProblemsPanel();
   });
   catFilterMenu.querySelector<HTMLButtonElement>(".menu-reset")?.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -1002,7 +1038,12 @@ interface Ingestable {
   relPath: string;
 }
 
-const isYaml = (name: string) => /\.ya?ml$/i.test(name);
+// EWP only ever loads `.yaml` (`FileLoading.IsYaml` in EWP's C# source checks
+// `.EndsWith(".yaml", OrdinalIgnoreCase)` — no `.yml` support anywhere in its
+// source, confirmed by source-verification research, ticket 06 round 2).
+// `.yml` used to slip past this gate only to be rejected as "invalid" by
+// fileNameCheck.ts's stricter `.yaml`-only check — tightened here to match.
+const isYaml = (name: string) => /\.yaml$/i.test(name);
 
 // ---------- Upload/validation progress banner ----------
 // Reused for two moments: an upload's own read+check pass, and a manual
@@ -1066,11 +1107,49 @@ const currentFolder = () => (fileManager.activeFile ? fileManager.activeFile.fol
 async function ingest(entries: Ingestable[], defaultFolder = "") {
   const yamls = entries.filter((e) => isYaml(e.file.name));
   if (yamls.length === 0) return;
-  const total = yamls.length;
+
+  // Filename-prefix gate (ticket 06 round 2): "Invalid file" is 100%
+  // detectable from the name alone, before any content is read, so surface
+  // it immediately at upload time instead of leaving the scripter to
+  // discover it later via the reactive Clear-invalid flow. Warn-and-skip,
+  // not a hard block — ticket 08 documented the underlying `"data"` prefix
+  // rule as a known-imperfect heuristic, not a source-verified match for
+  // EWP's real (folder-based) rule, so a silent hard reject could drop a
+  // legitimate file with no recourse. Confirm keeps that recourse.
+  const invalid = yamls.filter((e) => classifyFileName(e.file.name) === "invalid");
+  let toIngest = yamls;
+  if (invalid.length > 0) {
+    const names = invalid.map((e) => e.file.name).join("\n  ");
+    // Real 3-way choice (ticket 09): native confirm() only ever offered 2
+    // options here, so "abort the whole upload" was impossible at this step
+    // — a scripter who didn't want ANY of the batch had to let it load, then
+    // manually clear it after. Skip these files is primary per the
+    // scripter's own answer (safety default: don't add files flagged as
+    // structurally wrong without a second, explicit choice).
+    const choice = await showConfirmModal({
+      message:
+        `${invalid.length} uploaded file${invalid.length > 1 ? "s" : ""} don't match an EWP structural filename ` +
+        `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml):\n  ${names}`,
+      buttons: [
+        { label: "Skip these files", value: "skip", primary: true },
+        { label: "Proceed anyway", value: "proceed" },
+        { label: "Cancel upload", value: "cancel" },
+      ],
+      cancelValue: "cancel",
+      allowEnter: true,
+    });
+    if (choice === "cancel") return;
+    if (choice === "skip") {
+      const skip = new Set(invalid);
+      toIngest = yamls.filter((e) => !skip.has(e));
+      if (toIngest.length === 0) return;
+    }
+  }
+  const total = toIngest.length;
 
   showUploadBanner(`Loaded 0 of ${plural(total, "file")}`);
   const prepared: { name: string; content: string; folder: string }[] = [];
-  for (const { file, relPath } of yamls) {
+  for (const { file, relPath } of toIngest) {
     prepared.push({
       name: file.name,
       content: await file.text(),
@@ -1084,11 +1163,15 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
   const dups = prepared.filter((p) => fileManager.exists(p.name, p.folder));
   if (dups.length > 0) {
     const names = dups.map((d) => (d.folder ? `${d.folder}/${d.name}` : d.name)).join("\n  ");
-    const ok = confirm(
-      `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:\n  ${names}\n\n` +
-        `Overwrite ${dups.length > 1 ? "them" : "it"} with the uploaded version? Click Cancel to abort the whole upload.`,
-    );
-    if (!ok) {
+    const choice = await showConfirmModal({
+      message: `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:\n  ${names}`,
+      buttons: [
+        { label: "Cancel upload", value: "cancel", primary: true },
+        { label: "Overwrite", value: "overwrite", danger: true },
+      ],
+      cancelValue: "cancel",
+    });
+    if (choice !== "overwrite") {
       hideUploadBanner();
       return;
     }
@@ -1341,24 +1424,36 @@ function renderClearAllMenu(): void {
     <button class="menu-item" data-clear="all"><span class="menu-label">Clear all files</span></button>
     <button class="menu-item" data-clear="invalid"><span class="menu-label">Clear invalid files</span></button>
   `;
-  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="all"]')!.addEventListener("click", () => {
+  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="all"]')!.addEventListener("click", async () => {
     clearAllMenu.setAttribute("hidden", "");
     if (fileManager.allFiles.length === 0) return;
-    const ok = confirm(
-      "Clear all loaded files?\n\nThis empties the panel and the editor. Make sure you've saved anything you want to keep — cleared files can't be recovered.",
-    );
-    if (ok) fileManager.clearAll();
+    const choice = await showConfirmModal({
+      message:
+        "Clear all loaded files?\n\nThis empties the panel and the editor. Make sure you've saved anything you want to keep — cleared files can't be recovered.",
+      buttons: [
+        { label: "Cancel", value: "cancel", primary: true },
+        { label: "Clear all", value: "clear", danger: true },
+      ],
+      cancelValue: "cancel",
+    });
+    if (choice === "clear") fileManager.clearAll();
   });
-  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="invalid"]')!.addEventListener("click", () => {
+  clearAllMenu.querySelector<HTMLButtonElement>('[data-clear="invalid"]')!.addEventListener("click", async () => {
     clearAllMenu.setAttribute("hidden", "");
     const invalid = fileManager.allFiles.filter((f) => f.problems.some((p) => p.branch === INVALID_FILE_CATEGORY));
     if (invalid.length === 0) return;
     const names = invalid.map((f) => (f.folder ? `${f.folder}/${f.name}` : f.name)).join("\n  ");
-    const ok = confirm(
-      `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n  ${names}\n\n` +
+    const choice = await showConfirmModal({
+      message:
+        `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n  ${names}\n\n` +
         `These aren't EWP-structured files. Make sure you've saved anything you want to keep — cleared files can't be recovered.`,
-    );
-    if (ok) {
+      buttons: [
+        { label: "Cancel", value: "cancel", primary: true },
+        { label: "Clear invalid files", value: "clear", danger: true },
+      ],
+      cancelValue: "cancel",
+    });
+    if (choice === "clear") {
       const removedIds = new Set(invalid.map((f) => f.id));
       const activeId = fileManager.activeFile?.id;
       const pivot = activeId ? visibleFileIds.indexOf(activeId) : -1;
@@ -1424,18 +1519,84 @@ filenameTextEl.addEventListener("keydown", (e) => {
     filenameTextEl.blur();
   }
 });
+// Rename-time filename note (ticket 01, validator-round2): a non-blocking
+// echo of checkFileName's verdict, shown the instant a rename commits,
+// instead of leaving the scripter to discover it later in the Problems
+// panel. Folded in from the prototype's variant C (floating popover) +
+// variant A (filename text color) — full detail on the ticket
+// (.scratch/validator-round2/issues/01-filename-edit-validation.md). Uses
+// the exact same checkFileName() the reactive revalidateAll() pass uses,
+// so this note and the Problems panel can never disagree — and since
+// fileManager.renameFile() below triggers that reactive pass synchronously
+// (auto mode) in the same tick, the note and the real diagnosis land
+// together, not one after the other.
+let renameNotePopover: HTMLDivElement | null = null;
+let renameNoteDismiss: (() => void) | null = null;
+
+function clearRenameNote() {
+  filenameTextEl.classList.remove("rename-flag", "error", "info");
+  if (renameNotePopover) {
+    renameNotePopover.remove();
+    renameNotePopover = null;
+  }
+  if (renameNoteDismiss) {
+    renameNoteDismiss();
+    renameNoteDismiss = null;
+  }
+}
+
+function showRenameNote(severity: "error" | "info", message: string) {
+  clearRenameNote();
+  filenameTextEl.classList.add("rename-flag", severity);
+
+  const popover = document.createElement("div");
+  popover.className = `rename-note-popover ${severity}`;
+  popover.textContent = message;
+  document.body.appendChild(popover);
+  const rect = filenameTextEl.getBoundingClientRect();
+  popover.style.left = `${rect.left}px`;
+  popover.style.top = `${rect.bottom + 6}px`;
+  renameNotePopover = popover;
+
+  // Stays up until the scripter does something else — no timer. Deferred by
+  // one tick so the same click/keystroke that committed the rename (and
+  // triggered this note) doesn't immediately dismiss it too. Listeners are
+  // capture-phase: Monaco's own mousedown/keydown handling stops
+  // propagation before it would otherwise bubble up to document, so a
+  // bubble-phase listener never sees a click or keystroke made inside the
+  // editor.
+  const dismiss = () => clearRenameNote();
+  const timer = window.setTimeout(() => {
+    document.addEventListener("mousemove", dismiss, { once: true, capture: true });
+    document.addEventListener("mousedown", dismiss, { once: true, capture: true });
+    document.addEventListener("keydown", dismiss, { once: true, capture: true });
+  }, 0);
+  renameNoteDismiss = () => {
+    window.clearTimeout(timer);
+    document.removeEventListener("mousemove", dismiss, { capture: true });
+    document.removeEventListener("mousedown", dismiss, { capture: true });
+    document.removeEventListener("keydown", dismiss, { capture: true });
+  };
+}
+
 filenameTextEl.addEventListener("blur", () => {
   const file = fileManager.activeFile;
   if (!file) return;
-  fileManager.renameFile(file.id, (filenameTextEl.textContent ?? "").replace(/\s+/g, " "));
-});
+  const name = (filenameTextEl.textContent ?? "").replace(/\s+/g, " ");
+  fileManager.renameFile(file.id, name);
 
-// ---------- Save (this file / this folder / all) ----------
+  const { verdict, problem } = checkFileName(name.trim());
+  if (verdict !== "valid" && problem) showRenameNote(problem.severity as "error" | "info", problem.message);
+  else clearRenameNote();
+});
+filenameTextEl.addEventListener("focus", clearRenameNote);
+
+// ---------- Export (this file / this folder / all) ----------
 
 const SAVE_OPTIONS: { scope: SaveScope; label: string }[] = [
-  { scope: "file", label: "Save this file" },
-  { scope: "folder", label: "Save this folder" },
-  { scope: "all", label: "Save all" },
+  { scope: "file", label: "Export this file" },
+  { scope: "folder", label: "Export this folder" },
+  { scope: "all", label: "Export all" },
 ];
 
 function downloadBlob(filename: string, blob: Blob) {
@@ -1458,7 +1619,39 @@ function savedByScope(scope: SaveScope): LoadedFile[] {
   return active ? fileManager.allFiles.filter((f) => f.folder === active.folder) : [];
 }
 
-function doSave(scope: SaveScope) {
+// A zip build is the one Export path with real work to do (many files' worth
+// of byte encoding + CRC, plus a large "huge project" batch — thousands of
+// files across many folders — can push this from "a moment" to "seconds"); a
+// "single" export is just wrapping one string in a Blob, effectively instant
+// regardless of its size. So only the zip branch runs off the main thread, in
+// zipWorker.ts, so the page stays fully responsive no matter the batch size —
+// the worker posts progress the banner shows live instead of the previous
+// static spinner.
+function buildZipInWorker(entries: ZipEntry[], onProgress: (done: number, total: number) => void): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./zipWorker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (e: MessageEvent<ZipWorkerResponse>) => {
+      const msg = e.data;
+      if (msg.type === "progress") {
+        onProgress(msg.done, msg.total);
+      } else if (msg.type === "done") {
+        worker.terminate();
+        resolve(msg.bytes);
+      } else {
+        worker.terminate();
+        reject(new Error(msg.message));
+      }
+    };
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(err instanceof ErrorEvent ? err.error ?? new Error(err.message) : err);
+    };
+    const req: ZipWorkerRequest = { entries };
+    worker.postMessage(req);
+  });
+}
+
+async function doSave(scope: SaveScope) {
   const toSaveFile = (f: LoadedFile): SaveFile => ({ name: f.name, folder: f.folder, content: f.model.getValue() });
   const active = fileManager.activeFile;
   const plan = planSave(fileManager.allFiles.map(toSaveFile), scope, active ? toSaveFile(active) : null);
@@ -1466,8 +1659,14 @@ function doSave(scope: SaveScope) {
   if (plan.kind === "single") {
     downloadBlob(plan.filename, new Blob([plan.entries[0].content], { type: "text/yaml" }));
   } else {
-    const bytes = buildZip(plan.entries);
+    showUploadBanner(`Building export of ${plural(plan.entries.length, "file")}…`, { spinner: true });
+    const bytes = await buildZipInWorker(plan.entries, (done, total) => {
+      showUploadBanner(`Building export… ${done} / ${total} files packed`, { spinner: true });
+    });
     downloadBlob(plan.filename, new Blob([bytes.buffer as ArrayBuffer], { type: "application/zip" }));
+    showUploadBanner(`Exported ${plural(plan.entries.length, "file")}`, { done: true });
+    await sleep(1100);
+    hideUploadBanner();
   }
   fileManager.markSaved(savedByScope(scope).map((f) => f.id));
 }
@@ -1478,7 +1677,7 @@ function renderSaveMenu() {
   ).join("");
   saveMenu.querySelectorAll<HTMLButtonElement>(".save-item").forEach((btn) => {
     btn.addEventListener("click", () => {
-      doSave(btn.dataset.scope as SaveScope);
+      void doSave(btn.dataset.scope as SaveScope);
       saveMenu.setAttribute("hidden", "");
     });
   });

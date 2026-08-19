@@ -4,14 +4,15 @@
 // and the ticket 06 reference validation (cross-file by nature — a change in
 // one file can make a `data:` reference in another valid or invalid — so it
 // always re-runs across every loaded file, not just the one that changed).
-// The typing debounce always runs both passes; add/remove/upload can be
-// deferred in "manual" validation mode (see ValidationMode) so loading or
-// rearranging a big batch doesn't re-scan the whole file set once per file.
+// Every trigger — typing, add/remove, upload/re-upload — can be deferred in
+// "manual" validation mode (see ValidationMode): nothing auto-validates while
+// Manual is selected, only the Validate button runs a pass, so loading or
+// editing a big batch doesn't re-scan the whole file set behind the user's back.
 import * as monaco from "monaco-editor";
 import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
-import { CUSTOM_KEY_CATEGORY, DATA_REFERENCE_CATEGORY } from "./diagnosisCategories";
-import { LEGACY_FORMAT_CATEGORY, pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
+import { LEGACY_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 
 export interface LoadedFile {
   id: string;
@@ -40,10 +41,10 @@ interface AddOptions {
 }
 
 /**
- * Auto validates on every add/remove/move (plus the existing typing debounce,
- * unaffected by this switch). Manual defers the add/remove-triggered pass —
- * meant for loading/rearranging a big batch as one task before checking it —
- * and leaves `validationStatus` "stale" until the user calls `validateNow()`.
+ * Auto validates on every add/remove/move and every keystroke (debounced).
+ * Manual defers all of those — meant for loading/editing a big batch as one
+ * task before checking it — and leaves `validationStatus` "stale" until the
+ * user calls `validateNow()`.
  */
 export type ValidationMode = "auto" | "manual";
 /** "none" = never validated yet; "clean" = matches the current file set; "stale" = an add/remove was deferred since the last pass. */
@@ -58,10 +59,15 @@ const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
 const MARKER_OWNER = "ewp-toolkit";
 const VALIDATE_DEBOUNCE_MS = 200;
 
+// Both "data-reference" (undefined/unused data.yaml entry) and "custom-key"
+// (orphaned saved key) merge into one Reference problem category — they were
+// already close cousins (ticket 04's naming pass), and both mix a hard error
+// with merely-informational findings, matching the "___ problem" naming
+// principle in diagnosisCategories.ts.
 const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key" | "legacy-object-data", string> = {
-  "data-reference": DATA_REFERENCE_CATEGORY,
-  "custom-key": CUSTOM_KEY_CATEGORY,
-  "legacy-object-data": LEGACY_FORMAT_CATEGORY,
+  "data-reference": REFERENCE_PROBLEM_CATEGORY,
+  "custom-key": REFERENCE_PROBLEM_CATEGORY,
+  "legacy-object-data": LEGACY_CATEGORY,
 };
 
 export class FileManager {
@@ -274,6 +280,15 @@ export class FileManager {
       return;
     }
     file.dirty = true;
+    // Manual mode means nothing auto-validates but the Validate button — a
+    // keystroke edit (or a re-upload of an already-loaded file, which reaches
+    // here via the same model.setValue()-fires-onDidChangeContent path) only
+    // marks the batch stale, same as an add/remove would.
+    if (this.validationMode === "manual") {
+      this.validationStatus = "stale";
+      this.onChange();
+      return;
+    }
     this.scheduleRevalidateAll();
   }
 
@@ -334,7 +349,13 @@ export class FileManager {
     return file;
   }
 
-  /** Rename a loaded file. Blank names are rejected; collisions get a `(n)` suffix from (1). */
+  /**
+   * Rename a loaded file. Blank names are rejected; collisions get a `(n)`
+   * suffix from (1). Re-validates (ticket 01, validator-round2) — the new
+   * name can change the file's Invalid-file/Legacy-filename verdict, and
+   * without this the Problems panel stayed stale after a rename until some
+   * unrelated action (an edit, Validate, another upload) forced a rescan.
+   */
   renameFile(id: string, rawName: string): void {
     const file = this.files.find((f) => f.id === id);
     if (!file) return;
@@ -344,6 +365,7 @@ export class FileManager {
       return;
     }
     file.name = this.uniqueName(trimmed, file.folder, id);
+    this.revalidateOrDefer();
     this.onChange();
   }
 

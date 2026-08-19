@@ -13,7 +13,7 @@ The specific Expand World plugin for defining and customizing prefabs (spawned o
 _Avoid_: "the prefab mod"
 
 **WEC (World Edit Commands)**:
-Jere's separate mod providing in-game admin commands and a related data system (e.g. random loot tables) that scripters reference alongside EWP. Treated as a secondary/reference source, not the primary target.
+Jere's separate mod providing in-game admin commands and a related data system (e.g. random loot tables) that scripters reference alongside EWP. Treated as a secondary/reference source, not the primary target. Source-verified (2026-08-19, [research/wec-ewp-correlation.md](.scratch/ew_toolkit/research/wec-ewp-correlation.md)) to have **zero code coupling with EWP** — no assembly reference, no `BepInDependency` in either direction. WEC depends on a third mod, `ServerDevcommands`, for its own YAML utilities, not on EWP.
 
 **Scripter**:
 A Valheim player/modder who writes EWP YAML to build custom in-game systems or content, without necessarily writing C# mod code.

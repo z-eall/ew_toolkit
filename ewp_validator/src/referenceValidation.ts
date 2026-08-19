@@ -251,8 +251,17 @@ function stripLineComments(text: string): string {
 // A saved-key template can nest `<...>` inside its name (dynamic parameters) and
 // its name can contain `/`, so a flat character-class regex can't extract it.
 // Scan the whole document, balance the outer `<...>`, then keep only the
-// key-name portion: a `<save_..>` value is its last top-level `_` segment and a
-// `<load_..>` default is everything after the first top-level `=`.
+// key-name portion. Per EWP's actual source (Functions.cs's GetFunction/
+// SetValue — see .scratch/validator-round2/research/07-custom-key-source-
+// verification.md §1): `save++`/`save--`/`load`/`clear` all use their entire
+// remainder as the key, unsplit — `_` characters inside are literal, part of
+// the name. Only plain `save` splits its remainder a second time, and only on
+// the FIRST top-level `_`: everything before it is the key, everything from
+// it onward (which can itself contain more `_`) is the value being stored.
+// Getting this wrong either truncates a real key with literal underscores
+// (`save++`/`save--`) or mis-splits a multi-segment `save` key on the wrong
+// `_`, which is exactly the false-positive/false-negative pattern this
+// rework was commissioned to fix.
 function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[] } {
   const writes: RawKeyOccurrence[] = [];
   const reads: RawKeyOccurrence[] = [];
@@ -268,9 +277,11 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
     const range: [number, number] = [i, end];
 
     let key: string;
-    if (head[1].startsWith("save")) {
-      const segs = splitTopLevel(inner, "_");
-      key = segs.length > 1 ? segs.slice(0, -1).join("_") : (segs[0] ?? "");
+    if (head[1] === "save") {
+      key = splitTopLevel(inner, "_")[0] ?? "";
+      if (key && hasLiteral(key)) writes.push({ key, range });
+    } else if (head[1] === "save++" || head[1] === "save--") {
+      key = inner; // whole remainder, unsplit — no second split for these
       if (key && hasLiteral(key)) writes.push({ key, range });
     } else if (head[1] === "load") {
       key = splitTopLevel(inner, "=")[0] ?? inner;
@@ -301,51 +312,72 @@ const GROUP_SENTINEL = "\x01";
 
 // Turn a key name into a matcher where each dynamic `<...>` parameter is a
 // wildcard, and into a literal subject where those parameters become the
-// sentinel a wildcard can span.
+// sentinel a wildcard can span. Case-insensitive (the `i` flag): every
+// DataStorage call site in EWP's own source lowercases a key before touching
+// its dictionary (research/07-custom-key-source-verification.md §3), so
+// `Foo`/`foo`/`FOO` are the same stored key at runtime and must never be
+// reported as reciprocally orphaned here. A literal `*` outside any `<...>`
+// group is EWP's own documented bulk-match wildcard (functions.md: "Wildcard
+// * in the key name can be used to remove multiple keys at once"), so it's
+// treated the same as a `<...>` group — a `.*` in the pattern, the sentinel
+// in the subject — rather than requiring an exact `*` match on the other side.
 function keyToPattern(key: string): RegExp {
   let out = "";
   walkKeySegments(
     key,
-    (ch) => (out += escapeRegex(ch)),
+    (ch) => (out += ch === "*" ? ".*" : escapeRegex(ch)),
     () => (out += ".*"),
   );
-  return new RegExp("^" + out + "$");
+  return new RegExp("^" + out + "$", "i");
 }
 
 function keyToSubject(key: string): string {
   let out = "";
   walkKeySegments(
     key,
-    (ch) => (out += ch),
+    (ch) => (out += ch === "*" ? GROUP_SENTINEL : ch),
     () => (out += GROUP_SENTINEL),
   );
   return out;
 }
 
-// Does the key have any character outside a `<...>` group? A key that is purely
-// dynamic (e.g. `<pid>`, `<par_1>`) compiles to the `^.*$` matcher, which would
-// match every other key — so such a key is never allowed to drive a wildcard
-// match (keysCompatible), and is skipped entirely at occurrence-recording time:
-// its real name is only known at runtime (a passed parameter or function
-// result), so there is nothing concrete here to check a read/write against.
+// Does the key have any character outside a `<...>` group and outside a
+// literal `*`? A key that is purely dynamic/wildcard (e.g. `<pid>`, `<par_1>`,
+// or a bare `*`) compiles to the `^.*$` matcher, which would match every other
+// key — so such a key is never allowed to drive a wildcard match
+// (keysCompatible), and is skipped entirely at occurrence-recording time: its
+// real name is only known at runtime (a passed parameter, function result, or
+// EWP's own bulk-match resolution), so there is nothing concrete here to check
+// a read/write against.
 function hasLiteral(key: string): boolean {
   let found = false;
   walkKeySegments(
     key,
-    () => (found = true),
+    (ch) => {
+      if (ch !== "*") found = true;
+    },
     () => {},
   );
   return found;
 }
 
-// "Likely match": an exact name match, or either key's dynamic-parameter
-// skeleton matching the other. This lets a read of `captureblockercity1` resolve
-// against a `<save_captureblockercity<int_isRadarCity=0>_..>` write, and a
+// "Likely match": a case-insensitive exact name match, or either key's
+// dynamic-parameter/wildcard skeleton matching the other. This lets a read of
+// `captureblockercity1` resolve against a
+// `<save_captureblockercity<int_isRadarCity=0>_..>` write, and a
 // `<pid>/teamlead` read against a `<save_<pid>/teamlead_<par_1>>` write. A
 // wildcard match only counts from the side that has at least one literal anchor,
 // so a purely-dynamic key can't silently suppress unrelated read/write flags.
+//
+// Static-analysis limit, not a bug: EWP resolves any `<...>` parameter nested
+// inside a key inside-out, *then* splits the resulting flat string into
+// key/value (research/07-custom-key-source-verification.md §2). If a dynamic
+// group straddles that real split point — e.g. `<save_foo<x>_bar>`, where
+// `<x>` might resolve to text containing its own `_` — this scanner can't know
+// at analysis time whether the resolved text lands before or after the split,
+// so the wildcard placement here is necessarily a best-effort approximation.
 function keysCompatible(a: string, b: string): boolean {
-  if (a === b) return true;
+  if (a.toLowerCase() === b.toLowerCase()) return true;
   const aMatchesB = hasLiteral(a) && keyToPattern(a).test(keyToSubject(b));
   const bMatchesA = hasLiteral(b) && keyToPattern(b).test(keyToSubject(a));
   return aMatchesB || bMatchesA;

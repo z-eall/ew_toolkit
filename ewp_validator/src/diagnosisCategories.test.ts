@@ -3,17 +3,17 @@ import { DIAGNOSIS_CATEGORIES, presentSortedCategories } from "./diagnosisCatego
 
 describe("presentSortedCategories", () => {
   it("returns only the categories present among the given branches", () => {
-    const branches = ["EWP rule entry", "Data entry reference", "EWP rule entry"];
-    expect(presentSortedCategories(branches)).toEqual(["Data entry reference", "EWP rule entry"]);
+    const branches = ["Structure problem", "Reference problem", "Structure problem"];
+    expect(presentSortedCategories(branches)).toEqual(["Reference problem", "Structure problem"]);
   });
 
   it("sorts ascending alphabetical, case-insensitive", () => {
-    const branches = ["WEC data entry", "Value entry", "EWP rule entry", "Formatting"];
+    const branches = ["Value problem", "Legacy but working", "Structure problem", "Invalid file"];
     expect(presentSortedCategories(branches)).toEqual([
-      "EWP rule entry",
-      "Formatting",
-      "Value entry",
-      "WEC data entry",
+      "Invalid file",
+      "Legacy but working",
+      "Structure problem",
+      "Value problem",
     ]);
   });
 
@@ -25,6 +25,16 @@ describe("presentSortedCategories", () => {
   it("returns an empty list when nothing categorised is present", () => {
     expect(presentSortedCategories(["(parse)"])).toEqual([]);
     expect(presentSortedCategories([])).toEqual([]);
+  });
+
+  it("has exactly the 5 kind-based categories from the category-grouping redesign", () => {
+    expect(DIAGNOSIS_CATEGORIES).toEqual([
+      "Structure problem",
+      "Value problem",
+      "Reference problem",
+      "Invalid file",
+      "Legacy but working",
+    ]);
   });
 
   it("keeps every vocabulary label in sentence/abbreviation case (no stray lowercase)", () => {

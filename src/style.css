@@ -1,19 +1,12 @@
-:root {
-  --bg: #222831;
-  --panel: #393e46;
-  --border: #948979;
-  --text: #dfd0b8;
-  --muted: #948979;
-  --info: #dfd0b8;
-}
+@import "../shared/theme.css";
 
-:root[data-theme="light"] {
-  --bg: #dfd0b8;
-  --panel: #948979;
-  --border: #393e46;
-  --text: #222831;
-  --muted: #393e46;
-  --info: #222831;
+/* Landing-page-only accent: brightens borders/text on hover. Was named
+   --info before, which collided with the validator's unrelated severity
+   blue of the same name (ew_toolkit/map.md checklist item 8) — it was
+   never really "info" here, just the text color repurposed as a hover
+   highlight, so it gets its own honest name instead of a shared one. */
+:root {
+  --accent: var(--text);
 }
 
 * {
@@ -118,7 +111,7 @@ body {
 }
 
 .theme-toggle:hover {
-  border-color: var(--info);
+  border-color: var(--accent);
 }
 
 .landing {
@@ -167,8 +160,8 @@ body {
 }
 
 .tool-btn:hover {
-  border-color: var(--info);
-  color: var(--info);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .tool-desc {

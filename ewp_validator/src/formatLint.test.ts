@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FORMAT_CATEGORY, runFormatLint } from "./formatLint";
+import { STRUCTURE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { runFormatLint } from "./formatLint";
 
 describe("runFormatLint — double-colon keys", () => {
   it("flags a key written with a stray double colon, pointing at the key itself", () => {
@@ -7,7 +8,7 @@ describe("runFormatLint — double-colon keys", () => {
     const problems = runFormatLint(yaml);
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe("error");
-    expect(problems[0].branch).toBe(FORMAT_CATEGORY);
+    expect(problems[0].branch).toBe(STRUCTURE_PROBLEM_CATEGORY);
     expect(problems[0].message).toContain("colon");
     // Range points at the offending `filter:` key, not the whole entry.
     expect(yaml.slice(...problems[0].range)).toBe("filter:");

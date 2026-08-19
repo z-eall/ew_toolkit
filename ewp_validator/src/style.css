@@ -1,13 +1,13 @@
-/* Chrome palette matches the hub (ew_toolkit/src/style.css) so the validator
-   reads as the same site. `--error`/`--warning`/`--info` stay dedicated severity
-   colors (the hub's accent `--info` is cream — no good for the blue flag). */
+@import "../../shared/theme.css";
+
+/* Chrome palette imports the hub's shared identity (bg/panel/border/text/
+   muted, see ../../shared/theme.css) so the validator reads as the same
+   site. `--hover` (a background-tint fill, this Tool's own interaction
+   pattern) and the severity colors below are validator-specific, not Hub
+   identity, and deliberately stay out of the shared file — see
+   ew_toolkit/map.md's message-quality checklist item 8. */
 :root {
   color-scheme: dark;
-  --bg: #222831;
-  --panel: #393e46;
-  --border: #948979;
-  --text: #dfd0b8;
-  --muted: #948979;
   --hover: #4a515c;
   --error: #f14c4c;
   --warning: #cca700;
@@ -16,11 +16,6 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #dfd0b8;
-  --panel: #948979;
-  --border: #393e46;
-  --text: #222831;
-  --muted: #393e46;
   --hover: #b6a88f;
 }
 
@@ -168,17 +163,28 @@ body {
   outline-offset: -2px;
 }
 
+/*
+ * Shared height/vertical-rhythm for every panel's header bar (sidebar,
+ * editor filename, Problems), so a future panel picks up the standard by
+ * adding this class instead of needing its own padding to happen to match.
+ * Converges on the editor filename header's (shorter) 4px vertical padding
+ * rather than the sidebar header's old 8px, so the editor's already-tight
+ * layout doesn't grow.
+ */
+.panel-header {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+
 .sidebar-header {
-  padding: 8px 10px;
+  justify-content: space-between;
+  gap: 6px;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
 }
 
 .sidebar-actions {
@@ -338,6 +344,15 @@ body {
   height: 1px;
   background: var(--border);
   margin: 5px 2px;
+}
+
+.menu-toggle-all {
+  justify-content: center;
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
 }
 
 .status-dot {
@@ -710,16 +725,14 @@ body {
 }
 
 .active-file-name {
-  padding: 4px 10px 4px 12px;
+  padding-left: 12px;
   font-size: 12px;
   color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
 .filename-text {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -745,11 +758,13 @@ body {
 }
 
 .filename-actions {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 2px;
   flex: none;
+  margin-right: 4px;
+  padding-right: 8px;
+  border-right: 1px solid var(--border);
 }
 
 .icon-btn:disabled {
@@ -824,13 +839,15 @@ body {
   overflow-x: auto;
 }
 
-/* Filter + report buttons pinned to the right of the panel header. */
+/* Filter + report buttons, before the Errors/Warnings/Info tabs. */
 .problems-actions {
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 4px 6px;
   flex: none;
+  margin-right: 4px;
+  border-right: 1px solid var(--border);
 }
 
 .catfilter,
@@ -1057,8 +1074,26 @@ body {
   white-space: nowrap;
 }
 
+/* Two-line tag: the kind of mistake (bold, on top) and, when the diagnosis
+   is scoped to one of the 4 schema shapes, which shape it's on (small,
+   below) — category-grouping ticket. */
 .problem .branch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+  gap: 1px;
+}
+
+.problem .branch-kind {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+.problem .branch-entry {
   color: var(--muted);
+  font-size: 10.5px;
 }
 
 .problems-empty {
@@ -1209,4 +1244,110 @@ body {
 /* The message keeps the flexible width; the copy button hugs the branch tag. */
 .problem .branch {
   flex: none;
+}
+
+/* Custom confirm modal (ticket 09) — replaces window.confirm() so a call
+   site can offer more than two buttons and real labels. Panel/border/shadow
+   match the existing dropdown-menu convention (.sortfilter-menu) so it
+   reads as the same chrome, not a separate visual system. */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.confirm-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+  max-width: 420px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.confirm-message {
+  margin: 0 0 16px;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  /* Preserves the \n / \n\n already used in every call site's message text. */
+  white-space: pre-line;
+}
+
+.confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.confirm-btn:hover {
+  background: var(--hover);
+}
+
+/* Visual emphasis only — never wired to Enter on a destructive dialog (see
+   confirmModal.ts's allowEnter doc comment). A primary button is also never
+   the same button as a danger one in this Tool's own call sites. */
+.confirm-btn.primary {
+  border-color: var(--text);
+  font-weight: 600;
+}
+
+.confirm-btn.danger {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.confirm-btn.danger:hover {
+  background: var(--error);
+  color: var(--bg);
+}
+
+/* Rename-time filename note (ticket 01, validator-round2): a non-blocking
+   echo of the reactive Invalid-file/Legacy diagnosis, shown immediately at
+   commit instead of only in the Problems panel. Prototyped as variant C
+   (floating popover) + variant A (filename text color), see
+   .scratch/validator-round2/issues/01-filename-edit-validation.md. */
+#filename-text.rename-flag.error {
+  color: var(--error);
+}
+
+#filename-text.rename-flag.info {
+  color: var(--info);
+}
+
+.rename-note-popover {
+  position: fixed;
+  z-index: 200;
+  max-width: 360px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.rename-note-popover.error {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.rename-note-popover.info {
+  color: var(--info);
+  border-color: var(--info);
 }

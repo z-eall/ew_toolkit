@@ -1,0 +1,24 @@
+/* Shared Hub identity palette — the Landing page and every Tool import this
+   instead of hand-copying hex values (ew_toolkit/map.md's message-quality
+   checklist item 8). Only the values that are genuinely the same concept in
+   every consumer live here: background/panel/border/text/muted. Anything
+   role-specific (a Tool's own severity colors, a hover treatment unique to
+   one page's own interaction pattern) stays local to that consumer's own
+   style.css and must not reuse these variable names for a different idea —
+   that collision (the Landing page's old `--info`) is exactly what this file
+   exists to stop happening again. */
+:root {
+  --bg: #222831;
+  --panel: #393e46;
+  --border: #948979;
+  --text: #dfd0b8;
+  --muted: #948979;
+}
+
+:root[data-theme="light"] {
+  --bg: #dfd0b8;
+  --panel: #948979;
+  --border: #393e46;
+  --text: #222831;
+  --muted: #393e46;
+}

@@ -474,6 +474,63 @@ describe("custom saved key lint (ticket 06)", () => {
     expect(problems).toHaveLength(1);
     expect(problems[0].kind).toBe("data-reference");
   });
+
+  // Round 2 rework, source-verified against EWP's actual DataStorage.cs/
+  // Functions.cs (.scratch/validator-round2/research/07-custom-key-source-
+  // verification.md) rather than reverse-engineered from observed behavior.
+  describe("source-verified rework (round 2)", () => {
+    it("takes the whole remainder as the key for save++/save--, literal underscores included", () => {
+      // Per source, save++/save-- never split their remainder — unlike plain
+      // save. A key containing literal underscores must match in full, not
+      // just its first segment.
+      const files = [
+        { id: "a", text: "- prefab: Boss\n  type: create\n  command: <save++_boss_kill_count>\n" },
+        { id: "b", text: "- prefab: Chest\n  type: create\n  keys: boss_kill_count 1\n" },
+      ];
+      expect(runReferenceValidation(files)).toEqual([]);
+    });
+
+    it("splits a plain save's remainder on the FIRST underscore only, not the last", () => {
+      // <save_foo_bar_123> stores key "foo", value "bar_123" (Functions.cs's
+      // SetValue: Parse.Kvp on the first '_'). A read of "foo" must resolve;
+      // a read of "foo_bar" (not a real key) must not.
+      const matching = [
+        { id: "a", text: "- prefab: A\n  type: create\n  command: <save_foo_bar_123>\n" },
+        { id: "b", text: "- prefab: B\n  type: create\n  keys: foo 1\n" },
+      ];
+      expect(runReferenceValidation(matching)).toEqual([]);
+
+      const wrongKey = [
+        { id: "a", text: "- prefab: A\n  type: create\n  command: <save_foo_bar_123>\n" },
+        { id: "b", text: "- prefab: B\n  type: create\n  keys: foo_bar 1\n" },
+      ];
+      const problems = runReferenceValidation(wrongKey);
+      // Both the write (real key "foo") and the read (nonexistent key
+      // "foo_bar") are orphaned from each other's perspective.
+      expect(problems.filter((p) => p.kind === "custom-key")).toHaveLength(2);
+    });
+
+    it("matches a saved key case-insensitively, per EWP's ToLowerInvariant() storage layer", () => {
+      const files = [
+        { id: "a", text: "- prefab: A\n  type: create\n  command: <save_CaptureCity_1>\n" },
+        { id: "b", text: "- prefab: B\n  type: create\n  keys: captureCity 1\n" },
+      ];
+      expect(runReferenceValidation(files)).toEqual([]);
+    });
+
+    it("treats a literal * outside <...> as EWP's own bulk-match wildcard", () => {
+      // <clear_boss_*> is EWP's documented syntax for clearing every key
+      // starting with "boss_" (functions.md) — it plausibly relates to a
+      // concrete write like <save++_boss_1>, so that write must not be
+      // flagged as fully orphaned just because nothing reads "boss_1" by
+      // its exact literal name.
+      const files = [
+        { id: "a", text: "- prefab: A\n  type: create\n  command: <save++_boss_1>\n" },
+        { id: "b", text: "- prefab: B\n  type: create\n  command: <clear_boss_*>\n" },
+      ];
+      expect(runReferenceValidation(files)).toEqual([]);
+    });
+  });
 });
 
 describe("cross-file re-evaluation", () => {

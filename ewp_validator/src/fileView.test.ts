@@ -9,6 +9,7 @@ import {
   type SaveFile,
   sortFiles,
   statusOf,
+  toggleAllSelection,
   type ViewFile,
 } from "./fileView";
 
@@ -132,6 +133,32 @@ describe("filterFiles", () => {
   });
   it("keeps everything when all statuses enabled", () => {
     expect(filterFiles(files, new Set(["error", "warning", "valid"]))).toHaveLength(3);
+  });
+});
+
+describe("toggleAllSelection", () => {
+  const options = ["error", "warning", "valid"] as const;
+
+  it("selects everything when nothing is selected", () => {
+    expect(toggleAllSelection(new Set(), options)).toEqual(new Set(options));
+  });
+
+  it("selects everything when only some options are selected", () => {
+    expect(toggleAllSelection(new Set(["error"]), options)).toEqual(new Set(options));
+  });
+
+  it("deselects everything when every option is already selected", () => {
+    expect(toggleAllSelection(new Set(options), options)).toEqual(new Set());
+  });
+
+  it("selects everything (empty result) when there are no options to select", () => {
+    expect(toggleAllSelection(new Set(), [])).toEqual(new Set());
+  });
+
+  it("works over an arbitrary option type, e.g. diagnosis category strings", () => {
+    const categories = ["Structure problem", "Value problem", "Reference problem"];
+    expect(toggleAllSelection(new Set(categories), categories)).toEqual(new Set());
+    expect(toggleAllSelection(new Set(["Structure problem"]), categories)).toEqual(new Set(categories));
   });
 });
 

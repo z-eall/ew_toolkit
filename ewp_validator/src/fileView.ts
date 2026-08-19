@@ -72,6 +72,18 @@ export function filterFiles(files: readonly ViewFile[], enabled: ReadonlySet<Fil
 }
 
 /**
+ * Backing logic for a FILTER menu's select-all/deselect-all toggle button
+ * (validator-round2 ticket 04): if every option is already selected, clear
+ * the selection; otherwise select every option. Generic over the option
+ * type so both the file-status FILTER menu and the diagnosis-category
+ * FILTER menu share one implementation.
+ */
+export function toggleAllSelection<T>(current: ReadonlySet<T>, options: readonly T[]): Set<T> {
+  const allSelected = options.length > 0 && options.every((o) => current.has(o));
+  return allSelected ? new Set<T>() : new Set(options);
+}
+
+/**
  * Pick which id becomes active after removing one or more ids from a
  * currently-displayed order, so the next selection always lands on a visual
  * neighbor of what was removed rather than an arbitrary internal-array
