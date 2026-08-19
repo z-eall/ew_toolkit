@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real "monaco-editor" package has no "main"/"exports" entry Node can
 // resolve outside a bundler (Vite resolves its "module" field; plain Node/
@@ -40,7 +40,7 @@ vi.mock("monaco-editor", () => {
   };
 });
 
-const { FileManager } = await import("./fileManager");
+import { FileManager, DRAFT_PLACEHOLDER_NAME } from "./fileManager";
 
 // FileManager only ever calls getModel/setModel/revealLineInCenter/setPosition/focus
 // on the editor it's given.
@@ -83,9 +83,9 @@ describe("FileManager manual mode gating", () => {
 
     file.model.setValue("data:\n  - key: value2\n");
 
-    // scheduleRevalidateAll debounces 200ms and flips status via revalidateAll;
-    // asserting synchronously (no timers advanced) proves nothing was scheduled
-    // that could later run behind the user's back.
+    // scheduleHybridRevalidation debounces 400ms/1200ms; asserting synchronously
+    // (no timers advanced) proves nothing was scheduled that could later run
+    // behind the user's back.
     expect(manager.status).toBe("stale");
   });
 
@@ -110,5 +110,102 @@ describe("FileManager manual mode gating", () => {
 
     manager.validateNow();
     expect(manager.status).toBe("clean");
+  });
+});
+
+describe("FileManager auto mode hybrid revalidation", () => {
+  let manager: InstanceType<typeof FileManager>;
+  let changeCount: number;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    changeCount = 0;
+    manager = new FileManager(fakeEditor(), () => {
+      changeCount++;
+    });
+    manager.setValidationMode("auto");
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("does not run a validation pass synchronously on a keystroke", () => {
+    const file = manager.addFile("expand_world_prefabs_test.yaml", "- prefab: Foo\n");
+    const countAfterAdd = changeCount;
+    file.model.setValue("- prefab: FooBar\n");
+    expect(changeCount).toBe(countAfterAdd);
+  });
+
+  it("runs a per-file structural pass after the fast debounce", () => {
+    const file = manager.addFile("expand_world_prefabs_test.yaml", "- prefab: Foo\n");
+    const countAfterAdd = changeCount;
+    file.model.setValue("- prefab: FooBar\n");
+    vi.advanceTimersByTime(400);
+    expect(changeCount).toBe(countAfterAdd + 1);
+  });
+
+  it("runs a full-project pass after the idle debounce", () => {
+    const file = manager.addFile("expand_world_prefabs_test.yaml", "- prefab: Foo\n");
+    const countAfterAdd = changeCount;
+    file.model.setValue("- prefab: FooBar\n");
+    vi.advanceTimersByTime(1200);
+    expect(changeCount).toBe(countAfterAdd + 2);
+  });
+
+  it("cancels pending keystroke validation when switching files", () => {
+    manager.addFile("expand_world_prefabs_a.yaml", "- prefab: A\n");
+    const b = manager.addFile("expand_world_prefabs_b.yaml", "- prefab: B\n");
+    const countAfterAdd = changeCount;
+    manager.allFiles[0]!.model.setValue("- prefab: A2\n");
+    manager.setActive(b.id);
+    expect(changeCount).toBeGreaterThan(countAfterAdd);
+    const countAfterSwitch = changeCount;
+    vi.advanceTimersByTime(400);
+    expect(changeCount).toBe(countAfterSwitch);
+  });
+});
+
+describe("FileManager rename filename gate", () => {
+  let manager: InstanceType<typeof FileManager>;
+
+  beforeEach(() => {
+    manager = new FileManager(fakeEditor(), () => {});
+  });
+
+  it("surfaces Invalid file in problems immediately after rename in Auto mode", () => {
+    manager.setValidationMode("auto");
+    const file = manager.addFile("expand_prefabs_test.yaml", "- prefab: Foo\n  type: create\n");
+    manager.renameFile(file.id, "not_a_valid_name.yaml");
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(true);
+  });
+
+  it("surfaces Invalid file after Validate in Manual mode", () => {
+    manager.setValidationMode("manual");
+    const file = manager.addFile("expand_prefabs_test.yaml", "- prefab: Foo\n  type: create\n");
+    manager.validateNow();
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(false);
+    manager.renameFile(file.id, "not_a_valid_name.yaml");
+    expect(manager.mode).toBe("manual");
+    expect(manager.status).toBe("stale");
+    manager.validateNow();
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(true);
+  });
+
+  it("applies the filename gate after an ephemeral draft is renamed away from the placeholder", () => {
+    manager.setValidationMode("auto");
+    const file = manager.addFile(DRAFT_PLACEHOLDER_NAME, "- prefab: Foo\n  type: create\n", "", {
+      ephemeral: true,
+    });
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(false);
+    manager.renameFile(file.id, "not_a_valid_name.yaml");
+    expect(file.name).toBe("not_a_valid_name.yaml");
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(true);
+  });
+
+  it("still exempts an unsaved ephemeral draft on the placeholder name", () => {
+    manager.setValidationMode("auto");
+    const file = manager.addFile(DRAFT_PLACEHOLDER_NAME, "", "", { ephemeral: true });
+    expect(file.problems.some((p) => p.branch === "Invalid file")).toBe(false);
   });
 });

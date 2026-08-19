@@ -1074,9 +1074,10 @@ body {
   white-space: nowrap;
 }
 
-/* Two-line tag: the kind of mistake (bold, on top) and, when the diagnosis
-   is scoped to one of the 4 schema shapes, which shape it's on (small,
-   below) — category-grouping ticket. */
+/* Two-line tag for YAML problem only: category bold on top, (parse)/(root)/
+   (item) sub-group muted below (validator-round3 ticket 04). Kind-based
+   categories are a single bold line — schema-shape entryType subtitles
+   removed from the UI. */
 .problem .branch {
   display: flex;
   flex-direction: column;

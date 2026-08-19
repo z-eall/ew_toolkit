@@ -41,10 +41,12 @@ interface AddOptions {
 }
 
 /**
- * Auto validates on every add/remove/move and every keystroke (debounced).
- * Manual defers all of those — meant for loading/editing a big batch as one
- * task before checking it — and leaves `validationStatus` "stale" until the
- * user calls `validateNow()`.
+ * Auto mode validates on add/remove/upload/rename and on keystrokes using a
+ * hybrid schedule (validator-round3 ticket 05): a fast per-file structural
+ * pass while typing, then a full-project pass (including cross-file reference
+ * checks) after idle or on file switch. Manual defers all of those — meant
+ * for loading/editing a big batch as one task before checking it — and leaves
+ * `validationStatus` "stale" until the user calls `validateNow()`.
  */
 export type ValidationMode = "auto" | "manual";
 /** "none" = never validated yet; "clean" = matches the current file set; "stale" = an add/remove was deferred since the last pass. */
@@ -57,7 +59,12 @@ const SEVERITY_TO_MARKER: Record<Severity, monaco.MarkerSeverity> = {
 };
 
 const MARKER_OWNER = "ewp-toolkit";
-const VALIDATE_DEBOUNCE_MS = 200;
+/** Placeholder name for in-progress typed drafts — matches main.ts `DEFAULT_FILE_NAME`. */
+export const DRAFT_PLACEHOLDER_NAME = "unnamed.yaml";
+/** Per-file structural pass while the scripter is still typing (Auto mode). */
+const FAST_VALIDATE_DEBOUNCE_MS = 400;
+/** Full-project pass (structural + cross-file references) after typing stops. */
+const FULL_VALIDATE_IDLE_MS = 1200;
 
 // Both "data-reference" (undefined/unused data.yaml entry) and "custom-key"
 // (orphaned saved key) merge into one Reference problem category — they were
@@ -75,6 +82,8 @@ export class FileManager {
   private activeId: string | null = null;
   private nextId = 1;
   private debounceHandle: ReturnType<typeof setTimeout> | undefined;
+  private fullIdleHandle: ReturnType<typeof setTimeout> | undefined;
+  private pendingEditFileId: string | null = null;
   private validationMode: ValidationMode = "auto";
   private validationStatus: ValidationStatus = "none";
 
@@ -107,22 +116,27 @@ export class FileManager {
   /** Switching back to auto immediately runs a deferred pass so nothing is left stale. */
   setValidationMode(mode: ValidationMode): void {
     this.validationMode = mode;
-    if (mode === "auto" && this.validationStatus === "stale") this.revalidateAll();
+    if (mode === "auto" && this.validationStatus === "stale") {
+      this.cancelScheduledValidation();
+      this.revalidateAll();
+    }
     this.onChange();
   }
 
   /** The Validate button's action: run the full pass on demand, regardless of mode. */
   validateNow(): void {
+    this.cancelScheduledValidation();
     this.revalidateAll();
     this.onChange();
   }
 
-  /** Runs the pass in auto mode; in manual mode, defers it and marks status "stale" instead. */
+  /** Runs the full pass in auto mode; in manual mode, defers it and marks status "stale" instead. */
   private revalidateOrDefer(): void {
     if (this.validationMode === "manual") {
       this.validationStatus = "stale";
       return;
     }
+    this.cancelScheduledValidation();
     this.revalidateAll();
   }
 
@@ -289,7 +303,7 @@ export class FileManager {
       this.onChange();
       return;
     }
-    this.scheduleRevalidateAll();
+    this.scheduleHybridRevalidation(file);
   }
 
   /**
@@ -316,12 +330,17 @@ export class FileManager {
   }
 
   setActive(id: string | null) {
+    const prevId = this.activeId;
     this.activeId = id;
     const file = this.activeFile;
     const nextModel = file ? file.model : null;
     // Skip the setModel when it's already showing — re-setting the same model
     // instance would stomp the caret/selection (matters when adopting a draft).
     if (this.editor.getModel() !== nextModel) this.editor.setModel(nextModel);
+    if (this.validationMode === "auto" && id !== prevId && this.files.length > 0) {
+      this.cancelScheduledValidation();
+      this.revalidateAll();
+    }
     this.onChange();
   }
 
@@ -410,32 +429,71 @@ export class FileManager {
     else this.setActive(null);
   }
 
-  private scheduleRevalidateAll() {
+  private cancelScheduledValidation(): void {
     clearTimeout(this.debounceHandle);
+    clearTimeout(this.fullIdleHandle);
+    this.pendingEditFileId = null;
+  }
+
+  /** Auto-mode keystroke path: fast per-file structural pass, then full idle pass. */
+  private scheduleHybridRevalidation(file: LoadedFile): void {
+    this.pendingEditFileId = file.id;
+    clearTimeout(this.debounceHandle);
+    clearTimeout(this.fullIdleHandle);
+
     this.debounceHandle = setTimeout(() => {
+      const target = this.files.find((f) => f.id === this.pendingEditFileId);
+      if (target) {
+        this.revalidateFileStructural(target);
+        this.onChange();
+      }
+    }, FAST_VALIDATE_DEBOUNCE_MS);
+
+    this.fullIdleHandle = setTimeout(() => {
       this.revalidateAll();
       this.onChange();
-    }, VALIDATE_DEBOUNCE_MS);
+    }, FULL_VALIDATE_IDLE_MS);
+  }
+
+  /**
+   * Structural pre-check (+ filename gate) for one file only — no cross-file
+   * reference pass. Reference findings on other files stay as-is until the
+   * idle full pass or an immediate full-pass trigger fires.
+   */
+  private revalidateFileStructural(file: LoadedFile): void {
+    this.scanFileStructural(file);
+    this.applyMarkers(file);
+  }
+
+  /** Returns whether the file participates in reference validation. */
+  /** Unsaved typed draft still on the placeholder name — skip the filename gate. */
+  private isFilenameGateExempt(file: LoadedFile): boolean {
+    return file.ephemeral && !file.savedOnce && file.name === DRAFT_PLACEHOLDER_NAME;
+  }
+
+  private scanFileStructural(file: LoadedFile): boolean {
+    const nameCheck = this.isFilenameGateExempt(file) ? null : checkFileName(file.name);
+    if (nameCheck && nameCheck.verdict === "invalid") {
+      file.problems = nameCheck.problem ? [nameCheck.problem] : [];
+      return false;
+    }
+    file.problems = runStructuralPrecheck(file.model.getValue());
+    if (nameCheck && nameCheck.problem) file.problems.push(nameCheck.problem);
+    return true;
   }
 
   private revalidateAll() {
+    this.cancelScheduledValidation();
     // Filename gate (ticket 13 round 4): an "Invalid file" name skips both
     // diagnosis passes entirely — it isn't an EWP structural file, so its
     // shape and its data/key namespace shouldn't count. A legacy `expand_data*`
     // name still gets fully scanned, just with an added rename notice. An
-    // unsaved draft (ephemeral, never saved) is exempt: it's an in-progress
-    // buffer named `unnamed.yaml`, not a claimed EWP file.
+    // unsaved draft (ephemeral, never saved, still `unnamed.yaml`) is exempt:
+    // an in-progress buffer, not a claimed EWP file. Once renamed, the gate
+    // applies (validator-round3 ticket 07).
     const scannable: LoadedFile[] = [];
     for (const file of this.files) {
-      const isDraft = file.ephemeral && !file.savedOnce;
-      const nameCheck = isDraft ? null : checkFileName(file.name);
-      if (nameCheck && nameCheck.verdict === "invalid") {
-        file.problems = nameCheck.problem ? [nameCheck.problem] : [];
-        continue;
-      }
-      file.problems = runStructuralPrecheck(file.model.getValue());
-      if (nameCheck && nameCheck.problem) file.problems.push(nameCheck.problem);
-      scannable.push(file);
+      if (this.scanFileStructural(file)) scannable.push(file);
     }
 
     const refProblems = runReferenceValidation(scannable.map((f) => ({ id: f.id, text: f.model.getValue() })));

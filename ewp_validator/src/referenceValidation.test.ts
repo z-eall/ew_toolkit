@@ -41,6 +41,14 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(runReferenceValidation(files)).toEqual([]);
   });
 
+  it("registers a numeric WEC data entry name and resolves references to it — ticket 13", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  data: 333\n" },
+      { id: "b", text: "- name: 333\n  ints:\n  - level, 1\n" },
+    ];
+    expect(runReferenceValidation(files)).toEqual([]);
+  });
+
   it("does not treat a boolean drops: value as a reference, but does check a bareword drops: value", () => {
     const boolFiles = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  drops: true\n" }];
     expect(runReferenceValidation(boolFiles)).toEqual([]);

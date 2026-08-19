@@ -24,13 +24,20 @@
 export const STRUCTURE_PROBLEM_CATEGORY = "Structure problem";
 export const VALUE_PROBLEM_CATEGORY = "Value problem";
 export const REFERENCE_PROBLEM_CATEGORY = "Reference problem";
+export const YAML_PROBLEM_CATEGORY = "YAML problem";
 export const INVALID_FILE_CATEGORY = "Invalid file";
 export const LEGACY_CATEGORY = "Legacy but working";
+
+/** Sub-group labels shown under {@link YAML_PROBLEM_CATEGORY} in the tag UI. */
+export const YAML_SUBGROUP_PARSE = "(parse)";
+export const YAML_SUBGROUP_ROOT = "(root)";
+export const YAML_SUBGROUP_ITEM = "(item)";
 
 export const DIAGNOSIS_CATEGORIES = [
   STRUCTURE_PROBLEM_CATEGORY,
   VALUE_PROBLEM_CATEGORY,
   REFERENCE_PROBLEM_CATEGORY,
+  YAML_PROBLEM_CATEGORY,
   INVALID_FILE_CATEGORY,
   LEGACY_CATEGORY,
 ] as const;
@@ -39,10 +46,20 @@ export const DIAGNOSIS_CATEGORY_SET: ReadonlySet<string> = new Set(DIAGNOSIS_CAT
 
 // The filterable categories actually present among the given problem branches,
 // ascending alphabetical (case-insensitive). Drives the dynamic category-filter
-// menu: a category the current diagnoses never produced isn't offered, and
-// synthetic parse/root/item branches (not in the vocabulary) are never listed.
+// menu: a category the current diagnoses never produced isn't offered.
 export function presentSortedCategories(branches: Iterable<string>): string[] {
   const present = new Set<string>();
   for (const b of branches) if (DIAGNOSIS_CATEGORY_SET.has(b)) present.add(b);
   return [...present].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+}
+
+/** Copy/report tag string — YAML problem alone keeps a ` · (sub-group)` suffix. */
+export function formatProblemTag(branch: string, entryType?: string): string {
+  if (branch === YAML_PROBLEM_CATEGORY && entryType) return `${branch} · ${entryType}`;
+  return branch;
+}
+
+/** Variant B (ticket 04): muted second line only for YAML-native sub-groups. */
+export function shouldShowTagSubline(branch: string, entryType?: string): boolean {
+  return branch === YAML_PROBLEM_CATEGORY && !!entryType;
 }

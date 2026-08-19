@@ -18,7 +18,8 @@
 //      name (e.g. `<save_captureblockercity<int_isRadarCity=0>_<time>>`) are
 //      treated as wildcards, and only the key-name portion is compared — the
 //      trailing value/parameter of a save or a `type: key` trigger is ignored.
-import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
+import { isMap, isSeq, parseDocument } from "yaml";
+import { collectRuleEntryDataReferences } from "./dataFieldValidation";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
 
 export interface FileProblem {
@@ -39,49 +40,10 @@ interface Occurrence {
   range: [number, number];
 }
 
-// Fields documented as taking either a bareword data.yaml entry name or an
-// inline shorthand (a comma means "this is the shorthand, not a reference") —
-// see docs/scripting.md's Actions and Spawns sections. Object/poke filter
-// `data:` fields are deliberately excluded: per PrefabData.cs, that field is
-// a single-filter shorthand (`Filters([data.data], ...)`), a different
-// semantic despite the same field name, and not scoped by ticket 06.
-// `filter` names a data entry used as an object-data filter (docs/scripting.md):
-// same namespace as `data:`, and a comma value is the inline `type, key, value`
-// shorthand (isBarewordReference already excludes it). Its list sibling
-// `filters` is handled separately below, item by item.
-const TOP_LEVEL_DATA_REF_FIELDS = ["data", "addItems", "removeItems", "drops", "filter", "bannedFilter"];
-const TOP_LEVEL_DATA_REF_LIST_FIELDS = ["filters", "bannedFilters"];
-
-// Nested object/poke filter fields (PrefabData.cs's ObjectData/PokeData, shared
-// by objects:/bannedObjects:/poke: array items): `filter`/`filters`/
-// `bannedFilter`/`bannedFilters` name a data.yaml entry the same way the
-// top-level fields do. `data` on these nested items is a different story — a
-// live-tested legacy alias for the singular `filter` (same underlying
-// property, not the top-level rule's own action `data:` field despite the
-// shared name) — so it's tracked separately below, alongside a "flag legacy
-// format, don't misreport it as unused" notice.
-const NESTED_FILTER_SCALAR_FIELDS = ["filter", "bannedFilter"];
-const NESTED_FILTER_LIST_FIELDS = ["filters", "bannedFilters"];
-const NESTED_LEGACY_DATA_FIELD = "data";
-
-function isBarewordReference(raw: unknown): raw is string {
-  if (typeof raw !== "string") return false;
-  const trimmed = raw.trim();
-  if (trimmed === "") return false;
-  if (trimmed.includes(",")) return false; // "type, key, value" / "itemid, amount" shorthand
-  // A value built purely from `<...>` parameters (e.g. `<string_isSpawningPrefabData>`)
-  // reads from the object's own ZDO data at runtime (functions.md) — nothing to
-  // check here. But a value that *mixes* literal text with a dynamic parameter
-  // (e.g. `newDeerDropLevel<par_1>`) names a family of data.yaml entries by a
-  // literal prefix/skeleton, the same best-effort wildcard idea already used
-  // for custom saved keys below (see keyToPattern) — worth a fuzzy-match check,
-  // not a silent skip.
-  if (/[<>]/.test(trimmed) && !hasLiteral(trimmed)) return false;
-  return true;
-}
-
-function isDropsReference(raw: unknown): raw is string {
-  return isBarewordReference(raw) && !/^(true|false)$/i.test(raw as string);
+function normalizeDataEntryName(raw: unknown): string | null {
+  if (raw == null || raw === "") return null;
+  const name = String(raw).trim();
+  return name === "" ? null : name;
 }
 
 function recordOccurrence(map: Map<string, Occurrence[]>, name: string, occ: Occurrence) {
@@ -455,45 +417,39 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
 
-    const addDataUsage = (name: string, range: [number, number], suppressUndefinedError?: boolean) =>
-      dataUsages.push({ name: name.trim(), occ: { fileId: file.id, range }, suppressUndefinedError });
+    const addDataUsage = (
+      name: string,
+      range: [number, number],
+      suppressUndefinedError?: boolean,
+    ) => dataUsages.push({ name, occ: { fileId: file.id, range }, suppressUndefinedError });
 
     for (const itemNode of root.items) {
       if (!isMap(itemNode)) continue;
       const value = itemNode.toJSON() as Record<string, unknown>;
       const { branch } = guessBranch(value);
 
-      if (branch === "wecDataEntry" && typeof value.name === "string" && value.name.trim() !== "") {
+      const defName = branch === "wecDataEntry" ? normalizeDataEntryName(value.name) : null;
+      if (defName) {
         const range = findPairRange(itemNode, "name") ?? nodeRange(itemNode);
-        recordOccurrence(definitions, value.name.trim(), { fileId: file.id, range });
+        recordOccurrence(definitions, defName, { fileId: file.id, range });
       }
 
       if (branch !== "ewpRuleEntry") continue;
 
-      for (const field of TOP_LEVEL_DATA_REF_FIELDS) {
-        const raw = value[field];
-        // A `data:` value carrying commas is the "type, key, value" injection
-        // shorthand (scripting.md), and a `<...>` value reads from the object's
-        // own ZDO data (functions.md) — neither names a data.yaml entry, and
-        // neither is verifiable here, so both fall through unflagged.
-        const isRef = field === "drops" ? isDropsReference(raw) : isBarewordReference(raw);
-        if (!isRef) continue;
-        addDataUsage(raw as string, findPairRange(itemNode, field) ?? nodeRange(itemNode));
+      const { usages, legacyNotices } = collectRuleEntryDataReferences(itemNode, value);
+      for (const u of usages) {
+        addDataUsage(u.name, u.range, u.suppressUndefinedError);
       }
-
-      // List-valued reference fields (`filters:`): every bareword item names a
-      // data entry. Walk the AST seq so each undefined name points at its own
-      // line rather than at the whole field.
-      for (const field of TOP_LEVEL_DATA_REF_LIST_FIELDS) {
-        const seqNode = getPairValueNode(itemNode, field);
-        if (!seqNode || !isSeq(seqNode as any)) continue;
-        for (const itemScalar of (seqNode as any).items) {
-          const raw = (itemScalar as { value?: unknown })?.value;
-          if (!isBarewordReference(raw)) continue;
-          const itemHasRange = !!(itemScalar as any).range;
-          const range = itemHasRange ? nodeRange(itemScalar as any) : findPairRange(itemNode, field) ?? nodeRange(itemNode);
-          addDataUsage(raw, range);
-        }
+      for (const { arrKey, range } of legacyNotices) {
+        problems.push({
+          fileId: file.id,
+          severity: "info",
+          kind: "legacy-object-data",
+          message:
+            `Legacy format: \`data:\` under \`${arrKey}:\` is an old alias for \`filter:\`. It still works, ` +
+            `but we recommend renaming it to \`filter:\`.`,
+          range,
+        });
       }
 
       if (typeof value.keys === "string") {
@@ -516,74 +472,6 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         }
       }
 
-      // spawn[]/swap[] entries support the same bareword-or-shorthand `data:` field.
-      for (const arrKey of ["spawn", "swap"]) {
-        const arrNode = getPairValueNode(itemNode, arrKey);
-        if (!arrNode || !isSeq(arrNode as any)) continue;
-        for (const nested of (arrNode as any).items) {
-          if (!isMap(nested)) continue;
-          const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
-          if (!isBarewordReference(nestedValue.data)) continue;
-          addDataUsage(nestedValue.data as string, findPairRange(nested as YAMLMap, "data") ?? nodeRange(nested as any));
-        }
-      }
-
-      // objects:/bannedObjects:/poke: array items (ObjectData/PokeData in
-      // PrefabData.cs) carry their own filter fields, same data.yaml
-      // namespace as the top-level ones above. A string item is the legacy
-      // single-line object format (`Object(string line)`) — nothing
-      // structured to read a data-entry name out of, so it's skipped.
-      for (const arrKey of ["objects", "bannedObjects", "poke"]) {
-        const arrNode = getPairValueNode(itemNode, arrKey);
-        if (!arrNode || !isSeq(arrNode as any)) continue;
-        for (const nested of (arrNode as any).items) {
-          if (!isMap(nested)) continue;
-          const nestedValue = (nested as YAMLMap).toJSON() as Record<string, unknown>;
-
-          for (const field of NESTED_FILTER_SCALAR_FIELDS) {
-            const raw = nestedValue[field];
-            if (!isBarewordReference(raw)) continue;
-            addDataUsage(raw as string, findPairRange(nested as YAMLMap, field) ?? nodeRange(nested as any));
-          }
-          for (const field of NESTED_FILTER_LIST_FIELDS) {
-            const seqNode = getPairValueNode(nested as YAMLMap, field);
-            if (!seqNode || !isSeq(seqNode as any)) continue;
-            for (const itemScalar of (seqNode as any).items) {
-              const raw = (itemScalar as { value?: unknown })?.value;
-              if (!isBarewordReference(raw)) continue;
-              const itemHasRange = !!(itemScalar as any).range;
-              const range = itemHasRange
-                ? nodeRange(itemScalar as any)
-                : findPairRange(nested as YAMLMap, field) ?? nodeRange(nested as any);
-              addDataUsage(raw, range);
-            }
-          }
-
-          // `data:` here is the legacy alias for the singular `filter:`
-          // (still works — same underlying property, ticket 08) — counts as
-          // a real usage like `filter:` does (so a real entry it points at
-          // isn't wrongly flagged unused), but never as an "undefined
-          // reference" error of its own: the ask is to flag the legacy
-          // *format*, not raise a data-reference error on top of it, and this
-          // field's real-world value shapes are less battle-tested here than
-          // the modern `filter:` fields, so an unresolved name is left to the
-          // legacy-format notice alone rather than also getting a hard error.
-          const legacyRaw = nestedValue[NESTED_LEGACY_DATA_FIELD];
-          if (isBarewordReference(legacyRaw)) {
-            const range = findPairRange(nested as YAMLMap, NESTED_LEGACY_DATA_FIELD) ?? nodeRange(nested as any);
-            addDataUsage(legacyRaw as string, range, true);
-            problems.push({
-              fileId: file.id,
-              severity: "info",
-              kind: "legacy-object-data",
-              message:
-                `Legacy format: \`data:\` under \`${arrKey}:\` is an old alias for \`filter:\`. It still works, ` +
-                `but we recommend renaming it to \`filter:\`.`,
-              range,
-            });
-          }
-        }
-      }
     }
   }
 

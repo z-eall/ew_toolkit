@@ -16,11 +16,13 @@ import {
   type SortMode,
   sortFiles,
   statusOf,
+  shouldResortFilePanelOnManualValidate,
+  shouldShowFileStatusBadges,
   toggleAllSelection,
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
-import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, presentSortedCategories } from "./diagnosisCategories";
+import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, formatProblemTag, presentSortedCategories, shouldShowTagSubline } from "./diagnosisCategories";
 import { INVALID_FILE_CATEGORY, checkFileName, classifyFileName } from "./fileNameCheck";
 import { pickHighestPriority, type Severity } from "./structuralPrecheck";
 import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
@@ -265,11 +267,12 @@ const sidebarFilters = new Set<FileStatus>(DEFAULT_FILTERS);
 // Folders the user has collapsed in the sidebar tree (by folder name).
 const collapsedFolders = new Set<string>();
 
-// The file panel's row order, frozen between the two points that are allowed to
-// resort it: upload-complete and an explicit sort-menu pick. Every other
-// render (in particular the live-validation renders that fire as the user
-// types) must not reshuffle rows just because a status changed — see
-// validator-ui-polish ticket 03.
+// The file panel's row order, frozen between the three points that are allowed
+// to resort it: upload-complete, an explicit sort-menu pick, and Manual
+// Validate completing (validator-round3 ticket 02). Every other render (in
+// particular the live-validation renders that fire as the user types) must not
+// reshuffle rows just because a status changed — see validator-ui-polish
+// ticket 03.
 let fileOrder: string[] = [];
 
 // A folder's position in the list is otherwise an incidental side effect of
@@ -318,9 +321,8 @@ type ProblemTab = Severity | "thisfile";
 let activeTab: ProblemTab = "error";
 
 // The diagnostic-category vocabulary now lives in ./diagnosisCategories (shared
-// with fileManager's reference labels and unit-tested there). Synthetic
-// parse/root/item branches are deliberately excluded: they're rare fatal issues,
-// always shown, never filtered.
+// with fileManager's reference labels and unit-tested there). YAML-native
+// sub-groups reuse `entryType` under YAML problem (ticket 04).
 
 // Category multi-select filter for the Problems panel (all on by default).
 const categoryFilter = new Set<string>(DIAGNOSIS_CATEGORIES);
@@ -379,7 +381,8 @@ function scrollFileRowIntoView(fileId: string): void {
   fileListEl.querySelector<HTMLElement>(`[data-file-id="${fileId}"]`)?.scrollIntoView({ block: "nearest" });
 }
 
-function statusBadge(status: FileStatus, errors: number, warnings: number): string {
+function statusBadge(status: FileStatus, errors: number, warnings: number, visible: boolean): string {
+  if (!visible) return "";
   if (status === "error") return `<span class="badge err">${errors}</span>`;
   if (status === "warning") return `<span class="badge warn">${warnings}</span>`;
   return `<span class="badge ok">✓</span>`;
@@ -408,6 +411,7 @@ function renderFileList() {
 
   const active = fileManager.activeFile;
   const byId = new Map(all.map((f) => [f.id, f]));
+  const showBadges = shouldShowFileStatusBadges(fileManager.mode, fileManager.status);
   syncFileOrder();
   const ordered = fileOrder.map((id) => byId.get(id)).filter((f): f is LoadedFile => !!f);
   const view = filterFiles(ordered.map(toViewFile), sidebarFilters);
@@ -470,11 +474,11 @@ function renderFileList() {
       row.draggable = true;
       row.innerHTML = `
         <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
-        ${statusBadge(vf.status, errors, warnings)}
+        ${statusBadge(vf.status, errors, warnings, showBadges)}
         <button class="remove-btn" title="Remove file">×</button>
       `;
       row.querySelector(".file-name")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
-      row.querySelector(".badge")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
+      row.querySelector(".badge")?.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
       row.querySelector(".remove-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
         const nextId = pickNextAfterRemoval(visibleFileIds, new Set([vf.id]), visibleFileIds.indexOf(vf.id));
@@ -558,8 +562,7 @@ function renderProblemsPanel() {
   }
 
   // "This file" isolates every severity for the active file; the others filter by
-  // severity. The category multi-select then narrows further — but only touches
-  // the defined categories, so parse/root/item branches always stay visible.
+  // severity. The category multi-select narrows further.
   const bySeverity =
     activeTab === "thisfile"
       ? rows.filter((r) => r.file.id === activeId)
@@ -620,10 +623,11 @@ function renderProblemsPanel() {
       const key = `${file.id}:${problem.range[0]}`;
       row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
       row.dataset.key = key;
-      const entryTypeTag = problem.entryType
-        ? `<span class="branch-entry">${escapeHtml(problem.entryType)}</span>`
-        : "";
-      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch"><span class="branch-kind">${escapeHtml(problem.branch)}</span>${entryTypeTag}</span>`;
+      const sublineTag =
+        shouldShowTagSubline(problem.branch, problem.entryType)
+          ? `<span class="branch-entry">${escapeHtml(problem.entryType!)}</span>`
+          : "";
+      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch"><span class="branch-kind">${escapeHtml(problem.branch)}</span>${sublineTag}</span>`;
       row.addEventListener("click", () => {
         fileManager.revealProblem(file.id, problem.range[0], { focus: false });
         scrollFileRowIntoView(file.id);
@@ -649,7 +653,7 @@ function copyDiagnosis(
   problem: LoadedFile["problems"][number],
   line: number,
 ): void {
-  const tag = problem.entryType ? `${problem.branch} · ${problem.entryType}` : problem.branch;
+  const tag = formatProblemTag(problem.branch, problem.entryType);
   const text = `${file.name}:${line} — ${problem.message} [${tag}]`;
   navigator.clipboard?.writeText(text).then(
     () => {
@@ -813,7 +817,8 @@ function renderSortFilterMenu() {
       renderFileList();
     });
   });
-  sortFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="filter"]')?.addEventListener("click", () => {
+  sortFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="filter"]')?.addEventListener("click", (e) => {
+    e.stopPropagation();
     const next = toggleAllSelection(
       sidebarFilters,
       FILTER_OPTIONS.map((o) => o.status),
@@ -899,7 +904,8 @@ function renderCatFilterMenu() {
       renderProblemsPanel();
     });
   });
-  catFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="cat"]')?.addEventListener("click", () => {
+  catFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="cat"]')?.addEventListener("click", (e) => {
+    e.stopPropagation();
     const next = toggleAllSelection(categoryFilter, present);
     for (const c of present) {
       if (next.has(c)) categoryFilter.add(c);
@@ -1272,7 +1278,15 @@ modeAutoBtn.addEventListener("click", () => applyValidationMode("auto"));
 modeManualBtn.addEventListener("click", () => applyValidationMode("manual"));
 validateBtn.addEventListener("click", () => {
   if (validating || !fileManager.canValidateNow) return;
-  void runVisibleValidation(fileManager.allFiles.length, () => fileManager.validateNow());
+  const batchStatusBefore = fileManager.status;
+  void runVisibleValidation(fileManager.allFiles.length, () => {
+    fileManager.validateNow();
+    if (shouldResortFilePanelOnManualValidate(fileManager.mode, batchStatusBefore)) {
+      currentSort = DEFAULT_UPLOAD_SORT;
+      recomputeFileOrder();
+      renderFileList();
+    }
+  });
 });
 
 sidebarEl.addEventListener("dragover", (e) => {
@@ -1585,7 +1599,9 @@ filenameTextEl.addEventListener("blur", () => {
   const name = (filenameTextEl.textContent ?? "").replace(/\s+/g, " ");
   fileManager.renameFile(file.id, name);
 
-  const { verdict, problem } = checkFileName(name.trim());
+  const committed = fileManager.activeFile;
+  if (!committed) return;
+  const { verdict, problem } = checkFileName(committed.name);
   if (verdict !== "valid" && problem) showRenameNote(problem.severity as "error" | "info", problem.message);
   else clearRenameNote();
 });

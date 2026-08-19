@@ -92,6 +92,9 @@ codebase's message/category-generation logic is no larger than it needs to be.
 - Whether the build-time validator lives as a vitest test, a standalone
   Node script wired into the existing GitHub Action, or both — depends on
   how the extraction ticket shapes the catalog-loading code.
+- **Diagnosis arbitration** (intent over schema) — see
+  [Diagnosis Arbitration map](../diagnosis-arbitration/map.md); shape
+  messages may move into `messages.yaml` once the catalog exists.
 - What the redesigned category list should actually contain — deliberately
   left to the grilling ticket below rather than guessed at while charting.
 
