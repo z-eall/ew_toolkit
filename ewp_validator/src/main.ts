@@ -1125,7 +1125,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
   const invalid = yamls.filter((e) => classifyFileName(e.file.name) === "invalid");
   let toIngest = yamls;
   if (invalid.length > 0) {
-    const names = invalid.map((e) => e.file.name).join("\n  ");
+    const names = invalid.map((e) => e.file.name);
     // Real 3-way choice (ticket 09): native confirm() only ever offered 2
     // options here, so "abort the whole upload" was impossible at this step
     // — a scripter who didn't want ANY of the batch had to let it load, then
@@ -1135,7 +1135,9 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
     const choice = await showConfirmModal({
       message:
         `${invalid.length} uploaded file${invalid.length > 1 ? "s" : ""} don't match an EWP structural filename ` +
-        `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml):\n  ${names}`,
+        `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml):`,
+      fileList: names,
+      fileListLabel: "Flagged files",
       buttons: [
         { label: "Skip these files", value: "skip", primary: true },
         { label: "Proceed anyway", value: "proceed" },
@@ -1168,9 +1170,11 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
 
   const dups = prepared.filter((p) => fileManager.exists(p.name, p.folder));
   if (dups.length > 0) {
-    const names = dups.map((d) => (d.folder ? `${d.folder}/${d.name}` : d.name)).join("\n  ");
+    const names = dups.map((d) => (d.folder ? `${d.folder}/${d.name}` : d.name));
     const choice = await showConfirmModal({
-      message: `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:\n  ${names}`,
+      message: `${dups.length} uploaded file${dups.length > 1 ? "s" : ""} already loaded:`,
+      fileList: names,
+      fileListLabel: "Already loaded",
       buttons: [
         { label: "Cancel upload", value: "cancel", primary: true },
         { label: "Overwrite", value: "overwrite", danger: true },
@@ -1456,11 +1460,13 @@ function renderClearAllMenu(): void {
     clearAllMenu.setAttribute("hidden", "");
     const invalid = fileManager.allFiles.filter((f) => f.problems.some((p) => p.branch === INVALID_FILE_CATEGORY));
     if (invalid.length === 0) return;
-    const names = invalid.map((f) => (f.folder ? `${f.folder}/${f.name}` : f.name)).join("\n  ");
+    const names = invalid.map((f) => (f.folder ? `${f.folder}/${f.name}` : f.name));
     const choice = await showConfirmModal({
       message:
-        `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n  ${names}\n\n` +
+        `Clear ${invalid.length} invalid file${invalid.length > 1 ? "s" : ""}?\n\n` +
         `These aren't EWP-structured files. Make sure you've saved anything you want to keep — cleared files can't be recovered.`,
+      fileList: names,
+      fileListLabel: "Invalid files",
       buttons: [
         { label: "Cancel", value: "cancel", primary: true },
         { label: "Clear invalid files", value: "clear", danger: true },

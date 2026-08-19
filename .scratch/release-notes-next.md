@@ -5,7 +5,7 @@
 - FILTER menus keep working when you use select-all / deselect-all (the menu stays open).
 - Diagnosis tags use the live FILTER names, including **YAML problem**, with a second line only for YAML parse/root/item groups.
 - Renaming a file updates Problems-panel filename diagnoses immediately (Auto) or on Validate (Manual).
-- Export all no longer freezes the page on large batches; native confirm dialogs are replaced by an in-app confirm. A long list of flagged filenames in that confirm stays inside the window with a scrollbar.
+- Export all no longer freezes the page on large batches; native confirm dialogs are replaced by an in-app confirm. Flagged filenames sit in a dotted, always-on bullet box with a scrollbar when the list is long, so the buttons stay on screen.
 - Hub and validator share one icon and color set; toolbar labels say Export (not Save); panel headers and sort/filter chrome are aligned.
 - Problems panel: next-file jump, collapse vs cursor highlight, focus zones, and tabs no longer stick to the active file's severity.
 

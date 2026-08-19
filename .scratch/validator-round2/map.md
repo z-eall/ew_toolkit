@@ -43,6 +43,7 @@ conclusion is recorded with its reasoning, same bar as any other map here.
   checklist, two-step source-verify-then-duplication-check rule (critical
   for [Custom saved key validation rework](issues/07-custom-key-validation-rework.md)),
   $0/no-backend, low-maintenance.
+- Follow-on (not this map): [Confirm modal large file-list overflow](../confirm-modal-large-list/map.md) — height cap, always-boxed dotted list, bullets. Charted in a sibling Cursor worktree; copied into this repo 2026-08-20. Ticket 09's modal is still the component; that map owns overflow UX.
 - This map's tickets **carry execution** for the `task`-typed tickets
   (matching this repo's established convention); the `grilling`-typed
   tickets resolve the decision here and implement in the same pass unless
