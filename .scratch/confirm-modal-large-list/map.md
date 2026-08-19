@@ -23,7 +23,7 @@ The EWP validator's custom confirm modal (`confirmModal.ts`, [Custom confirmatio
 - [What layout keeps confirm buttons on-screen when the file list is long?](issues/02-capped-modal-layout-and-scroll-region.md) — **always boxed**: summary pinned on top, bordered (dotted-token) scroll area for names even at 3 files, buttons pinned at bottom, max height `min(80vh, 640px)`.
 - [How should the modal present 1600+ filenames without breaking UX or perf?](issues/03-extreme-count-list-presentation.md) — **full bullet list** (`ul/li`) inside the scroll box; same on all three long-list pop-ups; no “first N + and M more” cut-off.
 - [Should confirmModal take a structured file list or stay message-only?](issues/04-confirm-modal-api-shape.md) — optional `fileList: string[]` + short `message`; modal renders bullets.
-- [Implement scroll-capped confirm modal and verify at bulk-upload scale](issues/05-implement-and-verify-scroll-capped-modal.md) — `fileList` + always-boxed dashed bullet region; cap `min(80vh, 640px)`; wired on upload-gate, duplicate overwrite, clear-invalid. Tests/build clean; Pages not updated until commit+push.
+- [Implement scroll-capped confirm modal and verify at bulk-upload scale](issues/05-implement-and-verify-scroll-capped-modal.md) — `fileList` + always-boxed dashed bullet region; cap `min(80vh, 640px)`; wired on upload-gate, duplicate overwrite, clear-invalid. Shipped in `e7798b6`.
 
 ## Not yet specified
 

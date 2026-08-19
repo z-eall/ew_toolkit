@@ -21,7 +21,7 @@ Implemented always-boxed dotted bullet list + `fileList` API (tickets 02–04).
 - No jsdom in this project; layout not unit-tested (still in map Not yet specified).
 - Local validator opened at `http://localhost:5175/ew_toolkit/ewp_validator/` for a human drop of 3 / 12 / 160+ invalid names. Agent could not drive the file picker. Keyboard rules unchanged (Enter still upload-gate only).
 
-**Not done here:** git commit / Pages push — say if you want that next so live matches this build.
+**Not done here:** git commit / Pages push — **done as `e7798b6`.**
 
 ## Question
 
