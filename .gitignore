@@ -1,6 +1,9 @@
 node_modules/
 dist/
 
+# Machine-local junction to shared skills (see wayfinder setup) — not portable across machines
+.cursor/skills
+
 # Regenerated fresh by schema/generate.mjs on every build — committing it would
 # just drift stale in git history (ticket 12).
 ewp_validator/src/schema.generated.json
