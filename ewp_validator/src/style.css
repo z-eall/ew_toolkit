@@ -1267,6 +1267,9 @@ body {
   border-radius: 6px;
   padding: 18px;
   max-width: 420px;
+  max-height: min(80vh, 28rem);
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
@@ -1277,6 +1280,9 @@ body {
   line-height: 1.5;
   /* Preserves the \n / \n\n already used in every call site's message text. */
   white-space: pre-line;
+  overflow-y: auto;
+  min-height: 0;
+}
 }
 
 .confirm-buttons {

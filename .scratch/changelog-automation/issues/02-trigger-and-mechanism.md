@@ -20,7 +20,7 @@ Concrete mechanism:
 
 1. **Trigger**: a human decides a batch is release-worthy and runs a local command/script — no CI watches for a signal; this is entirely separate from `build-deploy.yml`'s push/schedule triggers, which are untouched.
 2. **Summarization**: Claude Code (or an equivalent local session) drafts release notes from `git log`/diff since the last tag, saved to a notes file.
-3. **Tag naming**: date-based, `vYYYY-MM-DD`. Same-day collision handling: the script checks existing tags for that day's prefix (`git tag -l "vYYYY-MM-DD*"`) and appends `-2`, `-3`, … if one already exists (first release of the day stays bare). No semver judgment calls (per map's "Out of scope").
+3. **Tag naming**: date-based, `vYYYY-MM-DD`, using the **local calendar date of the machine that runs `cut-release`** (not UTC). Same-day collision handling: the script checks existing tags for that day's prefix (`git tag -l "vYYYY-MM-DD*"`) and appends `-2`, `-3`, … if one already exists (first release of the day stays bare). No semver judgment calls (per map's "Out of scope"). Locked 2026-08-20 so the tag date matches the validator's locally displayed "Schema last updated" date.
 4. **Publish**: the script pushes the computed tag and runs `gh release create <tag> --notes-file <file>`.
 5. **Cost**: $0 — no API secret, no CI spend.
 

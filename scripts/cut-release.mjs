@@ -18,7 +18,15 @@ function run(cmd) {
   return execSync(cmd, { encoding: "utf8" }).trim();
 }
 
-const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD, UTC
+/** Calendar date on the machine that cuts the release (not UTC). Matches the validator header's local "last updated" date. */
+function localYmd(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+const today = localYmd();
 const existingTags = run(`git tag -l "v${today}*"`)
   .split("\n")
   .filter(Boolean);
