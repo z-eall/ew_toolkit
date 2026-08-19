@@ -1,7 +1,7 @@
 # Design the legend-generation mechanism and placeholder syntax
 
 Type: grilling
-Status: open
+Status: closed — out of scope
 Blocked by: (none)
 
 ## Question
@@ -48,3 +48,8 @@ Not blocked by [Redesign the diagnosis category grouping](01-category-grouping-r
 — this is about the *mechanism* for any catalog entry, independent of what
 the final category list looks like. Both tickets are in the frontier
 together.
+
+## Resolution
+
+**Closed — out of scope (2026-08-20).** Scripter dropped the YAML catalog destination (ROI too low vs machinery). Grilling stopped mid-round; no placeholder syntax or generator chosen. Do not implement `messages.yaml`.
+

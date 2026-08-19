@@ -1,6 +1,9 @@
+# Retroactive reformat and release 3
+
 Type: grilling
-Status: in-progress
-Assignee: current session
+Status: resolved
+Blocked by: (none)
+Parent: [Changelog Automation map](../map.md)
 
 ## Question
 
@@ -19,6 +22,18 @@ this patch shipping as release #3 in the same pass? Or does release #3 just
 go out in the current format going forward, leaving the first two as a
 known-stale historical record?
 
-## Answer
+## Resolution
 
-(pending — grilling in progress)
+**Leave `v2026-08-18` and `v2026-08-18-2` unchanged.** Old 10-name headers stay as a dated snapshot. Do not edit in place or delete/recreate.
+
+**Going-forward heading list** (supersedes ticket 03’s five diagnosis names and implicit “Site last” order):
+
+1. **Site** — Hub/Tool UX that is not a diagnosis (nav, theme, leave-site warning, Changelog link, layout). Always first so scripters see UX before validation changes.
+2. **Structure problem**
+3. **Value problem**
+4. **Reference problem**
+5. **YAML problem** — sixth FILTER name from Validator Round 3; include when the batch has YAML-parse/empty-file/list-root changes.
+6. **Invalid file**
+7. **Legacy but working**
+
+Omit a heading when the batch has no bullets for it. This ticket does **not** cut release 3 or push `main`.

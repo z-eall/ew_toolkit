@@ -51,8 +51,7 @@ have a documented place to add rows without overlapping existing layers.
 
 ## Not yet specified
 
-- Merge with Message Catalog YAML when that map lands — catalog keys vs inline
-  strings in arbitration module.
+(none)
 
 ## Out of scope
 
@@ -60,6 +59,4 @@ have a documented place to add rows without overlapping existing layers.
   stays strict; arbitration is UX-only.
 - **Component-aware RPC signature checks** — research 08 deferred unless
   explicitly ticketed.
-- **RPC param table generation** — owned by
-  [Validation Maintenance map](../validation-maintenance/map.md); do not
-  duplicate `checkRpcParams` table data in the arbitration catalog.
+- **Message Catalog YAML** — [Editable Message & Category Catalog](../message-catalog/map.md) abandoned the YAML destination (2026-08-20); arbitration strings stay in `shapeMismatchDiagnosis.ts`.

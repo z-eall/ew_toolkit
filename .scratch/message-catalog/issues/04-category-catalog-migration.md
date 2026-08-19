@@ -1,7 +1,7 @@
 # Move category labels into the catalog
 
 Type: task
-Status: open
+Status: closed — out of scope
 Blocked by: [Extract message wording into messages.yaml + build-time validator](03-extract-messages-to-catalog.md)
 
 ## Question
@@ -36,3 +36,8 @@ Covers:
 3. Regression tests referencing the category constants updated to read from
    the catalog instead of the plain exported string, if the accessor shape
    changes.
+
+## Resolution
+
+**Closed — out of scope (2026-08-20).** YAML catalog dropped. Category labels remain code constants from ticket 01 (plus **YAML problem** from Round 3).
+
