@@ -71,10 +71,15 @@ const FULL_VALIDATE_IDLE_MS = 1200;
 // already close cousins (ticket 04's naming pass), and both mix a hard error
 // with merely-informational findings, matching the "___ problem" naming
 // principle in diagnosisCategories.ts.
-const REFERENCE_BRANCH_LABEL: Record<"data-reference" | "custom-key" | "legacy-object-data", string> = {
+const REFERENCE_BRANCH_LABEL: Record<
+  "data-reference" | "custom-key" | "legacy-object-data" | "template-function" | "poke-parameter",
+  string
+> = {
   "data-reference": REFERENCE_PROBLEM_CATEGORY,
   "custom-key": REFERENCE_PROBLEM_CATEGORY,
   "legacy-object-data": LEGACY_CATEGORY,
+  "template-function": REFERENCE_PROBLEM_CATEGORY,
+  "poke-parameter": REFERENCE_PROBLEM_CATEGORY,
 };
 
 export class FileManager {

@@ -18,7 +18,7 @@
 //      name (e.g. `<save_captureblockercity<int_isRadarCity=0>_<time>>`) are
 //      treated as wildcards, and only the key-name portion is compared — the
 //      trailing value/parameter of a save or a `type: key` trigger is ignored.
-import { isMap, isSeq, parseDocument } from "yaml";
+import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
 import { collectRuleEntryDataReferences } from "./dataFieldValidation";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
 
@@ -26,7 +26,7 @@ export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind: "data-reference" | "custom-key" | "legacy-object-data";
+  kind: "data-reference" | "custom-key" | "legacy-object-data" | "template-function" | "poke-parameter";
   range: [start: number, end: number];
 }
 
@@ -374,6 +374,307 @@ function orphanKeyMessage(direction: KeyDirection, name: string, counterpartOnly
   return `Custom saved key '${name}' written (<save_..>) but never read in the loaded files — check ${CUSTOM_KEY_DATA_PATH_HINT} before treating this as a bug.`;
 }
 
+// Ticket 06 — EWP string-template function name typo detection. Source-verified
+// catalog (.scratch/validator-round4/research/05-string-template-function-source
+// -audit.md, EWP's Functions.cs/ObjectFunctions.cs fetched and read in full,
+// 2026-08-22): every `<...>` group is resolved by first trying the *entire*
+// bracket contents against a no-argument name table, and only if that fails,
+// splitting on the first top-level `_` and trying the head against an
+// argument-taking name table. Both tables are checked here in that same order,
+// so a name that's only valid in one arity (e.g. `par` bare vs. `par_X`) is
+// never wrongly flagged just because it also happens to appear split.
+//
+// `GetGeneralFunction`, Functions.cs:126-153.
+const NO_ARG_FUNCTION_NAMES = new Set([
+  "prefab", "safeprefab", "par",
+  "par0", "par1", "par2", "par3", "par4", "par5", "par6", "par7", "par8", "par9",
+  "day", "ticks", "x", "y", "z", "snap", "amount", "time", "realtime",
+]);
+// `ObjectFunctions.GetGeneralParameter`, ObjectFunctions.cs:34-55 — only reachable
+// with an object/ZDO context, but that context can't be told apart from plain
+// text at static-analysis time, so it's folded into the same recognized set
+// rather than risk a false positive.
+const NO_ARG_OBJECT_FUNCTION_NAMES = new Set([
+  "zdo", "pos", "i", "j", "a", "rad", "deg", "rot", "pid", "cid", "platform",
+  "pname", "pchar", "pvisible", "owner", "connected", "biome", "joints",
+  // `<none>`: documented (docs/functions.md, "Empty or lack of value when using
+  // filters") but not found in Functions.cs/ObjectFunctions.cs's own dispatch
+  // switches during ticket 05's research — likely resolved by filter-comparison
+  // code elsewhere in the mod, not the general `<...>` template engine. Included
+  // here on the strength of the docs rather than a pinned source line, since
+  // treating a documented, scripter-facing keyword as a "typo" would be a
+  // needless false positive either way.
+  "none",
+]);
+// `GetValueFunction`, Functions.cs:155-251 (68 names, argument-taking).
+const ARG_FUNCTION_HEADS = new Set([
+  "sqrt", "round", "ceil", "floor", "abs", "sin", "cos", "tan", "asin", "acos",
+  "rad2deg", "deg2rad", "rad2vec", "deg2vec", "vec2deg", "vec2rad",
+  "angle", "distance", "dot", "cross", "project", "reflect",
+  "normalize", "magnitude", "sqrmagnitude", "vecx", "vecy", "vecz",
+  "lerp", "atan", "pow", "log", "exp", "min", "max",
+  "add", "sub", "mul", "div", "mod", "iter", "iter2",
+  "addlong", "sublong", "mullong", "divlong", "modlong",
+  "randf", "randomfloat", "randi", "randomint", "random",
+  "hashof", "textof", "len", "lower", "upper", "trim",
+  "left", "right", "mid", "proper", "search",
+  "calcf", "calcfloat", "calci", "calcint", "calclong",
+  "par", "rest", "load", "save", "save++", "save--", "clear", "key",
+  "rank", "small", "large", "eq", "ne", "gt", "ge", "lt", "le",
+  "even", "odd", "findupper", "findlower", "time", "realtime", "globalkey",
+]);
+// `ObjectFunctions.GetValueFunction`, ObjectFunctions.cs:60-80 (11 names, object
+// context — same "can't tell context apart statically" call as the no-arg set).
+const ARG_OBJECT_FUNCTION_HEADS = new Set([
+  "string", "float", "int", "long", "bool", "vec", "quat",
+  "hash", "byte", "zdo", "amount", "quality", "durability", "item", "pos", "pdata",
+]);
+
+const KNOWN_NO_ARG_NAMES = new Set([...NO_ARG_FUNCTION_NAMES, ...NO_ARG_OBJECT_FUNCTION_NAMES]);
+const KNOWN_ARG_HEADS = new Set([...ARG_FUNCTION_HEADS, ...ARG_OBJECT_FUNCTION_HEADS]);
+const ALL_KNOWN_FUNCTION_NAMES = [...new Set([...KNOWN_NO_ARG_NAMES, ...KNOWN_ARG_HEADS])];
+// Case-insensitive lookup, keyed by lowercase, back to the real (correctly-cased)
+// spelling(s) — used only to recognize "right name, wrong case" as a distinct,
+// high-confidence case from a genuine spelling typo (dispatch itself is
+// case-sensitive per source, §1c of the research above: no `.ToLowerInvariant()`/
+// `OrdinalIgnoreCase` anywhere in the four switch bodies).
+const LOWERCASE_TO_KNOWN_NAMES = new Map<string, string[]>();
+for (const name of ALL_KNOWN_FUNCTION_NAMES) {
+  const lower = name.toLowerCase();
+  const list = LOWERCASE_TO_KNOWN_NAMES.get(lower);
+  if (list) list.push(name);
+  else LOWERCASE_TO_KNOWN_NAMES.set(lower, [name]);
+}
+
+// DataLoading.cs's `LoadDefaultValueGroups` hardcodes these four group names
+// (aliased onto live component/material scans) regardless of what's loaded —
+// unlike `material_*`/`itemtype_*`/arbitrary component-type-name groups, which
+// are built from a live `ZNetScene` prefab scan and have no fixed, enumerable
+// name list this validator's static file-scan could ever produce (same class
+// of runtime-only dependency the ticket 05 research ruled "not statically
+// checkable" for function *arguments* — it applies here too, to *value group*
+// names). Always-recognized regardless of what's loaded in the batch.
+const DEFAULT_VALUE_GROUP_NAMES = new Set(["wearntear", "humanoid", "creature", "structure"]);
+
+function isRecognizedFunctionGroup(inner: string): boolean {
+  if (KNOWN_NO_ARG_NAMES.has(inner)) return true;
+  const head = splitTopLevel(inner, "_")[0] ?? inner;
+  return KNOWN_ARG_HEADS.has(head);
+}
+
+// Small, unweighted Levenshtein distance — good enough for short function-name
+// heads (longest known name is 11 chars); no need for a fancier metric.
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+interface FunctionNameSuggestion {
+  name: string;
+  caseOnly: boolean;
+}
+
+// Best-effort "did you mean X" for an unrecognized function head. Case-only
+// mismatch (same spelling, wrong case) is reported with certainty since it's a
+// known, source-confirmed failure mode, not a guess. Otherwise, only suggest a
+// close spelling when exactly one known name is within edit-distance 2 — a tie
+// or a distant match says nothing useful, so no suggestion is offered rather
+// than a misleading one.
+function suggestFunctionName(head: string): FunctionNameSuggestion | null {
+  const lower = head.toLowerCase();
+  const caseMatches = LOWERCASE_TO_KNOWN_NAMES.get(lower);
+  if (caseMatches && caseMatches.length === 1) return { name: caseMatches[0], caseOnly: true };
+
+  let best: string | null = null;
+  let bestDist = Infinity;
+  let tie = false;
+  for (const name of ALL_KNOWN_FUNCTION_NAMES) {
+    const dist = levenshtein(lower, name.toLowerCase());
+    if (dist < bestDist) {
+      best = name;
+      bestDist = dist;
+      tie = false;
+    } else if (dist === bestDist) {
+      tie = true;
+    }
+  }
+  if (best && !tie && bestDist > 0 && bestDist <= 2) return { name: best, caseOnly: false };
+  return null;
+}
+
+function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestion | null): string {
+  const base = `'<${head}...>' doesn't match any known EWP function name`;
+  const runtime = "left as literal text at runtime — no error, and no function actually runs";
+  if (!suggestion) return `${base}. It's ${runtime}.`;
+  if (suggestion.caseOnly) {
+    return (
+      `${base} — EWP function names are case-sensitive, and this only differs from ` +
+      `'<${suggestion.name}...>' by case. It's ${runtime}.`
+    );
+  }
+  return `${base} — probably a typo of '<${suggestion.name}...>'. It's ${runtime}.`;
+}
+
+// Scan the whole document for balanced `<...>` groups whose head isn't any
+// known function name, skipping (a) unbalanced brackets — same "leave for
+// structural pre-check" rule scanKeyOccurrences follows — and (b) a head built
+// entirely from a nested `<...>` group, which has no literal spelling to check
+// (the real name only exists at runtime, same reasoning as hasLiteral above).
+// Deliberately no jump-past-match on a hit, matching scanKeyOccurrences: a
+// nested group inside an unrecognized outer one (or vice versa) still gets its
+// own pass through this loop.
+interface UnrecognizedFunctionOccurrence {
+  head: string;
+  range: [number, number];
+}
+
+function scanUnrecognizedFunctionHeads(text: string): UnrecognizedFunctionOccurrence[] {
+  const out: UnrecognizedFunctionOccurrence[] = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "<") continue;
+    const end = findGroupEnd(text, i);
+    if (end === -1) continue;
+    const inner = text.slice(i + 1, end - 1);
+    if (isRecognizedFunctionGroup(inner)) continue;
+    const head = splitTopLevel(inner, "_")[0] ?? inner;
+    if (!head || head.includes("<")) continue; // purely dynamic head, nothing to check
+    out.push({ head, range: [i, end] });
+  }
+  return out;
+}
+
+// Ticket 07 — poke parameter declaration/usage matching. Source-verified rules
+// (round3 research/11-poke-parameter-naming-rules.md, treated as settled ground
+// truth per this ticket's own framing — not re-derived here):
+//   - `poke[].parameter` / legacy `pokeParameter` split on SPACES into args.
+//   - `poke[].pars` splits on COMMAS into args; when a poke item sets `pars`,
+//     EWP uses it INSTEAD of `parameter` (PrefabData.cs's `GetArgs`: `if
+//     (Parameters != null) ... else ...`) — so `pars` wins over `parameter` on
+//     the same item, not merged with it.
+//   - `type: poke, X Y` splits its comma-suffix on spaces into filter tokens
+//     (`Info.Args`); `InfoSelector.CheckArgs` matches positionally,
+//     `info.Args[i]` against the incoming `args[i]`, via `Helper.CheckWild`
+//     (comma-separated alternatives, `*` wildcard, numeric `min;max` range,
+//     else case-insensitive exact match).
+//
+// Scope decision: this only tracks each side's FIRST token (the "poke name"),
+// matching every worked example in the ticket and in round3's research — full
+// positional multi-arg-list matching would mean statically resolving arbitrary
+// `<...>` values at arbitrary argument positions, which is the same kind of
+// runtime-state dependency ticket 04's research already ruled out of scope
+// elsewhere in this file.
+function firstPokeToken(raw: string, sep: "," | " "): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const token = (sep === "," ? splitTopLevel(trimmed, ",") : trimmed.split(/\s+/))[0]?.trim();
+  if (!token) return null;
+  return hasLiteral(token) ? token : null; // purely dynamic — nothing concrete to check
+}
+
+// `type: poke, X` / `types: [poke, X]` — mirrors parseTypeKeyParameter's shape
+// for the "poke" trigger instead of "key". Match on the type keyword is
+// case-insensitive per source (`Enum.TryParse(..., true, ...)`).
+function parseTypePokeParameter(raw: string): string | null {
+  const [head, ...rest] = raw.split(",");
+  if (head.trim().toLowerCase() !== "poke") return null;
+  return firstPokeToken(rest.join(","), " ");
+}
+
+// `Helper.CheckWild`'s comma-separated-alternatives step, applied to one filter
+// token before per-alternative matching. `splitTopLevel` keeps a `<...>`
+// group's own commas intact, matching how every other comma-split in this file
+// treats dynamic groups as opaque.
+function pokeTriggerAlternatives(token: string): string[] {
+  return splitTopLevel(token, ",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+}
+
+// Reuses `keysCompatible` (case-insensitive, `<...>`/`*` as wildcards) for the
+// per-alternative comparison — the wildcard-skeleton approach built for custom
+// saved keys transfers directly to poke names, confirmed by re-reading round3
+// research 11 §2b: both are "case-insensitive string, `*`/dynamic segments as
+// wildcards" comparisons at the core. The one real addition `CheckWild` has
+// that custom-key matching doesn't — comma-separated alternatives on the
+// trigger side — is layered on top here rather than folded into
+// `keysCompatible` itself, since custom keys never have that shape.
+// Deliberately NOT reused: `CheckWild`'s numeric `min;max` range branch — a
+// poke *name* comparison has no numeric-range use case, so implementing it
+// would only add surface area no real script needs.
+function pokeNameCompatible(declaredName: string, triggerToken: string): boolean {
+  return pokeTriggerAlternatives(triggerToken).some((alt) => keysCompatible(declaredName, alt));
+}
+
+interface PokeTokenOccurrence {
+  token: string;
+  occ: Occurrence;
+}
+
+// Walks one EWP rule entry for both halves of the ticket 07 feature: declared
+// poke parameters (`poke[].parameter`/`pars`, legacy top-level `pokeParameter`)
+// and `type: poke, X` / `types:` trigger filter tokens.
+function collectPokeSignals(
+  itemNode: YAMLMap,
+  value: Record<string, unknown>,
+  fileId: string,
+): { declarations: PokeTokenOccurrence[]; triggers: PokeTokenOccurrence[] } {
+  const declarations: PokeTokenOccurrence[] = [];
+  const triggers: PokeTokenOccurrence[] = [];
+
+  if (typeof value.pokeParameter === "string") {
+    const name = firstPokeToken(value.pokeParameter, " ");
+    if (name) {
+      const range = findPairRange(itemNode, "pokeParameter") ?? nodeRange(itemNode as any);
+      declarations.push({ token: name, occ: { fileId, range } });
+    }
+  }
+
+  const pokeSeq = getPairValueNode(itemNode, "poke");
+  if (pokeSeq && isSeq(pokeSeq as any)) {
+    for (const nested of (pokeSeq as any).items) {
+      if (!isMap(nested)) continue;
+      const nestedMap = nested as YAMLMap;
+      const nestedValue = nestedMap.toJSON() as Record<string, unknown>;
+      // `pars` wins over `parameter` on the same item (source-verified above).
+      const field = typeof nestedValue.pars === "string" ? "pars" : typeof nestedValue.parameter === "string" ? "parameter" : null;
+      if (!field) continue;
+      const name = firstPokeToken(nestedValue[field] as string, field === "pars" ? "," : " ");
+      if (!name) continue;
+      const range = findPairRange(nestedMap, field) ?? nodeRange(nestedMap as any);
+      declarations.push({ token: name, occ: { fileId, range } });
+    }
+  }
+
+  const typeStrings: { raw: string; range: [number, number] }[] = [];
+  if (typeof value.type === "string") {
+    typeStrings.push({ raw: value.type, range: findPairRange(itemNode, "type") ?? nodeRange(itemNode as any) });
+  }
+  const typesSeq = getPairValueNode(itemNode, "types");
+  if (typesSeq && isSeq(typesSeq as any)) {
+    for (const item of (typesSeq as any).items) {
+      if (typeof item !== "string" && !(item && "value" in item)) continue;
+      const raw = typeof item === "string" ? item : String((item as { value: unknown }).value);
+      const range: [number, number] = (item as { range?: [number, number] }).range ?? nodeRange(itemNode as any);
+      typeStrings.push({ raw, range });
+    }
+  }
+  for (const { raw, range } of typeStrings) {
+    const token = parseTypePokeParameter(raw);
+    if (token) triggers.push({ token, occ: { fileId, range } });
+  }
+
+  return { declarations, triggers };
+}
+
 export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   const problems: FileProblem[] = [];
   const definitions = new Map<string, Occurrence[]>();
@@ -389,6 +690,16 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   // counterpart anywhere" — the two get different messages below.
   const commentedWriteNames = new Set<string>();
   const commentedReadNames = new Set<string>();
+  // Names of value/valueGroup entries defined anywhere in the loaded batch
+  // (case-insensitive, matching DataLoading.cs's own
+  // `group.ToLowerInvariant().GetStableHashCode()` lookup — research/05 §1c).
+  // A `<...>` group whose head matches one of these resolves as a value-group
+  // reference instead of a function call — a real, if unusual, EWP feature —
+  // so it must not be flagged as an unrecognized/typo'd function name.
+  const valueGroupNames = new Set<string>();
+  const templateFunctionOccurrences: { fileId: string; head: string; range: [number, number] }[] = [];
+  const pokeDeclarations: PokeTokenOccurrence[] = [];
+  const pokeTriggers: PokeTokenOccurrence[] = [];
 
   for (const file of files) {
     const doc = parseDocument(file.text);
@@ -414,6 +725,12 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     // matching commented-write pass.
     for (const name of scanCommentedReadKeys(file.text)) commentedReadNames.add(name);
 
+    // Same comment-blindness rule as the custom-key scan above: a template
+    // written only inside a commented-out line isn't live code.
+    for (const occ of scanUnrecognizedFunctionHeads(stripLineComments(file.text))) {
+      templateFunctionOccurrences.push({ fileId: file.id, head: occ.head, range: occ.range });
+    }
+
     const root = doc.contents;
     if (!root || !isSeq(root)) continue;
 
@@ -432,6 +749,17 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       if (defName) {
         const range = findPairRange(itemNode, "name") ?? nodeRange(itemNode);
         recordOccurrence(definitions, defName, { fileId: file.id, range });
+      }
+
+      // `value: groupName, someValue` (Parse.Kvp's default comma separator —
+      // Parse.cs:187) or `valueGroup: groupName` — either names a value group.
+      if (branch === "valueEntry" && typeof value.value === "string") {
+        const groupName = value.value.split(",")[0]?.trim();
+        if (groupName) valueGroupNames.add(groupName.toLowerCase());
+      }
+      if (branch === "valueGroup" && typeof value.valueGroup === "string") {
+        const groupName = value.valueGroup.trim();
+        if (groupName) valueGroupNames.add(groupName.toLowerCase());
       }
 
       if (branch !== "ewpRuleEntry") continue;
@@ -472,6 +800,9 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         }
       }
 
+      const pokeSignals = collectPokeSignals(itemNode, value, file.id);
+      pokeDeclarations.push(...pokeSignals.declarations);
+      pokeTriggers.push(...pokeSignals.triggers);
     }
   }
 
@@ -516,6 +847,31 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
 
+  // Duplicate `name:` (WEC data entry) definitions — source-verified against
+  // EWP's own DataLoading.cs (`LoadEntry`, .scratch/validator-round4/issues/
+  // 04-duplicate-name-entry-detection.md's ## Answer): entries load in file-list
+  // order, and each subsequent `name:` with an already-seen hash overwrites
+  // `Data[hash]` unconditionally while logging `Log.Warning("Duplicate data
+  // entry: ...")`. So the runtime behavior really is "last loaded silently wins,
+  // with a warning" — matching the scripter's own "warning" severity ask exactly,
+  // not just a guess. Load order across files isn't something this static scan
+  // can know, so the message doesn't claim to know which occurrence wins.
+  for (const [name, occs] of definitions) {
+    if (occs.length <= 1) continue;
+    for (const occ of occs) {
+      problems.push({
+        fileId: occ.fileId,
+        severity: "warning",
+        kind: "data-reference",
+        message:
+          `Data entry name '${name}' is defined ${occs.length} times in the loaded batch. EWP keeps only ` +
+          `the last one loaded and logs a "Duplicate data entry" warning at runtime — the others are silently ` +
+          `discarded. Rename one, or delete the duplicate if it's leftover.`,
+        range: occ.range,
+      });
+    }
+  }
+
   const writeKeyNames = [...keyWrites.keys()];
   const readKeyNames = [...keyReads.keys()];
   const commentedWrites = [...commentedWriteNames];
@@ -548,6 +904,72 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         range: occ.range,
       });
     }
+  }
+
+  for (const { fileId, head, range } of templateFunctionOccurrences) {
+    const lowerHead = head.toLowerCase();
+    if (valueGroupNames.has(lowerHead) || DEFAULT_VALUE_GROUP_NAMES.has(lowerHead)) continue;
+    problems.push({
+      fileId,
+      severity: "warning",
+      kind: "template-function",
+      message: templateFunctionMessage(head, suggestFunctionName(head)),
+      range,
+    });
+  }
+
+  // Ticket 07 — stray declared poke parameters: no `type: poke, X` (or `types:`
+  // entry) anywhere in the loaded batch matches this declaration. Info, not
+  // warning, per the same "another mod/console command outside the batch" carve
+  // -out custom-key orphans already use — a poke can legitimately be caught by
+  // a rule that isn't loaded here.
+  for (const { token, occ } of pokeDeclarations) {
+    if (pokeTriggers.some((t) => pokeNameCompatible(token, t.token))) continue;
+    problems.push({
+      fileId: occ.fileId,
+      severity: "info",
+      kind: "poke-parameter",
+      message:
+        `Poke parameter '${token}' has no matching \`type: poke, ${token}\` trigger anywhere in the loaded ` +
+        `files. This still works if a rule outside this batch (or another mod) listens for it — otherwise it's dead.`,
+      range: occ.range,
+    });
+  }
+
+  // Ticket 07 — likely-typo triggers: a `type: poke, X` with no exact/wildcard
+  // match, but a close (edit-distance <= 2, unambiguous) declared poke name
+  // exists in the batch. Warning, not info — unlike the stray case above, this
+  // has a concrete, high-confidence fix sitting right there in the same batch,
+  // not just an "elsewhere" possibility. Suggestion is only offered between
+  // fully-literal tokens (no `<...>`) on both sides — comparing edit distance
+  // against a dynamic skeleton doesn't mean anything.
+  for (const { token, occ } of pokeTriggers) {
+    if (token.includes("<")) continue;
+    if (pokeDeclarations.some((d) => pokeNameCompatible(token, d.token))) continue;
+    let best: string | null = null;
+    let bestDist = Infinity;
+    let tie = false;
+    for (const { token: declared } of pokeDeclarations) {
+      if (declared.includes("<")) continue;
+      const dist = levenshtein(token.toLowerCase(), declared.toLowerCase());
+      if (dist < bestDist) {
+        best = declared;
+        bestDist = dist;
+        tie = false;
+      } else if (dist === bestDist && declared.toLowerCase() !== best?.toLowerCase()) {
+        tie = true;
+      }
+    }
+    if (!best || tie || bestDist === 0 || bestDist > 2) continue;
+    problems.push({
+      fileId: occ.fileId,
+      severity: "warning",
+      kind: "poke-parameter",
+      message:
+        `\`type: poke, ${token}\` has no matching declared poke parameter, but '${best}' is declared in this ` +
+        `batch and is a close match — probably a typo of '${best}'.`,
+      range: occ.range,
+    });
   }
 
   return problems;

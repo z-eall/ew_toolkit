@@ -48,6 +48,7 @@ have a documented place to add rows without overlapping existing layers.
 - [Implement RPC orphan list-item diagnosis](issues/05-implement-rpc-orphan-list-item-diagnosis.md) — `diagnoseRpcOrphanListItems()` + structuralPrecheck wiring + tests.
 - [Ambiguous scalar-list fallback message](issues/04-ambiguous-scalar-list-fallback.md) — add `ewp-malformed-typed-line-list` for comma-but-incomplete lines; generic fallback kept for other ambiguous lists.
 - [Implement malformed typed-line list diagnosis](issues/06-implement-malformed-typed-line-list-diagnosis.md) — `isMalformedTypedLineList()` branch + tests.
+- Cross-reference from [Validator Round 4 ticket 07](../validator-round4/issues/07-poke-parameter-stray-and-typo-matching.md) (poke parameter stray/typo matching): checked against this map's anti-duplication contract and confirmed **out of scope for this catalog** — the poke checks are batch-wide definition/usage matching (a declared `poke[].parameter`/`pars` against every `type: poke, X` trigger loaded), the same mechanism class as `referenceValidation.ts`'s existing data.yaml and custom-saved-key checks, not per-entry shape confusion resolved before ajv on one YAML item. Implemented in `referenceValidation.ts` alongside those, not as a new `shapeMismatchDiagnosis.ts` row.
 
 ## Not yet specified
 
