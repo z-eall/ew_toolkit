@@ -1,7 +1,7 @@
 # Extract message wording into messages.yaml + build-time validator
 
 Type: task
-Status: open
+Status: closed — out of scope
 Blocked by: [Design the legend-generation mechanism and placeholder syntax](02-legend-generation-mechanism.md)
 
 ## Question
@@ -46,3 +46,8 @@ Not in scope here: diagnosis category labels (see
 or the cleanup/simplification pass (see
 [Cleanup pass: remove redundant/overlapping message code and rarely-firing rules](05-message-generation-cleanup.md))
 — land the mechanical extraction first, on a clean baseline, before either.
+
+## Resolution
+
+**Closed — out of scope (2026-08-20).** YAML catalog destination dropped. Diagnosis wording stays in TypeScript.
+

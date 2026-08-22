@@ -1,7 +1,7 @@
 # Cleanup pass: remove redundant/overlapping message code and rarely-firing rules
 
 Type: task
-Status: open
+Status: closed — out of scope
 Blocked by: [Extract message wording into messages.yaml + build-time validator](03-extract-messages-to-catalog.md), [Move category labels into the catalog + apply the redesigned grouping](04-category-catalog-migration.md)
 
 ## Question
@@ -35,3 +35,8 @@ Every simplification and every removal gets its regression-test consequences
 worked out explicitly: a removed rule's test either gets deleted with a note
 explaining why, or converted into a "confirmed this never fires" assertion if
 that's cheap — not just silently dropped.
+
+## Resolution
+
+**Closed — out of scope (2026-08-20).** Cleanup was sequenced after a YAML catalog that will not exist. Dead-rule / overlap cleanup is not part of this map.
+

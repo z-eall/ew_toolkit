@@ -9,6 +9,8 @@ import {
   type SaveFile,
   sortFiles,
   statusOf,
+  shouldResortFilePanelOnManualValidate,
+  shouldShowFileStatusBadges,
   toggleAllSelection,
   type ViewFile,
 } from "./fileView";
@@ -27,6 +29,35 @@ describe("statusOf", () => {
   });
   it("is valid when clean", () => {
     expect(statusOf(0, 0)).toBe("valid");
+  });
+});
+
+describe("shouldResortFilePanelOnManualValidate", () => {
+  it("resorts in manual mode when batch was none or stale", () => {
+    expect(shouldResortFilePanelOnManualValidate("manual", "none")).toBe(true);
+    expect(shouldResortFilePanelOnManualValidate("manual", "stale")).toBe(true);
+  });
+  it("skips when batch was already clean (repeat Validate)", () => {
+    expect(shouldResortFilePanelOnManualValidate("manual", "clean")).toBe(false);
+  });
+  it("never resorts in auto mode", () => {
+    expect(shouldResortFilePanelOnManualValidate("auto", "none")).toBe(false);
+    expect(shouldResortFilePanelOnManualValidate("auto", "stale")).toBe(false);
+  });
+});
+
+describe("shouldShowFileStatusBadges", () => {
+  it("always shows in auto mode regardless of batch status", () => {
+    expect(shouldShowFileStatusBadges("auto", "none")).toBe(true);
+    expect(shouldShowFileStatusBadges("auto", "stale")).toBe(true);
+    expect(shouldShowFileStatusBadges("auto", "clean")).toBe(true);
+  });
+  it("shows in manual mode only after Validate completes", () => {
+    expect(shouldShowFileStatusBadges("manual", "clean")).toBe(true);
+  });
+  it("hides in manual mode before Validate or after a stale-marking change", () => {
+    expect(shouldShowFileStatusBadges("manual", "none")).toBe(false);
+    expect(shouldShowFileStatusBadges("manual", "stale")).toBe(false);
   });
 });
 

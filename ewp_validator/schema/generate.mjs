@@ -15,9 +15,12 @@
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
+import { emitRpcParamsTs, fetchAndParseRpcs } from "./parse-rpcs.mjs";
+import { RPCS_MD_URL } from "./rpcOverrides.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = path.join(__dirname, "..", "src", "schema.generated.json");
+const RPC_PARAMS_OUT = path.join(__dirname, "..", "src", "rpcParams.generated.ts");
 const MANIFEST_URL =
   "https://raw.githubusercontent.com/JereKuusela/valheim-expand_world_prefabs/main/publish/manifest.json";
 
@@ -397,7 +400,7 @@ const wecDataEntry = {
   title: "WEC data entry",
   type: "object",
   properties: {
-    name: str,
+    name: numberOrString,
     ints: strArray,
     floats: strArray,
     strings: strArray,
@@ -495,4 +498,11 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
 
   await writeFile(OUT_PATH, JSON.stringify(schema, null, 2) + "\n", "utf-8");
   console.log(`generate.mjs: wrote ${OUT_PATH}${ewpVersion ? ` (EWP ${ewpVersion})` : ""}`);
+
+  const rpcTables = await fetchAndParseRpcs(RPCS_MD_URL);
+  const rpcTs = emitRpcParamsTs({ ...rpcTables, sourceUrl: RPCS_MD_URL });
+  await writeFile(RPC_PARAMS_OUT, rpcTs, "utf-8");
+  const objectCount = Object.keys(rpcTables.objectRpcParams).length;
+  const clientCount = Object.keys(rpcTables.clientRpcParams).length;
+  console.log(`generate.mjs: wrote ${RPC_PARAMS_OUT} (${objectCount} object + ${clientCount} client RPCs)`);
 }

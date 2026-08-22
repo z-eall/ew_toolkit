@@ -1,6 +1,45 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
-import { guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
+import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
+import { fieldLabelFromInstancePath, formatAjvFallthroughMessage, guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
+
+describe("ajv field-native messages", () => {
+  it("labels top-level and nested instance paths without JSON Pointer syntax", () => {
+    expect(fieldLabelFromInstancePath("/name")).toBe("`name:`");
+    expect(fieldLabelFromInstancePath("/objects/0/data")).toBe("`data:` under `objects:`");
+    expect(fieldLabelFromInstancePath("/objects/0")).toBe("`objects:` entry");
+    expect(fieldLabelFromInstancePath("/types/0")).toBe("`types:` entry");
+  });
+
+  it("formats common ajv type and required fallthroughs", () => {
+    expect(
+      formatAjvFallthroughMessage({
+        keyword: "type",
+        instancePath: "/prefab",
+        message: "must be string",
+        params: { type: "string" },
+        schemaPath: "",
+      }),
+    ).toBe("`prefab:` must be text (a string).");
+    expect(
+      formatAjvFallthroughMessage({
+        keyword: "type",
+        instancePath: "/objects/0/data",
+        message: "must be string",
+        params: { type: "string" },
+        schemaPath: "",
+      }),
+    ).toBe("`data:` under `objects:` must be text (a string).");
+    expect(
+      formatAjvFallthroughMessage({
+        keyword: "required",
+        instancePath: "",
+        message: "must have required property 'values'",
+        params: { missingProperty: "values" },
+        schemaPath: "",
+      }),
+    ).toBe("`values:` is required.");
+  });
+});
 
 describe("guessBranch", () => {
   it("guesses valueGroup when valueGroup is present", () => {
@@ -99,6 +138,20 @@ describe("runStructuralPrecheck", () => {
     expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
   });
 
+  it("accepts a numeric WEC data entry name — ticket 13", () => {
+    const yaml = "- name: 333\n  ints:\n  - level, 1\n";
+    expect(runStructuralPrecheck(yaml).filter((p) => p.severity === "error")).toEqual([]);
+  });
+
+  it("falls back to generic list-on-scalar hint when items are not typed lines — ticket 13", () => {
+    const yaml = "- prefab: Player\n  type: create\n  data:\n  - foo, bar\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("incomplete `type, key, value` line");
+    expect(problems[0].message).not.toContain("must be string");
+    expect(problems[0].branch).toBe(VALUE_PROBLEM_CATEGORY);
+  });
+
   it("flags a legacy top-level delay: under the Legacy but working category, not an error — ticket 13", () => {
     const yaml = "- prefab: dungeon_queen_door_custom\n  type: change, state true\n  delay: 18\n";
     const problems = runStructuralPrecheck(yaml);
@@ -175,7 +228,7 @@ describe("runStructuralPrecheck", () => {
     // A duplicate key is one of the easiest real parse errors to trigger reliably.
     const yaml = "- prefab: Bonemass\n  prefab: Eikthyr\n  type: create\n";
     const problems = runStructuralPrecheck(yaml);
-    const err = problems.find((p) => p.branch === "(parse)");
+    const err = problems.find((p) => p.branch === YAML_PROBLEM_CATEGORY && p.entryType === YAML_SUBGROUP_PARSE);
     expect(err).toBeDefined();
     expect(err!.message).toContain("YAML syntax error:");
     expect(err!.message).toContain("appears more than once");
@@ -251,6 +304,8 @@ describe("runStructuralPrecheck", () => {
     const err = problems.find((p) => p.severity === "error");
     expect(err).toBeDefined();
     expect(err!.message).not.toContain("[cC]"); // no leaked ci() bracket-class regex
+    expect(err!.message).not.toMatch(/^\//);
+    expect(err!.message).toContain("`type:`");
     expect(err!.message).toContain("must be one of");
     expect(err!.message).toContain("create");
   });
@@ -299,7 +354,32 @@ describe("runStructuralPrecheck", () => {
   it("still errors plainly on an empty typed-list field with no commented-out item", () => {
     const yaml = "- name: x\n  floats:\n  strings:\n  - a, b\n";
     const problems = runStructuralPrecheck(yaml);
-    expect(problems.some((p) => p.message.includes("floats") && p.message.includes("array"))).toBe(true);
+    expect(problems.some((p) => p.message.includes("floats") && p.message.includes("YAML list"))).toBe(true);
+    expect(problems.some((p) => p.message.startsWith("/"))).toBe(false);
+  });
+
+  it("uses field-native wording for a wrong-type prefab, not a JSON Pointer path", () => {
+    const yaml = "- prefab: 123\n  type: create\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.message.includes("prefab"));
+    expect(err).toBeDefined();
+    expect(err!.message).toBe("`prefab:` must be text (a string).");
+    expect(err!.message).not.toMatch(/^\//);
+    expect(err!.message).not.toContain("must be string");
+  });
+
+  it("uses field-native wording for nested object field type errors", () => {
+    const yaml =
+      "- prefab: P\n" +
+      "  type: create\n" +
+      "  objects:\n" +
+      "  - prefab: 123\n" +
+      "    data: int, isCustom, 1\n";
+    const problems = runStructuralPrecheck(yaml);
+    const err = problems.find((p) => p.message.includes("prefab") && p.severity === "error");
+    expect(err).toBeDefined();
+    expect(err!.message).toBe("`prefab:` under `objects:` must be text (a string).");
+    expect(err!.message).not.toContain("/objects/");
   });
 
   it("flags an objectRpc parameter beyond the documented shape as a Value problem warning, not ajv's raw 'must be string' error", () => {
@@ -325,6 +405,57 @@ describe("runStructuralPrecheck", () => {
     expect(flag!.message).toContain("'4'");
   });
 
+  it("flags an unrecognized non-numeric objectRpc key (e.g. triggerRules:, a spawnData/rule-entry field nested by mistake) as a Structure problem, not the misleading 'must be text' message", () => {
+    // Round 4 ticket 03 repro: `triggerRules:`/`remove:` are real fields on
+    // the rule entry / spawn:/swap: entries, not on an RPC entry — quoting
+    // the value makes ajv's raw error disappear without fixing anything.
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: RPC_Damage\n" +
+      "    1: hit, lightning=1.0 block=true dodge=true\n" +
+      "    triggerRules: true\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message.includes("must be text"))).toBe(false);
+    expect(problems.some((p) => p.message.includes("must be string"))).toBe(false);
+    const flag = problems.find((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY);
+    expect(flag).toBeDefined();
+    expect(flag!.severity).toBe("warning");
+    expect(flag!.message).toContain("'triggerRules:'");
+    expect(flag!.message).toContain("rule entry");
+  });
+
+  it("still flags an unrecognized objectRpc key once its value is quoted (the scripter's 'fix' that currently goes silent)", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: RPC_Damage\n" +
+      "    1: hit, damage=<load_neckzillaKilled>\n" +
+      '    remove: "true"\n';
+    const problems = runStructuralPrecheck(yaml);
+    const flag = problems.find((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.message.includes("remove"));
+    expect(flag).toBeDefined();
+    expect(flag!.message).toContain("rule entry");
+  });
+
+  it("does not flag known RPC entry keys (name/target/delay/overwrite/etc) as unrecognized", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: Message\n" +
+      "    target: all\n" +
+      "    delay: 1\n" +
+      "    overwrite: true\n" +
+      "    1: enum_message, 2\n" +
+      '    2: string, "hello"\n' +
+      "    3: int, 0\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY)).toBe(false);
+  });
+
   it("does not flag an objectRpc entry that matches its documented shape", () => {
     const yaml =
       "- prefab: Player\n" +
@@ -338,7 +469,34 @@ describe("runStructuralPrecheck", () => {
     expect(problems.some((p) => p.branch === VALUE_PROBLEM_CATEGORY)).toBe(false);
   });
 
-  it("downgrades a file that is only commented-out content to a warning instead of a YAML-list lint error", () => {
+  it("warns when an RPC param line is split off as its own list item", () => {
+    const yaml =
+      "- prefab: Fireplace\n" +
+      "  type: state, fuel\n" +
+      "  objectRpc:\n" +
+      "  - name: RPC_AddFuelAmount\n" +
+      "  - 1: float, 5\n";
+    const problems = runStructuralPrecheck(yaml);
+    const warn = problems.find((p) => p.message.includes("previous RPC entry"));
+    expect(warn).toBeDefined();
+    expect(warn!.severity).toBe("warning");
+    expect(warn!.branch).toBe(VALUE_PROBLEM_CATEGORY);
+    expect(problems.some((p) => p.message.includes("must be string"))).toBe(false);
+  });
+
+  it("warns when an RPC list item has params but no name", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  clientRpc:\n" +
+      "  - 1: string, hello\n";
+    const problems = runStructuralPrecheck(yaml);
+    const warn = problems.find((p) => p.message.includes("no `name:`"));
+    expect(warn).toBeDefined();
+    expect(warn!.severity).toBe("warning");
+  });
+
+  it("downgrades comment-only and wholly empty files to a warning instead of a YAML-list error", () => {
     const yaml =
       "# - prefab: Player\n" +
       "#  type: state, step\n" +
@@ -347,11 +505,17 @@ describe("runStructuralPrecheck", () => {
     const problems = runStructuralPrecheck(yaml);
     expect(problems).toHaveLength(1);
     expect(problems[0].severity).toBe("warning");
-    expect(problems[0].message.toLowerCase()).toContain("commented out");
-  });
+    expect(problems[0].message).toContain("no active content");
+    expect(problems[0].branch).toBe(YAML_PROBLEM_CATEGORY);
+    expect(problems[0].entryType).toBe(YAML_SUBGROUP_ROOT);
 
-  it("still hard-errors on a genuinely blank file (not just comments)", () => {
-    expect(runStructuralPrecheck("").some((p) => p.severity === "error")).toBe(true);
+    const empty = runStructuralPrecheck("");
+    expect(empty).toHaveLength(1);
+    expect(empty[0].severity).toBe("warning");
+    expect(empty[0].message).toContain("no active content");
+
+    const whitespace = runStructuralPrecheck("  \n\n\t\n");
+    expect(whitespace[0].severity).toBe("warning");
   });
 
   it("still hard-errors when the top level really isn't a list, even with a stray comment", () => {

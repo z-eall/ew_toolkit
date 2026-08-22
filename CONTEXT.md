@@ -2,6 +2,8 @@
 
 QoL tooling for scripters who write YAML for Jere's Expand World mod series in Valheim. This context covers the terminology for the tooling project itself, not Valheim or the mods' in-game mechanics.
 
+This file covers hub-wide and Valheim-modding domain vocabulary, shared across every Tool. `ewp_validator`'s own UI/diagnosis vocabulary (Manual/Auto mode, Diagnosis category, Diagnosis arbitration, Problems panel, Confirm modal) lives in [ewp_validator/CONTEXT.md](ewp_validator/CONTEXT.md).
+
 ## Language
 
 **Expand World (EW)**:
@@ -76,3 +78,9 @@ The URL path segment a Tool builds and deploys into under the Hub's single domai
 
 **Tool registration**:
 The mechanism by which a Tool gets listed on the [[Landing page]]. v1 is a hardcoded list (name/subpath/description) in the landing page source — no auto-discovery, since only 1-2 Tools are expected near-term.
+
+**Release-worthy push**:
+A push to `main` the maintainer judges worth summarizing for scripters — the curated trigger for changelog generation. Distinct from every push (which triggers the deploy pipeline unconditionally regardless of release-worthiness) and from a fully manual, un-tooled writeup. A human decides when a push is release-worthy, then runs the local changelog script.
+
+**Changelog entry**:
+One AI-summarized item in a GitHub Release's notes, generated from `git log`/diff since the last tag and grouped by the validator's own diagnosis-category vocabulary (e.g. a "Reference problem" section) rather than a generic Added/Fixed/Changed split.

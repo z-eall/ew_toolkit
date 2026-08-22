@@ -23,6 +23,13 @@
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 html,
 body,
 #app {
@@ -1074,9 +1081,10 @@ body {
   white-space: nowrap;
 }
 
-/* Two-line tag: the kind of mistake (bold, on top) and, when the diagnosis
-   is scoped to one of the 4 schema shapes, which shape it's on (small,
-   below) — category-grouping ticket. */
+/* Two-line tag for YAML problem only: category bold on top, (parse)/(root)/
+   (item) sub-group muted below (validator-round3 ticket 04). Kind-based
+   categories are a single bold line — schema-shape entryType subtitles
+   removed from the UI. */
 .problem .branch {
   display: flex;
   flex-direction: column;
@@ -1266,7 +1274,16 @@ body {
   border-radius: 6px;
   padding: 18px;
   max-width: 420px;
+  width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Always-boxed list confirms (confirm-modal-large-list ticket 02): cap the
+   pop-up so buttons stay on-screen; names scroll in .confirm-list-scroll. */
+.confirm-box.has-file-list {
+  max-height: min(80vh, 640px);
 }
 
 .confirm-message {
@@ -1274,14 +1291,44 @@ body {
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.5;
+  flex-shrink: 0;
   /* Preserves the \n / \n\n already used in every call site's message text. */
   white-space: pre-line;
+}
+
+.confirm-box.has-file-list .confirm-message {
+  margin-bottom: 12px;
+}
+
+.confirm-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+
+.confirm-list-scroll ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  color: var(--text);
+}
+
+.confirm-list-scroll li {
+  margin: 2px 0;
 }
 
 .confirm-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .confirm-btn {

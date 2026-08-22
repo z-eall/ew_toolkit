@@ -25,6 +25,30 @@ export function statusOf(errors: number, warnings: number): FileStatus {
 }
 
 /**
+ * Manual mode hides per-file status badges until Validate completes — empty
+ * `problems[]` before that pass would otherwise show a misleading green ✓
+ * (validator-round3 ticket 01). Auto mode always shows badges.
+ */
+export function shouldShowFileStatusBadges(
+  mode: "auto" | "manual",
+  batchStatus: "none" | "clean" | "stale",
+): boolean {
+  return mode === "auto" || batchStatus === "clean";
+}
+
+/**
+ * Manual Validate triggers a one-time errors-first re-sort when the batch
+ * transitions to `"clean"` — not on a no-op re-validate of an already-clean
+ * batch (validator-round3 ticket 02). Auto mode never resorts here.
+ */
+export function shouldResortFilePanelOnManualValidate(
+  mode: "auto" | "manual",
+  batchStatusBefore: "none" | "clean" | "stale",
+): boolean {
+  return mode === "manual" && batchStatusBefore !== "clean";
+}
+
+/**
  * The folder to indent a file under: the deepest directory of its upload path.
  * `customEWP/expand_world_prefabs_HelloWorld.yaml` -> `customEWP`. A bare
  * filename (an individually-picked file has no path) -> "" (root level).

@@ -8,9 +8,11 @@
 // prototype/oneof-union-error-quality branch.
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
-import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { scalarDataFieldTypeMessage } from "./dataFieldValidation";
+import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems } from "./shapeMismatchDiagnosis";
+import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
-import { checkRpcParams, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
+import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
 import { translateYamlError } from "./yamlErrorMessages";
 
@@ -45,7 +47,7 @@ export interface Problem {
   message: string;
   /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Legacy but working) — see diagnosisCategories.ts. */
   branch: string;
-  /** Which of the 4 schema shapes this is on (EWP rule entry, WEC data entry, ...), shown as the tag's subtitle. Absent for checks that aren't scoped to one shape (format lint, file-name, legacy-filename, reference/custom-key checks). */
+  /** Schema-shape subtitle (EWP rule entry, …) — kept on `Problem` for backend use but not shown in the tag UI (ticket 04). YAML-native sub-groups `(parse)`/`(root)`/`(item)` reuse this field and *are* shown under {@link YAML_PROBLEM_CATEGORY}. */
   entryType?: string;
   /** Character offsets into the source text, for mapping to editor positions. */
   range: [start: number, end: number];
@@ -161,6 +163,77 @@ const KNOWN_TYPES_LIST = [...KNOWN_TYPES].join(", ");
 function isTypeValuePath(instancePath: string): boolean {
   const head = instancePath.split("/").filter(Boolean)[0];
   return head === "type" || head === "types";
+}
+
+const ARRAY_INDEX_SEGMENT = /^\d+$/;
+
+/** EWP-native field label from an ajv JSON Pointer — no leading `/`. */
+export function fieldLabelFromInstancePath(instancePath: string): string {
+  const segments = instancePath.split("/").filter(Boolean);
+  if (segments.length === 0) return "This entry";
+
+  if (ARRAY_INDEX_SEGMENT.test(segments[segments.length - 1]!)) {
+    const parent = segments[segments.length - 2];
+    return parent ? `\`${parent}:\` entry` : "This entry";
+  }
+
+  const field = segments[segments.length - 1]!;
+  const fieldLabel = `\`${field}:\``;
+
+  if (
+    segments.length >= 3 &&
+    ARRAY_INDEX_SEGMENT.test(segments[segments.length - 2]!) &&
+    !ARRAY_INDEX_SEGMENT.test(segments[segments.length - 3]!)
+  ) {
+    const parent = segments[segments.length - 3]!;
+    return `${fieldLabel} under \`${parent}:\``;
+  }
+
+  return fieldLabel;
+}
+
+/** Replace ajv's JSON-Pointer-prefixed fallthrough with field-native wording (ticket 14). */
+export function formatAjvFallthroughMessage(error: ErrorObject): string {
+  if (error.keyword === "required") {
+    const missing = (error.params as { missingProperty?: string }).missingProperty;
+    if (missing) return `\`${missing}:\` is required.`;
+    return "A required field is missing.";
+  }
+
+  const label = fieldLabelFromInstancePath(error.instancePath);
+
+  if (error.keyword === "type") {
+    const expected = (error.params as { type?: string }).type;
+    switch (expected) {
+      case "string":
+        return `${label} must be text (a string).`;
+      case "number":
+        return `${label} must be a number.`;
+      case "array":
+        return `${label} must be a YAML list.`;
+      case "object":
+        return `${label} must be \`key: value\` pairs, not a single value.`;
+      case "boolean":
+        return `${label} must be true or false.`;
+      default:
+        return `${label} has the wrong type.`;
+    }
+  }
+
+  if (error.keyword === "oneOf" || error.keyword === "anyOf") {
+    return `${label} has an invalid shape.`;
+  }
+
+  const raw = error.message ?? "is invalid";
+  const simplified: Record<string, string> = {
+    "must be string": "must be text (a string)",
+    "must be array": "must be a YAML list",
+    "must be object": "must be `key: value` pairs, not a single value",
+    "must be number": "must be a number",
+    "must be boolean": "must be true or false",
+  };
+  const tail = simplified[raw] ?? raw;
+  return `${label} ${tail}${tail.endsWith(".") ? "" : "."}`;
 }
 
 // Undocumented/legacy constructs on an EWP rule entry that are live-tested to
@@ -310,13 +383,16 @@ function commentedOutListItemRange(text: string, keyStart: number): [number, num
   return null;
 }
 
-// True when the file has *some* non-blank content but every bit of it is a
-// comment line — not a truly empty/blank file (that stays the existing hard
-// error; a brand-new file with nothing typed yet isn't "disabled on purpose").
-function isCommentOnly(text: string): boolean {
+// True when the file has no active YAML content: wholly blank/whitespace, or
+// every non-blank line is a comment. A lone `-` or other partial stub still
+// has active content and keeps the hard "must be a YAML list" error.
+function hasNoActiveContent(text: string): boolean {
   const lines = text.split("\n").map((l) => l.trim()).filter((l) => l !== "");
-  return lines.length > 0 && lines.every((l) => l.startsWith("#"));
+  return lines.length === 0 || lines.every((l) => l.startsWith("#"));
 }
+
+const NO_ACTIVE_CONTENT_MESSAGE =
+  "This file has no active content — It is either empty or every line is commented out. Uncomment what you want validated, or remove the file if it's no longer needed.";
 
 export function runStructuralPrecheck(text: string): Problem[] {
   const problems: Problem[] = [];
@@ -331,11 +407,11 @@ export function runStructuralPrecheck(text: string): Problem[] {
 
   for (const err of doc.errors) {
     const [start, end] = err.pos ?? [0, 0];
-    problems.push({ severity: "error", message: `YAML syntax error: ${translateYamlError(err)}`, branch: "(parse)", range: [start, end] });
+    problems.push({ severity: "error", message: `YAML syntax error: ${translateYamlError(err)}`, branch: YAML_PROBLEM_CATEGORY, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
   }
   for (const warn of doc.warnings) {
     const [start, end] = warn.pos ?? [0, 0];
-    problems.push({ severity: "warning", message: translateYamlError(warn), branch: "(parse)", range: [start, end] });
+    problems.push({ severity: "warning", message: translateYamlError(warn), branch: YAML_PROBLEM_CATEGORY, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
   }
   if (doc.errors.length > 0) return problems; // downstream checks need a parseable document
 
@@ -345,11 +421,12 @@ export function runStructuralPrecheck(text: string): Problem[] {
     // content at all, which would otherwise hit the same "must be a YAML
     // list" wording a genuine syntax mistake gets — misleading for content
     // that's disabled on purpose. Downgrade to a warning instead.
-    if (isCommentOnly(text)) {
+    if (hasNoActiveContent(text)) {
       problems.push({
         severity: "warning",
-        message: "This file has no active content — every line is commented out. Uncomment what you want validated, or remove the file if it's no longer needed.",
-        branch: "(root)",
+        message: NO_ACTIVE_CONTENT_MESSAGE,
+        branch: YAML_PROBLEM_CATEGORY,
+        entryType: YAML_SUBGROUP_ROOT,
         range: [0, text.length],
       });
       return problems;
@@ -357,7 +434,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
     problems.push({
       severity: "error",
       message: "The top level must be a YAML list. Start each entry with `- `.",
-      branch: "(root)",
+      branch: YAML_PROBLEM_CATEGORY,
+      entryType: YAML_SUBGROUP_ROOT,
       range: root && (root as any).range ? nodeRange(root as any) : [0, text.length],
     });
     return problems;
@@ -368,7 +446,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
       problems.push({
         severity: "error",
         message: "Each entry must be `key: value` pairs, not a single value or a list.",
-        branch: "(item)",
+        branch: YAML_PROBLEM_CATEGORY,
+        entryType: YAML_SUBGROUP_ITEM,
         range: nodeRange(itemNode as any),
       });
       continue;
@@ -378,17 +457,23 @@ export function runStructuralPrecheck(text: string): Problem[] {
     const value = itemNode.toJSON() as Record<string, unknown>;
     const { branch, likelyDataNameTypo } = guessBranch(value);
 
-    if (likelyDataNameTypo) {
-      const r = findPairRange(itemNode, "data") ?? itemRange;
+    const entryShape = diagnoseEntryShapeIssues(
+      itemNode,
+      value,
+      branch,
+      ENTRY_TYPE_TITLES[branch as BranchName],
+      likelyDataNameTypo,
+    );
+    for (const d of entryShape.diagnoses) {
       problems.push({
-        severity: "warning",
-        message: "Use `name:`, not `data:`, to name a data entry. This entry will not register (a known WEC README typo).",
-        branch: STRUCTURE_PROBLEM_CATEGORY,
-        entryType: ENTRY_TYPE_TITLES.wecDataEntry,
-        range: r,
+        severity: d.severity,
+        message: d.message,
+        branch: d.branch,
+        entryType: d.entryType,
+        range: d.range,
       });
-      continue; // skip ajv validation against wecDataEntry: it would just repeat "required: name"
     }
+    if (entryShape.skipEntryAjv) continue;
 
     // Peel off legacy-but-working constructs before ajv: flag each in blue and
     // validate the remainder, so a legacy `delay:`/`spawn:` doesn't also error.
@@ -423,6 +508,24 @@ export function runStructuralPrecheck(text: string): Problem[] {
       }
     }
 
+    // EWP rule-entry shape rows were merged above; only collect suppress paths here.
+    const shapeSuppressPaths = new Set(entryShape.suppressAjvPaths);
+
+    const rpcOrphan =
+      branch === "ewpRuleEntry"
+        ? diagnoseRpcOrphanListItems(itemNode, ENTRY_TYPE_TITLES.ewpRuleEntry)
+        : { diagnoses: [], suppressAjvPaths: new Set<string>(), skipRpcParamCheck: new Map() };
+    for (const d of rpcOrphan.diagnoses) {
+      problems.push({
+        severity: d.severity,
+        message: d.message,
+        branch: d.branch,
+        entryType: d.entryType,
+        range: d.range,
+      });
+    }
+    for (const p of rpcOrphan.suppressAjvPaths) shapeSuppressPaths.add(p);
+
     // objectRpc:/clientRpc: numbered parameters get their own doc-aware check
     // (rpcValidation.ts) instead of ajv's generic "must be string" — a
     // mismatch there is a warning, not an error, so a `not-a-string` issue's
@@ -434,6 +537,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
         if (!isSeq(seqNode)) continue;
         seqNode.items.forEach((entryNode: unknown, entryIdx: number) => {
           if (!isMap(entryNode)) return;
+          if (rpcOrphan.skipRpcParamCheck.get(field)?.has(entryIdx)) return;
           const entryValue = (entryNode as YAMLMap).toJSON() as Record<string, unknown>;
           if (typeof entryValue.name !== "string") return;
           for (const issue of checkRpcParams(table, entryValue.name, entryValue)) {
@@ -449,6 +553,24 @@ export function runStructuralPrecheck(text: string): Problem[] {
             // suppress it regardless of kind rather than only for "not-a-string".
             rpcSuppressPaths.add(`/${field}/${entryIdx}/${issue.key}`);
           }
+          // A non-numeric key that isn't one of the known RPC fields (e.g.
+          // `triggerRules:`/`remove:` nested here by mistake) is a wrong-key
+          // mistake, not a value-shape one — same "Structure problem" bucket
+          // as the WEC name typo, and independent of whether `entryValue.name`
+          // resolves to a documented RPC (unlike checkRpcParams above).
+          for (const issue of checkRpcUnrecognizedKeys(entryValue)) {
+            problems.push({
+              severity: "warning",
+              message: issue.message,
+              branch: STRUCTURE_PROBLEM_CATEGORY,
+              entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
+              range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
+            });
+            // Suppresses ajv's additionalProperties/type-string error on this
+            // same key (the misleading "must be text" message) so a scripter
+            // never sees both, and never sees the raw one once this fires.
+            rpcSuppressPaths.add(`/${field}/${entryIdx}/${issue.key}`);
+          }
         });
       }
     }
@@ -457,7 +579,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
     const valid = validate(toValidate);
     if (!valid && validate.errors) {
       for (const error of validate.errors) {
-        // Already covered by a clearer RPC-specific warning above.
+        // Already covered by shape arbitration or RPC-specific checks above.
+        if (shapeSuppressPaths.has(error.instancePath)) continue;
         if (rpcSuppressPaths.has(error.instancePath)) continue;
         // A `::` double colon makes YAML fold the extra colon into the key
         // (`filter::` → key `filter:`), which ajv then reports as an unknown
@@ -466,6 +589,25 @@ export function runStructuralPrecheck(text: string): Problem[] {
         // here — a real EWP/WEC key never contains a colon.
         const badKey = (error.params as { additionalProperty?: string })?.additionalProperty;
         if (badKey?.includes(":")) continue;
+        // Fallback when shape arbitration did not classify this path — generic
+        // scalar-field hint (ticket 10/13).
+        if (error.keyword === "type" && (error.params as { type?: string })?.type === "string") {
+          const segments = error.instancePath.split("/").filter(Boolean);
+          const field = segments.length >= 1 ? segments[segments.length - 1] : null;
+          if (field) {
+            const clearer = scalarDataFieldTypeMessage(field);
+            if (clearer) {
+              problems.push({
+                severity: "error",
+                message: clearer,
+                branch: VALUE_PROBLEM_CATEGORY,
+                entryType: ENTRY_TYPE_TITLES[branch],
+                range: ajvErrorRange(itemNode, itemRange, error),
+              });
+              continue;
+            }
+          }
+        }
         // A `field:` whose value is null because its only list item is commented
         // out (`#  - ...`) trips ajv's "must be array". Replace that with an
         // actionable note pointed at the disabled line, and drop the raw error.
@@ -502,13 +644,13 @@ export function runStructuralPrecheck(text: string): Problem[] {
         let message: string;
         if (error.keyword === "pattern" && isTypeValuePath(error.instancePath)) {
           kind = VALUE_PROBLEM_CATEGORY;
-          message = `'${error.instancePath}' must be one of: ${KNOWN_TYPES_LIST} (any case), optionally followed by ", param1 param2".`;
+          message = `${fieldLabelFromInstancePath(error.instancePath)} must be one of: ${KNOWN_TYPES_LIST} (any case), optionally followed by ", param1 param2".`;
         } else if (error.params && "additionalProperty" in error.params) {
           kind = STRUCTURE_PROBLEM_CATEGORY;
           message = `'${(error.params as { additionalProperty: string }).additionalProperty}' is not a valid key in a ${ENTRY_TYPE_TITLES[branch]}.`;
         } else {
           kind = error.keyword === "required" ? STRUCTURE_PROBLEM_CATEGORY : VALUE_PROBLEM_CATEGORY;
-          message = `${error.instancePath || "(entry)"} ${error.message}`;
+          message = formatAjvFallthroughMessage(error);
         }
         problems.push({
           severity: "error",
