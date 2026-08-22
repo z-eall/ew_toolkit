@@ -221,6 +221,37 @@ describe("data.yaml reference validation (ticket 06)", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: <par_1>\n" }];
     expect(runReferenceValidation(files)).toEqual([]);
   });
+
+  it("flags a same-file duplicate name: definition as a warning, one problem per occurrence — ticket 04", () => {
+    const files = [
+      { id: "a", text: "- name: someTemplate\n  ints:\n  - x, 1\n\n- name: someTemplate\n  ints:\n  - x, 2\n" },
+    ];
+    const problems = runReferenceValidation(files);
+    const dupes = problems.filter((p) => p.message.includes("defined 2 times"));
+    expect(dupes).toHaveLength(2);
+    for (const p of dupes) {
+      expect(p).toMatchObject({ fileId: "a", severity: "warning", kind: "data-reference" });
+      expect(p.message).toContain("someTemplate");
+    }
+  });
+
+  it("flags a cross-file duplicate name: definition the same way as same-file — ticket 04", () => {
+    const files = [
+      { id: "a", text: "- name: sharedTemplate\n  ints:\n  - x, 1\n" },
+      { id: "b", text: "- name: sharedTemplate\n  ints:\n  - x, 2\n" },
+    ];
+    const problems = runReferenceValidation(files);
+    const dupes = problems.filter((p) => p.message.includes("defined 2 times"));
+    expect(dupes).toHaveLength(2);
+    expect(dupes.some((p) => p.fileId === "a")).toBe(true);
+    expect(dupes.some((p) => p.fileId === "b")).toBe(true);
+  });
+
+  it("does not flag a uniquely-defined name: as a duplicate", () => {
+    const files = [{ id: "a", text: "- name: onlyOne\n  ints:\n  - x, 1\n" }];
+    const problems = runReferenceValidation(files);
+    expect(problems.some((p) => p.message.includes("defined"))).toBe(false);
+  });
 });
 
 describe("custom saved key lint (ticket 06)", () => {
@@ -538,6 +569,205 @@ describe("custom saved key lint (ticket 06)", () => {
       ];
       expect(runReferenceValidation(files)).toEqual([]);
     });
+  });
+});
+
+describe("string-template function name typo detection (ticket 06)", () => {
+  it("flags an unrecognized function head as a warning and suggests the likely intended name", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <strink_isSpawningPrefabData>\n" }];
+    const problems = runReferenceValidation(files);
+    const flagged = problems.filter((p) => p.kind === "template-function");
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "template-function" });
+    expect(flagged[0].message).toContain("strink");
+    expect(flagged[0].message).toContain("string");
+  });
+
+  it("does not flag a recognized argument-taking function", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <string_isSpawningPrefabData>\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("does not flag a recognized no-argument function, bare or with an argument suffix", () => {
+    const files = [
+      {
+        id: "a",
+        text: "- prefab: Bonemass\n  type: create\n  command: <par> <par_1> <pid> <none>\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("reports a case-only mismatch distinctly, since EWP function dispatch is case-sensitive", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <String_x>\n" }];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("case-sensitive");
+    expect(problems[0].message).toContain("string");
+  });
+
+  it("does not flag a head matching a value/valueGroup entry defined in the loaded batch", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <myCustomGroup>\n\n" +
+          "- value: myCustomGroup, someValue\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+
+    const viaValueGroup = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <otherGroup>\n\n" +
+          "- valueGroup: otherGroup\n  values:\n  - a\n  - b\n",
+      },
+    ];
+    expect(runReferenceValidation(viaValueGroup).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("does not flag EWP's hardcoded default value groups (wearntear/humanoid/creature/structure)", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <humanoid> <structure>\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("does not flag a template written inside a YAML comment", () => {
+    const files = [{ id: "a", text: "# command: <strink_foo>\n- prefab: Bonemass\n  type: create\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("skips a head built entirely from a nested dynamic group, and gives no suggestion when the typo is too far from any known name", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <<par_1>_foo>\n" }];
+    // Only the recognizable inner <par_1> group exists; the outer head is purely dynamic.
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+
+    const noSuggestion = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <zzzzzzzzzzzz>\n" }];
+    const problems = runReferenceValidation(noSuggestion).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).not.toContain("probably a typo of");
+  });
+});
+
+describe("poke parameter stray/typo matching (ticket 07)", () => {
+  it("flags a poke parameter with no matching type: poke, X trigger as info, and leaves a matched one alone", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: helloWorld <pname>\n" +
+          "  - self: true\n    parameter: helloWorld2 <pname>\n\n" +
+          "- prefab: Player\n  type: poke, helloWorld\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "poke-parameter" });
+    expect(problems[0].message).toContain("helloWorld2");
+  });
+
+  it("suggests the close declared match for a typo'd type: poke, X trigger", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: helloWorld <pname>\n" +
+          "  - self: true\n    parameter: helloWorld2 <pname>\n\n" +
+          "- prefab: Player\n  type: poke, helloWord\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    const typoWarning = problems.find((p) => p.severity === "warning");
+    expect(typoWarning).toBeDefined();
+    expect(typoWarning!.message).toContain("helloWord");
+    expect(typoWarning!.message).toContain("helloWorld");
+    // helloWorld2 is still genuinely stray (no exact/wildcard match, typo or not).
+    expect(problems.some((p) => p.severity === "info" && p.message.includes("helloWorld2"))).toBe(true);
+  });
+
+  it("does not flag a poke declaration/trigger pair that matches exactly, cross-file", () => {
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: readyFlag\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, readyFlag\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+  });
+
+  it("uses pars: (comma-split) instead of parameter: when both are set on the same poke item", () => {
+    // Source: PrefabData.cs's GetArgs uses `pars` INSTEAD of `parameter` when set.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: ignoredName\n    pars: realName, extra\n\n" +
+          "- prefab: Player\n  type: poke, realName\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    // 'ignoredName' is never actually sent at runtime, so it must not be
+    // treated as a live declaration matched against 'realName' — nor flagged
+    // as its own stray declaration, since it was never a real declaration.
+    expect(problems).toEqual([]);
+  });
+
+  it("matches a legacy top-level pokeParameter: the same way as poke[].parameter", () => {
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  pokeParameter: legacyFlag\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, legacyFlag\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+  });
+
+  it("reads a poke trigger from a types: list entry, not just a scalar type:", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: viaTypesList\n\n" +
+          "- prefab: Player\n  types:\n  - say, hi\n  - poke, viaTypesList\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+  });
+
+  it("matches case-insensitively and through a <...> dynamic segment as a wildcard", () => {
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: CaptureCity<par_1>\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, captureCity1\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+  });
+
+  it("does not flag a purely-dynamic poke parameter or trigger — nothing concrete to check", () => {
+    const files = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: <par_1>\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, <par_1>\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+  });
+
+  it("does not offer a typo suggestion when the trigger token is dynamic or no close match exists", () => {
+    const dynamic = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: realName\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, <par_1>notrealname\n" },
+    ];
+    const dynamicProblems = runReferenceValidation(dynamic).filter((p) => p.kind === "poke-parameter");
+    expect(dynamicProblems.some((p) => p.severity === "warning")).toBe(false);
+
+    const farOff = [
+      { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: realName\n" },
+      { id: "b", text: "- prefab: Player\n  type: poke, somethingCompletelyDifferent\n" },
+    ];
+    const farProblems = runReferenceValidation(farOff).filter((p) => p.kind === "poke-parameter");
+    expect(farProblems.some((p) => p.severity === "warning")).toBe(false);
+  });
+
+  it("does not flag a non-poke type: trigger, or treat a poke: entry under a non-poke rule as a false match", () => {
+    const files = [{ id: "a", text: "- prefab: Player\n  type: state, action swing_sledge\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
   });
 });
 
