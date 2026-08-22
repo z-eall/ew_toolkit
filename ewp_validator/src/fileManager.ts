@@ -72,7 +72,12 @@ const FULL_VALIDATE_IDLE_MS = 1200;
 // with merely-informational findings, matching the "___ problem" naming
 // principle in diagnosisCategories.ts.
 const REFERENCE_BRANCH_LABEL: Record<
-  "data-reference" | "custom-key" | "legacy-object-data" | "template-function" | "poke-parameter",
+  | "data-reference"
+  | "custom-key"
+  | "legacy-object-data"
+  | "template-function"
+  | "poke-parameter"
+  | "malformed-reference",
   string
 > = {
   "data-reference": REFERENCE_PROBLEM_CATEGORY,
@@ -80,6 +85,7 @@ const REFERENCE_BRANCH_LABEL: Record<
   "legacy-object-data": LEGACY_CATEGORY,
   "template-function": REFERENCE_PROBLEM_CATEGORY,
   "poke-parameter": REFERENCE_PROBLEM_CATEGORY,
+  "malformed-reference": REFERENCE_PROBLEM_CATEGORY,
 };
 
 export class FileManager {

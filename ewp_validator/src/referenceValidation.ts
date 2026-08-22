@@ -26,7 +26,13 @@ export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind: "data-reference" | "custom-key" | "legacy-object-data" | "template-function" | "poke-parameter";
+  kind:
+    | "data-reference"
+    | "custom-key"
+    | "legacy-object-data"
+    | "template-function"
+    | "poke-parameter"
+    | "malformed-reference";
   range: [start: number, end: number];
 }
 
@@ -224,9 +230,40 @@ function stripLineComments(text: string): string {
 // (`save++`/`save--`) or mis-splits a multi-segment `save` key on the wrong
 // `_`, which is exactly the false-positive/false-negative pattern this
 // rework was commissioned to fix.
-function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[] } {
+// Round5 ticket 08 — a literal `__` immediately before a nested `<...>`
+// group inside a save/load/clear key template. Source-verified
+// (research/07-malformed-nested-function-source-audit.md, worked example 1):
+// EWP's key/value split (`Parse.Kvp`) is a naive first-occurrence `_` find,
+// so the doubled underscore only ever consumes ONE of the two characters —
+// the other survives as a stray leading `_` baked into the saved value
+// (`"_3"` instead of `"3"`), silently, with no error. Scoped narrowly to
+// "immediately before a nested group" (not any doubled underscore anywhere
+// in a key name) since a key name can legitimately contain a literal `__`
+// with no dynamic parameter nearby — only the boundary case has no
+// legitimate meaning under EWP's own naive-split dispatch.
+function findDoubledUnderscoreBeforeGroup(inner: string, offset: number): [number, number][] {
+  const hits: [number, number][] = [];
+  let i = 0;
+  while (i < inner.length) {
+    if (inner[i] === "<") {
+      if (i >= 2 && inner[i - 1] === "_" && inner[i - 2] === "_") {
+        hits.push([offset + i - 2, offset + i]);
+      }
+      const end = findGroupEnd(inner, i);
+      i = end === -1 ? i + 1 : end;
+    } else {
+      i++;
+    }
+  }
+  return hits;
+}
+
+function scanKeyOccurrences(
+  text: string,
+): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[]; malformed: { range: [number, number] }[] } {
   const writes: RawKeyOccurrence[] = [];
   const reads: RawKeyOccurrence[] = [];
+  const malformed: { range: [number, number] }[] = [];
   for (let i = 0; i < text.length; i++) {
     if (text[i] !== "<") continue;
     const head = KEY_HEAD_RE.exec(text.slice(i));
@@ -237,6 +274,10 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
 
     const inner = text.slice(i + head[0].length, end - 1); // between "<head_" and ">"
     const range: [number, number] = [i, end];
+
+    for (const [start, doubledEnd] of findDoubledUnderscoreBeforeGroup(inner, i + head[0].length)) {
+      malformed.push({ range: [start, doubledEnd] });
+    }
 
     let key: string;
     if (head[1] === "save") {
@@ -261,7 +302,7 @@ function scanKeyOccurrences(text: string): { writes: RawKeyOccurrence[]; reads: 
     // `<load_..>` gets its own pass through this same branch once the scan
     // reaches it.
   }
-  return { writes, reads };
+  return { writes, reads, malformed };
 }
 
 function escapeRegex(s: string): string {
@@ -457,9 +498,67 @@ for (const name of ALL_KNOWN_FUNCTION_NAMES) {
 const DEFAULT_VALUE_GROUP_NAMES = new Set(["wearntear", "humanoid", "creature", "structure"]);
 
 function isRecognizedFunctionGroup(inner: string): boolean {
-  if (KNOWN_NO_ARG_NAMES.has(inner)) return true;
+  // EWP strips a `=default` suffix off the ENTIRE bracket text in
+  // TryReplaceFunction, unconditionally, before any no-arg/arg-taking
+  // dispatch runs — so every no-arg name tolerates a `=default` suffix, not
+  // just par0-par9 (the default is only ever *used* by the par family, but
+  // it parses cleanly and is silently discarded for every other no-arg
+  // name). Use splitTopLevel, not a naive indexOf: the validator never
+  // resolves nested groups, so a literal '=' inside a nested group's own
+  // text must not be mistaken for the outer bracket's default separator.
+  const withoutDefault = splitTopLevel(inner, "=")[0] ?? inner;
+  if (KNOWN_NO_ARG_NAMES.has(withoutDefault)) return true;
   const head = splitTopLevel(inner, "_")[0] ?? inner;
   return KNOWN_ARG_HEADS.has(head);
+}
+
+// Round 5 ticket 04 — Valheim's chat/UI text renders through stock Unity
+// TextMeshPro (source-verified: decompiled MessageHud/chat mod source shows
+// `TMP_Text`/`TextMeshProUGUI`, no Valheim-specific tag vocabulary found —
+// see research/02-valheim-richtext-tag-source-audit.md §1). A RichText tag
+// embedded in a string value (e.g. a `value:` body used for chat/HUD text)
+// is not an EWP function and must never be flagged as an unrecognized one.
+//
+// Recognized by shape wherever the shape alone is unambiguous, by a short
+// fixed TMP tag-name list only where it can't be (research §2):
+//   (a) closing tags (`/...`) — no EWP head can start with `/`.
+//   (b) `#RGB`/`#RGBA`/`#RRGGBB`/`#RRGGBBAA` hex color shorthand — no EWP
+//       head can start with `#`.
+//   (c) `name=value` attribute tags — bounded allow-list, NOT open shape:
+//       an unrestricted "identifier=value" rule would silently swallow a
+//       real scripter typo like `<load=foo>` (argument-separator typo of
+//       `<load_foo>`) instead of flagging it.
+//   (d) bare pair/self-closing tags (`<br>`, `<sub>`, etc.) — bounded
+//       allow-list; structurally identical to a bare EWP no-arg head, so no
+//       shape rule can tell them apart. `i` is deliberately omitted here —
+//       TMP's `<i>` (italics) collides letter-for-letter with EWP's own `i`
+//       no-arg object function (already in `NO_ARG_OBJECT_FUNCTION_NAMES`),
+//       so it's already harmlessly recognized today; adding it again here
+//       would be redundant, not wrong.
+const RICHTEXT_HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+
+const RICHTEXT_ATTRIBUTE_TAG_NAMES = new Set([
+  "align", "alpha", "color", "cspace", "font", "font-weight", "gradient",
+  "indent", "line-height", "line-indent", "link", "margin", "mark",
+  "mspace", "pos", "rotate", "size", "space", "sprite", "style",
+  "voffset", "width",
+]);
+
+const RICHTEXT_BARE_TAG_NAMES = new Set([
+  "b", "u", "s", "br", "sub", "sup", "mark", "nobr", "noparse", "page",
+  "allcaps", "uppercase", "lowercase", "smallcaps", "strikethrough",
+]);
+
+function isRichTextTag(inner: string): boolean {
+  if (inner.startsWith("/")) return true;
+  if (RICHTEXT_HEX_COLOR_RE.test(inner)) return true;
+  const eq = inner.indexOf("=");
+  const underscore = inner.indexOf("_");
+  if (eq !== -1 && (underscore === -1 || eq < underscore)) {
+    const name = inner.slice(0, eq).toLowerCase();
+    if (RICHTEXT_ATTRIBUTE_TAG_NAMES.has(name)) return true;
+  }
+  return RICHTEXT_BARE_TAG_NAMES.has(inner.toLowerCase());
 }
 
 // Small, unweighted Levenshtein distance — good enough for short function-name
@@ -511,17 +610,24 @@ function suggestFunctionName(head: string): FunctionNameSuggestion | null {
   return null;
 }
 
+// Ticket 03 (Round 5) — a value-group name can legitimately contain an
+// underscore (e.g. `level_multiplier`), so the message can't assume a flagged
+// reference is a pure function-name typo: it might be a value-group entry
+// declared in a file outside this validation batch (same "can't know about
+// files outside the batch" limitation `orphanKeyMessage` and the poke-stray
+// check already hedge for, source-verified in round5 research/01 — EWP's own
+// `ResolveValue` falls back to a value-group lookup on the *whole* bracket
+// text, not just `head`, whenever no function matches).
 function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestion | null): string {
   const base = `'<${head}...>' doesn't match any known EWP function name`;
-  const runtime = "left as literal text at runtime — no error, and no function actually runs";
-  if (!suggestion) return `${base}. It's ${runtime}.`;
-  if (suggestion.caseOnly) {
-    return (
-      `${base} — EWP function names are case-sensitive, and this only differs from ` +
-      `'<${suggestion.name}...>' by case. It's ${runtime}.`
-    );
+  const runtime = "left as literal text at runtime, no error";
+  if (!suggestion) {
+    return `${base} — ${runtime}. Could be a value:/valueGroup: entry from another file; check ${CUSTOM_KEY_DATA_PATH_HINT}.`;
   }
-  return `${base} — probably a typo of '<${suggestion.name}...>'. It's ${runtime}.`;
+  if (suggestion.caseOnly) {
+    return `${base} — case-sensitive, differs from '<${suggestion.name}...>' only by case. ${runtime[0].toUpperCase()}${runtime.slice(1)}.`;
+  }
+  return `${base} — probably a typo of '<${suggestion.name}...>'. ${runtime[0].toUpperCase()}${runtime.slice(1)}.`;
 }
 
 // Scan the whole document for balanced `<...>` groups whose head isn't any
@@ -532,24 +638,58 @@ function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestio
 // Deliberately no jump-past-match on a hit, matching scanKeyOccurrences: a
 // nested group inside an unrecognized outer one (or vice versa) still gets its
 // own pass through this loop.
+//
+// Carries the full, unsplit `inner` bracket text alongside `head` (round5
+// ticket 01/03): `head` stays the underscore-truncated function-dispatch key
+// — the right thing for isRecognizedFunctionGroup and for the typo-suggestion
+// pool, since that's genuinely what EWP's own function dispatch keys on
+// (Functions.cs's `GetFunction` does the same first-`_` split). But EWP's
+// value-group fallback (`ResolveValue`/`TryGetValueFromGroup`) hashes the
+// *whole* bracket text, never truncated — so the value-group exclusion check
+// below must test `inner`, not `head`, or any value-group name containing an
+// underscore (e.g. `level_multiplier`) is wrongly flagged even though it
+// resolves fine at runtime (round5 research/01's worked example).
 interface UnrecognizedFunctionOccurrence {
   head: string;
+  inner: string;
   range: [number, number];
 }
 
-function scanUnrecognizedFunctionHeads(text: string): UnrecognizedFunctionOccurrence[] {
-  const out: UnrecognizedFunctionOccurrence[] = [];
+// Round5 ticket 08 — a `<` with no matching `>` never resolves at runtime,
+// and (source-verified, research/07 §"worked example 2b") permanently
+// offsets EWP's own field-wide bracket-nesting counter, silently corrupting
+// every *other*, otherwise-well-formed `<...>` reference later in the same
+// string field. Every earlier scan in this file discarded `findGroupEnd`'s
+// `-1` under the assumption structural pre-check catches it elsewhere —
+// confirmed false by that same research: no check anywhere in this repo
+// looks at bracket balance inside string content. Scoped to `<` immediately
+// followed by a plausible reference-start character (letter, `#`, `/`) to
+// avoid flagging an unrelated lone `<` in freeform chat text (e.g. a
+// numeric comparison like "Day < 5"), which never has this shape.
+const PLAUSIBLE_REFERENCE_START_RE = /^[A-Za-z#/]/;
+
+function scanUnrecognizedFunctionHeads(
+  text: string,
+): { occurrences: UnrecognizedFunctionOccurrence[]; unbalanced: { range: [number, number] }[] } {
+  const occurrences: UnrecognizedFunctionOccurrence[] = [];
+  const unbalanced: { range: [number, number] }[] = [];
   for (let i = 0; i < text.length; i++) {
     if (text[i] !== "<") continue;
     const end = findGroupEnd(text, i);
-    if (end === -1) continue;
+    if (end === -1) {
+      if (PLAUSIBLE_REFERENCE_START_RE.test(text.slice(i + 1, i + 2))) {
+        unbalanced.push({ range: [i, i + 1] });
+      }
+      continue;
+    }
     const inner = text.slice(i + 1, end - 1);
+    if (isRichTextTag(inner)) continue;
     if (isRecognizedFunctionGroup(inner)) continue;
     const head = splitTopLevel(inner, "_")[0] ?? inner;
     if (!head || head.includes("<")) continue; // purely dynamic head, nothing to check
-    out.push({ head, range: [i, end] });
+    occurrences.push({ head, inner, range: [i, end] });
   }
-  return out;
+  return { occurrences, unbalanced };
 }
 
 // Ticket 07 — poke parameter declaration/usage matching. Source-verified rules
@@ -697,7 +837,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   // reference instead of a function call — a real, if unusual, EWP feature —
   // so it must not be flagged as an unrecognized/typo'd function name.
   const valueGroupNames = new Set<string>();
-  const templateFunctionOccurrences: { fileId: string; head: string; range: [number, number] }[] = [];
+  const templateFunctionOccurrences: { fileId: string; head: string; inner: string; range: [number, number] }[] = [];
   const pokeDeclarations: PokeTokenOccurrence[] = [];
   const pokeTriggers: PokeTokenOccurrence[] = [];
 
@@ -707,9 +847,21 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
     // Custom-saved-key templates can appear inside any string field, so this
     // one part is a whole-document text scan rather than a node walk.
-    const { writes, reads } = scanKeyOccurrences(stripLineComments(file.text));
+    const { writes, reads, malformed: malformedKeys } = scanKeyOccurrences(stripLineComments(file.text));
     for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
     for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
+    for (const { range } of malformedKeys) {
+      problems.push({
+        fileId: file.id,
+        severity: "warning",
+        kind: "malformed-reference",
+        message:
+          "Doubled '_' right before a nested '<...>' parameter. EWP's key/value split only " +
+          "consumes one underscore — the extra one is saved as a leading '_' baked into the " +
+          "value ('_X' instead of 'X'), silently, with no error.",
+        range,
+      });
+    }
 
     // Re-scan the raw text (comments intact). stripLineComments preserves
     // offsets, so any raw occurrence whose start offset the live scan did not
@@ -727,8 +879,20 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
     // Same comment-blindness rule as the custom-key scan above: a template
     // written only inside a commented-out line isn't live code.
-    for (const occ of scanUnrecognizedFunctionHeads(stripLineComments(file.text))) {
-      templateFunctionOccurrences.push({ fileId: file.id, head: occ.head, range: occ.range });
+    const functionScan = scanUnrecognizedFunctionHeads(stripLineComments(file.text));
+    for (const occ of functionScan.occurrences) {
+      templateFunctionOccurrences.push({ fileId: file.id, head: occ.head, inner: occ.inner, range: occ.range });
+    }
+    for (const { range } of functionScan.unbalanced) {
+      problems.push({
+        fileId: file.id,
+        severity: "warning",
+        kind: "malformed-reference",
+        message:
+          "This '<' never closes with a matching '>'. EWP leaves it — and everything after it " +
+          "in the same string — as literal, unresolved text.",
+        range,
+      });
     }
 
     const root = doc.contents;
@@ -906,9 +1070,55 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     }
   }
 
-  for (const { fileId, head, range } of templateFunctionOccurrences) {
+  for (const { fileId, head, inner, range } of templateFunctionOccurrences) {
+    // Round5 ticket 03: EWP's own value-group fallback (`ResolveValue`) hashes
+    // the *whole* bracket text, never truncated at the first `_` — so the
+    // exclusion check here must test the full `inner`, not just `head`, or a
+    // value-group name containing an underscore (e.g. `level_multiplier`) is
+    // wrongly flagged despite resolving fine at runtime (research/01's worked
+    // example). A no-underscore name has `inner === head`, so this only adds
+    // coverage — it never changes behavior for the case Round 4 already got
+    // right.
     const lowerHead = head.toLowerCase();
-    if (valueGroupNames.has(lowerHead) || DEFAULT_VALUE_GROUP_NAMES.has(lowerHead)) continue;
+    const lowerInner = inner.toLowerCase();
+    let recognized =
+      valueGroupNames.has(lowerHead) ||
+      valueGroupNames.has(lowerInner) ||
+      DEFAULT_VALUE_GROUP_NAMES.has(lowerHead) ||
+      DEFAULT_VALUE_GROUP_NAMES.has(lowerInner);
+
+    // Round5 ticket 06: `inner` can itself contain a nested `<...>` group
+    // whose runtime value splices in BEFORE EWP's value-group lookup ever
+    // runs (Functions.cs's ResolveFunctions resolves the innermost bracket
+    // pair first, splices, and only then re-scans outward — source-confirmed
+    // in research/05 §Q1). The only thing a static scan can ever know about
+    // the final looked-up string is inner's literal skeleton around that
+    // nested group, so match it the same way the dataUsages dynamic-reference
+    // loop above already does: keyToPattern turns each nested group into a
+    // `.*` wildcard (already correct for arbitrary nesting depth, per
+    // keyToPattern's own balanced-bracket walk — research/05 §Q2), tested
+    // against every literal declared name. Only engaged when `inner` actually
+    // has an unresolved nested group, so a plain misspelled name with no
+    // nesting still hits the existing exact-match path unchanged.
+    if (!recognized && inner.includes("<") && hasLiteral(inner)) {
+      const pattern = keyToPattern(inner);
+      for (const vg of valueGroupNames) {
+        if (pattern.test(vg)) {
+          recognized = true;
+          break;
+        }
+      }
+      if (!recognized) {
+        for (const vg of DEFAULT_VALUE_GROUP_NAMES) {
+          if (pattern.test(vg)) {
+            recognized = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (recognized) continue;
     problems.push({
       fileId,
       severity: "warning",

@@ -628,6 +628,22 @@ describe("string-template function name typo detection (ticket 06)", () => {
     expect(runReferenceValidation(viaValueGroup).filter((p) => p.kind === "template-function")).toEqual([]);
   });
 
+  it("does not flag a value/valueGroup entry name that contains an underscore (round 5 ticket 03)", () => {
+    // EWP's own runtime fallback (ResolveValue/TryGetValueFromGroup) hashes the
+    // whole bracket text, never truncated at the first `_` — so `<level_multiplier>`
+    // must be checked as a whole against the value-group set, not split into a
+    // "level" head first (which isn't itself a known EWP function head either).
+    const files = [
+      {
+        id: "a",
+        text:
+          "- value: level_multiplier, 3\n\n" +
+          "- prefab: Bonemass\n  type: create\n  command: <level_multiplier>\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
   it("does not flag EWP's hardcoded default value groups (wearntear/humanoid/creature/structure)", () => {
     const files = [
       { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <humanoid> <structure>\n" },
@@ -649,6 +665,196 @@ describe("string-template function name typo detection (ticket 06)", () => {
     const problems = runReferenceValidation(noSuggestion).filter((p) => p.kind === "template-function");
     expect(problems).toHaveLength(1);
     expect(problems[0].message).not.toContain("probably a typo of");
+  });
+
+  it("does not flag Valheim RichText tags (round 5 ticket 04)", () => {
+    // Closing tags, hex color shorthand (3/4/6/8 digit), `name=value` attribute
+    // tags, and bare pair/self-closing tags — the exact shapes documented in
+    // research/02-valheim-richtext-tag-source-audit.md, including the
+    // scripter's own repro (<#ddd>, </b>, <br>, <size=15>).
+    const files = [
+      {
+        id: "a",
+        text:
+          "- value: msgPlayerCheckTime,\n" +
+          "            <#ddd>Current Season Time:</b>\n" +
+          "            <br>Day<#00ff00> <load_bfvrealday=1></color> - <#fff000><realtime_HH:mm_<load_serverutc=0>></color>\n" +
+          "            <br><size=15>*Day count increases at 21:00 UTC.\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+
+    const moreShapes = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n" +
+          "  command: <b>bold</b> <u>underline</u> <#f00> <#ff0000ff> <color=red> <align=center>\n",
+      },
+    ];
+    expect(runReferenceValidation(moreShapes).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("still flags an EWP typo shaped like a RichText attribute tag (<load=foo>)", () => {
+    // A real scripter typo (argument-separator slip: `_` -> `=`) must not be
+    // silently swallowed by the RichText attribute-tag allow-list — `load`
+    // isn't one of the fixed TMP attribute-tag names, so this still flags.
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <load=foo>\n" }];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+  });
+
+  it("does not flag a nested-group value-group reference whose literal prefix matches a declared family (round 5 ticket 06)", () => {
+    // <requiredWorldLevel_<prefab>> — EWP resolves <prefab> to a live prefab
+    // name and splices it in *before* the value-group lookup ever runs
+    // (source-verified in round5 research/05), so only the literal prefix
+    // before the nested group can ever be statically checked.
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <requiredWorldLevel_<prefab>>\n\n" +
+          "- value: requiredWorldLevel_blackforge, 5\n" +
+          "- value: requiredWorldLevel_blackforge_ext1, 5\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("resolves a multi-layer nested value-group reference when every layer's family is declared, but still flags an undeclared inner layer on its own", () => {
+    // <realDayLock_<nameBoss_<int_location=0>>> — two independent value-group
+    // families nested inside each other; the fix must handle both without
+    // conflating them, and must not silently swallow a genuinely undeclared
+    // inner occurrence just because it's nested inside a resolved outer one.
+    const withBothDeclared = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <realDayLock_<nameBoss_<int_location=0>>>\n\n" +
+          "- value: realDayLock_Eikthyr, 1\n" +
+          "- value: nameBoss_0, Eikthyr\n",
+      },
+    ];
+    expect(runReferenceValidation(withBothDeclared).filter((p) => p.kind === "template-function")).toEqual([]);
+
+    const nameBossUndeclared = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <realDayLock_<nameBoss_<int_location=0>>>\n\n" +
+          "- value: realDayLock_Eikthyr, 1\n",
+      },
+    ];
+    const problems = runReferenceValidation(nameBossUndeclared).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("nameBoss");
+  });
+
+  it("does not let the nested-group wildcard swallow a genuine prefix typo", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n  command: <reqiuredWorldLevel_<prefab>>\n\n" +
+          "- value: requiredWorldLevel_blackforge, 5\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+  });
+});
+
+describe("default-value '=' suffix on no-arg function names (round 5 ticket 10)", () => {
+  it("recognizes a no-arg function's real base64-shaped default value (par2=...)", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Bonemass\n  type: create\n" +
+          "  data: bytes, TCData, <par2=H4sIAAAAAAAACu3YsQ2AMBADwA8TsBGrweaIMgrNSxRGuuviyu8yo6q2Wl37SwgAAADwtdYnxJif5yGYg2pK6R0bVFdK8b/sZbC2lOopexhkldL+o3MeYXUAAACg6wb32BzyoicAAA==>\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("still recognizes par2 bare and par_2, unaffected by the default-value fix", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <par2> <par_2>\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("tolerates a default-value suffix on any no-arg name, not just the par family", () => {
+    const files = [
+      {
+        id: "a",
+        text: "- prefab: Bonemass\n  type: create\n  command: <prefab=fallback> <pid=fallback> <day=fallback>\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("still recognizes an arg-taking par_X outside the 0-9 no-arg range, with a default", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <par_47=fallback>\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+  });
+
+  it("does not let a nested group's own literal '=' be mistaken for the outer bracket's default separator", () => {
+    // <pid_<load_x=default>> — `pid` is no-arg and takes no argument, so
+    // `pid_X` is a genuine dead end regardless of the nested group's own
+    // '=' usage; this must stay flagged as unrecognized.
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <pid_<load_x=default>>\n" }];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+  });
+
+  it("still flags a genuine typo carrying a default-value suffix", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <prefeb=fallback>\n" }];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("prefeb");
+  });
+});
+
+describe("malformed nested-reference detection (round 5 ticket 08)", () => {
+  it("flags a doubled underscore immediately before a nested group in a save key", () => {
+    // <save_bossKillCount__<int_bossKills=0>> — EWP's key/value split only
+    // consumes one underscore, so the extra one silently corrupts the saved
+    // value ('_3' instead of '3'), with no error.
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount__<int_bossKills=0>>\n" },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "malformed-reference");
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "malformed-reference" });
+    expect(problems[0].message).toContain("Doubled");
+  });
+
+  it("does not flag a well-formed single underscore before a nested group", () => {
+    const files = [
+      { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount_<int_bossKills=0>>\n" },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
+  });
+
+  it("does not flag a legitimate literal double-underscore key with no adjacent nesting", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_my__key_1>\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
+  });
+
+  it("flags a '<' that never closes with a matching '>'", () => {
+    const files = [
+      {
+        id: "a",
+        text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount_<int_bossKills=0>\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.kind === "malformed-reference");
+    expect(problems.length).toBeGreaterThanOrEqual(1);
+    expect(problems.some((p) => p.message.includes("never closes"))).toBe(true);
+  });
+
+  it("does not flag a lone '<' in freeform comparison text with no plausible reference shape", () => {
+    const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: Day < 5 remaining\n" }];
+    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
   });
 });
 
