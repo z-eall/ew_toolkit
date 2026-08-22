@@ -6,6 +6,7 @@
   "scripts": {
     "generate-schema": "node schema/generate.mjs",
     "dev": "npm run generate-schema && vite",
+    "dev:prototype-confirm-modal": "npm run generate-schema && npx vite --open /ew_toolkit/ewp_validator/prototype-confirm-modal.html",
     "build": "npm run generate-schema && vite build",
     "preview": "vite preview",
     "pretest": "npm run generate-schema",

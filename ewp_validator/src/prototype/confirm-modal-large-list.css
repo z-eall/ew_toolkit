@@ -1,0 +1,239 @@
+/* PROTOTYPE — confirm modal large-list. Styles local to this throwaway page;
+   production confirm scroll styles land in style.css after a variant wins. */
+
+.prototype-backdrop {
+  min-height: 100vh;
+  background: var(--bg, #222831);
+  color: var(--text, #dfd0b8);
+  font-family: system-ui, -apple-system, sans-serif;
+  position: relative;
+}
+
+body {
+  margin: 0;
+  background: var(--bg, #222831);
+}
+
+.prototype-backdrop::before {
+  content: "PROTOTYPE — not production";
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 50;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.prototype-shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.prototype-sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.prototype-sidebar h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.prototype-sidebar .fake-file {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  opacity: 0.5;
+}
+
+.prototype-main {
+  padding: 24px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.prototype-main h1 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.prototype-state {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 50;
+  max-width: 280px;
+  font-size: 11px;
+  line-height: 1.45;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--muted);
+}
+
+.prototype-state strong {
+  color: var(--text);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+/* --- Variant-specific modal layouts (extend production .confirm-* ) --- */
+
+.confirm-box.is-flex {
+  display: flex;
+  flex-direction: column;
+  max-height: min(80vh, 640px);
+  max-width: 420px;
+  width: calc(100vw - 32px);
+}
+
+.confirm-box.is-flex .confirm-summary {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  flex-shrink: 0;
+}
+
+.confirm-box.is-flex .confirm-buttons {
+  flex-shrink: 0;
+  margin-top: 16px;
+}
+
+.confirm-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+  padding: 8px 10px;
+}
+
+.confirm-list-scroll.pre-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  color: var(--text);
+}
+
+.confirm-list-scroll ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  color: var(--text);
+}
+
+.confirm-list-scroll li {
+  margin: 2px 0;
+}
+
+/* Adaptive (Q1-A): short lists — no box, inline in summary */
+.confirm-adaptive-short .confirm-summary .inline-names {
+  display: block;
+  margin-top: 8px;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.confirm-adaptive-short .confirm-summary .inline-names ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+/* Broken baseline — today's unbounded growth */
+.confirm-box.baseline-broken {
+  max-width: 420px;
+}
+
+.confirm-box.baseline-broken .confirm-message {
+  max-height: none;
+}
+
+/* Prototype controls */
+.prototype-controls {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.prototype-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #111;
+  color: #fff;
+  border: 2px solid #666;
+  border-radius: 999px;
+  padding: 8px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+}
+
+.prototype-switcher button {
+  background: transparent;
+  border: 1px solid #888;
+  color: #fff;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.prototype-switcher button:hover {
+  background: #333;
+}
+
+.prototype-count-bar {
+  display: flex;
+  gap: 6px;
+  background: #111;
+  border: 2px solid #666;
+  border-radius: 999px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.prototype-count-bar button {
+  background: #222;
+  border: 1px solid #555;
+  color: #ddd;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.prototype-count-bar button.active {
+  background: #dfd0b8;
+  color: #222;
+  border-color: #dfd0b8;
+  font-weight: 600;
+}

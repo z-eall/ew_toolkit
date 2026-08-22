@@ -1,5 +1,6 @@
 node_modules/
 dist/
+ewp_validator/.tmp-prototype-check/
 
 # Machine-local junction to shared skills (see wayfinder setup) — not portable across machines
 .cursor/skills
