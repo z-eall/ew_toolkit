@@ -6,6 +6,7 @@
 // rpcParams.generated.ts). This module owns checkRpcParams() logic only.
 
 import { CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcParams.generated";
+import schemaJson from "./schema.generated.json";
 
 export interface RpcParamDoc {
   type: string;
@@ -17,7 +18,7 @@ export { CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS };
 // Fixed prefix + open repeat tail — must stay in sync with schema/rpcOverrides.mjs.
 export const VARIADIC_RPCS = new Set(["DestroyZDO", "LocationIcons"]);
 
-export type RpcIssueKind = "extra" | "not-a-string" | "type-mismatch" | "missing";
+export type RpcIssueKind = "extra" | "not-a-string" | "type-mismatch" | "missing" | "unrecognized-key";
 
 export interface RpcParamIssue {
   /** The numbered key (e.g. "4") the issue is about — used to locate its range in the source. */
@@ -124,5 +125,58 @@ export function checkRpcParams(
     });
   }
 
+  return issues;
+}
+
+// objectRpc:/clientRpc: entries are a true open Dictionary<string,string> in
+// C# (schema/generate.mjs's rpcEntry comment) — ajv's additionalProperties
+// schema can only reject a *wrongly-typed* extra key (e.g. a boolean), never
+// an extra key with a string value, since a string is always structurally
+// legal there. That means a key like `triggerRules:`/`remove:` — real fields
+// on the rule entry itself or a spawn:/swap: entry (PrefabData.cs's Data /
+// SpawnData classes), nested here by mistake — silently does nothing at
+// runtime whether or not its value happens to be a string. Known-key sets
+// are read from the generated schema rather than duplicated here, so they
+// can't drift from it.
+const RPC_ENTRY_KNOWN_KEYS = new Set(
+  Object.keys((schemaJson as any).definitions.ewpRuleEntry.properties.objectRpc.items.properties),
+);
+const RULE_ENTRY_FIELDS = new Set(Object.keys((schemaJson as any).definitions.ewpRuleEntry.properties));
+const SPAWN_DATA_FIELDS = new Set(Object.keys((schemaJson as any).definitions.spawnData.properties));
+
+function unrecognizedRpcKeyMessage(key: string): string {
+  const onRuleEntry = RULE_ENTRY_FIELDS.has(key);
+  const onSpawnData = SPAWN_DATA_FIELDS.has(key);
+  if (onRuleEntry || onSpawnData) {
+    const where =
+      onRuleEntry && onSpawnData
+        ? "the rule entry itself or a spawn:/swap: entry"
+        : onRuleEntry
+          ? "the rule entry itself"
+          : "a spawn:/swap: entry";
+    return (
+      `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+      `correctly (it's a field on ${where}, not on an objectRpc:/clientRpc: entry). Move it there, or remove it.`
+    );
+  }
+  return (
+    `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+    `correctly. If this is meant as a numbered call parameter, use "1", "2", etc. instead.`
+  );
+}
+
+/**
+ * Flags a non-numeric RPC entry key that isn't one of the known RPC fields
+ * (name/target/chance/…) — distinct from {@link checkRpcParams}, which only
+ * walks numbered call-arg keys. Runs regardless of whether `rpcName` has a
+ * documented param table, since this only depends on the entry's own keys.
+ */
+export function checkRpcUnrecognizedKeys(entry: Record<string, unknown>): RpcParamIssue[] {
+  const issues: RpcParamIssue[] = [];
+  for (const key of Object.keys(entry)) {
+    if (/^[1-9][0-9]*$/.test(key)) continue;
+    if (RPC_ENTRY_KNOWN_KEYS.has(key)) continue;
+    issues.push({ key, kind: "unrecognized-key", message: unrecognizedRpcKeyMessage(key) });
+  }
   return issues;
 }

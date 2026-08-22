@@ -12,7 +12,7 @@ import { scalarDataFieldTypeMessage } from "./dataFieldValidation";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems } from "./shapeMismatchDiagnosis";
 import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
-import { checkRpcParams, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
+import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
 import { translateYamlError } from "./yamlErrorMessages";
 
@@ -551,6 +551,24 @@ export function runStructuralPrecheck(text: string): Problem[] {
             // Any issue at all (including "extra" — out of documented range)
             // already covers whatever ajv would say about this same key, so
             // suppress it regardless of kind rather than only for "not-a-string".
+            rpcSuppressPaths.add(`/${field}/${entryIdx}/${issue.key}`);
+          }
+          // A non-numeric key that isn't one of the known RPC fields (e.g.
+          // `triggerRules:`/`remove:` nested here by mistake) is a wrong-key
+          // mistake, not a value-shape one — same "Structure problem" bucket
+          // as the WEC name typo, and independent of whether `entryValue.name`
+          // resolves to a documented RPC (unlike checkRpcParams above).
+          for (const issue of checkRpcUnrecognizedKeys(entryValue)) {
+            problems.push({
+              severity: "warning",
+              message: issue.message,
+              branch: STRUCTURE_PROBLEM_CATEGORY,
+              entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
+              range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
+            });
+            // Suppresses ajv's additionalProperties/type-string error on this
+            // same key (the misleading "must be text" message) so a scripter
+            // never sees both, and never sees the raw one once this fires.
             rpcSuppressPaths.add(`/${field}/${entryIdx}/${issue.key}`);
           }
         });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkRpcParams, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
+import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 
 describe("checkRpcParams", () => {
   it("flags a numbered parameter beyond the documented count as extra, not an error", () => {
@@ -122,6 +122,55 @@ describe("checkRpcParams", () => {
       2: "string, SwordIron",
     });
     expect(issues.filter((i) => i.kind === "missing").map((i) => i.key)).toEqual(["3", "4"]);
+  });
+});
+
+describe("checkRpcUnrecognizedKeys", () => {
+  it("flags a rule-entry-only field (remove) nested under an RPC entry, naming the rule entry", () => {
+    const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", 1: "hit, x=1", remove: true });
+    expect(issues).toEqual([expect.objectContaining({ key: "remove", kind: "unrecognized-key" })]);
+    expect(issues[0].message).toContain("'remove:'");
+    expect(issues[0].message).toContain("rule entry itself");
+    expect(issues[0].message).not.toContain("spawn:/swap:");
+  });
+
+  it("flags a field that exists on both the rule entry and spawnData (triggerRules), naming both", () => {
+    const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", triggerRules: true });
+    expect(issues).toEqual([expect.objectContaining({ key: "triggerRules", kind: "unrecognized-key" })]);
+    expect(issues[0].message).toContain("rule entry itself or a spawn:/swap: entry");
+  });
+
+  it("still flags the same key once its value is quoted — this is a wrong-key mistake, not a type mistake", () => {
+    const boolIssues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", triggerRules: true });
+    const stringIssues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", triggerRules: "true" });
+    expect(boolIssues).toHaveLength(1);
+    expect(stringIssues).toHaveLength(1);
+    expect(stringIssues[0].key).toBe("triggerRules");
+  });
+
+  it("flags a key that isn't a field anywhere in the schema with a generic message", () => {
+    const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", totallyMadeUp: "x" });
+    expect(issues).toEqual([expect.objectContaining({ key: "totallyMadeUp", kind: "unrecognized-key" })]);
+    expect(issues[0].message).toContain("numbered call parameter");
+  });
+
+  it("does not flag known RPC entry keys or numbered call-arg keys", () => {
+    const issues = checkRpcUnrecognizedKeys({
+      name: "Message",
+      target: "all",
+      chance: "1",
+      weight: "1",
+      delay: "1",
+      repeat: "1",
+      repeatInterval: "1",
+      repeatChance: "1",
+      overwrite: "true",
+      source: "here",
+      packaged: "true",
+      1: "enum_message, 2",
+      2: "string, hi",
+    });
+    expect(issues).toEqual([]);
   });
 });
 

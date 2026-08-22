@@ -23,6 +23,13 @@
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 html,
 body,
 #app {
@@ -1301,6 +1308,7 @@ body {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.12);
   padding: 8px 10px;
+  margin-bottom: 12px;
 }
 
 .confirm-list-scroll ul {

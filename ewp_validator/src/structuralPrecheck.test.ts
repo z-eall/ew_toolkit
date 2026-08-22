@@ -405,6 +405,57 @@ describe("runStructuralPrecheck", () => {
     expect(flag!.message).toContain("'4'");
   });
 
+  it("flags an unrecognized non-numeric objectRpc key (e.g. triggerRules:, a spawnData/rule-entry field nested by mistake) as a Structure problem, not the misleading 'must be text' message", () => {
+    // Round 4 ticket 03 repro: `triggerRules:`/`remove:` are real fields on
+    // the rule entry / spawn:/swap: entries, not on an RPC entry — quoting
+    // the value makes ajv's raw error disappear without fixing anything.
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: RPC_Damage\n" +
+      "    1: hit, lightning=1.0 block=true dodge=true\n" +
+      "    triggerRules: true\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.message.includes("must be text"))).toBe(false);
+    expect(problems.some((p) => p.message.includes("must be string"))).toBe(false);
+    const flag = problems.find((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY);
+    expect(flag).toBeDefined();
+    expect(flag!.severity).toBe("warning");
+    expect(flag!.message).toContain("'triggerRules:'");
+    expect(flag!.message).toContain("rule entry");
+  });
+
+  it("still flags an unrecognized objectRpc key once its value is quoted (the scripter's 'fix' that currently goes silent)", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: RPC_Damage\n" +
+      "    1: hit, damage=<load_neckzillaKilled>\n" +
+      '    remove: "true"\n';
+    const problems = runStructuralPrecheck(yaml);
+    const flag = problems.find((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.message.includes("remove"));
+    expect(flag).toBeDefined();
+    expect(flag!.message).toContain("rule entry");
+  });
+
+  it("does not flag known RPC entry keys (name/target/delay/overwrite/etc) as unrecognized", () => {
+    const yaml =
+      "- prefab: Player\n" +
+      "  type: state, step\n" +
+      "  objectRpc:\n" +
+      "  - name: Message\n" +
+      "    target: all\n" +
+      "    delay: 1\n" +
+      "    overwrite: true\n" +
+      "    1: enum_message, 2\n" +
+      '    2: string, "hello"\n' +
+      "    3: int, 0\n";
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems.some((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY)).toBe(false);
+  });
+
   it("does not flag an objectRpc entry that matches its documented shape", () => {
     const yaml =
       "- prefab: Player\n" +
