@@ -50,11 +50,12 @@ have a documented place to add rows without overlapping existing layers.
 - [Implement malformed typed-line list diagnosis](issues/06-implement-malformed-typed-line-list-diagnosis.md) — `isMalformedTypedLineList()` branch + tests.
 - [Restore anti-duplication contract](issues/07-restore-anti-duplication-contract.md) — `dataFieldValidation.ts` and `rpcValidation.ts` are back to pure predicates; `shapeMismatchDiagnosis.ts` owns all diagnosis text, including a new `rpcParamIssueMessage()`; collapsed the `drops:`/`addItems:`/`removeItems:` duplicate that wrongly borrowed the `filter`/`bannedFilter` plural-list phrasing.
 - [Own the ajv-error-translation messages structuralPrecheck.ts still builds itself](issues/08-own-ajv-error-translation-text.md) — new sibling catalog module `ajvMessages.ts` owns every post-ajv fallback message (including the relocated `scalarDataFieldTypeMessage`); `structuralPrecheck.ts` now holds no diagnosis text of its own.
+- [Sharpen the detector/catalog boundary inside shapeMismatchDiagnosis.ts](issues/09-sharpen-detector-catalog-boundary.md) — moved `isMalformedTypedLineList`/`stringListItems` into `dataFieldValidation.ts` and `diagnoseRpcOrphanListItems`'s detection half (as `findOrphanRpcListItems`) into `rpcValidation.ts`; `shapeMismatchDiagnosis.ts` now does arbitration only, no structural detection.
 - Cross-reference from [Validator Round 4 ticket 07](../validator-round4/issues/07-poke-parameter-stray-and-typo-matching.md) (poke parameter stray/typo matching): checked against this map's anti-duplication contract and confirmed **out of scope for this catalog** — the poke checks are batch-wide definition/usage matching (a declared `poke[].parameter`/`pars` against every `type: poke, X` trigger loaded), the same mechanism class as `referenceValidation.ts`'s existing data.yaml and custom-saved-key checks, not per-entry shape confusion resolved before ajv on one YAML item. Implemented in `referenceValidation.ts` alongside those, not as a new `shapeMismatchDiagnosis.ts` row.
 
 ## Not yet specified
 
-(none — one open ticket: [Sharpen the detector/catalog boundary inside shapeMismatchDiagnosis.ts](issues/09-sharpen-detector-catalog-boundary.md), already fully specified, awaiting a grilling session)
+(none — no open tickets)
 
 ## Out of scope
 

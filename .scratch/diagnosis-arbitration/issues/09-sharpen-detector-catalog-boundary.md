@@ -1,7 +1,7 @@
 # Sharpen the detector/catalog boundary inside shapeMismatchDiagnosis.ts
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -32,4 +32,10 @@ exploring.
 
 ## Answer
 
-(unresolved)
+Grilled 2026-08-24, 1 round:
+
+1. Build it now — small, cheap fix, and keeping the contract legible outweighs the low urgency.
+2. `isMalformedTypedLineList()`/`stringListItems()` (plus the `MALFORMED_TYPED_LINE_FIELDS` set they depend on) moved into `dataFieldValidation.ts`, next to `looksLikeTypedValueLine` — same family of pure "does this line look like X" predicates.
+3. `diagnoseRpcOrphanListItems()` split the same way ticket 07 split `checkRpcParams`: `rpcValidation.ts` gained `findOrphanRpcListItems()`, a pure predicate over already-parsed entry objects that returns typed facts (`{ index, previousIsNameOnly }`); `shapeMismatchDiagnosis.ts` kept only the YAML-range lookup, message-picking, and suppress-path wiring. `numberedRpcParamKeys()` (needed by both the new predicate and the existing suppress-path helper) also moved to `rpcValidation.ts`.
+
+`shapeMismatchDiagnosis.ts` now holds no structural detection — every function in it either arbitrates (picks a message + suppress path) or wires suppress paths from facts a domain module already computed. 307/307 tests pass (no new tests needed — behavior unchanged, only which module owns which function), `tsc --noEmit` clean, `vite build` succeeds.

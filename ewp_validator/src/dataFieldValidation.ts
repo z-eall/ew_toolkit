@@ -68,6 +68,25 @@ export function looksLikeTypedValueLine(raw: unknown): boolean {
   return /^\w+\s*,\s*\w+\s*,\s*.+/.test(trimmed);
 }
 
+/** Fields where a comma-shaped list item is checked against the typed `type, key, value` grammar. */
+export const MALFORMED_TYPED_LINE_FIELDS = new Set(["data", "filter", "bannedFilter"]);
+
+/** Normalizes a YAML sequence's raw value to a trimmed, non-empty string list, or null if it isn't one. */
+export function stringListItems(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  const items = raw.map((item) => (typeof item === "string" ? item.trim() : "")).filter((s) => s !== "");
+  return items.length > 0 ? items : null;
+}
+
+/** True when `lines` contain commas but don't form complete `type, key, value` triples. */
+export function isMalformedTypedLineList(field: string, lines: string[]): boolean {
+  if (!MALFORMED_TYPED_LINE_FIELDS.has(field)) return false;
+  const allBareword = lines.every((line) => !line.includes(","));
+  if (allBareword) return false;
+  if (lines.some(looksLikeTypedValueLine)) return false;
+  return lines.some((line) => line.includes(","));
+}
+
 function scalarRefPredicate(field: string): (raw: unknown) => raw is string {
   return field === "drops" ? isDropsReference : isBarewordDataReference;
 }

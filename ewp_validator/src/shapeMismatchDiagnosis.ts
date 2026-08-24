@@ -20,15 +20,18 @@
 
 import { isMap, isSeq, type YAMLMap } from "yaml";
 import {
+  isMalformedTypedLineList,
   looksLikeTypedValueLine,
+  MALFORMED_TYPED_LINE_FIELDS,
   NESTED_LEGACY_FILTER_DATA_FIELD,
   NESTED_SCALAR_REF_FIELDS,
   SPAWN_SCALAR_REF_FIELDS,
+  stringListItems,
   TOP_LEVEL_LIST_REF_FIELDS,
   TOP_LEVEL_SCALAR_REF_FIELDS,
 } from "./dataFieldValidation";
 import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
-import type { RpcActualType, RpcKeyOwner, RpcParamIssue } from "./rpcValidation";
+import { findOrphanRpcListItems, numberedRpcParamKeys, type RpcActualType, type RpcKeyOwner, type RpcParamIssue } from "./rpcValidation";
 import { findPairRange, getPairValueNode, nodeRange, type Severity } from "./structuralPrecheck";
 
 export interface ShapeMismatchDiagnosis {
@@ -61,25 +64,13 @@ const ORPHAN_SIBLING_PARAM_MESSAGE =
 const MISSING_RPC_NAME_MESSAGE =
   "This RPC list item has numbered parameters but no `name:` — add `name: YourRpcName`.";
 
-function hasNumberedRpcParamKeys(entry: Record<string, unknown>): boolean {
-  return Object.keys(entry).some((k) => /^[1-9][0-9]*$/.test(k));
-}
-
-function numberedParamKeys(entry: Record<string, unknown>): string[] {
-  return Object.keys(entry).filter((k) => /^[1-9][0-9]*$/.test(k));
-}
-
-function isNameOnlyRpcEntry(entry: Record<string, unknown>): boolean {
-  return typeof entry.name === "string" && !hasNumberedRpcParamKeys(entry);
-}
-
 function orphanEntrySuppressPaths(
   field: string,
   entryIdx: number,
   entry: Record<string, unknown>,
 ): string[] {
   const paths = [`/${field}/${entryIdx}`];
-  for (const key of numberedParamKeys(entry)) {
+  for (const key of numberedRpcParamKeys(entry)) {
     paths.push(`/${field}/${entryIdx}/${key}`);
   }
   return paths;
@@ -106,12 +97,6 @@ type ShapeMismatchRule = {
   id: string;
   run: (ctx: RuleContext) => ShapeMismatchDiagnosis[];
 };
-
-function stringListItems(raw: unknown): string[] | null {
-  if (!Array.isArray(raw)) return null;
-  const items = raw.map((item) => (typeof item === "string" ? item.trim() : "")).filter((s) => s !== "");
-  return items.length > 0 ? items : null;
-}
 
 function rangeForScalarListField(parentNode: YAMLMap, field: string): [number, number] {
   const seqNode = getPairValueNode(parentNode, field);
@@ -155,8 +140,6 @@ function messageScalarFieldAsEntryNameList(field: string, lines: string[]): stri
   );
 }
 
-const MALFORMED_TYPED_LINE_FIELDS = new Set(["data", "filter", "bannedFilter"]);
-
 function messageMalformedTypedLineList(field: string, lines: string[]): string {
   const plural =
     field === "filter" ? "filters" : field === "bannedFilter" ? "bannedFilters" : "filters";
@@ -170,14 +153,6 @@ function messageMalformedTypedLineList(field: string, lines: string[]): string {
     `Invalid \`${field}:\` format — lines with commas must be full \`type, key, value\` triples. ` +
     `Put complete lines under \`${plural}:\`, or one triple on \`${field}:\`.`
   );
-}
-
-function isMalformedTypedLineList(field: string, lines: string[]): boolean {
-  if (!MALFORMED_TYPED_LINE_FIELDS.has(field)) return false;
-  const allBareword = lines.every((line) => !line.includes(","));
-  if (allBareword) return false;
-  if (lines.some(looksLikeTypedValueLine)) return false;
-  return lines.some((line) => line.includes(","));
 }
 
 function diagnoseScalarFieldAsList(
@@ -407,33 +382,22 @@ export function diagnoseRpcOrphanListItems(
     const seqNode = getPairValueNode(itemNode, field);
     if (!seqNode || !isSeq(seqNode as any)) continue;
     const items = (seqNode as any).items as unknown[];
-    const skipSet = new Set<number>();
+    const entries = items.map((entryNode) =>
+      isMap(entryNode) ? ((entryNode as YAMLMap).toJSON() as Record<string, unknown>) : {},
+    );
+    const orphans = findOrphanRpcListItems(entries);
+    if (orphans.length === 0) continue;
 
-    for (let entryIdx = 0; entryIdx < items.length; entryIdx++) {
+    const skipSet = new Set<number>();
+    for (const { index: entryIdx, previousIsNameOnly } of orphans) {
       const entryNode = items[entryIdx];
       if (!isMap(entryNode)) continue;
       const entryMap = entryNode as YAMLMap;
-      const entryValue = entryMap.toJSON() as Record<string, unknown>;
+      const entryValue = entries[entryIdx]!;
 
-      if (typeof entryValue.name === "string" || !hasNumberedRpcParamKeys(entryValue)) continue;
-
-      const firstKey = numberedParamKeys(entryValue).sort((a, b) => Number(a) - Number(b))[0]!;
+      const firstKey = numberedRpcParamKeys(entryValue).sort((a, b) => Number(a) - Number(b))[0]!;
       const range = findPairRange(entryMap, firstKey) ?? nodeRange(entryMap as any);
-
-      let message: string;
-      if (entryIdx > 0) {
-        const prevNode = items[entryIdx - 1];
-        const prevValue =
-          prevNode && isMap(prevNode)
-            ? ((prevNode as YAMLMap).toJSON() as Record<string, unknown>)
-            : null;
-        message =
-          prevValue && isNameOnlyRpcEntry(prevValue)
-            ? ORPHAN_SIBLING_PARAM_MESSAGE
-            : MISSING_RPC_NAME_MESSAGE;
-      } else {
-        message = MISSING_RPC_NAME_MESSAGE;
-      }
+      const message = previousIsNameOnly ? ORPHAN_SIBLING_PARAM_MESSAGE : MISSING_RPC_NAME_MESSAGE;
 
       diagnoses.push({
         severity: "warning",

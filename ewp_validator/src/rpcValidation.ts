@@ -152,3 +152,39 @@ export function checkRpcUnrecognizedKeys(entry: Record<string, unknown>): RpcPar
   }
   return issues;
 }
+
+function hasNumberedRpcParamKeys(entry: Record<string, unknown>): boolean {
+  return Object.keys(entry).some((k) => /^[1-9][0-9]*$/.test(k));
+}
+
+/** The numbered call-parameter keys on one RPC list entry (e.g. ["1", "2"]). */
+export function numberedRpcParamKeys(entry: Record<string, unknown>): string[] {
+  return Object.keys(entry).filter((k) => /^[1-9][0-9]*$/.test(k));
+}
+
+function isNameOnlyRpcEntry(entry: Record<string, unknown>): boolean {
+  return typeof entry.name === "string" && !hasNumberedRpcParamKeys(entry);
+}
+
+export interface OrphanRpcListItem {
+  index: number;
+  /** True when the immediately preceding sibling entry is name-only (a likely split point). */
+  previousIsNameOnly: boolean;
+}
+
+/**
+ * Finds objectRpc:/clientRpc: list entries that have numbered call-parameter
+ * keys but no `name:` — a likely sign the entry was split from (or never
+ * given) its own `name:`. shapeMismatchDiagnosis.ts turns each result into a
+ * message and a suppressed ajv range — see diagnosis-arbitration ticket 09.
+ */
+export function findOrphanRpcListItems(entries: Record<string, unknown>[]): OrphanRpcListItem[] {
+  const orphans: OrphanRpcListItem[] = [];
+  for (let index = 0; index < entries.length; index++) {
+    const entry = entries[index]!;
+    if (typeof entry.name === "string" || !hasNumberedRpcParamKeys(entry)) continue;
+    const prev = index > 0 ? entries[index - 1]! : null;
+    orphans.push({ index, previousIsNameOnly: !!prev && isNameOnlyRpcEntry(prev) });
+  }
+  return orphans;
+}
