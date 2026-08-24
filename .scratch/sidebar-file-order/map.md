@@ -37,11 +37,11 @@ round-2/round-3 file-order-freeze bugfixes) still pass unchanged in behavior.
 
 ## Decisions so far
 
-(none)
+- [Design the file-order module](issues/01-design-file-order-module.md) — closed without building. A grounded code survey found `fileOrder`/`folderOrder` already owned by two named functions (`recomputeFileOrder`/`syncFileOrder`), `visibleFileIds` a fully-derived per-render value, and `collapsedFolders` two trivial toggle sites — the premise of four scattered, invariant-fragile globals only half held. Destination not reached; not pursued further.
 
 ## Not yet specified
 
-(none — one open ticket: [Design the file-order module](issues/01-design-file-order-module.md), already fully specified, awaiting a grilling session)
+(none — no open tickets)
 
 ## Out of scope
 

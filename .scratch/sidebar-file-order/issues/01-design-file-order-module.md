@@ -1,7 +1,7 @@
 # Design the file-order module
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -33,4 +33,10 @@ exploring / speculative strength.
 
 ## Answer
 
-(unresolved)
+Grounded code survey of `main.ts` (2026-08-24), before grilling module shape:
+
+- `fileOrder`/`folderOrder` already have two owning functions: `recomputeFileOrder()` (the real resort — called at 4 sites: sort-menu pick ×2, upload-complete, Manual Validate completing) and `syncFileOrder()` (drop/append without resorting — called once, inside `renderFileList()`). Already centralized, not scattered hand-reasoning at each call site.
+- `visibleFileIds` isn't frozen state — fully recomputed every `renderFileList()` (line ~423), a derived value with no invariant to protect.
+- `collapsedFolders` is a raw `Set` toggled inline at 2 trivial sites (folder-select auto-expand, folder-header click) — plain add/delete, no real policy.
+
+The ticket's premise — four globals with an invariant scattered across ~5 call sites — only half held once checked against the actual code. Confirmed with the scripter: **close without building.** The real state (`fileOrder`/`folderOrder`) is already reasonably owned by two named functions; the remaining gap (`collapsedFolders` has no owning function) is two one-line toggles, not worth a module. No code changed.
