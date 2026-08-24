@@ -20,7 +20,8 @@ scripter's request — note the tradeoff below.
 
 - [x] `AGENTS.md` (root + `ewp_validator/`) holds all shared rules; `CLAUDE.md` at both levels slimmed to an import.
 - [x] `docs/agents/` copied into this repo (both worktrees) so `AGENTS.md`'s pointers resolve without reaching outside the repo.
-- [x] `cursor/work` and `main` merged both directions — fully in sync as of commit below.
+- [x] `cursor/work` and `main` merged both directions for standing-rule files (`AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `docs/agents/`) — those are in sync as of the commit below.
+- [ ] `cursor/work` still carries files not yet merged to `main`: `.scratch/confirm-modal-large-list` (updated), `.scratch/cursor-hook-popup`, `.scratch/cursor-skill-parity`, `ewp_validator/prototype-confirm-modal.html`, `ewp_validator/src/prototype/confirm-modal-large-list.*`, and an `ewp_validator/package.json`/`package-lock.json` change. Confirmed via `git diff main cursor/work --stat` on 2026-08-24 — check that command before writing "fully in sync" again.
 - [x] Recovered work committed: `.scratch/confirm-modal-large-list` (the real prototype, superseding `main`'s secondhand reconstruction), `.scratch/cursor-hook-popup`, `.scratch/cursor-skill-parity`.
 - [x] Both branches pushed to `origin`.
 
@@ -37,3 +38,4 @@ Nothing in-progress elsewhere right now.
 - Branch: `cursor/work`
 - Last commit: run `git log -1 --oneline` (this session ended on the merge that brought `main`'s AGENTS.md restructure in)
 - Uncommitted changes: none — working tree clean, both branches pushed
+- Branch parity: not full — see the unchecked item above; run `git diff main cursor/work --stat` to re-check before claiming sync
