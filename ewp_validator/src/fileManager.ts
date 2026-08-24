@@ -13,6 +13,7 @@ import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
 import { LEGACY_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
+import type { SaveScope } from "./fileView";
 
 export interface LoadedFile {
   id: string;
@@ -276,6 +277,14 @@ export class FileManager {
     this.validationStatus = "none";
     this.editor.setModel(null);
     this.onChange();
+  }
+
+  /** The loaded files a given save scope writes — used to mark them saved after an export. */
+  filesForScope(scope: SaveScope): LoadedFile[] {
+    const active = this.activeFile;
+    if (scope === "all") return [...this.files];
+    if (scope === "file") return active ? [active] : [];
+    return active ? this.files.filter((f) => f.folder === active.folder) : [];
   }
 
   /** Mark the given files saved: protects ephemerals and clears their unsaved flag. */

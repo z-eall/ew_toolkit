@@ -24,7 +24,8 @@ import {
 import schemaJson from "./schema.generated.json";
 import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, formatProblemTag, presentSortedCategories, shouldShowTagSubline } from "./diagnosisCategories";
 import { INVALID_FILE_CATEGORY, checkFileName, classifyFileName } from "./fileNameCheck";
-import { pickHighestPriority, type Severity } from "./structuralPrecheck";
+import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
+import { fromDataTransfer, fromFileList, type Ingestable } from "./fileIngestion";
 import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
 import { showConfirmModal } from "./confirmModal";
 import "./style.css";
@@ -317,7 +318,6 @@ let visibleProblemFileIds: string[] = [];
 // The "info" tab is the blue data.yaml/custom-key/legacy-format hints; the
 // "thisfile" tab isolates every severity for the active file only.
 
-type ProblemTab = Severity | "thisfile";
 let activeTab: ProblemTab = "error";
 
 // The diagnostic-category vocabulary now lives in ./diagnosisCategories (shared
@@ -680,31 +680,11 @@ let focusedProblemKey: string | null = null;
 // a removal picking a "next" file) ends up correct, not just direct cursor
 // moves. Returns true if the key or tab actually changed.
 function syncFocusedProblem(): boolean {
-  const file = fileManager.activeFile;
   const line = editor.getPosition()?.lineNumber ?? 1;
-  let best: LoadedFile["problems"][number] | null = null;
-  if (file) {
-    const onLine = file.problems.filter((p) => {
-      const startLine = file.model.getPositionAt(p.range[0]).lineNumber;
-      const endLine = file.model.getPositionAt(Math.max(p.range[1], p.range[0])).lineNumber;
-      return line >= startLine && line <= endLine;
-    });
-    best = pickHighestPriority(onLine);
-  }
-  const key = best && file ? `${file.id}:${best.range[0]}` : null;
-  const keyChanged = key !== focusedProblemKey;
-  focusedProblemKey = key;
-  // Follow the caret onto the matching severity tab — but only when the caret
-  // actually moved to a different problem. Gating on keyChanged (rather than
-  // running on every render) keeps a manual tab click from being immediately
-  // overridden back to the cursor's severity on the re-render it triggers.
-  // Never yank the user off "This file" either, which shows every severity.
-  let tabChanged = false;
-  if (keyChanged && best && activeTab !== "thisfile" && activeTab !== best.severity) {
-    activeTab = best.severity;
-    tabChanged = true;
-  }
-  return keyChanged || tabChanged;
+  const result = computeFocusedProblem(fileManager.activeFile, line, activeTab, focusedProblemKey);
+  focusedProblemKey = result.key;
+  activeTab = result.activeTab;
+  return result.changed;
 }
 
 function renderTabs(counts: Record<ProblemTab, number>) {
@@ -1039,11 +1019,6 @@ document.addEventListener("click", (e) => {
 
 // ---------- Loading files: pickers, folders, and drag-and-drop ----------
 
-interface Ingestable {
-  file: File;
-  relPath: string;
-}
-
 // EWP only ever loads `.yaml` (`FileLoading.IsYaml` in EWP's C# source checks
 // `.EndsWith(".yaml", OrdinalIgnoreCase)` — no `.yml` support anywhere in its
 // source, confirmed by source-verification research, ticket 06 round 2).
@@ -1203,43 +1178,6 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
   currentSort = DEFAULT_UPLOAD_SORT;
   recomputeFileOrder();
   renderFileList();
-}
-
-function fromFileList(list: FileList): Ingestable[] {
-  return Array.from(list).map((file) => ({ file, relPath: file.webkitRelativePath || file.name }));
-}
-
-// Drag-and-drop can carry whole folders (and multiple at once); walk the entry
-// tree so dropped directories become the same folder structure as the picker.
-async function readAllDirEntries(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
-  // readEntries yields the directory in batches and signals the end with an
-  // empty batch, so keep calling until it drains.
-  const out: FileSystemEntry[] = [];
-  for (;;) {
-    const batch = await new Promise<FileSystemEntry[]>((res, rej) => reader.readEntries(res, rej));
-    if (batch.length === 0) return out;
-    out.push(...batch);
-  }
-}
-
-async function walkEntry(entry: FileSystemEntry, prefix: string, out: Ingestable[]): Promise<void> {
-  if (entry.isFile) {
-    const file = await new Promise<File>((res, rej) => (entry as FileSystemFileEntry).file(res, rej));
-    out.push({ file, relPath: prefix + entry.name });
-  } else if (entry.isDirectory) {
-    const children = await readAllDirEntries((entry as FileSystemDirectoryEntry).createReader());
-    for (const child of children) await walkEntry(child, `${prefix}${entry.name}/`, out);
-  }
-}
-
-async function fromDataTransfer(dt: DataTransfer): Promise<Ingestable[]> {
-  const entries = Array.from(dt.items)
-    .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null))
-    .filter((e): e is FileSystemEntry => e !== null);
-  if (entries.length === 0) return fromFileList(dt.files); // fallback for browsers without the entry API
-  const out: Ingestable[] = [];
-  for (const entry of entries) await walkEntry(entry, "", out);
-  return out;
 }
 
 const fileInput = document.getElementById("file-input") as HTMLInputElement;
@@ -1632,15 +1570,6 @@ function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url);
 }
 
-// The loaded files a given save scope writes, so they can be marked saved
-// (clears their unsaved flag; protects a typed draft from auto-removal).
-function savedByScope(scope: SaveScope): LoadedFile[] {
-  const active = fileManager.activeFile;
-  if (scope === "all") return [...fileManager.allFiles];
-  if (scope === "file") return active ? [active] : [];
-  return active ? fileManager.allFiles.filter((f) => f.folder === active.folder) : [];
-}
-
 // A zip build is the one Export path with real work to do (many files' worth
 // of byte encoding + CRC, plus a large "huge project" batch — thousands of
 // files across many folders — can push this from "a moment" to "seconds"); a
@@ -1690,7 +1619,7 @@ async function doSave(scope: SaveScope) {
     await sleep(1100);
     hideUploadBanner();
   }
-  fileManager.markSaved(savedByScope(scope).map((f) => f.id));
+  fileManager.markSaved(fileManager.filesForScope(scope).map((f) => f.id));
 }
 
 function renderSaveMenu() {

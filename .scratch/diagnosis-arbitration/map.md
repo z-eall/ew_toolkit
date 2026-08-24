@@ -52,7 +52,7 @@ have a documented place to add rows without overlapping existing layers.
 
 ## Not yet specified
 
-(none)
+(none — one open ticket: [Restore anti-duplication contract](issues/07-restore-anti-duplication-contract.md), already fully specified, awaiting execution)
 
 ## Out of scope
 
