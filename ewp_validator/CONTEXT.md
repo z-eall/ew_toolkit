@@ -14,6 +14,9 @@ _Avoid_: naming a future category "Invalid ___" unless it's a pure hard-error bu
 **Diagnosis arbitration**:
 The mechanism that picks one intent-specific diagnosis when several validation layers would otherwise all flag the same mistake — the message that best matches what the scripter probably meant — and suppresses the generic schema/YAML noise on that same range. Owned by a single catalog module (`shapeMismatchDiagnosis.ts` today, grows with future domains). See [CLAUDE.md](CLAUDE.md)'s Validation rule lifecycle for the procedure that builds and extends it.
 
+**Ajv fallback**:
+Diagnosis text for an ajv error on any instancePath [[Diagnosis arbitration]] didn't already claim — ajv's own message translated into scripter-readable wording. Runs *after* ajv, reacting to what it already flagged, where [[Diagnosis arbitration]] runs *before* ajv, proactively. Owned by `ajvMessages.ts`.
+
 **Detector**:
 A pure predicate function living in a domain module (`dataFieldValidation.ts`, `rpcValidation.ts`, etc.) that recognizes a specific mistake shape but carries no user-facing text itself — the "does this look wrong" half of [[Diagnosis arbitration]], kept separate from the message/severity decision.
 

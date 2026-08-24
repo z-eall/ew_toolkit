@@ -12,7 +12,7 @@ Every new or changed validation rule goes through this order:
 
 2. **Dedupe-check.** Before adding the rule, check whether an existing check already flags the same root cause from a different angle (grep `structuralPrecheck.ts`, `formatLint.ts`, `referenceValidation.ts`, `rpcValidation.ts`) — extend or suppress an existing check rather than double-diagnosing.
 
-3. **Architect the split.** Detectors are pure predicates in domain modules (`dataFieldValidation.ts`, `rpcValidation.ts`, …) — never carrying user-facing strings. Messages and `suppressAjvPath` arbitration live only in the catalog module (`shapeMismatchDiagnosis.ts` or a sibling re-exported through one `diagnoseShapeMismatches` entry point). `structuralPrecheck.ts` calls arbitration once per entry, before ajv runs.
+3. **Architect the split.** Detectors are pure predicates in domain modules (`dataFieldValidation.ts`, `rpcValidation.ts`, …) — never carrying user-facing strings. Messages live in one of two catalog modules: `shapeMismatchDiagnosis.ts` for pre-ajv shape arbitration (plus `suppressAjvPath`), `ajvMessages.ts` for post-ajv fallback text (see [[Ajv fallback]] in CONTEXT.md). `structuralPrecheck.ts` calls both and holds no diagnosis text of its own.
 
 4. **Respect the priority stack** when more than one check could fire on the same entry: parse → format lint → branch/intent guess → shape arbitration → domain validators (RPC, references) → ajv fallback. Highest wins and suppresses lower layers on the same path.
 
