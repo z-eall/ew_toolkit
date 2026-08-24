@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseDocument } from "yaml";
 import { isMap, isSeq } from "yaml";
 import { looksLikeTypedValueLine } from "./dataFieldValidation";
-import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, diagnoseShapeMismatches, rpcParamIssueMessage, scalarDataFieldTypeMessage, SHAPE_MISMATCH_RULE_IDS, WEC_NAME_TYPO_RULE_ID } from "./shapeMismatchDiagnosis";
+import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, diagnoseShapeMismatches, rpcParamIssueMessage, SHAPE_MISMATCH_RULE_IDS, WEC_NAME_TYPO_RULE_ID } from "./shapeMismatchDiagnosis";
 import { runStructuralPrecheck } from "./structuralPrecheck";
 import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 
@@ -147,15 +147,6 @@ describe("shape mismatch integration", () => {
     const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toBe("`drops:` must be a single string value, not a YAML list.");
-  });
-});
-
-describe("scalarDataFieldTypeMessage", () => {
-  it("provides clearer scalar-field type messages", () => {
-    expect(scalarDataFieldTypeMessage("data")).toContain("filters:");
-    expect(scalarDataFieldTypeMessage("filter")).toContain("filters:");
-    expect(scalarDataFieldTypeMessage("bannedFilter")).toContain("bannedFilters:");
-    expect(scalarDataFieldTypeMessage("unknown")).toBeNull();
   });
 });
 

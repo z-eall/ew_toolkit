@@ -50,7 +50,7 @@ in `main.ts` call into them instead of holding the logic inline;
 
 ## Not yet specified
 
-(none)
+(none — one open ticket: [Design the ingest() policy extraction](issues/03-design-ingest-policy-extraction.md), already fully specified, awaiting a grilling session)
 
 ## Out of scope
 

@@ -1,45 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
-import { fieldLabelFromInstancePath, formatAjvFallthroughMessage, guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
-
-describe("ajv field-native messages", () => {
-  it("labels top-level and nested instance paths without JSON Pointer syntax", () => {
-    expect(fieldLabelFromInstancePath("/name")).toBe("`name:`");
-    expect(fieldLabelFromInstancePath("/objects/0/data")).toBe("`data:` under `objects:`");
-    expect(fieldLabelFromInstancePath("/objects/0")).toBe("`objects:` entry");
-    expect(fieldLabelFromInstancePath("/types/0")).toBe("`types:` entry");
-  });
-
-  it("formats common ajv type and required fallthroughs", () => {
-    expect(
-      formatAjvFallthroughMessage({
-        keyword: "type",
-        instancePath: "/prefab",
-        message: "must be string",
-        params: { type: "string" },
-        schemaPath: "",
-      }),
-    ).toBe("`prefab:` must be text (a string).");
-    expect(
-      formatAjvFallthroughMessage({
-        keyword: "type",
-        instancePath: "/objects/0/data",
-        message: "must be string",
-        params: { type: "string" },
-        schemaPath: "",
-      }),
-    ).toBe("`data:` under `objects:` must be text (a string).");
-    expect(
-      formatAjvFallthroughMessage({
-        keyword: "required",
-        instancePath: "",
-        message: "must have required property 'values'",
-        params: { missingProperty: "values" },
-        schemaPath: "",
-      }),
-    ).toBe("`values:` is required.");
-  });
-});
+import { guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
 
 describe("guessBranch", () => {
   it("guesses valueGroup when valueGroup is present", () => {

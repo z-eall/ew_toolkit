@@ -9,16 +9,17 @@
 // messages and which ajv instancePaths to suppress.
 //
 // CALL SITE: structuralPrecheck calls `diagnoseEntryShapeIssues()` per list
-// item (before ajv), merges `suppressAjvPaths` with rpcSuppressPaths, and
-// uses scalarDataFieldTypeMessage() only as a fallback when no rule claimed
-// the path. WEC `data:`/`name:` typo uses `skipEntryAjv` so ajv never runs.
+// item (before ajv), merges `suppressAjvPaths` with rpcSuppressPaths. WEC
+// `data:`/`name:` typo uses `skipEntryAjv` so ajv never runs. Ajv-fallback
+// text (fired only when no rule here claimed the path) lives in
+// ajvMessages.ts, a separate catalog module — see diagnosis-arbitration
+// ticket 08.
 //
 // See `.scratch/diagnosis-arbitration/map.md` for the full arbitration stack
 // and rules against duplication with RPC / legacy / format-lint layers.
 
 import { isMap, isSeq, type YAMLMap } from "yaml";
 import {
-  isScalarDataValueField,
   looksLikeTypedValueLine,
   NESTED_LEGACY_FILTER_DATA_FIELD,
   NESTED_SCALAR_REF_FIELDS,
@@ -452,28 +453,6 @@ export function diagnoseRpcOrphanListItems(
   }
 
   return { diagnoses, suppressAjvPaths, skipRpcParamCheck };
-}
-
-/**
- * Ajv fallback for a scalar data/filter field given a non-string, non-list
- * value (number, boolean, mapping) — the list-shaped case is already owned
- * by {@link diagnoseScalarFieldAsList} above and suppresses ajv before this
- * ever runs. Called from structuralPrecheck.ts only when no catalog rule
- * claimed the path.
- */
-export function scalarDataFieldTypeMessage(field: string): string | null {
-  if (!isScalarDataValueField(field)) return null;
-  if (field === "data") {
-    return (
-      "`data:` must be a single value (`entryName` or `type, key, value`). " +
-      "For multiple typed lines use `filters:`, or reference a `data.yaml` entry."
-    );
-  }
-  if (field === "filter" || field === "bannedFilter") {
-    const plural = field === "filter" ? "filters" : "bannedFilters";
-    return `\`${field}:\` must be a single value (\`entryName\` or \`type, key, value\`). For multiple lines use \`${plural}:\`.`;
-  }
-  return `\`${field}:\` must be a single string value.`;
 }
 
 function describeActualType(kind: RpcActualType | undefined): string {

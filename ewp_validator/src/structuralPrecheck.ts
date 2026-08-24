@@ -8,7 +8,14 @@
 // prototype/oneof-union-error-quality branch.
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
-import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage, scalarDataFieldTypeMessage } from "./shapeMismatchDiagnosis";
+import {
+  commentedOutListMessage,
+  formatAjvFallthroughMessage,
+  scalarDataFieldTypeMessage,
+  typeValueEnumMessage,
+  unknownKeyMessage,
+} from "./ajvMessages";
+import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage } from "./shapeMismatchDiagnosis";
 import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
@@ -162,77 +169,6 @@ const KNOWN_TYPES_LIST = [...KNOWN_TYPES].join(", ");
 function isTypeValuePath(instancePath: string): boolean {
   const head = instancePath.split("/").filter(Boolean)[0];
   return head === "type" || head === "types";
-}
-
-const ARRAY_INDEX_SEGMENT = /^\d+$/;
-
-/** EWP-native field label from an ajv JSON Pointer — no leading `/`. */
-export function fieldLabelFromInstancePath(instancePath: string): string {
-  const segments = instancePath.split("/").filter(Boolean);
-  if (segments.length === 0) return "This entry";
-
-  if (ARRAY_INDEX_SEGMENT.test(segments[segments.length - 1]!)) {
-    const parent = segments[segments.length - 2];
-    return parent ? `\`${parent}:\` entry` : "This entry";
-  }
-
-  const field = segments[segments.length - 1]!;
-  const fieldLabel = `\`${field}:\``;
-
-  if (
-    segments.length >= 3 &&
-    ARRAY_INDEX_SEGMENT.test(segments[segments.length - 2]!) &&
-    !ARRAY_INDEX_SEGMENT.test(segments[segments.length - 3]!)
-  ) {
-    const parent = segments[segments.length - 3]!;
-    return `${fieldLabel} under \`${parent}:\``;
-  }
-
-  return fieldLabel;
-}
-
-/** Replace ajv's JSON-Pointer-prefixed fallthrough with field-native wording (ticket 14). */
-export function formatAjvFallthroughMessage(error: ErrorObject): string {
-  if (error.keyword === "required") {
-    const missing = (error.params as { missingProperty?: string }).missingProperty;
-    if (missing) return `\`${missing}:\` is required.`;
-    return "A required field is missing.";
-  }
-
-  const label = fieldLabelFromInstancePath(error.instancePath);
-
-  if (error.keyword === "type") {
-    const expected = (error.params as { type?: string }).type;
-    switch (expected) {
-      case "string":
-        return `${label} must be text (a string).`;
-      case "number":
-        return `${label} must be a number.`;
-      case "array":
-        return `${label} must be a YAML list.`;
-      case "object":
-        return `${label} must be \`key: value\` pairs, not a single value.`;
-      case "boolean":
-        return `${label} must be true or false.`;
-      default:
-        return `${label} has the wrong type.`;
-    }
-  }
-
-  if (error.keyword === "oneOf" || error.keyword === "anyOf") {
-    return `${label} has an invalid shape.`;
-  }
-
-  const raw = error.message ?? "is invalid";
-  const simplified: Record<string, string> = {
-    "must be string": "must be text (a string)",
-    "must be array": "must be a YAML list",
-    "must be object": "must be `key: value` pairs, not a single value",
-    "must be number": "must be a number",
-    "must be boolean": "must be true or false",
-  };
-  const tail = simplified[raw] ?? raw;
-  return `${label} ${tail}${tail.endsWith(".") ? "" : "."}`;
 }
 
 // Undocumented/legacy constructs on an EWP rule entry that are live-tested to
@@ -619,7 +555,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
           if (commentRange) {
             problems.push({
               severity: "warning",
-              message: `\`${field[0]}:\` has no entries — all its items are commented out. Uncomment it, or remove the empty \`${field[0]}:\`.`,
+              message: commentedOutListMessage(field[0]!),
               branch: STRUCTURE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES[branch],
               range: commentRange,
@@ -643,10 +579,10 @@ export function runStructuralPrecheck(text: string): Problem[] {
         let message: string;
         if (error.keyword === "pattern" && isTypeValuePath(error.instancePath)) {
           kind = VALUE_PROBLEM_CATEGORY;
-          message = `${fieldLabelFromInstancePath(error.instancePath)} must be one of: ${KNOWN_TYPES_LIST} (any case), optionally followed by ", param1 param2".`;
+          message = typeValueEnumMessage(error.instancePath, KNOWN_TYPES_LIST);
         } else if (error.params && "additionalProperty" in error.params) {
           kind = STRUCTURE_PROBLEM_CATEGORY;
-          message = `'${(error.params as { additionalProperty: string }).additionalProperty}' is not a valid key in a ${ENTRY_TYPE_TITLES[branch]}.`;
+          message = unknownKeyMessage((error.params as { additionalProperty: string }).additionalProperty, ENTRY_TYPE_TITLES[branch]);
         } else {
           kind = error.keyword === "required" ? STRUCTURE_PROBLEM_CATEGORY : VALUE_PROBLEM_CATEGORY;
           message = formatAjvFallthroughMessage(error);
