@@ -20,11 +20,28 @@ export const VARIADIC_RPCS = new Set(["DestroyZDO", "LocationIcons"]);
 
 export type RpcIssueKind = "extra" | "not-a-string" | "type-mismatch" | "missing" | "unrecognized-key";
 
+/** Coarse JS type tag for a wrongly-typed RPC param value — shapeMismatchDiagnosis.ts phrases it. */
+export type RpcActualType = "boolean" | "number" | "list" | "mapping" | "other";
+
+/** Where an unrecognized RPC-entry key actually belongs, if it's a known field elsewhere. */
+export type RpcKeyOwner = "rule-entry" | "spawn-data" | "both" | null;
+
 export interface RpcParamIssue {
   /** The numbered key (e.g. "4") the issue is about — used to locate its range in the source. */
   key: string;
   kind: RpcIssueKind;
-  message: string;
+  /** "extra": how many parameters the RPC documents. */
+  docParamCount?: number;
+  /** "not-a-string" | "type-mismatch" | "missing": the documented param this issue is about. */
+  docParam?: RpcParamDoc;
+  /** "not-a-string": coarse type of the value actually given. */
+  actualType?: RpcActualType;
+  /** "type-mismatch": the type prefix actually written. */
+  declaredType?: string;
+  /** "type-mismatch": true when declaredType differs from the documented type only in case. */
+  caseOnlyMismatch?: boolean;
+  /** "unrecognized-key": where the key belongs instead, if known. */
+  belongsTo?: RpcKeyOwner;
 }
 
 /** EWP runtime treats these declared type prefixes as interchangeable (RpcInfo.cs + Parse.Enum*). */
@@ -37,12 +54,12 @@ function rpcTypesCompatible(declared: string, documented: string): boolean {
   return false;
 }
 
-function describeJsType(v: unknown): string {
-  if (typeof v === "boolean") return "a boolean";
-  if (typeof v === "number") return "a number";
-  if (Array.isArray(v)) return "a list";
-  if (v && typeof v === "object") return "a mapping";
-  return "a different value";
+function describeJsType(v: unknown): RpcActualType {
+  if (typeof v === "boolean") return "boolean";
+  if (typeof v === "number") return "number";
+  if (Array.isArray(v)) return "list";
+  if (v && typeof v === "object") return "mapping";
+  return "other";
 }
 
 /**
@@ -70,23 +87,12 @@ export function checkRpcParams(
 
     if (!docParam) {
       if (variadic && index > doc.length) continue;
-      const countDesc = doc.length === 0 ? "no parameters" : `${doc.length} parameter${doc.length === 1 ? "" : "s"}`;
-      issues.push({
-        key,
-        kind: "extra",
-        message: `RPC '${rpcName}' doesn't document a parameter '${key}' (it defines ${countDesc}) — this still works, but worth double-checking it's intentional.`,
-      });
+      issues.push({ key, kind: "extra", docParamCount: doc.length });
       continue;
     }
 
     if (typeof raw !== "string") {
-      issues.push({
-        key,
-        kind: "not-a-string",
-        message:
-          `RPC '${rpcName}' parameter '${key}' should be written as "${docParam.type}, <value>" (a string), ` +
-          `got ${describeJsType(raw)} instead. This may still work, but is worth writing out explicitly.`,
-      });
+      issues.push({ key, kind: "not-a-string", docParam, actualType: describeJsType(raw) });
       continue;
     }
 
@@ -96,19 +102,9 @@ export function checkRpcParams(
         declaredType.toLowerCase() === docParam.type.toLowerCase() &&
         declaredType !== docParam.type
       ) {
-        issues.push({
-          key,
-          kind: "type-mismatch",
-          message:
-            `RPC '${rpcName}' parameter '${key}' uses type prefix '${declaredType}', but EWP matches types ` +
-            `case-sensitively — use '${docParam.type}' (${docParam.desc}).`,
-        });
+        issues.push({ key, kind: "type-mismatch", docParam, declaredType, caseOnlyMismatch: true });
       } else if (!rpcTypesCompatible(declaredType, docParam.type)) {
-        issues.push({
-          key,
-          kind: "type-mismatch",
-          message: `RPC '${rpcName}' parameter '${key}' is declared as '${declaredType}', but the documented type is '${docParam.type}' (${docParam.desc}).`,
-        });
+        issues.push({ key, kind: "type-mismatch", docParam, declaredType, caseOnlyMismatch: false });
       }
     }
   }
@@ -116,13 +112,7 @@ export function checkRpcParams(
   for (let i = 0; i < doc.length; i++) {
     const key = String(i + 1);
     if (key in entry) continue;
-    issues.push({
-      key,
-      kind: "missing",
-      message:
-        `RPC '${rpcName}' is missing documented parameter '${key}' (${doc[i]!.type}: ${doc[i]!.desc}) — ` +
-        `EWP will still send the RPC with fewer args, but this is worth checking.`,
-    });
+    issues.push({ key, kind: "missing", docParam: doc[i]! });
   }
 
   return issues;
@@ -144,27 +134,6 @@ const RPC_ENTRY_KNOWN_KEYS = new Set(
 const RULE_ENTRY_FIELDS = new Set(Object.keys((schemaJson as any).definitions.ewpRuleEntry.properties));
 const SPAWN_DATA_FIELDS = new Set(Object.keys((schemaJson as any).definitions.spawnData.properties));
 
-function unrecognizedRpcKeyMessage(key: string): string {
-  const onRuleEntry = RULE_ENTRY_FIELDS.has(key);
-  const onSpawnData = SPAWN_DATA_FIELDS.has(key);
-  if (onRuleEntry || onSpawnData) {
-    const where =
-      onRuleEntry && onSpawnData
-        ? "the rule entry itself or a spawn:/swap: entry"
-        : onRuleEntry
-          ? "the rule entry itself"
-          : "a spawn:/swap: entry";
-    return (
-      `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
-      `correctly (it's a field on ${where}, not on an objectRpc:/clientRpc: entry). Move it there, or remove it.`
-    );
-  }
-  return (
-    `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
-    `correctly. If this is meant as a numbered call parameter, use "1", "2", etc. instead.`
-  );
-}
-
 /**
  * Flags a non-numeric RPC entry key that isn't one of the known RPC fields
  * (name/target/chance/…) — distinct from {@link checkRpcParams}, which only
@@ -176,7 +145,10 @@ export function checkRpcUnrecognizedKeys(entry: Record<string, unknown>): RpcPar
   for (const key of Object.keys(entry)) {
     if (/^[1-9][0-9]*$/.test(key)) continue;
     if (RPC_ENTRY_KNOWN_KEYS.has(key)) continue;
-    issues.push({ key, kind: "unrecognized-key", message: unrecognizedRpcKeyMessage(key) });
+    const onRuleEntry = RULE_ENTRY_FIELDS.has(key);
+    const onSpawnData = SPAWN_DATA_FIELDS.has(key);
+    const belongsTo: RpcKeyOwner = onRuleEntry && onSpawnData ? "both" : onRuleEntry ? "rule-entry" : onSpawnData ? "spawn-data" : null;
+    issues.push({ key, kind: "unrecognized-key", belongsTo });
   }
   return issues;
 }

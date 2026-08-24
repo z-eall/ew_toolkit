@@ -1,7 +1,7 @@
 # Restore anti-duplication contract: strip messages out of dataFieldValidation.ts and rpcValidation.ts
 
 Type: task
-Status: open
+Status: resolved
 
 ## Question
 
@@ -32,4 +32,12 @@ Source: 2026-08-24 `/improve-codebase-architecture` review (HTML report was writ
 
 ## Answer
 
-(unresolved)
+Done 2026-08-24. Detectors now return typed results only; `shapeMismatchDiagnosis.ts` is the sole owner of all diagnosis text.
+
+- `dataFieldValidation.ts`: removed `scalarDataFieldTypeMessage()`. Kept only `isScalarDataValueField()`, a pure predicate over the same field set.
+- `rpcValidation.ts`: `checkRpcParams()` and `checkRpcUnrecognizedKeys()` return `RpcParamIssue` without a `message` field — instead `docParam`, `actualType`, `declaredType`, `caseOnlyMismatch`, `docParamCount`, `belongsTo`, enough for the catalog to phrase the text. `describeJsType()` now returns a coarse tag (`"boolean"`/`"number"`/`"list"`/`"mapping"`/`"other"`), not a phrase.
+- `shapeMismatchDiagnosis.ts` gained `scalarDataFieldTypeMessage(field)` (the moved ajv-fallback for non-list bad-type values — list-shaped values are already owned by `diagnoseScalarFieldAsList`) and `rpcParamIssueMessage(rpcName, issue)` (phrases every `RpcParamIssue` kind, including the unrecognized-key text).
+- `structuralPrecheck.ts` now imports both message functions from `shapeMismatchDiagnosis.ts` instead of the domain modules, and calls `rpcParamIssueMessage()` at both RPC call sites.
+- Collapsed the duplicate: `diagnoseScalarFieldAsList()`'s generic list-shape fallback used to say "the plural `bannedFilters:` list field" for every field, including `drops`/`addItems`/`removeItems`, which have no plural sibling — that branch now only fires for `filter`/`bannedFilter` (their real plural) and `data`, with `drops`/`addItems`/`removeItems` getting their own message (matching what `scalarDataFieldTypeMessage` said for the same case, which is now dead for list-shaped values since `diagnoseScalarFieldAsList` already suppresses ajv on that path).
+
+Tests: moved the `.message`-content assertions for `scalarDataFieldTypeMessage`/RPC issues out of `dataFieldValidation.test.ts`/`rpcValidation.test.ts` (which now assert only `kind`/typed fields) into `shapeMismatchDiagnosis.test.ts`, plus a new regression test for the `drops:` list-shape message. 304/304 pass, `tsc --noEmit` clean, `vite build` succeeds.

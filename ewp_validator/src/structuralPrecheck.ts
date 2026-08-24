@@ -8,8 +8,7 @@
 // prototype/oneof-union-error-quality branch.
 import Ajv, { type ErrorObject } from "ajv";
 import { isMap, isSeq, parseDocument, type Pair, type YAMLMap } from "yaml";
-import { scalarDataFieldTypeMessage } from "./dataFieldValidation";
-import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems } from "./shapeMismatchDiagnosis";
+import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage, scalarDataFieldTypeMessage } from "./shapeMismatchDiagnosis";
 import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
@@ -543,7 +542,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
           for (const issue of checkRpcParams(table, entryValue.name, entryValue)) {
             problems.push({
               severity: "warning",
-              message: issue.message,
+              message: rpcParamIssueMessage(entryValue.name, issue),
               branch: VALUE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
               range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
@@ -561,7 +560,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
           for (const issue of checkRpcUnrecognizedKeys(entryValue)) {
             problems.push({
               severity: "warning",
-              message: issue.message,
+              message: rpcParamIssueMessage(entryValue.name, issue),
               branch: STRUCTURE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
               range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,

@@ -18,6 +18,7 @@
 
 import { isMap, isSeq, type YAMLMap } from "yaml";
 import {
+  isScalarDataValueField,
   looksLikeTypedValueLine,
   NESTED_LEGACY_FILTER_DATA_FIELD,
   NESTED_SCALAR_REF_FIELDS,
@@ -26,6 +27,7 @@ import {
   TOP_LEVEL_SCALAR_REF_FIELDS,
 } from "./dataFieldValidation";
 import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import type { RpcActualType, RpcKeyOwner, RpcParamIssue } from "./rpcValidation";
 import { findPairRange, getPairValueNode, nodeRange, type Severity } from "./structuralPrecheck";
 
 export interface ShapeMismatchDiagnosis {
@@ -197,12 +199,18 @@ function diagnoseScalarFieldAsList(
     message = messageScalarFieldAsEntryNameList(field, lines);
   } else if (isMalformedTypedLineList(field, lines)) {
     message = messageMalformedTypedLineList(field, lines);
-  } else {
+  } else if (field === "filter" || field === "bannedFilter") {
+    const plural = field === "filter" ? "filters" : "bannedFilters";
     message =
       `Invalid \`${field}:\` format — \`${field}:\` must be a single string, not a YAML list. ` +
-      (field === "data"
-        ? "Use one full `type, key, value` triple, one entry name, or move complete typed lines to `filters:`."
-        : `Use one value on the same line, or the plural \`${field === "filter" ? "filters" : "bannedFilters"}:\` list field.`);
+      `Use one value on the same line, or the plural \`${plural}:\` list field.`;
+  } else if (field === "data") {
+    message =
+      "Invalid `data:` format — `data:` must be a single string, not a YAML list. " +
+      "Use one full `type, key, value` triple, one entry name, or move complete typed lines to `filters:`.";
+  } else {
+    // drops/addItems/removeItems: no plural sibling list field to point at.
+    message = `\`${field}:\` must be a single string value, not a YAML list.`;
   }
 
   return {
@@ -444,6 +452,89 @@ export function diagnoseRpcOrphanListItems(
   }
 
   return { diagnoses, suppressAjvPaths, skipRpcParamCheck };
+}
+
+/**
+ * Ajv fallback for a scalar data/filter field given a non-string, non-list
+ * value (number, boolean, mapping) — the list-shaped case is already owned
+ * by {@link diagnoseScalarFieldAsList} above and suppresses ajv before this
+ * ever runs. Called from structuralPrecheck.ts only when no catalog rule
+ * claimed the path.
+ */
+export function scalarDataFieldTypeMessage(field: string): string | null {
+  if (!isScalarDataValueField(field)) return null;
+  if (field === "data") {
+    return (
+      "`data:` must be a single value (`entryName` or `type, key, value`). " +
+      "For multiple typed lines use `filters:`, or reference a `data.yaml` entry."
+    );
+  }
+  if (field === "filter" || field === "bannedFilter") {
+    const plural = field === "filter" ? "filters" : "bannedFilters";
+    return `\`${field}:\` must be a single value (\`entryName\` or \`type, key, value\`). For multiple lines use \`${plural}:\`.`;
+  }
+  return `\`${field}:\` must be a single string value.`;
+}
+
+function describeActualType(kind: RpcActualType | undefined): string {
+  switch (kind) {
+    case "boolean":
+      return "a boolean";
+    case "number":
+      return "a number";
+    case "list":
+      return "a list";
+    case "mapping":
+      return "a mapping";
+    default:
+      return "a different value";
+  }
+}
+
+function unrecognizedRpcKeyMessage(key: string, belongsTo: RpcKeyOwner): string {
+  if (belongsTo) {
+    const where =
+      belongsTo === "both"
+        ? "the rule entry itself or a spawn:/swap: entry"
+        : belongsTo === "rule-entry"
+          ? "the rule entry itself"
+          : "a spawn:/swap: entry";
+    return (
+      `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+      `correctly (it's a field on ${where}, not on an objectRpc:/clientRpc: entry). Move it there, or remove it.`
+    );
+  }
+  return (
+    `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+    `correctly. If this is meant as a numbered call parameter, use "1", "2", etc. instead.`
+  );
+}
+
+/** Phrases one {@link checkRpcParams}/{@link checkRpcUnrecognizedKeys} detector result. */
+export function rpcParamIssueMessage(rpcName: string, issue: RpcParamIssue): string {
+  switch (issue.kind) {
+    case "extra": {
+      const count = issue.docParamCount ?? 0;
+      const countDesc = count === 0 ? "no parameters" : `${count} parameter${count === 1 ? "" : "s"}`;
+      return `RPC '${rpcName}' doesn't document a parameter '${issue.key}' (it defines ${countDesc}) — this still works, but worth double-checking it's intentional.`;
+    }
+    case "not-a-string":
+      return (
+        `RPC '${rpcName}' parameter '${issue.key}' should be written as "${issue.docParam!.type}, <value>" (a string), ` +
+        `got ${describeActualType(issue.actualType)} instead. This may still work, but is worth writing out explicitly.`
+      );
+    case "type-mismatch":
+      return issue.caseOnlyMismatch
+        ? `RPC '${rpcName}' parameter '${issue.key}' uses type prefix '${issue.declaredType}', but EWP matches types case-sensitively — use '${issue.docParam!.type}' (${issue.docParam!.desc}).`
+        : `RPC '${rpcName}' parameter '${issue.key}' is declared as '${issue.declaredType}', but the documented type is '${issue.docParam!.type}' (${issue.docParam!.desc}).`;
+    case "missing":
+      return (
+        `RPC '${rpcName}' is missing documented parameter '${issue.key}' (${issue.docParam!.type}: ${issue.docParam!.desc}) — ` +
+        `EWP will still send the RPC with fewer args, but this is worth checking.`
+      );
+    case "unrecognized-key":
+      return unrecognizedRpcKeyMessage(issue.key, issue.belongsTo ?? null);
+  }
 }
 
 /** Exported for tests and future catalog rows. */

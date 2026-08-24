@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseDocument } from "yaml";
 import { isMap, isSeq } from "yaml";
 import { looksLikeTypedValueLine } from "./dataFieldValidation";
-import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, diagnoseShapeMismatches, SHAPE_MISMATCH_RULE_IDS, WEC_NAME_TYPO_RULE_ID } from "./shapeMismatchDiagnosis";
+import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, diagnoseShapeMismatches, rpcParamIssueMessage, scalarDataFieldTypeMessage, SHAPE_MISMATCH_RULE_IDS, WEC_NAME_TYPO_RULE_ID } from "./shapeMismatchDiagnosis";
 import { runStructuralPrecheck } from "./structuralPrecheck";
 import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 
@@ -139,5 +139,68 @@ describe("shape mismatch integration", () => {
     expect(problems[0].branch).toBe(VALUE_PROBLEM_CATEGORY);
     expect(problems[0].message).toContain("data: int, isCustom, 1");
     expect(problems[0].message).not.toContain("must be string");
+  });
+
+  it("gives drops: as a YAML list its own message, not the filter/bannedFilter plural text", () => {
+    const yaml = "- prefab: Player\n  type: create\n  drops:\n  - a\n  - b\n";
+    const { itemNode, value } = firstEwpEntry(yaml);
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    expect(diagnoses).toHaveLength(1);
+    expect(diagnoses[0].message).toBe("`drops:` must be a single string value, not a YAML list.");
+  });
+});
+
+describe("scalarDataFieldTypeMessage", () => {
+  it("provides clearer scalar-field type messages", () => {
+    expect(scalarDataFieldTypeMessage("data")).toContain("filters:");
+    expect(scalarDataFieldTypeMessage("filter")).toContain("filters:");
+    expect(scalarDataFieldTypeMessage("bannedFilter")).toContain("bannedFilters:");
+    expect(scalarDataFieldTypeMessage("unknown")).toBeNull();
+  });
+});
+
+describe("rpcParamIssueMessage", () => {
+  it("phrases a not-a-string issue with the actual type", () => {
+    const msg = rpcParamIssueMessage("Message", {
+      key: "3",
+      kind: "not-a-string",
+      docParam: { type: "int", desc: "count" },
+      actualType: "boolean",
+    });
+    expect(msg).toContain("should be written as");
+    expect(msg).toContain("a boolean");
+  });
+
+  it("phrases a case-only type mismatch distinctly from an incompatible one", () => {
+    const caseOnly = rpcParamIssueMessage("RPC_SetPose", {
+      key: "1",
+      kind: "type-mismatch",
+      docParam: { type: "int", desc: "pose id" },
+      declaredType: "Int",
+      caseOnlyMismatch: true,
+    });
+    expect(caseOnly).toContain("case-sensitively");
+
+    const incompatible = rpcParamIssueMessage("Message", {
+      key: "1",
+      kind: "type-mismatch",
+      docParam: { type: "enum_message", desc: "kind" },
+      declaredType: "string",
+      caseOnlyMismatch: false,
+    });
+    expect(incompatible).not.toContain("case-sensitively");
+    expect(incompatible).toContain("documented type is");
+  });
+
+  it("names the rule entry, both, or neither for an unrecognized RPC key", () => {
+    expect(rpcParamIssueMessage("RPC_Damage", { key: "remove", kind: "unrecognized-key", belongsTo: "rule-entry" })).toContain(
+      "rule entry itself",
+    );
+    expect(
+      rpcParamIssueMessage("RPC_Damage", { key: "triggerRules", kind: "unrecognized-key", belongsTo: "both" }),
+    ).toContain("rule entry itself or a spawn:/swap: entry");
+    expect(
+      rpcParamIssueMessage("RPC_Damage", { key: "totallyMadeUp", kind: "unrecognized-key", belongsTo: null }),
+    ).toContain("numbered call parameter");
   });
 });

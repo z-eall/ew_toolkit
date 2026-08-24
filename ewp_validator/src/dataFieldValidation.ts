@@ -37,6 +37,11 @@ const SCALAR_DATA_VALUE_FIELDS = new Set<string>([
   NESTED_LEGACY_FILTER_DATA_FIELD,
 ]);
 
+/** True when `field` is one of the scalar data/filter fields shapeMismatchDiagnosis.ts arbitrates. */
+export function isScalarDataValueField(field: string): boolean {
+  return SCALAR_DATA_VALUE_FIELDS.has(field);
+}
+
 export function normalizeDataReferenceValue(raw: unknown): string | null {
   if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
   if (typeof raw !== "string") return null;
@@ -165,25 +170,6 @@ export function collectRuleEntryDataReferences(
   }
 
   return { usages, legacyNotices };
-}
-
-/** Clearer ajv substitute when a scalar data/filter field receives a YAML list. */
-export function scalarDataFieldTypeMessage(field: string): string | null {
-  if (!SCALAR_DATA_VALUE_FIELDS.has(field)) return null;
-  if (field === "data") {
-    return (
-      "`data:` must be a single value (`entryName` or `type, key, value`). " +
-      "For multiple typed lines use `filters:`, or reference a `data.yaml` entry."
-    );
-  }
-  if (field === "filter" || field === "bannedFilter") {
-    const plural = field === "filter" ? "filters" : "bannedFilters";
-    return `\`${field}:\` must be a single value (\`entryName\` or \`type, key, value\`). For multiple lines use \`${plural}:\`.`;
-  }
-  if (field === "drops" || field === "addItems" || field === "removeItems") {
-    return `\`${field}:\` must be a single string value, not a YAML list.`;
-  }
-  return `\`${field}:\` must be a single string value.`;
 }
 
 function hasLiteralAnchor(key: string): boolean {
