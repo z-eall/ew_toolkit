@@ -1,7 +1,7 @@
 # Design the ingest() policy extraction
 
 Type: grilling
-Status: open
+Status: resolved
 
 ## Question
 
@@ -42,4 +42,10 @@ written to the OS temp dir, not repo-tracked) — Finding 1, rated Strong.
 
 ## Answer
 
-(unresolved)
+Grilled 2026-08-24, 1 round:
+
+1. **Two small pure predicates, not one combined action tree.** The review's working hypothesis (`decideIngestAction(existingFiles, incomingFiles, mode) → action` called once up front) doesn't fit: `ingest()`'s invalid-filename gate must resolve before file content is read, and the duplicate check only runs on files that survived that gate — content-reading and two sequential `await showConfirmModal(...)` calls sit *between* the two decisions. One synchronous decide-everything call can't sit before that interleaved I/O without changing behavior.
+2. **Folded into `fileIngestion.ts`**, not a new `ingestPolicy.ts` — two small functions, same domain as its existing pure helpers, no shared state to justify a separate module.
+3. **`applyValidationMode`/validate-button left out of scope** — smaller, differently-shaped decisions; deferred to a follow-up ticket if they turn out to need one.
+
+Built as designed: `fileIngestion.ts` gained `classifyUploadEntries()` (wraps the `classifyFileName` filter) and `findDuplicateFiles()` (wraps the `fileManager.exists` filter) plus a `PreparedFile` type. `main.ts`'s `ingest()` calls both instead of inlining the filters; it still owns the sequencing and both confirm modals (real DOM interaction, not policy to hide). 311/311 tests pass (4 new), `tsc --noEmit` clean, `vite build` succeeds.

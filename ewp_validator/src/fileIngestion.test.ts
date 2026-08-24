@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromDataTransfer, fromFileList } from "./fileIngestion";
+import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList } from "./fileIngestion";
 
 // Hand-written fakes covering just the File/DataTransfer/FileSystemEntry
 // surface these functions actually read — the project's vitest config runs
@@ -93,5 +93,37 @@ describe("fromDataTransfer", () => {
       ]),
     );
     expect(result).toHaveLength(2);
+  });
+});
+
+describe("classifyUploadEntries", () => {
+  it("flags entries whose filename doesn't match an EWP structural pattern", () => {
+    const entries = [
+      { file: fakeFile("expand_prefabs_foo.yaml"), relPath: "expand_prefabs_foo.yaml" },
+      { file: fakeFile("notes.yaml"), relPath: "notes.yaml" },
+    ];
+    const { invalid } = classifyUploadEntries(entries);
+    expect(invalid).toEqual([expect.objectContaining({ relPath: "notes.yaml" })]);
+  });
+
+  it("flags nothing when every entry matches", () => {
+    const entries = [{ file: fakeFile("expand_prefabs_foo.yaml"), relPath: "expand_prefabs_foo.yaml" }];
+    expect(classifyUploadEntries(entries).invalid).toEqual([]);
+  });
+});
+
+describe("findDuplicateFiles", () => {
+  it("returns only the prepared files the exists callback reports as already loaded", () => {
+    const prepared = [
+      { name: "a.yaml", content: "", folder: "" },
+      { name: "b.yaml", content: "", folder: "sub" },
+    ];
+    const exists = (name: string, folder: string) => name === "a.yaml" && folder === "";
+    expect(findDuplicateFiles(prepared, exists)).toEqual([{ name: "a.yaml", content: "", folder: "" }]);
+  });
+
+  it("returns an empty list when nothing exists yet", () => {
+    const prepared = [{ name: "a.yaml", content: "", folder: "" }];
+    expect(findDuplicateFiles(prepared, () => false)).toEqual([]);
   });
 });

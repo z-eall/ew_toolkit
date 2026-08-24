@@ -1,6 +1,38 @@
+import { classifyFileName } from "./fileNameCheck";
+
 export interface Ingestable {
   file: File;
   relPath: string;
+}
+
+export interface PreparedFile {
+  name: string;
+  content: string;
+  folder: string;
+}
+
+/**
+ * Splits YAML-named uploads into ones `classifyFileName` flags as an invalid
+ * EWP structural filename vs. the rest. The scripter's own choice (skip/
+ * proceed/cancel, via the upload's 3-way confirm modal) decides what happens
+ * to `invalid` — this only classifies, it doesn't gate. See
+ * validator-main-orchestration ticket 03.
+ */
+export function classifyUploadEntries(entries: Ingestable[]): { invalid: Ingestable[] } {
+  return { invalid: entries.filter((e) => classifyFileName(e.file.name) === "invalid") };
+}
+
+/**
+ * Which of `prepared`'s files already exist, per `exists` (typically
+ * `fileManager.exists`) — the scripter's own choice (overwrite/cancel, via
+ * the upload's duplicate confirm modal) decides what happens next. See
+ * validator-main-orchestration ticket 03.
+ */
+export function findDuplicateFiles(
+  prepared: PreparedFile[],
+  exists: (name: string, folder: string) => boolean,
+): PreparedFile[] {
+  return prepared.filter((p) => exists(p.name, p.folder));
 }
 
 export function fromFileList(list: FileList): Ingestable[] {

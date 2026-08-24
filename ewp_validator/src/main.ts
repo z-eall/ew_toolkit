@@ -23,9 +23,9 @@ import {
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
 import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, formatProblemTag, presentSortedCategories, shouldShowTagSubline } from "./diagnosisCategories";
-import { INVALID_FILE_CATEGORY, checkFileName, classifyFileName } from "./fileNameCheck";
+import { INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
 import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
-import { fromDataTransfer, fromFileList, type Ingestable } from "./fileIngestion";
+import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList, type Ingestable, type PreparedFile } from "./fileIngestion";
 import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
 import { showConfirmModal } from "./confirmModal";
 import "./style.css";
@@ -1097,7 +1097,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
   // rule as a known-imperfect heuristic, not a source-verified match for
   // EWP's real (folder-based) rule, so a silent hard reject could drop a
   // legitimate file with no recourse. Confirm keeps that recourse.
-  const invalid = yamls.filter((e) => classifyFileName(e.file.name) === "invalid");
+  const { invalid } = classifyUploadEntries(yamls);
   let toIngest = yamls;
   if (invalid.length > 0) {
     const names = invalid.map((e) => e.file.name);
@@ -1131,7 +1131,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
   const total = toIngest.length;
 
   showUploadBanner(`Loaded 0 of ${plural(total, "file")}`);
-  const prepared: { name: string; content: string; folder: string }[] = [];
+  const prepared: PreparedFile[] = [];
   for (const { file, relPath } of toIngest) {
     prepared.push({
       name: file.name,
@@ -1143,7 +1143,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
     showUploadBanner(`Loaded ${prepared.length} of ${plural(total, "file")}`);
   }
 
-  const dups = prepared.filter((p) => fileManager.exists(p.name, p.folder));
+  const dups = findDuplicateFiles(prepared, (name, folder) => fileManager.exists(name, folder));
   if (dups.length > 0) {
     const names = dups.map((d) => (d.folder ? `${d.folder}/${d.name}` : d.name));
     const choice = await showConfirmModal({

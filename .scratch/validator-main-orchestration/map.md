@@ -47,10 +47,11 @@ in `main.ts` call into them instead of holding the logic inline;
 
 - [Design the seam split for main.ts](issues/01-design-main-seam-split.md) — `focusedProblem.ts` (pure `computeFocusedProblem`, takes whole `LoadedFile`) and `fileIngestion.ts` (`fromFileList`/`readAllDirEntries`/`walkEntry`/`fromDataTransfer` + `Ingestable` type, hand-written fakes for tests, no jsdom) are the two extractions; `savedByScope` becomes `fileManager.filesForScope`; `buildZipInWorker`/`downloadBlob`/validation-mode triggering/misc DOM utilities stay in `main.ts` out of scope. Execution moved to [Implement the main.ts seam split](issues/02-implement-main-seam-split.md).
 - [Implement the main.ts seam split](issues/02-implement-main-seam-split.md) — built as designed: `focusedProblem.ts` + `fileIngestion.ts` created with paired tests, `fileManager.filesForScope` added, `main.ts` down to ~1655 lines. 300/300 tests pass, typecheck clean, build succeeds. Destination reached.
+- [Design the ingest() policy extraction](issues/03-design-ingest-policy-extraction.md) — two small pure predicates (`classifyUploadEntries`, `findDuplicateFiles`) folded into `fileIngestion.ts`, not one combined action-tree function — the interleaved confirm-modal/file-read I/O between the two decisions ruled out a single up-front decide call. `applyValidationMode`/validate-button left out of scope.
 
 ## Not yet specified
 
-(none — one open ticket: [Design the ingest() policy extraction](issues/03-design-ingest-policy-extraction.md), already fully specified, awaiting a grilling session)
+(none — no open tickets)
 
 ## Out of scope
 
