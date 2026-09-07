@@ -102,3 +102,61 @@
 	color: var(--muted);
 	font-size: 13.5px;
 }
+
+/* <Steps> title lines (the bold first line of each numbered item) rendered
+   as plain body text — same size/color as everything else, so a reader
+   scanning a procedural page couldn't pick out where one step ends and the
+   next begins. Starlight's own accent tokens were tried first, but that's
+   Starlight's default blue — it clashed against this wiki's warm dark
+   palette (the hub's #222831/#393e46/#948979/#dfd0b8 set, see the ticket 01
+   comment above). A dedicated warm gold, kept local to this rule only (not
+   added to shared/theme.css's 5-color palette, since it's page decoration,
+   not brand identity), matches instead — chosen and previewed with the
+   maintainer before landing here. A left border instead of Aside's full
+   tint, so the two aren't visually confused. */
+.sl-steps > li > p:first-child {
+	margin: 0 0 0.6rem;
+	padding: 0.3rem 0.75rem;
+	font-size: var(--sl-text-base);
+	line-height: 1.5;
+	color: #f0d9ae;
+	background: rgba(230, 193, 138, 0.14);
+	border-left: 3px solid #e6c18a;
+	border-radius: 0 4px 4px 0;
+}
+/* <Steps> wraps the whole title line in one <strong> — connector words
+   like "combined with" inherited the same bold weight as the code parts,
+   reading heavier/bigger than the rest of the title needed. Dialing the
+   plain-word weight back down (the code rule below re-bolds just the
+   `code:` parts) puts the emphasis back on the code, not the glue words. */
+.sl-steps > li > p:first-child strong {
+	color: inherit;
+	font-weight: 500;
+}
+/* Light mode flips the page to a cream background (shared/theme.css). A
+   gold-on-cream banner (tried first) still fought the page for attention;
+   the maintainer pointed at the sidebar's own current-page highlight in
+   light mode instead — a dark grey/navy chip with white text (confirmed
+   via computed style: bg rgb(34,40,49), text white) — and asked to reuse
+   that same grey/white contrast here instead of a second gold treatment.
+   The gold border-left is kept as the one thread tying it back to the
+   dark-mode banner's identity. */
+:root[data-theme='light'] .sl-steps > li > p:first-child {
+	color: #ffffff;
+	background: #222831;
+	border-left-color: #e6c18a;
+}
+/* A step title can include a `code:` mention (e.g. **`chance:` — an
+   independent roll**). Starlight's default inline-code chip is a
+   panel-grey box — dropped onto the banner above, it read as a
+   mismatched sticker instead of part of the same title. Dropping the
+   chip's own background/border and just inheriting the banner's text
+   color + extra weight keeps it reading as one title, not two colliding
+   boxes — and gives the code the emphasis the connector words gave up
+   above, instead of both fighting for the same bold weight. */
+.sl-steps > li > p:first-child code {
+	background: transparent;
+	color: inherit;
+	font-weight: 700;
+	padding: 0;
+}

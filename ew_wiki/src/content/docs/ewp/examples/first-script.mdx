@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
 
 [Fields](/ew_wiki/ewp/concepts/fields/), [Data](/ew_wiki/ewp/concepts/data/), and [Start Writing a Script](/ew_wiki/ewp/concepts/script/) covered the pieces one at a time. This page puts them together into one small file — copy it, save it, and it just works.
 
@@ -47,7 +48,11 @@ import { Steps, Aside } from '@astrojs/starlight/components';
        data: int, level, 3
    ```
 
-   `type: say, spawn` fires when a player types exactly `spawn` in chat (see [Start Writing a Script: what `type:` can trigger on](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) for why the comma isn't "either type"). This rule spawns two things at once: a Boar using the [`strongBoar` data entry](/ew_wiki/ewp/concepts/data/), and a Neck set directly to level 3 with the `type, key, value` shorthand instead of a named entry.
+   `type: say, spawn` fires when a player types exactly `spawn` in chat (see [what `type:` can trigger on](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) for why the comma isn't "either type"). This rule spawns two things at once: a Boar using the `strongBoar` data entry —
+
+   <StrongBoarData />
+
+   — and a Neck set directly to level 3 with the `type, key, value` shorthand instead of a named entry.
 
 4. **Put it all together**
 
@@ -74,7 +79,7 @@ import { Steps, Aside } from '@astrojs/starlight/components';
        data: int, level, 3
    ```
 
-   Save this in the script folder from [Preparation: Getting a script onto your server](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server), and you've got a working script.
+   Save this in the script folder from [Preparation](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server), and you've got a working script.
 
 </Steps>
 

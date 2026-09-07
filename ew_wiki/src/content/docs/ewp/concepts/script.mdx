@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
 
 A **script** is just the `.yaml` file you write. "Writing a script" and "editing a `.yaml` file" mean the same thing.
 
@@ -20,7 +21,11 @@ Most of what you write follows one pattern: "when X happens, do Y."
   data: strongBoar
 ```
 
-This says: whenever a Boar spawns, apply the [`strongBoar` data entry](/ew_wiki/ewp/concepts/data/) to it. A single block like this is already a complete, working script — you don't need dozens of lines to get started.
+This says: whenever a Boar spawns, apply this data entry to it (see [Understanding Data](/ew_wiki/ewp/concepts/data/) for how these work in general):
+
+<StrongBoarData />
+
+A single block like this is already a complete, working script — you don't need dozens of lines to get started.
 
 <Aside type="caution">
 Keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. `Prefab`/`Type` won't cause an error, it'll just silently not match anything.
@@ -99,12 +104,12 @@ Stack as many blocks as you like in the same file:
   data: strongGreydwarf
 ```
 
-EWP reads the whole file and applies whichever block matches what's happening.
+EWP reads the whole file and applies whichever block matches what's happening. (`strongGreydwarf` here is just a stand-in name — you'd define it in your own `data.yaml` the same way [`strongBoar`](/ew_wiki/ewp/concepts/data/) was defined.)
 
 ## Getting your script running
 
-Saving the file in the right folder is the only "install" step there is — see [Preparation: Getting a script onto your server](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
+Saving the file in the right folder is the only "install" step there is — see [Preparation](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
 
 <Aside type="tip">
-Get your [data](/ew_wiki/ewp/concepts/data/) ready before your script needs it — see [Preparation: set up data before scripts](/ew_wiki/ewp/preparation/#a-good-habit-set-up-data-before-scripts) for why.
+Get your [data](/ew_wiki/ewp/concepts/data/) ready before your script needs it — see [Preparation](/ew_wiki/ewp/preparation/#a-good-habit-set-up-data-before-scripts) for why.
 </Aside>

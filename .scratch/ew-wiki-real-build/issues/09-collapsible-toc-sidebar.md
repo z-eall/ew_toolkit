@@ -12,5 +12,7 @@ This is a real UI component build, not a config change: overriding Starlight's d
 
 **Scope addition (2026-09-07):** maintainer also asked for a "back to top" button. Folding it in here rather than building it standalone — Starlight has no built-in one, and it's the same right-side page-navigation area this ticket is already redesigning. Include in the design pass: does jumping to top live on the TOC panel itself (e.g. clicking its title) or as its own small control within the same panel.
 
+**Sequencing note (2026-09-07):** deploy (ticket 08) now also blocks on this ticket, not just 07 — the maintainer wants this built and reviewed before v1 ships, not left for a post-launch pass.
+
 ## Answer
 

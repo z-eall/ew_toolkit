@@ -1,0 +1,130 @@
+---
+title: "Adding Randomness, Step by Step"
+description: Making a rule fire only some of the time, and what happens when none of them do.
+complexity: beginner
+sidebar:
+  order: 2
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
+
+Every rule in [Your First Script](/ew_wiki/ewp/examples/first-script/) fired every single time its trigger happened. This page covers three rule-level fields that change that — `chance:`, `weight:`, and `fallback:` — then a compact variant that nests the same idea inside a `spawn:` list.
+
+<Aside type="note">
+These examples are written for this wiki, not pulled from a real maintainer script like [Your First Script](/ew_wiki/ewp/examples/first-script/) was — schema-valid and built the same way real rules are, but not something anyone's actually run in a live game. Treat them as demos to adapt, not battle-tested drops.
+</Aside>
+
+<Steps>
+
+1. **`chance:` — an independent roll, every time**
+
+   ```yaml
+   - prefab: Boar
+     type: create
+     chance: 0.2
+     data: strongBoar
+   ```
+
+   <StrongBoarData />
+
+   `chance:` is a number from `0` (never) to `1` (always, and the default if you leave it out). Here, only 1 in 5 Boars (`0.2` = 20%) gets `strongBoar` applied when it spawns — the other 4 in 5 spawn as an ordinary Boar. Each Boar's roll is independent: one spawning strong has no effect on the odds for the next one.
+
+2. **`chance:` combined with `filter:`**
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     filter: int, level, 2;3  # only leveled Necks
+     chance: 0.25
+     spawn:
+     - prefab: Coins
+   ```
+
+   [`filter:`](/ew_wiki/ewp/concepts/script/#only-affecting-the-right-objects-filter) narrows this to leveled Necks only; `chance: 0.25` then means even those only drop the bonus Coins a quarter of the time. Both conditions have to pass — a level-1 Neck never reaches the `chance:` roll at all.
+
+3. **`weight:` — a shared pool across sibling rules, not an independent roll**
+
+   `weight:` works completely differently from `chance:`. It doesn't compare against a fixed number — it only compares *against the other rules around it* that also set `weight:`. Two separate rules, both matching the same trigger:
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     weight: 3
+     spawn:
+     - prefab: Coins
+
+   - prefab: Neck
+     type: destroy
+     weight: 1
+     spawn:
+     - prefab: Wood
+   ```
+
+   Add the weights: `3 + 1 = 4`. Each rule's odds are its own weight divided by that total — the Coins rule `3/4` (75%), the Wood rule `1/4` (25%). At most one of the two ever fires for the same Neck death — never both.
+
+4. **`fallback: true` — guaranteeing something always happens**
+
+   `weight:` (and `chance:`) can leave a gap where nothing fires at all — the next step shows exactly that. `fallback:` is the guaranteed-default fix, and it's a rule-level field just like `weight:` — but instead of competing on odds, a `fallback: true` rule only runs when *no other rule already matched* the same trigger:
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     filter: int, level, 2;3  # only leveled Necks
+     spawn:
+     - prefab: Coins
+
+   - prefab: Neck
+     type: destroy
+     fallback: true  # only runs if the rule above didn't match
+     spawn:
+     - prefab: Wood
+   ```
+
+   Leveled Necks (level 2 or 3) drop Coins from the first rule. Every other Neck doesn't match that rule's `filter:` at all — so the second, `fallback: true` rule catches them and drops Wood instead. Nothing is ever left with no outcome.
+
+5. **When a `weight:` pool doesn't add up to 1: nothing happens**
+
+   Back to `weight:` — its pool is always measured against a total of at least `1`, even if the weights you wrote add up to less than that:
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     weight: 0.3
+     spawn:
+     - prefab: Coins
+
+   - prefab: Neck
+     type: destroy
+     weight: 0.2
+     spawn:
+     - prefab: Wood
+   ```
+
+   Add the weights: `0.3 + 0.2 = 0.5` — under `1`, so the pool is still measured against `1`, not `0.5`. That gives: Coins rule **30%**, Wood rule **20%**, and neither rule firing at all **50%** (the gap between `0.5` and `1`). This is the case a `fallback: true` rule (previous step) is built for — add one alongside these two, and that 50% gap gets a guaranteed default instead of doing nothing.
+
+   <Aside type="tip">
+   This is the key difference from `chance:`: two independent `chance: 0.3` and `chance: 0.2` rolls could both succeed, both fail, or either one. Two `weight:` rules can never both succeed — and here, more often than not, neither does.
+   </Aside>
+
+6. **Variant: `chance:` and `weight:` nested inside `spawn:`**
+
+   Everything above used separate top-level rules. The same `weight:` math also works *inside* a single rule's `spawn:` list, one entry per option, which is more compact when you don't need each option to have its own `filter:`:
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     spawn:
+     - prefab: Coins
+       weight: 3
+     - prefab: Wood
+       weight: 1
+   ```
+
+   Same 75%/25% split as step 3, same "sum under 1 leaves a gap" behavior as step 5 — just one rule instead of two. `spawn:` items also accept their own `chance:`, independent of the others in the list, the same way step 1's rule-level `chance:` worked.
+
+   <Aside type="tip">
+   Only items that actually set `weight:` compete in this pool. A plain `spawn:` entry with no `weight:` next to weighted ones still always happens on its own — it isn't part of the group.
+   </Aside>
+
+</Steps>

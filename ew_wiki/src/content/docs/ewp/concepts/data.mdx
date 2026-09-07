@@ -6,6 +6,8 @@ sidebar:
   order: 2
 ---
 
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
+
 A **data entry** is a group of changes you save under one name, so you can reuse it instead of typing the same edit over and over.
 
 ## Why bother saving it
@@ -16,13 +18,7 @@ Say you want a Boar to spawn stronger — a higher level, more max health. You c
 spawn_object Boar data=strongBoar
 ```
 
-```yaml
-- name: strongBoar
-  ints:
-  - level, 3
-  floats:
-  - max_health, 200
-```
+<StrongBoarData />
 
 Now `strongBoar` is ready to use anywhere, any time — no retyping.
 
@@ -48,4 +44,4 @@ Apply the whole bundle at once with `data=toughBoar`, instead of listing each ch
 
 ## Where data.yaml lives
 
-Your client and your server each keep their own `data.yaml` — they don't share one. See [Preparation: Getting data onto your server](/ew_wiki/ewp/preparation/#getting-data-onto-your-server-the-part-that-trips-people-up) for the exact folders and how to copy an entry from one to the other.
+Your client and your server each keep their own `data.yaml` — they don't share one. See [Preparation](/ew_wiki/ewp/preparation/#getting-data-onto-your-server-the-part-that-trips-people-up) for the exact folders and how to copy an entry from one to the other.
