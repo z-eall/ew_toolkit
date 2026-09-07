@@ -2,8 +2,6 @@
 title: Start Writing a Script
 description: What a script is, in the simplest terms.
 complexity: beginner
-sidebar:
-  order: 3
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -41,7 +39,7 @@ The example above used `type: create` — that's just one of several triggers `t
 - `state` — it broadcasts a state change (used for things like a door opening)
 - `say` — it, or a player, says something in chat
 
-(and others — `poke`, `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
+(and others — [`poke`](/ew_wiki/ewp/concepts/poke/), `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
 
 Some triggers take a parameter, written after a comma: `type: say, spawn` fires only when the chat message is exactly "spawn" — not on any chat message. What the parameter means depends on the trigger (`change`'s parameter is a data name, `time`'s is a granularity like `day`/`hour`); `say`'s is the exact text to match.
 

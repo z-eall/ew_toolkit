@@ -13,8 +13,12 @@ const PAGE_TITLE_ID = '_top';
 const { entry } = Astro.locals.starlightRoute;
 const { title, complexity } = entry.data as { title: string; complexity?: 'beginner' | 'intermediate' | 'advanced' };
 
+// Plain badge text matches the sidebar group names exactly (Beginner /
+// Intermediate / Advanced) so the two tally at a glance. The fun badge is a
+// separate, decorative second tag — game-y wording, not meant to be looked
+// up against anything else.
 const badgeText: Record<string, string> = {
-	beginner: 'Beginner-friendly',
+	beginner: 'Beginner',
 	intermediate: 'Intermediate',
 	advanced: 'Advanced',
 };
@@ -23,10 +27,20 @@ const badgeVariant: Record<string, 'success' | 'caution' | 'danger'> = {
 	intermediate: 'caution',
 	advanced: 'danger',
 };
+const funText: Record<string, string> = {
+	beginner: 'Getting Started',
+	intermediate: 'Leveling Up',
+	advanced: 'Mastery',
+};
 ---
 
 <h1 id={PAGE_TITLE_ID}>{title}</h1>
-{complexity && <Badge text={badgeText[complexity]} variant={badgeVariant[complexity]} class="complexity-badge" />}
+{complexity && (
+	<div class="complexity-badges">
+		<Badge text={badgeText[complexity]} variant={badgeVariant[complexity]} />
+		<Badge text={funText[complexity]} variant="note" />
+	</div>
+)}
 
 <style>
 	@layer starlight.core {
@@ -39,7 +53,10 @@ const badgeVariant: Record<string, 'success' | 'caution' | 'danger'> = {
 			color: var(--sl-color-white);
 		}
 	}
-	.complexity-badge {
+	.complexity-badges {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 		margin-bottom: 1rem;
 	}
 </style>

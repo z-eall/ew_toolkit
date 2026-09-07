@@ -1,0 +1,154 @@
+---
+title: Understanding Poke
+description: How one rule calls another using poke:, and the parameter that links the call to its receiver.
+complexity: intermediate
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+**Poke** sends a message from one rule to another — it's how one object tells another "do something now." Every [rule](/ew_wiki/ewp/concepts/script/) so far reacted only to its own trigger (`create`, `destroy`, `say`, ...). Poke lets one rule trigger another rule directly, instead of waiting for the game to trigger it.
+
+<Aside type="tip" title="Media placeholder #1">
+**Recommended: two still images — one before, one after.**
+- Image 1: a player about to type "open" in chat, next to a closed `wood_door`.
+- Image 2: the same door, now open, right after the chat message sends.
+- How to capture: run the two-rule example below on a test server/world, type `open` in chat next to a `wood_door`, and take both screenshots.
+</Aside>
+
+## The minimal poke
+
+Think of it like a phone call — one rule dials, another rule picks up:
+
+<Steps>
+
+1. **Make the call**
+
+   ```yaml
+   - prefab: Player
+     type: say, open
+     poke:
+     - prefab: wood_door
+       parameter: openDoor  # the "phone number" linking this call to its receiver
+   ```
+
+   When **Player** says "open" in chat, this rule pokes every `wood_door` in range, passing `openDoor` along as the parameter.
+
+2. **Answer the call**
+
+   ```yaml
+   - prefab: wood_door
+     type: poke, openDoor  # only answers a poke sent with this exact parameter
+     data: int, state, 1
+   ```
+
+   `type: poke, openDoor` fires only when `wood_door` receives a poke whose parameter is exactly `openDoor` — then this rule applies `int, state, 1` to it (opens the door).
+
+</Steps>
+
+Both rules live in the same script — see [A script can hold more than one rule](/ew_wiki/ewp/concepts/script/#a-script-can-hold-more-than-one-rule).
+
+## The parameter is just a name
+
+The parameter is the "phone number" that links a call to its receiver — any word or number works, but a descriptive name (`openDoor`, not `1` or `hello`) keeps a script with multiple pokes readable.
+
+<Aside type="caution">
+The two sides have to match — a typo or a renamed parameter on one side breaks the connection silently. Matching itself ignores capitalization (`openDoor` and `opendoor` still connect), so it's a real spelling difference that breaks it, not the letter case. See [When a poke doesn't fire](#when-a-poke-doesnt-fire) below.
+</Aside>
+
+## Narrowing who gets poked: `filter:`
+
+[`filter:`](/ew_wiki/ewp/concepts/script/#only-affecting-the-right-objects-filter) works under `poke:` the same way it does anywhere else — it doesn't set anything, it only checks a condition, and only pokes the objects that already pass:
+
+```yaml
+poke:
+- prefab: wood_door
+  filter: int, isWoodDoor, 1  # only pokes doors where isWoodDoor already equals 1
+  parameter: openDoor
+```
+
+<Aside type="tip">
+An older script might use `data:` here instead of `filter:` — that's a **legacy alias**, doing the exact same filtering job under a name that's easy to confuse with a real data-apply. Swap it to `filter:` if you copied it from an old script:
+
+```yaml
+poke:
+- prefab: wood_door
+  data: int, isWoodDoor, 1  # legacy alias for filter: — still works, same check
+  parameter: openDoor
+```
+</Aside>
+
+## When a poke doesn't fire
+
+A poke that doesn't work almost never throws an error — it just goes quiet. Four common causes, each shown broken next to its fix.
+
+**1. Bad indentation on the list item** — a `poke:` list follows the [same shape as `spawn:`](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data); indenting the second field too far breaks the item:
+
+```yaml
+# WRONG — parameter is indented past prefab, so it isn't read as part of this list item
+poke:
+- prefab: wood_door
+    parameter: openDoor
+```
+
+```yaml
+# CORRECT — both fields align
+poke:
+- prefab: wood_door
+  parameter: openDoor
+```
+
+**2. Missing hyphen** — without the `-`, YAML reads this as a single map, not a list of one item, and the whole rule fails to parse as a poke:
+
+```yaml
+# WRONG — no hyphen, so this isn't a list item at all
+poke:
+  prefab: wood_door
+  parameter: openDoor
+```
+
+```yaml
+# CORRECT
+poke:
+- prefab: wood_door
+  parameter: openDoor
+  delay: 1  # optional: seconds to wait before poking
+```
+
+**3. Misspelled parameter name** — matching ignores capitalization, but any other difference breaks it:
+
+```yaml
+# Calling rule sends the parameter "openDoor"
+- prefab: Player
+  type: say, open
+  poke:
+  - prefab: wood_door
+    parameter: openDoor
+
+# Receiving rule listens for "openDor" — one letter short, never matches
+- prefab: wood_door
+  type: poke, openDor
+  data: int, state, 1
+```
+
+Fix: spell the parameter identically on both sides. (`openDoor` and `OPENDOOR` would still connect — only a real spelling difference like the typo above breaks it.)
+
+**4. No receiver at all** — a poke with nothing listening for it fires into empty air:
+
+```yaml
+# Sends a poke with parameter "openDoor"...
+- prefab: Player
+  type: say, open
+  poke:
+  - prefab: wood_door
+    parameter: openDoor
+
+# ...but no rule anywhere has `type: poke, openDoor` to catch it
+```
+
+Fix: add a `type: poke, openDoor` rule somewhere in the script.
+
+If a poke chain isn't working, checking that every `parameter:` name is spelled identically on both sides catches the most common case first.
+
+<Aside type="note">
+Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts.
+</Aside>
