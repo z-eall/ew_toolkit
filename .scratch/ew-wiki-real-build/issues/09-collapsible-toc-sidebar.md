@@ -14,5 +14,7 @@ This is a real UI component build, not a config change: overriding Starlight's d
 
 **Sequencing note (2026-09-07):** deploy (ticket 08) now also blocks on this ticket, not just 07 — the maintainer wants this built and reviewed before v1 ships, not left for a post-launch pass.
 
+**Scope addition (2026-09-07):** the top-right header controls (theme mode switch, GitHub link) are Starlight's own default styling and don't visually match the toolkit hub's own header treatment (`ew_toolkit/src/style.css`/`nav.ts`) — maintainer wants them adjusted for alignment. Not its own ticket since it's the same header area this ticket already touches (the TOC toggle likely lands in this same top bar); include in the design pass.
+
 ## Answer
 
