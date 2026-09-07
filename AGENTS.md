@@ -1,20 +1,10 @@
 # EW Toolkit — Agent Notes
 
-Shared standing rules for any agent working in this repo — Claude Code or Cursor. `ewp_validator`-specific rules live one level down: [ewp_validator/AGENTS.md](ewp_validator/AGENTS.md). Domain vocabulary is split the same way, in `CONTEXT.md`.
+Shared standing rules for any agent working in this repo — Claude Code or Cursor. `ewp_validator`-specific rules live one level down: [ewp_validator/AGENTS.md](ewp_validator/AGENTS.md); `ew_wiki`-specific rules the same way, in [ew_wiki/AGENTS.md](ew_wiki/AGENTS.md). Domain vocabulary is split the same way, in `CONTEXT.md`.
 
-## Agent skills
+## Domain docs
 
-### Issue tracker
-
-Issues live as markdown files under `.scratch/<feature>/`. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
-
-### Triage labels
-
-Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
-
-### Domain docs
-
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps under `.scratch/`. See [docs/agents/domain.md](docs/agents/domain.md).
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps under `.scratch/`. See [../docs/agents/domain.md](../docs/agents/domain.md). (Issue tracker and triage labels: same generic convention as the root project — see the root `CLAUDE.md`, not duplicated here.)
 
 ## Dual-agent workflow (Cursor ↔ Claude Code)
 
@@ -31,6 +21,10 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 - **Minimal tooling.** No workspace/monorepo tooling (npm workspaces, Turborepo, Nx) unless plain per-Tool `package.json` + build scripts prove genuinely painful.
 - **`valheimtools.stream` is a cross-check reference only** — never a dependency, never coordinate with its owner.
 - **Tool registration is a hardcoded list** in the landing page source — no auto-discovery/manifest scanning until managing the list by hand becomes painful.
+
+## Confirm, don't guess
+
+State an external or domain fact — a file path, how a tool behaves, install steps — only when it's already confirmed in the repo, cited from a source, or confirmed by the maintainer this session. When a needed fact isn't established yet, ask or get permission to check a source first — never assert it and move on.
 
 ## UI/UX consistency
 
