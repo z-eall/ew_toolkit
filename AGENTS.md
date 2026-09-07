@@ -2,17 +2,9 @@
 
 Shared standing rules for any agent working in this repo — Claude Code or Cursor. `ewp_validator`-specific rules live one level down: [ewp_validator/AGENTS.md](ewp_validator/AGENTS.md); `ew_wiki`-specific rules the same way, in [ew_wiki/AGENTS.md](ew_wiki/AGENTS.md). Domain vocabulary is split the same way, in `CONTEXT.md`.
 
-### Issue tracker
+## Domain docs
 
-Issues live as markdown files under `.scratch/<feature>/`. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
-
-### Triage labels
-
-Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
-
-### Domain docs
-
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps under `.scratch/`. See [docs/agents/domain.md](docs/agents/domain.md).
+Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps under `.scratch/`. See [../docs/agents/domain.md](../docs/agents/domain.md). (Issue tracker and triage labels: same generic convention as the root project — see the root `CLAUDE.md`, not duplicated here.)
 
 ## Dual-agent workflow (Cursor ↔ Claude Code)
 

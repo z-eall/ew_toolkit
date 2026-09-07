@@ -31,6 +31,16 @@ not:
 
 Both parse identically — this is the convention scripters actually use, not a schema requirement. Applies to every YAML snippet in this wiki.
 
+## Component conventions
+
+- **`<Steps>`** marks a sequence — steps a reader performs in order, or an example whose later blocks depend on earlier ones. Skip it when the passage already reads fine as one continuous block, or is short enough that numbering adds nothing.
+- **`<Aside>`** carries a single-sentence trust or safety flag: crash risk, "untested"/"unconfirmed" provenance, a compulsory setup step. Match severity to the stakes — `danger`/`caution` for something that can break or crash, `note`/`tip` for a softer flag like "not exhaustive." Don't give a full heading to what's functionally one warning sentence.
+- **`<Tabs>`** is for true alternatives — the reader picks one, like Steam vs. Thunderstore paths. A sequence read in order (second → minute → hour → day) or a comparison the reader needs to see all at once (4 wrong variants beside the 1 correct one) stays a plain block — tabbing would hide what the reader needs open.
+- **Shared snippets** for boilerplate repeated verbatim across pages — an attribution footer, a "starting shape" YAML block, a recurring link. Import it once so it can't quietly drift between pages.
+- **Every code fence declares a language** (`yaml`, `bash`, ...) so it actually gets syntax-highlighted.
+- **Split a page along its confidence or purpose seams** — core teaching content next to community-contributed/unverified patterns, or a reference table next to copy-paste recipes, are two different reading modes. Give each its own page and link between them.
+- **Playground suitability**: a schema-valid playground proves shape, not behavior. A self-contained YAML document with no cross-references to other entries is a good candidate. A chained or stateful script (a poke chain, a counter that survives across pokes) is not — a green checkmark there would say "valid shape" while the actual runtime behavior stays unverified.
+
 ## Page and section naming
 
 Name pages and headings by what the reader does or learns, not by what the thing is called internally. "Start Here" is banned as a label — it says nothing about what's inside; every page name should. Test: could two different pages both honestly be called "Start Here"? If yes, the name is too generic.
@@ -50,15 +60,13 @@ When naming a few members of a larger set (value kinds, keys, types), say so exp
 
 Every content page (Concepts, ported guides) sets `complexity: beginner | intermediate | advanced` in its frontmatter. The `PageTitle` override (`src/components/PageTitle.astro`) renders it as a `<Badge>` directly under the H1 automatically — don't hand-add a `<Badge>` in the page body, and don't skip the frontmatter field on a new page.
 
-## Never guess
+## Never guess — real source first
 
-**No key, value, enum, or mechanic reaches a page until it's been checked against a real source in this session.** Not "sounds right," not "other mods do it this way," not "the schema probably allows this" — checked. `type: spawn` shipped in two pages this way before anyone checked it against real EWP behavior; the actual value is `type: create` (confirmed in `ewp_validator`'s own schema and test fixtures). This is the same bar `ewp_validator` itself holds code to — the wiki doesn't get a looser one just because it's prose.
+The hub-wide "Confirm, don't guess" rule ([../AGENTS.md](../AGENTS.md)) applies here at the same bar `ewp_validator` holds code to — the wiki doesn't get a looser one just because it's prose. Cautionary example: `type: spawn` shipped in two pages unchecked; the real value is `type: create` (confirmed in `ewp_validator`'s own schema and test fixtures).
 
-If a fact can't be verified in the current session (source unreachable, ambiguous, or genuinely undocumented), it does not get written as if true. Either leave it out, or mark it explicitly as unverified (e.g. an `<Aside type="caution">` naming exactly what's unconfirmed) — never smooth it over with confident-sounding wording.
+If a fact can't be verified this session (source unreachable, ambiguous, genuinely undocumented), it does not get written as if true — leave it out, or mark it explicitly unverified (e.g. an `<Aside type="caution">` naming exactly what's unconfirmed) rather than smoothing it over.
 
-## Source-verify every guide fact — real source first
-
-Check, in order:
+Check sources in this order:
 
 1. **`ewp_validator/src/schema.generated.json`** and its `*.test.ts` fixtures — already in this repo, generated from EWP's real schema, and the fastest ground truth for valid keys/values/types.
 2. The mod's own source, when the schema doesn't settle it: [expand_world_prefabs](https://github.com/JereKuusela/valheim-expand_world_prefabs) (EWP) and [world_edit_commands](https://github.com/JereKuusela/valheim-world_edit_commands) (WEC) — both pre-approved, listed in `docs/sources.md`. WEC commands it doesn't register itself (e.g. `search_component`) live in its dependency, [ServerDevcommands](https://github.com/JereKuusela/valheim-dev) — check there before assuming a command doesn't exist.
