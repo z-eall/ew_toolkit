@@ -1,0 +1,34 @@
+---
+title: Start Here
+description: What EWP/WEC are, and what the EW Toolkit does for scripters.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Jere Kuusela's **Expand World (EW)** mods let Valheim players customize world, creature, and item behavior through YAML config files. Within that family, **EWP (Expand World Prefabs)** is the specific plugin for defining and customizing prefabs — spawned objects and custom systems — via YAML, and it's the primary target of this toolkit. **WEC (World Edit Commands)** is Jere's separate mod for in-game admin commands and a related data system (e.g. random loot tables); scripters often reference it alongside EWP, but it's a secondary source here, not the main focus.
+
+The EW Toolkit is quality-of-life tooling for **scripters** — players who write EWP YAML to build custom in-game systems without necessarily writing C# mod code. Its first tool validates EWP YAML against a **schema** (a machine-readable definition of EWP's valid keys, value types, and constraints) so mistakes get caught before they hit the game.
+
+## Your first script
+
+<Steps>
+
+1. Create a YAML file, e.g. `my_first_script.yaml`, in your EWP config folder.
+
+2. Add one rule entry describing what to spawn and where:
+
+   ```yaml
+   - prefab: Boar
+     type: spawn
+     data: starter_boar
+   ```
+
+3. Open the EWP validator and load your file. It checks the YAML against the schema — valid keys, correct value types — before you ever load it in-game.
+
+4. Fix any flagged lines, save, and drop the file into your EWP config folder to try it out.
+
+</Steps>
+
+<Aside type="tip">
+This is a minimal example. Real scripts commonly chain filters and actions — see the Concepts pages for the vocabulary you'll need.
+</Aside>

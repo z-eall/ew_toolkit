@@ -1,0 +1,21 @@
+/* Maps the hub's shared identity palette onto Starlight's own CSS
+   variables, per ticket 01 (ew-wiki-real-build)'s Variant A decision.
+   Imports shared/theme.css instead of copying its hex values (AGENTS.md's
+   shared-visual-identity rule). --bg/--panel/--border/--text already flip
+   for light mode inside shared/theme.css, so a single :root mapping here
+   is enough — no separate light-mode block needed. Starlight's own default
+   accent color (links, current-page highlight, progress bar) is left
+   untouched; it isn't part of the shared 5-color palette. */
+@import '../../../shared/theme.css';
+
+:root {
+	--sl-color-bg: var(--bg);
+	--sl-color-bg-nav: var(--panel);
+	--sl-color-bg-sidebar: var(--panel);
+	--sl-color-bg-inline-code: var(--panel);
+	--sl-color-text: var(--text);
+	--sl-color-text-accent: var(--text);
+	--sl-color-hairline: var(--border);
+	--sl-color-hairline-light: var(--border);
+	--sl-color-hairline-shade: var(--border);
+}

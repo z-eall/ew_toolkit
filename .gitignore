@@ -3,6 +3,7 @@ dist/
 
 # Machine-local junction to shared skills (see wayfinder setup) — not portable across machines
 .cursor/skills
+.claude/skills
 
 # Regenerated fresh by schema/generate.mjs on every build — committing it would
 # just drift stale in git history (ticket 12).
