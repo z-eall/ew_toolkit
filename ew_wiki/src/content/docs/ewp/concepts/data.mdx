@@ -1,0 +1,50 @@
+---
+title: Understanding Data
+description: What a data entry is, and how it saves you from repeating the same edit.
+complexity: beginner
+sidebar:
+  order: 2
+---
+
+A **data entry** is a group of changes you save under one name, so you can reuse it instead of typing the same edit over and over.
+
+## Why bother saving it
+
+Say you want a Boar to spawn stronger — a higher level, more max health. You could type that out every single time. Or you could save it once, under a name, and just use that name from then on:
+
+```
+spawn_object Boar data=strongBoar
+```
+
+```yaml
+- name: strongBoar
+  ints:
+  - level, 3
+  floats:
+  - max_health, 200
+```
+
+Now `strongBoar` is ready to use anywhere, any time — no retyping.
+
+## What a data entry looks like
+
+A data entry is a `name`, plus one or more lists of changes. Which list a change goes in depends on its kind of value:
+
+- `ints` — whole numbers, like `level`
+- `floats` — numbers with decimals, like `max_health`
+- `strings` — text, like a name
+- (and others — these three cover most beginner edits)
+
+```yaml
+- name: toughBoar
+  ints:
+  - level, 5
+  floats:
+  - max_health, 300
+```
+
+Apply the whole bundle at once with `data=toughBoar`, instead of listing each change separately.
+
+## Where data.yaml lives
+
+Your client and your server each keep their own `data.yaml` — they don't share one. See [Preparation: Getting data onto your server](/ew_wiki/ewp/preparation/#getting-data-onto-your-server-the-part-that-trips-people-up) for the exact folders and how to copy an entry from one to the other.

@@ -1,0 +1,58 @@
+# Ew Wiki Real Build — Map
+
+Labels: wayfinder:map
+
+## Destination
+
+A real, hub-integrated wiki Tool — **`ew_wiki`** — living inside the `ew_toolkit` repo, built with Astro Starlight, deployed to GitHub Pages under the nested subpath `/ew_wiki/ewp/`. EWP is the first "component" inside the `ew_wiki` hub; the nested path leaves room for a future second mod's guides to slot in later without breaking bookmarks.
+
+Reaching the destination means: v1 content is live on the real hub —
+1. Structure + visual design settled (own ticket, before anything moves).
+2. Built as its own Tool folder in `ew_toolkit`, reusing the proven prototype (including its working Monaco+monaco-yaml playground) as the starting point.
+3. Preparation/"How to Start" page, Core Vocabulary page, a house-style ticket, and a reader-facing "How to use this guide" page all exist.
+4. The 6 already-audited fundamental + basic-use-case guides are ported in as real content.
+5. The site is registered on the landing page and deployed to GitHub Pages.
+
+Each earlier ticket is built and verified **locally**; deploy is the last ticket, not a running assumption.
+
+This map picks up where the [Wiki Tool Prototype map](../wiki-tool-prototype/map.md) left off — that map resolved framework (Astro Starlight) and go/no-go (Go), and named the conditions this map's v1 opens with.
+
+## Notes
+
+- Domain: Valheim modding / EWP-family tooling — see [CONTEXT.md](../../CONTEXT.md). `CONTEXT.md` covers the *toolkit project's own* vocabulary (Scripter, Schema, Tool, Subpath, etc.) — it explicitly does **not** cover EWP/WEC's in-game scripting vocabulary (`data`, `f=`, `par`, `poke`, `fallback`, save/load keys). The Core Vocabulary page (ticket 04) is that second, EWP-specific dictionary — a different audience/purpose than `CONTEXT.md`, not a duplicate of it.
+- Skills every session should consult: `ew_toolkit:grilling` and `ew_toolkit:domain-modeling` for any ticket marked `grilling`; `ew_toolkit:prototype` for ticket 01; `ew_toolkit:research` only with explicit signoff before tapping a new external source (standing user rule); `ew_toolkit:writing-for-agents` self-invoked before any structural `SKILL.md`/`AGENTS.md`/`CLAUDE.md` edit, with challenge-and-signoff first, even for a small diff.
+- **EWP is primary, WEC is secondary/reference** (per `CONTEXT.md`) — WEC content stays folded into EWP's guides for v1, not its own component. Split it out later only if it earns enough content of its own (same "start compact, split when it outgrows itself" pattern already used for Core Vocabulary itself).
+- **Expand World Data is not a locked target.** Building on EWP + WEC first; if a real guide topic turns out to need Expand World Data to make sense, revisit then — not pre-scoped in or out.
+- **Why nested from day one** (`/ew_wiki/ewp/...`, not flat `/ew_wiki/...`): Starlight URLs are generated straight from folder structure, so nesting now costs nothing. Starlight does have a built-in `redirects` config for a later flat→nested migration, but that redirect list has to be hand-written at migration time — skip it and every existing bookmark 404s. Nesting now removes that risk entirely given a second mod is a real possibility, not a hypothetical.
+- **v1 content = 6 of the 9 existing, already content-reviewed guide files** — the fundamental + basic tier, not all 9:
+  - Theory Fundamental (2): `EWP_Understanding_Fields.md`, `EWP_How_To_Use_Data.md`
+  - Basic Use Cases (4): `EWP_Basic_Poke_Guide.md`, `EWP_Guide_to_PARS.md`, `EWP_Type_Time_Guide.md`, `EWP_Type_Realtime_Guide.md`
+  - Advanced Use Cases (3, **deferred to phase 2**): `EWP_Advanced_Poke_Guide.md`, `EWP_Maths_Guide.md`, `EWP_Ship_Modification_Guide.md`
+  - Source folder: `ew_wiki/docs/guide-source/` (moved into the repo during ticket 04's rework; was `C:\Users\Ultimate\Claude\ew_toolkit_wiki_prototype\guide-reference\`, subfolders renamed `1-theory-fundamental`/`2-basic-use-cases`/`3-advanced-use-cases`, filenames unchanged; relocated under `docs/` in round 3 to stop colliding with `docs/sources.md`'s folder name). Maintainer intends to add more script examples directly into this folder before ticket 07.
+- **v1 IA is deliberately thin**: Start Here/Prep, Concepts (`fields.mdx`, `data.mdx`, `script.mdx` — the shared Vocabulary page and `schema`/`scripter` pages were tried and scrapped in ticket 04's round 2, see its Answer), and the ported guides once they land. No standalone Reference/Recipes/Troubleshooting sections in v1 — their early placeholder stubs were removed as more confusing than useful; a section comes back only once it has real content — see Not yet specified.
+- Reuse-before-building and $0-forever apply per `AGENTS.md` — reuse the prototype's Starlight setup and Monaco playground rather than rebuilding, pending ticket 01's structure/design comparison.
+- `ew_toolkit`'s own `package-lock.json` must be generated on Linux, not Windows, once real `npm install` happens inside the actual repo (ticket 02 onward) — not relevant to the standalone prototype folder.
+- Prior map's plain-language primer (Static site generator / Astro Starlight / Monaco / monaco-yaml) still applies — see [wiki-tool-prototype/map.md](../wiki-tool-prototype/map.md#notes).
+- **Content-authoring standing rules now live in [`ew_wiki/AGENTS.md`](../../ew_wiki/AGENTS.md)**, not duplicated here — voice/depth (warm tone, simple-language-but-full-step-by-step-depth for beginners), dedicated-server-as-default scope for every guide, mod-install-out-of-scope, source-verify (pointing at [`ew_wiki/docs/sources.md`](../../ew_wiki/docs/sources.md)), media placeholders, and cross-link-on-first-use. Surfaced across the Preparation ticket's reopen and rescope (see its Answer, and ticket 04's Question) — applies to every remaining content ticket (04, 06, 07), not just those.
+
+## Decisions so far
+
+- [Structure and visual design comparison](issues/01-structure-and-design.md) — Structure: adopt nesting everything under one `ewp/` group with a thin hub landing page and `/ew_wiki/ewp/...` routes, as-is. Visual: adopt Variant A (Baseline) — the shared 5-color hub palette mapped onto Starlight's own bg/panel/text/hairline variables, Starlight's default accent color left untouched. 3 other palette variants (Monochrome, Layered, Warm accent) built and rejected — full comparison in the ticket's Answer.
+- [Move into the hub](issues/02-move-into-hub.md) — Real `ew_toolkit/ew_wiki/` Tool folder created from the prototype, ticket 01's reshape applied, base `/ew_wiki/` (routes land at `/ew_wiki/ewp/...`), `src/styles/theme.css` imports `shared/theme.css` (Variant A mapping). `npm install`/build done via WSL, never Windows; `package-lock.json` copied back. Build verified clean (8 pages). Landing-page registration and CI wiring deferred to ticket 08.
+- [Preparation / How to Start page](issues/03-preparation-page.md) — Published once with wrong facts (unconfirmed assertions), reopened by the maintainer, redone as a grilling ticket. `ewp/preparation.mdx`: SP gets one callout only (dedicated server is now this wiki's default assumption everywhere, not just this page — see Notes), Dedi setup covers both self-hosted and rented/FTP hosting, mod installation dropped as out-of-scope, script "install" = save the `.yaml` into the server's config folder, and a dedicated section walks the client-capture-then-server-paste `data.yaml` workflow (WEC writes client-side, EWP reads a separate server-side copy). Also produced the new `ew_wiki/AGENTS.md` + `ew_wiki/docs/sources.md` and a "Confirm, don't guess" rule in root `AGENTS.md` — see Notes. Build verified clean (9 pages).
+- [Core Vocabulary page](issues/04-core-vocabulary-page.md) — Round 1 built three pages (`data`/`script`/`vocabulary`) and fixed a pre-existing `.md`-vs-`.mdx` rendering bug on `schema.md`/`scripter.md` (tickets 01/02) — see the ticket's Answer for that bug and the content-layer cache trap that masked it during verification. Reopened by the maintainer as too advanced for a beginner audience. **Round 2**: scrapped `schema`/`scripter`/`vocabulary` and the placeholder Reference/Recipes/Troubleshooting sections entirely; rewrote `data.mdx`/`script.mdx` in simpler language with beginner-relevant example fields and no early `par`/`poke` name-drops; added a new `fields.mdx` from `EWP_Understanding_Fields.md`; set explicit sidebar order (Fields → Data → Script); added a wiki-wide YAML indent rule to `ew_wiki/AGENTS.md` (nested list items align with their parent key); moved the guide source folder into the repo (`ew_wiki/guide-source/`, see Notes). Build verified clean via WSL, 7 pages. The collapsible/scroll-following TOC sidebar the maintainer also asked for was split out to [ticket 09](issues/09-collapsible-toc-sidebar.md) rather than bundled in. **Round 3**: source-verified every fact in `fields.mdx` against real mod source (caught `activationDistance`→`activationRange`, confirmed `type: create` over the previously-shipped `type: spawn`); hardened `ew_wiki/AGENTS.md`'s source-verify rule into an ordered 4-step checklist plus a "Never guess" section; added per-page `complexity` frontmatter badges via a `PageTitle.astro` override; rebuilt the Home page as a real hub page (doc layout, "Overview"/"Choose a Guide" heading, no TOC panel, per-mod tagline sourced from that mod's own GitHub description); renamed the site to "Expand World Wiki"; moved `guide-source/` under `docs/` to stop it colliding with `docs/sources.md`'s own folder name.
+
+## Not yet specified
+
+- **Phase 2 content**: the 3 Advanced Use Cases guides, plus growing the "ultimate guide" beyond the original 9 source files as an open-ended, beginner→intermediate→advanced EWP+WEC reference. Not sized or ticketed yet — revisit once v1 ships and the pattern is proven.
+- **WEC as its own component** — only if WEC content folded into EWP guides (per Notes) grows enough to justify splitting out. No trigger condition defined yet.
+- **Other Jere mods as future `ew_wiki` components** — "we might be creating other mod of Jere within this wiki hub if the first one lands right" (user, charting session). Entirely contingent on EWP's component succeeding; no shape yet.
+- **Reference section** (exhaustive, schema-generated "every key" pages, Factorio-prototype-docs style) — needs tooling to generate from the validator's schema that doesn't exist yet.
+- **Troubleshooting section** — needs the validator's own diagnosis-category vocabulary/wording, a cross-Tool dependency not yet wired.
+- **Checklists/quizzes** at section ends — mentioned in the original research report, not part of any locked v1 condition; revisit once v1 content exists to attach them to.
+- **Expand World Data** — see Notes; only becomes a ticket if a real guide topic forces the question.
+- **Visual media (screenshots/diagrams/video)** — never scoped anywhere on this map; surfaced by the maintainer during the Preparation ticket's correction pass. Deferred deliberately, not overlooked: cost of deciding later is low as long as media stays a *supplement* (text must always carry the explanation on its own, never "watch the video to understand this"), so inserting media later is additive, not a rewrite. Static screenshots/diagrams: fair game per-guide, decide when a specific spot in a specific guide seems to need one. Embedded video: hold off — no guide content so far needs motion/timing to explain (the existing `valheim-build-style` skill research doesn't transfer either, it's scoped to a different content pillar) — revisit only if a future guide genuinely can't be explained in stills/text.
+
+## Out of scope
+
+*(none yet — nothing has been ruled out past this map's destination so far)*

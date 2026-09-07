@@ -1,0 +1,213 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin Commands                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Use admin command to change world level
+- prefab: Player
+  type: say, !wlvl 0;999
+  admin: true
+  cancel: true
+  exec: |
+    <save_bfvworldlevel_<max_0_<par_1>>>
+  # command: s BFV World Level is adjusted to <max_0_<par_1>>.
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, BFV World Level is adjusted to <load_bfvworldlevel=0>.
+    3: int, 1
+
+# Use admin command to manually seal/unseal
+- prefab: Player
+  type: say, !seal
+  admin: true
+  cancel: true
+  poke:
+  - prefab: CraftingStation, StationExtension
+    filters:
+    - int, isBfvVillageStation, 1
+    - int, isBfvVillageStationExt, 1
+    filterLimit: 1
+    maxDistance: 20
+    parameter: findUnsealedVillageStation
+
+- prefab: Player
+  type: say, !unseal
+  admin: true
+  cancel: true
+  poke:
+  - prefab: dvergrprops_crate
+    filters:
+    - int, isBfvVillageStationSeal, 1
+    - int, isBfvVillageStationSealExt, 1
+    filterLimit: 1
+    maxDistance: 20
+    parameter: unsealIfWorldLevelValid true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV World Level                                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# World level change triggers
+- type: key, bfvworldlevel
+  poke:
+  - prefab: CraftingStation, StationExtension
+    filters:
+    - int, isBfvVillageStation, 1
+    - int, isBfvVillageStationExt, 1
+    filterLimit: 1
+    maxDistance: 20000
+    parameter: findUnsealedVillageStation
+  - prefab: dvergrprops_crate
+    filters:
+    - int, isBfvVillageStationSeal, 1
+    - int, isBfvVillageStationSealExt, 1
+    filterLimit: 1
+    maxDistance: 20000
+    parameter: findSealedVillageStation
+  - prefab: Feast
+    filters:
+    - int, isBfvCampFeast, 1
+    - int, isBfvCHouseFeast, 1
+    filterLimit: 1
+    maxDistance: 20000
+    parameter: findBfvCampFeast <ge_<par_1>_<load_bfvworldlevel=0>> <par_1> # checkIfBiggerWorldLevel, newWorldLevel
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Village Stations                                ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Find unsealed stations and extensions
+- prefab: CraftingStation, StationExtension
+  type: poke, findUnsealedVillageStation
+  poke:
+  - self: true
+    delay: <randf_0_1.6>
+    parameter: sealIfWorldLevelValid <ge_<load_bfvworldlevel=0>_<requiredWorldLevel_<prefab>>>
+
+# Find sealed crates
+- prefab: dvergrprops_crate
+  type: poke, findSealedVillageStation
+  poke:
+  - self: true
+    delay: <randf_0_1.6>
+    parameter: unsealIfWorldLevelValid <ge_<load_bfvworldlevel=0>_<requiredWorldLevel_<string_sealedPrefab>>>
+
+# ═══════════════════════════════════════════════════════════
+# Section - Sealing Stations/Extensions
+# ═══════════════════════════════════════════════════════════
+# Seal stations if (world level >= required)=false
+- prefab: CraftingStation
+  type: poke, sealIfWorldLevelValid false
+  spawn:
+  - prefab: vfx_Place_beehive
+    pos: 0,0,1
+  - prefab: sfx_gui_repairitem_workbench
+  swap:
+  - prefab: dvergrprops_crate
+    data: isBfvVillageStationSeal
+
+# Seal extensions if (world level >= required)=false
+- prefab: StationExtension
+  type: poke, sealIfWorldLevelValid false
+  spawn:
+  - prefab: vfx_Place_beehive
+    pos: 0,0,1
+  - prefab: sfx_gui_repairitem_workbench
+  swap:
+  - prefab: dvergrprops_crate
+    data: isBfvVillageStationSealExt
+
+# ═══════════════════════════════════════════════════════════
+# Section - Unsealing Stations/Extensions
+# ═══════════════════════════════════════════════════════════
+# Unseal stations if (world level >= required)=true
+- prefab: dvergrprops_crate
+  type: poke, unsealIfWorldLevelValid true
+  filter: int, isBfvVillageStationSeal, 1
+  spawn:
+  - prefab: vfx_Place_beehive
+    pos: 0,0,1
+  - prefab: sfx_gui_repairitem_workbench
+  swap:
+  - prefab: <string_sealedPrefab>
+    data: isBfvVillageStation
+
+# Unseal extensions if (world level >= required)=true
+- prefab: dvergrprops_crate
+  type: poke, unsealIfWorldLevelValid true
+  filter: int, isBfvVillageStationSealExt, 1
+  spawn:
+  - prefab: vfx_Place_beehive
+    pos: 0,0,1
+  - prefab: sfx_gui_repairitem_workbench
+  swap:
+  - prefab: <string_sealedPrefab>
+    data: isBfvVillageStationExt
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Base Camp Feast                                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Find Base Camp Feast
+- prefab: Feast
+  type: poke, findBfvCampFeast true 0;6
+  weight: 1e30
+  filter: int, isBfvCampFeast, 1
+  # command: s <par_1> #debug
+  # spawn: vfx_spawn_small #debug
+  swap:
+  - prefab: <campFeastWorldLevel<par_2>>
+    data: isBfvCampFeast
+
+- prefab: Feast
+  type: poke, findBfvCampFeast true 0;6
+  fallback: true
+  filter: int, isBfvCampFeast, 1
+  swap:
+  - prefab: <campFeastWorldLevelFallback>
+    data: isBfvCampFeast
+
+# Find Command House Feast
+- prefab: Feast
+  type: poke, findBfvCampFeast true 0;6
+  weight: 1e30
+  filter: int, isBfvCHouseFeast, 1
+  # command: s <par_1> #debug
+  # spawn: vfx_spawn_small #debug
+  swap:
+  - prefab: <cHouseFeastWorldLevel<par_2>>
+    data: isBfvCHouseFeast
+
+- prefab: Feast
+  type: poke, findBfvCampFeast true 0;6
+  fallback: true
+  filter: int, isBfvCHouseFeast, 1
+  swap:
+  - prefab: <cHouseFeastWorldLevelFallback>
+    data: isBfvCHouseFeast
+
+# Refill base camp/chouse feast
+- prefab: Feast
+  type: change, Value 0,-1
+  weight: 1e30
+  filters:
+  - int, isBfvCampFeast, 1
+  - int, isBfvCHouseFeast, 1
+  filterLimit: 1
+  data: int, Value, <int_Feast.m_eatStacks=10>
+  injectData: false
+  spawn:
+  - prefab: fx_BonusYield
+    pos: 0,0,0.5

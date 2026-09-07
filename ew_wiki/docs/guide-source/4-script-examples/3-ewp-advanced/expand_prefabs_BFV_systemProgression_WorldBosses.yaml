@@ -1,0 +1,103 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Progression - World Bosses                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# PROGRESSION - PROGRESSION WARDS
+# ═══════════════════════════════════════════════════════════
+# ELDER UNLOCK SWAMP
+# BONEMASS UNLOCK MOUNTAIN
+# MODER UNLOCK PLAINS
+# YAGLUTH UNLOCK MISTLANDS
+- prefab: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing, SeekerQueen, Fader
+  type: destroy
+  exec: |
+    <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_<safeprefab>>>>
+  poke:
+  - prefab: dverger_guardstone
+    filter: string, Piece.m_name, <progressionWard_<safeprefab>>
+    maxDistance: 20000
+    parameter: removeProgressionWard
+      
+- prefab: dverger_guardstone
+  type: poke, removeProgressionWard
+  remove: true
+
+# ═══════════════════════════════════════════════════════════
+# PROGRESSION - PVE CASTLE BLOCK
+# ═══════════════════════════════════════════════════════════
+# World level change triggers
+- type: key, bfvworldlevel
+  poke:
+  - prefab: GlowingMushroom
+    filters:
+    - int, spawnerCastleBlockerCity, 1;14
+    maxDistance: 20000
+    parameter: findSpawnerCastleBlocker
+
+- prefab: GlowingMushroom
+  type: poke, findSpawnerCastleBlocker
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: checkCastleBlockerLevel <ge_<load_bfvworldlevel=0>_<unlockCastleBlockerCity<int_spawnerCastleBlockerCity=1>>>
+
+- prefab: GlowingMushroom
+  type: poke, checkCastleBlockerLevel false
+  # commands: #debug
+  # - s par1 is <par_1>
+  bannedObjects:
+  - prefab: CastleBlocker
+    maxDistance: 1
+  data: spawnerCastleBlockerCity
+  injectData: false
+  spawn:
+  - prefab: fx_Fader_Spin
+    pos: 0,2,5
+    rot: 0,90,0
+    repeat: 3
+    repeatInterval: 1
+  - prefab: fx_Fader_Fissure_Prespawn
+    pos: 0,2,5
+    rot: 0,90,0
+  - prefab: fx_Fader_Roar_Projectile_Hit
+    pos: 0,2,5
+    rot: 0,90,0
+  - prefab: sfx_stonegolem_attack_wosh
+    data: float, ZSFX.m_minVol, 1
+  - prefab: CastleBlocker
+    data: isCastleBlockerCity
+    pos: 0,1,0
+    rot: 180,0,0
+
+- prefab: GlowingMushroom
+  type: poke, checkCastleBlockerLevel true
+  # commands: #debug
+  # - s par1 is <par_1>
+  data: spawnerCastleBlockerCity
+  spawn:
+  - prefab: fx_Fader_Spin
+    pos: 0,2,5
+    rot: 0,90,0
+    repeat: 3
+    repeatInterval: 1
+  - prefab: fx_Fader_Fissure_Prespawn
+    pos: 0,2,5
+    rot: 0,90,0
+  - prefab: fx_Fader_Roar_Projectile_Hit
+    pos: 0,2,5
+    rot: 0,90,0
+  - prefab: sfx_dverger_heal_finish
+    data: float, ZSFX.m_minVol, 1
+  poke:
+  - prefab: CastleBlocker
+    filter: int, isCastleBlockerCity, 1;14
+    maxDistance: 10
+    parameter: removeCastleBlocker
+
+- prefab: CastleBlocker
+  type: poke, removeCastleBlocker
+  remove: true

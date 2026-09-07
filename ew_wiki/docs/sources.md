@@ -6,11 +6,19 @@ Each entry: link/path, tier (**official** — from Jere or Iron Gate/Coffee Stai
 
 ## EWP
 
-- `guide-reference/1Theory Fundamental/EWP_How_To_Use_Data.md` (local file, DhakhaR) — **community**, original author guide. Source for v1's client-side `BepInEx\config` paths, `infinity_tools.yaml`/`data.yaml` behavior. Re-check anything from here against a live/current source before reuse — written before this correction pass caught errors in how it was applied.
+- `ewp_validator/src/schema.generated.json` and its `*.test.ts` fixtures (in this repo) — **official**, generated straight from EWP's own schema. Check here first for any key/value/type question — fastest ground truth, no network round-trip.
+- [expand_world_prefabs](https://github.com/JereKuusela/valheim-expand_world_prefabs) (GitHub, Jere Kuusela) — **official**, the mod's own C# source and README. Ground truth for valid keys/values/mechanics when `ewp_validator/src/schema.generated.json` doesn't settle it (e.g. `type:`'s real enum — confirmed `create`, not the guessed `spawn`, see ticket 04 round 3).
+- `docs/guide-source/1-theory-fundamental/EWP_How_To_Use_Data.md` (local file, DhakhaR) — **community**, original author guide. Source for v1's client-side `BepInEx\config` paths, `infinity_tools.yaml`/`data.yaml` behavior. Re-check anything from here against a live/current source before reuse — written before this correction pass caught errors in how it was applied.
 
 ## WEC
 
-*(none yet)*
+- [world_edit_commands](https://github.com/JereKuusela/valheim-world_edit_commands) (GitHub, Jere Kuusela) — **official**, the mod's own C# source and README. Use for any WEC-specific command/behavior claim.
+- [valheim-dev / ServerDevcommands](https://github.com/JereKuusela/valheim-dev) (GitHub, Jere Kuusela) — **official**, a separate mod WEC depends on (`using ServerDevcommands;`). Commands WEC itself doesn't register (e.g. `search_component`, `search_item`) live here.
+
+## Valheim game data (components, fields, prefabs)
+
+- [Jotunn data dumps](https://valheim-modding.github.io/Jotunn/data/intro.html) (Jotunn modding library docs) — **community** (auto-generated from the live game, not Jere's own docs). Prefab list confirms which components a prefab has (e.g. `portal_wood` → `Piece`/`WearNTear`/`TeleportWorld`); does **not** dump individual field names per component.
+- [valheimtools.stream/wiki/components](https://valheimtools.stream/wiki/components) — **community** (per-component field dumps, decompiled). Cross-check reference only per hub-wide `AGENTS.md` (never a dependency) — used here only to verify field names already claimed elsewhere, e.g. confirmed `TeleportWorld.m_allowAllItems` real, and caught `activationDistance` as wrong (the real field is `m_activationRange`).
 
 ## Valheim / hosting / BepInEx
 

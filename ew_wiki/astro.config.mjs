@@ -26,24 +26,32 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: 'EW Toolkit Wiki',
+			title: 'Expand World Wiki',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
 			customCss: ['./src/styles/theme.css'],
+			components: {
+				// Renders the `complexity` frontmatter badge under the H1 instead
+				// of it floating as a first paragraph in the page body.
+				PageTitle: './src/components/PageTitle.astro',
+			},
 			// Everything nests one level under 'EWP' so a future second mod
 			// component is a sibling top-level group, not a rebuild of this one.
 			// autogenerate still reflects each section's own folder — only the
 			// folder root moved (docs/ → docs/ewp/).
 			sidebar: [
-				{ label: 'Start Here', slug: 'index' },
+				{ label: 'Home', slug: 'index' },
 				{
-					label: 'EWP',
+					label: 'Guide - EWP',
 					items: [
-						{ label: 'Start Here', slug: 'ewp' },
+						// No dedicated EWP landing page — its old "first script" example
+						// duplicated Concepts/script.mdx's "What goes inside a script"
+						// (see ticket 04 round 3). Preparation is the entry point instead.
 						{ label: 'Preparation', slug: 'ewp/preparation' },
 						{ label: 'Concepts', items: [{ autogenerate: { directory: 'ewp/concepts' } }] },
-						{ label: 'Reference', items: [{ autogenerate: { directory: 'ewp/reference' } }] },
-						{ label: 'Recipes', items: [{ autogenerate: { directory: 'ewp/recipes' } }] },
-						{ label: 'Troubleshooting', items: [{ autogenerate: { directory: 'ewp/troubleshooting' } }] },
+						// Reference/Recipes/Troubleshooting removed for now (2026-09-07) — placeholder
+						// scaffolding from early tickets, not real content. Re-add when a section
+						// actually has something to say (Reference needs schema-gen tooling that
+						// doesn't exist yet; Troubleshooting needs the validator's diagnosis text).
 					],
 				},
 				// { label: 'A Second Mod', items: [{ autogenerate: { directory: 'second-mod' } }] },

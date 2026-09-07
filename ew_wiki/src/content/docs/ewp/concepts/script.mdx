@@ -1,0 +1,51 @@
+---
+title: Start Writing a Script
+description: What a script is, in the simplest terms.
+complexity: beginner
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A **script** is just the `.yaml` file you write. "Writing a script" and "editing a `.yaml` file" mean the same thing.
+
+## What goes inside a script
+
+Most of what you write follows one pattern: "when X happens, do Y."
+
+```yaml
+- prefab: Boar
+  type: create  # fires when this prefab is spawned/created
+  data: strongBoar
+```
+
+This says: whenever a Boar spawns, apply the [`strongBoar` data entry](/ew_wiki/ewp/concepts/data/) to it. A single block like this is already a complete, working script — you don't need dozens of lines to get started.
+
+<Aside type="caution">
+Keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. `Prefab`/`Type` won't cause an error, it'll just silently not match anything.
+</Aside>
+
+## A script can hold more than one rule
+
+Stack as many blocks as you like in the same file:
+
+```yaml
+- prefab: Boar
+  type: create
+  data: strongBoar
+
+- prefab: Greydwarf
+  type: create
+  data: strongGreydwarf
+```
+
+EWP reads the whole file and applies whichever block matches what's happening.
+
+## Getting your script running
+
+Saving the file in the right folder is the only "install" step there is — see [Preparation: Getting a script onto your server](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
+
+<Aside type="tip">
+Get your [data](/ew_wiki/ewp/concepts/data/) ready before your script needs it — see [Preparation: set up data before scripts](/ew_wiki/ewp/preparation/#a-good-habit-set-up-data-before-scripts) for why.
+</Aside>

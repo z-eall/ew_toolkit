@@ -1,0 +1,72 @@
+---
+title: Understanding Fields
+description: What a field is, and how to find the one you need using autocomplete.
+complexity: beginner
+sidebar:
+  order: 1
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Every object in the game is built from **fields** — the individual settings that make it behave the way it does. A door has door-related fields, a fire has fire-related fields, and so on. Changing a field directly, without saving it for reuse, is called a **field edit**, written as `f=`.
+
+## What "Components" are
+
+Most objects group their fields into a few named buckets called **Components**. A portal, for example, has:
+
+- **Piece** — fields about it being a placeable object
+- **WearNTear** — fields about taking damage or degrading
+- **TeleportWorld** — fields about teleporting
+- (and others — every object has a different set)
+
+You don't need to memorize these — the game's own autocomplete shows you what's available, one step at a time.
+
+## Finding a field with autocomplete
+
+Using a portal as the example:
+
+<Steps>
+
+1. Type `spawn_object portal_wood f=` in the console. Autocomplete lists every Component the portal has — press **Tab** to cycle through them.
+2. Pick one, followed by a comma. For a portal, that's `TeleportWorld`:
+   ```
+   spawn_object portal_wood f=TeleportWorld,
+   ```
+3. Autocomplete now lists every field inside `TeleportWorld` — press **Tab** to cycle again. Pick one, e.g. `activationRange`:
+   ```
+   spawn_object portal_wood f=TeleportWorld,activationRange,
+   ```
+4. Autocomplete shows what kind of value it expects (a number, here). Fill it in:
+   ```
+   spawn_object portal_wood f=TeleportWorld,activationRange,10
+   ```
+
+</Steps>
+
+Done — a portal that turns on its activation animation when a player comes within 10 meters.
+
+## Doing more than one edit at once
+
+Chain field edits on the same line:
+
+```
+spawn_object portal_wood f=TeleportWorld,activationRange,10 f=TeleportWorld,allowAllItems,true
+```
+
+## Editing an object that's already placed
+
+Hover over it and use `object f=...` the same way. Most people work out the field and value they want on a fresh `spawn_object` first, then apply it to the real object with `object f=`.
+
+## Finding every object with a certain field
+
+Once you've found a Component you like, you can ask "what else has this?":
+
+```
+search_component object Door
+```
+
+This lists every object with a Door component. Swap `object` for `location` to search locations instead.
+
+<Aside type="tip">
+A field edit changes one thing on one object, once. To save a group of field edits so you can reuse them, see [Understanding Data](/ew_wiki/ewp/concepts/data/).
+</Aside>

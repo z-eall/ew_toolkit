@@ -1,0 +1,18 @@
+- prefab: Boar
+  type: create
+  spawn:
+  - prefab: vfx_spawn
+    pos: 0,0,2
+
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Coins
+
+- prefab: Player
+  type: say, spawn
+  spawn:
+  - prefab: Boar
+    data: strongBoar
+  - prefab: Neck
+    data: int, level, 3

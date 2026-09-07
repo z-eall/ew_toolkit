@@ -18,4 +18,87 @@
 	--sl-color-hairline: var(--border);
 	--sl-color-hairline-light: var(--border);
 	--sl-color-hairline-shade: var(--border);
+	/* Wider center content column (Starlight default 45rem) so the "On this
+	   page" rail sits further right instead of floating in a wide empty gap
+	   — same formula Starlight uses, just fed a bigger number. */
+	--sl-content-width: 56rem;
+}
+
+/* Prev/next footer: Starlight's default is a bulky bordered card with a
+   shadow and 2xl title text. Hub-wide style is flatter — a plain panel-tint
+   hover, no border/shadow gimmicks (see ew_toolkit/src/style.css's
+   .tool-btn) — so this reshapes the same markup to match instead of adding
+   a heavier card here. The nudge-on-hover arrow is the one added flourish,
+   kept subtle and cheap (transform only, no layout shift). */
+.pagination-links a {
+	border: none;
+	box-shadow: none;
+	border-radius: 6px;
+	background: transparent;
+	padding: 0.75rem 0.5rem;
+	transition: background-color 0.15s ease;
+}
+.pagination-links a:hover {
+	background: var(--panel);
+}
+.pagination-links svg {
+	transition: transform 0.15s ease;
+}
+.pagination-links a[rel='next']:hover svg {
+	transform: translateX(3px);
+}
+.pagination-links a[rel='prev']:hover svg {
+	transform: translateX(-3px);
+}
+.pagination-links .link-title {
+	font-size: var(--sl-text-base);
+	color: var(--sl-color-text);
+}
+
+/* Home page's component picker, styled to match the hub landing page's own
+   .tool-row/.tool-btn/.tool-desc exactly (ew_toolkit/src/style.css) — same
+   pill-button-plus-description row, not a Starlight-native pattern. --accent
+   mirrors the hub's own local token (a hover-only brightening, not part of
+   the shared 5-color palette — see that file's comment on why it's named
+   this and not reused from shared/theme.css). */
+:root {
+	--accent: var(--text);
+}
+/* Same pattern as the hub landing page's own h1 + .tagline pair
+   (ew_toolkit/src/style.css) — a muted one-line lead-in right under the H1. */
+.home-tagline {
+	margin: 0 0 1rem;
+	color: var(--muted);
+	font-size: 0.95rem;
+}
+.home-tool-rows {
+	margin: 1.5rem 0;
+}
+.home-tool-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.home-tool-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex: none;
+	background: var(--panel);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.home-tool-btn:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+.home-tool-desc {
+	color: var(--muted);
+	font-size: 13.5px;
 }

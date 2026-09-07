@@ -1,0 +1,90 @@
+---
+title: Preparation
+description: Where your YAML files live, and how to get scripts and data onto your server.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import configRoot from '../../../assets/ewp/preparation/config-root.png';
+import dataYamlComparison from '../../../assets/ewp/preparation/data-yaml-comparison.png';
+
+Before you write a single rule, get your setup sorted. It's five minutes now that saves you a confused hour later — especially the data part below, which trips up almost everyone at least once.
+
+This guide assumes EWP, WEC, and BepInEx are already installed (via Thunderstore, Gale, or a manual install from GitHub) — that part's already well covered elsewhere. We're picking up from "the mods are in," to "now what?"
+
+## Singleplayer vs. dedicated server
+
+<Aside type="note">
+You can do all of this in singleplayer — you're your own server there, and edits are instantly live. It's a fine way to poke around. However, this guide, and the rest of this wiki, leans toward being written for a dedicated server. If you're still in singleplayer, everything below still applies to your own client's `BepInEx\config` folder — just know it'll look a little different once you make the jump.
+</Aside>
+
+## Where your dedicated server's YAML files live
+
+Two ways people run a dedicated server, and it changes where you'll find your files:
+
+- **Self-hosted (local):** you run the server on your own PC or box — direct folder access, same as your game client.
+- **Rented (hosted):** a hosting provider runs it for you — you get file access through SFTP or a web-based file manager instead of a local folder.
+
+Either way, it's a separate install from your normal game — its own `BepInEx\config` folder, not the one your game client uses, even if both live on the same PC.
+
+**Rented hosting:** the exact path depends on your host's control panel — look for a `BepInEx\config` folder in whatever file access they give you.
+
+**Self-hosted, common default path (Windows, via SteamCMD):**
+`C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server\BepInEx\config`
+
+<Image src={configRoot} alt="The BepInEx\config folder on a self-hosted dedicated server, with the address bar and the expand_world folder highlighted" />
+
+<Aside type="tip">
+Live-editing works the same on a dedicated server as it does in singleplayer — save a change to the server's YAML, and it applies right away, no restart needed. Just remember it goes live for *everyone connected at once*, so try anything risky on a private or offline world first.
+</Aside>
+
+## A good habit: set up data before scripts
+
+Quick bit of friendly advice before you start moving files around: try to get your [**data**](/ew_wiki/ewp/concepts/data/) in place before your [**scripts**](/ew_wiki/ewp/concepts/script/). You don't have to — EWP won't refuse to work if you do it the other way round — but building this habit early will save you some head-scratching later.
+
+Here's the why. A script's whole job is to look up a data entry and do something with it — spawn this, tweak that. If the data entry it's looking for doesn't exist yet, the script has nothing to point to, and it'll complain (even if the data shows up two seconds later). Data just sitting there with nothing using it yet, though? Totally fine — it waits quietly until a script needs it.
+
+So the easy order is: **data first, then the scripts that lean on it.** And if you add new data *after* a script that needs it is already running, give the script a little nudge — resave its `.yaml` file, and EWP will look at it fresh against the data that's now there.
+
+## Getting data onto your server (the part that trips people up)
+
+Here's the confusing bit, so take it slow: **WEC and EWP don't read the same `data.yaml`.**
+
+- When you use `data save=name` or `data dump=` in-game, WEC writes that entry to **your own local client's** `data.yaml` — `C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\config\data\data.yaml`. Your *client*, not your server.
+- EWP, running on your *server*, reads its own separate `data.yaml` — under the server's own install, e.g. `C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server\BepInEx\config\data\data.yaml` on a self-hosted server.
+
+<Aside type="caution">
+These are two different files, on two different installs. Capturing data with `data save=` only ever writes to your own client — it does not appear on your server by itself. To actually use that data in-game on your server, you have to copy the entry over yourself.
+</Aside>
+
+<Image src={dataYamlComparison} alt="Two data.yaml folders compared: the server's, at .../Valheim dedicated server/BepInEx/config/data (top), and the client's, at .../Valheim/BepInEx/config/data (bottom)" />
+
+*Top: the server's `data` folder. Bottom: the client's `data` folder — a different install entirely, even though the file inside has the same name.*
+
+<Steps>
+
+1. While connected to any world as a player, hover the object or prefab you want to capture, and run `data save=my_entry` (or `data dump=` for other data) in the console.
+2. Open your own local `data.yaml` (the client path above) and find the `my_entry` block you just created.
+3. Copy that block.
+4. Open your server's own `data.yaml` (the server path above) and paste it in.
+5. Save. EWP on the server picks it up live — no restart needed, same as any other YAML edit.
+
+</Steps>
+
+## Getting a script onto your server
+
+You'll get a script one of two ways: you download one someone else wrote, or you write your own. Either way, "installing" it is the same one step:
+
+<Steps>
+
+1. Save the `.yaml` file into your server's `BepInEx\config\expand_world` folder.
+
+</Steps>
+
+That's it. No build step, no restart — just the file being there.
+
+<Aside type="note">
+EWP actually scans every subfolder under `BepInEx\config`, not just `expand_world` — but `expand_world` is the folder EWP itself auto-generates and uses by convention, so stick with it rather than scattering scripts across other folders.
+</Aside>
+
+<Image src={configRoot} alt="The BepInEx\config folder listing, with expand_world highlighted" />
