@@ -26,6 +26,65 @@ This says: whenever a Boar spawns, apply the [`strongBoar` data entry](/ew_wiki/
 Keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. `Prefab`/`Type` won't cause an error, it'll just silently not match anything.
 </Aside>
 
+## What `type:` can trigger on
+
+The example above used `type: create` — that's just one of several triggers `type:` understands. The ones you'll reach for most as a beginner:
+
+- `create` — the moment this prefab spawns
+- `destroy` — the moment it's destroyed
+- `change` — one of its data values changes
+- `state` — it broadcasts a state change (used for things like a door opening)
+- `say` — it, or a player, says something in chat
+
+(and others — `poke`, `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
+
+Some triggers take a parameter, written after a comma: `type: say, spawn` fires only when the chat message is exactly "spawn" — not on any chat message. What the parameter means depends on the trigger (`change`'s parameter is a data name, `time`'s is a granularity like `day`/`hour`); `say`'s is the exact text to match.
+
+<Aside type="note">
+Watching for more than one *type* at once (not more than one parameter) uses a different field, `types:`, as a list — that's further out than a beginner script needs.
+</Aside>
+
+## Only affecting the right objects: `filter:`
+
+Sometimes `prefab:` + `type:` matches more than you want — every Boar, say, not just the tough ones. `filter:` narrows it down to only the objects that match a condition:
+
+```yaml
+- prefab: Boar
+  type: create
+  filter: int, level, 2;3  # only levels 2 or 3 — semicolon separates a list/range, not a comma
+  data: strongBoar
+```
+
+Same three pieces as a field edit (see [Understanding Fields](/ew_wiki/ewp/concepts/fields/)) — `type, field, value` — just checking a value instead of setting one. `bannedFilter:` does the opposite: matches everything *except* that condition:
+
+```yaml
+- prefab: Boar
+  type: create
+  bannedFilter: int, level, 1  # skip the plain, un-starred ones
+  data: strongBoar
+```
+
+<Aside type="tip">
+`filter:` and `bannedFilter:` also accept a saved data entry's name instead of spelling out a field, e.g. `filter: strongBoar` — matches whenever the object already has that entry applied.
+</Aside>
+
+## A rule can do more than set data
+
+Every example so far used `data:` to change something that already exists. A rule can also **create a new object**, with `spawn:`:
+
+```yaml
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Coins
+```
+
+Whenever a Neck is destroyed, this spawns a Coins drop where it died. `spawn:` takes a list, so one rule can spawn more than one thing.
+
+<Aside type="tip">
+See `data:` and `spawn:` used together, built up one rule at a time, in [Your First Script, Step by Step](/ew_wiki/ewp/examples/first-script/).
+</Aside>
+
 ## A script can hold more than one rule
 
 Stack as many blocks as you like in the same file:

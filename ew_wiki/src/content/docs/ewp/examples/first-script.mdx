@@ -1,0 +1,83 @@
+---
+title: Your First Script, Step by Step
+description: A real, working script built up one rule at a time.
+complexity: beginner
+sidebar:
+  order: 1
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+[Fields](/ew_wiki/ewp/concepts/fields/), [Data](/ew_wiki/ewp/concepts/data/), and [Start Writing a Script](/ew_wiki/ewp/concepts/script/) covered the pieces one at a time. This page puts them together into one small file — copy it, save it, and it just works.
+
+<Steps>
+
+1. **Give a Boar a little effect when it spawns**
+
+   ```yaml
+   - prefab: Boar
+     type: create
+     spawn:
+     - prefab: vfx_spawn
+       pos: 0,0,2
+   ```
+
+   `spawn:` creates a new object — here, a visual effect — every time a Boar is created. `pos: 0,0,2` positions it 2 meters *up* from the Boar (the three numbers are x, z, y — sideways, sideways, up).
+
+2. **Drop coins when a Neck dies**
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     spawn:
+     - prefab: Coins
+   ```
+
+   Same shape, different trigger: `type: destroy` instead of `create`. No `pos:` this time — it just spawns at the Neck's own position.
+
+3. **Let a chat command spawn a tougher Boar and a leveled Neck**
+
+   ```yaml
+   - prefab: Player
+     type: say, spawn
+     spawn:
+     - prefab: Boar
+       data: strongBoar
+     - prefab: Neck
+       data: int, level, 3
+   ```
+
+   `type: say, spawn` fires when a player types exactly `spawn` in chat (see [Start Writing a Script: what `type:` can trigger on](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) for why the comma isn't "either type"). This rule spawns two things at once: a Boar using the [`strongBoar` data entry](/ew_wiki/ewp/concepts/data/), and a Neck set directly to level 3 with the `type, key, value` shorthand instead of a named entry.
+
+4. **Put it all together**
+
+   All three rules can live in the same `.yaml` file — EWP checks every rule against every event and runs whichever ones match:
+
+   ```yaml
+   - prefab: Boar
+     type: create
+     spawn:
+     - prefab: vfx_spawn
+       pos: 0,0,2
+
+   - prefab: Neck
+     type: destroy
+     spawn:
+     - prefab: Coins
+
+   - prefab: Player
+     type: say, spawn
+     spawn:
+     - prefab: Boar
+       data: strongBoar
+     - prefab: Neck
+       data: int, level, 3
+   ```
+
+   Save this in the script folder from [Preparation: Getting a script onto your server](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server), and you've got a working script.
+
+</Steps>
+
+<Aside type="tip">
+Try changing a prefab name or a `pos:` number and resaving — that's the fastest way to see what each piece actually does.
+</Aside>

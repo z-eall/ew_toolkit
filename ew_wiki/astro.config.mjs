@@ -48,7 +48,11 @@ export default defineConfig({
 						// (see ticket 04 round 3). Preparation is the entry point instead.
 						{ label: 'Preparation', slug: 'ewp/preparation' },
 						{ label: 'Concepts', items: [{ autogenerate: { directory: 'ewp/concepts' } }] },
-						// Reference/Recipes/Troubleshooting removed for now (2026-09-07) — placeholder
+						// "Examples" is the applied-content sibling to Concepts — worked scripts,
+						// not definitions (renamed from the placeholder "Recipes" name, which read
+						// as more advanced/cookbook-y than this section is going for).
+						{ label: 'Examples', items: [{ autogenerate: { directory: 'ewp/examples' } }] },
+						// Reference/Troubleshooting removed for now (2026-09-07) — placeholder
 						// scaffolding from early tickets, not real content. Re-add when a section
 						// actually has something to say (Reference needs schema-gen tooling that
 						// doesn't exist yet; Troubleshooting needs the validator's diagnosis text).

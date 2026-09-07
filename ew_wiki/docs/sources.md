@@ -8,11 +8,13 @@ Each entry: link/path, tier (**official** — from Jere or Iron Gate/Coffee Stai
 
 - `ewp_validator/src/schema.generated.json` and its `*.test.ts` fixtures (in this repo) — **official**, generated straight from EWP's own schema. Check here first for any key/value/type question — fastest ground truth, no network round-trip.
 - [expand_world_prefabs](https://github.com/JereKuusela/valheim-expand_world_prefabs) (GitHub, Jere Kuusela) — **official**, the mod's own C# source and README. Ground truth for valid keys/values/mechanics when `ewp_validator/src/schema.generated.json` doesn't settle it (e.g. `type:`'s real enum — confirmed `create`, not the guessed `spawn`, see ticket 04 round 3).
+  - [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) inside that same repo — the mod's own prose reference for every top-level rule-entry field, `type:`'s full trigger list with per-type semantics, and the `filter:`/`bannedFilter:`/`filters:`/`filterLimit:` system. Better than reading the C# directly for anything field-shaped; check here before the schema for *meaning*, the schema for *valid values*.
 - `docs/guide-source/1-theory-fundamental/EWP_How_To_Use_Data.md` (local file, DhakhaR) — **community**, original author guide. Source for v1's client-side `BepInEx\config` paths, `infinity_tools.yaml`/`data.yaml` behavior. Re-check anything from here against a live/current source before reuse — written before this correction pass caught errors in how it was applied.
 
 ## WEC
 
 - [world_edit_commands](https://github.com/JereKuusela/valheim-world_edit_commands) (GitHub, Jere Kuusela) — **official**, the mod's own C# source and README. Use for any WEC-specific command/behavior claim.
+  - [`README_data.md`](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md) inside that same repo — the mod's own prose reference for the `data` command, every value-type list (`ints`/`floats`/`strings`/`longs`/`vecs`/`quats`/`bools`/`hashes`/`items`/etc.), parametrized/randomized data entries, value groups, and chest loot generation (`itemAmount`, `chance`, `containerSize`). The loot-generation section is the real-source backing for any "loot & drop tweaks" content.
 - [valheim-dev / ServerDevcommands](https://github.com/JereKuusela/valheim-dev) (GitHub, Jere Kuusela) — **official**, a separate mod WEC depends on (`using ServerDevcommands;`). Commands WEC itself doesn't register (e.g. `search_component`, `search_item`) live here.
 
 ## Valheim game data (components, fields, prefabs)

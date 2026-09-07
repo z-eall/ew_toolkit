@@ -10,5 +10,7 @@ The right-hand "On this page" TOC is good, but wants a collapse/expand toggle (l
 
 This is a real UI component build, not a config change: overriding Starlight's default `TableOfContents` component, plus client-side JS for the collapse state and scroll-spy animation. Needs its own design pass (where does the toggle live, what does "collapsed" look like — icon-only rail? fully hidden?, does collapse state persist across page loads via localStorage) before implementation.
 
+**Scope addition (2026-09-07):** maintainer also asked for a "back to top" button. Folding it in here rather than building it standalone — Starlight has no built-in one, and it's the same right-side page-navigation area this ticket is already redesigning. Include in the design pass: does jumping to top live on the TOC panel itself (e.g. clicking its title) or as its own small control within the same panel.
+
 ## Answer
 
