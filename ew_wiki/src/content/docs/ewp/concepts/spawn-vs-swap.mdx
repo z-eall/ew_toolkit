@@ -67,7 +67,7 @@ A few more `spawn:` fields exist, each big enough to earn a dedicated page once 
 - `owner:` — overrides who the spawned object counts as belonging to, tied into the player-identity functions covered later.
 
 <Aside type="tip">
-These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Sending RPCs to Clients](/ew_wiki/ewp/concepts/rpcs/) too — same mechanics, different action.
+These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Understanding RPC](/ew_wiki/ewp/concepts/rpcs/) too — same mechanics, different action.
 </Aside>
 
 ## `swap:`: same shape, replaces instead of adds
@@ -90,7 +90,7 @@ These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Sending RPCs to 
 </Aside>
 
 <Aside type="caution">
-Three gotchas worth knowing before relying on `swap:`:
+Three things `swap:` doesn't do the way you might expect:
 
 - If the swapped object fails to spawn (a `condition:` doesn't pass, or `chance:` misses), the **original is still removed** — a failed swap doesn't roll back and leave the original in place.
 - Swapping can break the object's ZDO connection (the game's own link between an object and its spawn point) — a spawn point may keep trying to respawn a creature that's technically still "alive" as the swapped-in object.

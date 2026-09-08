@@ -1,0 +1,202 @@
+---
+title: "Advanced Poke - Mechanics"
+description: "Every poke: field Understanding Poke didn't cover — self:, target:, connected:, poke-carried pars, evaluate:, weight:, the repeat/interval/chance timing set, random:, the distance/height range fields, and position:/offset:."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Understanding Poke](/ew_wiki/ewp/concepts/poke/) covered the connection mechanic itself — `parameter:` matching, `filter:` under `poke:`, and the four reasons a poke goes quiet — plus `delay:`, `repeat:`, `limit:`, and `maxDistance:` by name only. This page teaches the rest of `poke:`'s real field set, one at a time. [Advanced Poke - Creative Systems](/ew_wiki/ewp/concepts/advanced-poke-creative-systems/) is where these get combined into full patterns — this page is the reference for what each field actually does on its own.
+
+<Aside type="note">
+Field semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `Pokes` section.
+</Aside>
+
+## `target:` — poking one specific object, not a prefab match
+
+`prefab:` finds *any* matching object in range. `target:` instead names one exact object, by its ZDO id — and the two can't be combined; a poke entry picks one or the other.
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+  poke:
+  - target: <zdo>   # pokes the door itself, by its own exact id — same effect as self: true here
+    parameter: logOpen
+```
+
+`target:` is most useful once you have some *other* object's id in hand — typically because it was handed to you as a poke-carried value (see below), letting one specific object poke back at the exact object that originally poked it, rather than every matching object nearby.
+
+## `connected:` — reaching objects linked by `connect:`/`attach:`
+
+[`spawn:`'s `connect:`/`attach:` fields](/ew_wiki/ewp/concepts/spawn-vs-swap/#fields-with-their-own-page-later) link a spawned object to another one so they move or interact together. `connected: true` on a poke entry extends the poke to reach objects linked that way too, not just objects matching `prefab:` in range:
+
+```yaml
+- prefab: Ship
+  type: poke, stormHit
+  connected: true   # also pokes anything connect:/attach:-ed to this Ship (e.g. a passenger)
+  poke:
+  - prefab: Player
+    parameter: braceForImpact
+```
+
+The reverse direction uses `target: <connected>` instead — aiming at the connected objects of some *other* object, rather than the poker's own connections.
+
+## Poke-carried pars: sending values along with a poke
+
+`<par_X>` isn't only for a trigger's own information (a chat message, a changed field) — [Understanding Pars](/ew_wiki/ewp/concepts/pars/) covers that side. A poke can carry its own values too, read back the exact same way by whatever rule answers it.
+
+**`type: poke, X` is a trigger like any other, so it gets pars like any other trigger does.** The difference is entirely about *where the value came from*: a trigger par comes from whatever the game just did, a poke's pars come from the calling rule's own `poke:` entry — someone chose to send that value, on purpose, at the moment they wrote it. A poke breaks the chain back to whatever originally triggered the calling rule; pars don't travel through it automatically unless the calling rule hands them along explicitly.
+
+Two fields send extra values, beyond the parameter itself:
+
+```yaml
+- prefab: Player
+  type: say, unlock
+  poke:
+  - prefab: wood_door
+    pars: tryCode, 4821   # comma-separated — the current field
+```
+
+```yaml
+- prefab: Player
+  type: say, unlock
+  poke:
+  - prefab: wood_door
+    parameter: tryCode 4821   # space-separated — the older field, still works
+```
+
+<Aside type="note">
+`pars:` and `parameter:` do the same job — `pars:` is the current field (comma-separated, strict: a value containing a comma won't accidentally split into an extra parameter). `parameter:` is the older field (space-separated, dynamic: a value containing a space *will* split into extra parameters) — it still works, same as `data:` still works as a legacy alias for `filter:` under `poke:`. Either one reads back the exact same way.
+</Aside>
+
+### `par_0` is the match itself
+
+The 0-indexed rule from [Understanding Pars](/ew_wiki/ewp/concepts/pars/#indexing-starts-at-0) still applies — it's just index `0` that surprises here, the same way a literal `say` match fills `par_0` with the matched word itself. `type: poke, tryCode` matches on the first value sent (`tryCode` itself lands in `<par_0>`); anything sent *after* it starts at `<par_1>`:
+
+```yaml
+- prefab: wood_door
+  type: poke, tryCode
+  command: s <par_0> attempt was <par_1>  # shouts "tryCode attempt was 4821"
+```
+
+In practice `<par_0>` is rarely worth reading back — you already know it, you wrote it into `type: poke, ...` to get here. `<par_1>` onward is where the values you actually sent live.
+
+### Combining `<par_X>` with `target:` — pairing one object to another
+
+Sending `<zdo>` as a poke-carried value, then poking back with `target: <par_X>`, lets one specific object respond to the exact object that poked it — not every matching object nearby:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+  poke:
+  - prefab: piece_chest_blackmetal
+    maxDistance: 10
+    parameter: doorOpened <zdo>   # this specific door's own id, not "any door in range"
+
+- prefab: piece_chest_blackmetal
+  type: poke, doorOpened
+  poke:
+  - target: <par_1>   # pokes back the exact door that opened it, not every door nearby
+    parameter: chestUnlocked
+```
+
+`<par_1>` only needs to live long enough to be re-sent within the same rule that received it, as shown here — carrying it further than that (into a rule triggered later, by something else entirely) needs it saved into [`data:`](/ew_wiki/ewp/concepts/data/) first, the same as any other par.
+
+### Trigger par vs. poke-carried value, side by side
+
+| | Trigger par | Poke-carried value |
+|---|---|---|
+| Source | Whatever the trigger itself just did (chat text, changed field, ...) | The `pars:`/`parameter:` on the poke that called this rule |
+| Set by | The game | The calling rule's own author |
+| Read with | `<par_X>` | `<par_X>` — same syntax, different rule's trigger |
+| Only available on | That trigger's own rule | A rule whose trigger is `type: poke, ...` |
+
+Same syntax, because a poke is a trigger like any other — `<par_X>` always means "the pars this rule's own trigger came with." The only thing that changes is what kind of trigger that is.
+
+## `evaluate:` — turning off legacy math parsing
+
+`evaluate:` (default `true`) controls whether math symbols inside a poke's parameter value get calculated. `scripting.md` calls this mechanism legacy — [functions](/ew_wiki/ewp/concepts/functions/) are the current way to compute a value — and warns it can produce "weird results" if a parameter's own text happens to contain math symbols it wasn't meant to trigger:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  poke:
+  - prefab: Player
+    parameter: message "Price: 5-2"   # evaluate: true (the default) could try to compute 5-2 here
+    evaluate: false   # keeps "Price: 5-2" as literal text instead
+```
+
+Set `evaluate: false` any time a value you're sending might contain characters that look like math but aren't meant to be computed.
+
+## `weight:` — picking one poke from a weighted group
+
+Same mechanic as [`spawn:`'s `weight:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — when several poke entries in the same list carry a `weight:`, only one of them fires, chosen by weight:
+
+```yaml
+poke:
+- prefab: wood_door
+  weight: 3   # 3-in-4 chance of being the one that fires
+  parameter: openSlow
+- prefab: wood_door
+  weight: 1   # 1-in-4 chance
+  parameter: openFast
+```
+
+## Timing: `delay:`, `repeat:`, `repeatInterval:`, `repeatChance:`
+
+These four behave exactly like their [`spawn:` counterparts](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — `delay:` waits before the first poke fires, `repeat:` (default `0`) fires it that many *extra* times on top of the first, `repeatInterval:` (default `0`) is the gap between each, and `repeatChance:` (default `1`) rolls separately for every attempt including the first:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  poke:
+  - self: true
+    delay: 2       # first extra poke 2 seconds after the original
+    repeat: 3      # 4 total: the original poke, plus 3 repeats
+    repeatInterval: 5   # 5 seconds between each of those
+    parameter: checkStillOpen
+```
+
+## `limit:` and `random:` — when more objects match than you want poked
+
+`limit:` (already named in Understanding Poke) caps how many matching objects actually get poked — leave it unset and every match gets poked. `random:` decides *which* ones are picked once there are more matches than the limit allows: `false` (the default) picks the closest objects first; `true` picks randomly instead.
+
+```yaml
+poke:
+- prefab: wood_door
+  limit: 2         # only 2 doors get poked, even if more are in range
+  random: true      # which 2 is random, not "the 2 closest"
+  parameter: openDoor
+```
+
+## Range: `minDistance:`/`maxDistance:` and `minHeight:`/`maxHeight:`
+
+`maxDistance:` (already named in Understanding Poke, default 100 meters) sets the outer edge of a poke's reach. `minDistance:` sets an inner edge — combined, the two carve out a ring instead of a solid circle. `minHeight:`/`maxHeight:` do the same thing on the vertical axis, as a height *difference* from the poker rather than an absolute altitude:
+
+```yaml
+poke:
+- prefab: Player
+  minDistance: 5   # nobody within 5m (too close to be "nearby danger")
+  maxDistance: 20  # nobody past 20m either
+  maxHeight: 3     # and only if they're roughly level with the poker, not on a cliff above
+  parameter: nearbyDanger
+```
+
+<Aside type="caution">
+`maxDistance:`'s default (100m) is measured from the triggering object — except from a no-prefab trigger ([`event`/`key`/`globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)), where the mod's own docs say it's measured from the world center `(0,0,0)` instead, since there's no triggering object to measure from.
+</Aside>
+
+## `position:`/`offset:` — placing effects independent of range
+
+`position:` overrides where a poke's effects are considered to originate from entirely — an absolute `x,z,y` world coordinate, ignoring the poker's own location. `offset:` is milder: an `x,z,y` shift *relative to* the poker's own position and rotation, the same shape [`spawn:`'s `pos:`](/ew_wiki/ewp/examples/first-script/) already uses.
+
+```yaml
+poke:
+- prefab: Player
+  offset: 0,2,0   # 2 meters in front of the poker, in whatever direction it's facing
+  parameter: alertNearby
+```
+
+`position:`/`offset:` change where an effect is *centered*, not which objects get poked — they compose with `filter:`/`maxDistance:`/etc., they don't replace them.

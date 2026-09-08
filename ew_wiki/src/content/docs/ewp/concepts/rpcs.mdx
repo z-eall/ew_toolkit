@@ -1,5 +1,5 @@
 ---
-title: Sending RPCs to Clients
+title: Understanding RPC
 description: What an RPC call is, the objectRpc/clientRpc split, and how to fire one safely at a basic level.
 complexity: intermediate
 ---
@@ -10,7 +10,7 @@ An **RPC call** ("remote procedure call") sends data straight to a client — us
 
 **EWP lets you fire the exact same calls yourself, from any rule — not just the moment the game would normally send them.** Nothing about typing a word in chat would ever heal you in vanilla Valheim. With a script, it can, because the RPC that heals a player doesn't care *why* it was called — only that it was. That's the actual point of `objectRpc:`/`clientRpc:`: not replaying what the game already does under a different name, but making a real effect happen somewhere it normally couldn't.
 
-This page covers `objectRpc:` and `clientRpc:` — naming an RPC, aiming it with `target:`, passing parameters, and `chance:`. A deeper page ("Advanced RPC stuff") covers everything past that once you need it.
+This page covers `objectRpc:` and `clientRpc:` — naming an RPC, aiming it with `target:`, passing parameters, and `chance:`. [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/) covers everything past that once you need it.
 
 ## `objectRpc:` vs. `clientRpc:`
 
@@ -73,7 +73,7 @@ There's no partial matching and no helpful error — a misspelled or unsupported
 One player types a word, and the whole server sees a banner — leaving `target:` at its default (`owner`) would only show it to that one player. It's worth setting `target:` explicitly on any call meant for everyone, so the next reader doesn't have to check the default.
 
 <Aside type="note">
-`target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — saved for "Advanced RPC stuff."
+`target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — see [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/).
 </Aside>
 
 ## Passing parameters: `1:`, `2:`, `3:`, ...
@@ -115,4 +115,4 @@ A few `objectRpc:`/`clientRpc:` fields exist beyond what's shown here, each big 
 - `source:` — fakes the call as coming from a different object's owner, using the same `<zdo>`-function pattern covered elsewhere.
 - `overwrite:` — replaces any pending delayed call of the same name/target instead of stacking another one.
 
-All three, plus the full per-component RPC catalog, are covered in "Advanced RPC stuff."
+All three, plus the full per-component RPC catalog, are covered in [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/).

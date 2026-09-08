@@ -78,9 +78,38 @@ export default defineConfig({
 								'ewp/concepts/functions',
 								'ewp/concepts/custom-data',
 								'ewp/concepts/rpcs',
-								// Type: Time / Type: Realtime land here as each is ported
-								// (ticket 07) — not listed yet since a sidebar entry needs
-								// a real page to link to.
+							],
+						},
+						// Advanced: each page teaches genuinely new fields/functions/trigger
+						// types not covered anywhere else in the guide — skipping one leaves
+						// a real gap. type: time / type: realtime land here, not Intermediate
+						// (supersedes the plan noted above — confirmed with the maintainer
+						// 2026-09-08).
+						{
+							label: 'Advanced',
+							items: [
+								'ewp/concepts/advanced-functions',
+								'ewp/concepts/advanced-rpcs',
+								'ewp/concepts/advanced-triggers-change',
+								'ewp/concepts/advanced-triggers-time',
+								'ewp/concepts/advanced-triggers-realtime',
+								'ewp/concepts/advanced-triggers-no-prefab',
+								'ewp/concepts/advanced-filtering',
+								'ewp/concepts/advanced-poke-mechanics',
+								'ewp/concepts/advanced-poke-creative-systems',
+							],
+						},
+						// Extended Reading: full, proven real-world scripts built entirely
+						// from fields/functions already taught above — nothing here is
+						// required to learn EWP fully. For a reader who wants complete
+						// worked systems, not new syntax.
+						{
+							label: 'Extended Reading',
+							items: [
+								'ewp/examples/ship-modification',
+								'ewp/examples/world-bosses',
+								'ewp/examples/village-economy',
+								'ewp/examples/bee-ecosystem',
 							],
 						},
 						// Reference/Troubleshooting removed for now (2026-09-07) — placeholder

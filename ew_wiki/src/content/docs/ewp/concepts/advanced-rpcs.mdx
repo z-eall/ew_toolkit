@@ -1,0 +1,146 @@
+---
+title: Advanced RPC
+description: "The one rule that makes or breaks every objectRpc: call, plus composing overwrite: with repeat:, repeatInterval:, and delay: into real timing patterns."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Understanding RPC](/ew_wiki/ewp/concepts/rpcs/) covered `objectRpc:`/`clientRpc:`, naming a call with `name:`, aiming it with `target: owner`/`all`, numbered parameters, and `chance:`. This page picks up from there: the one rule every `objectRpc:` call has to satisfy or it silently does nothing, a quick look at three fields you'll mostly copy straight from the mod's own docs (`packaged:`, `source:`, `target: <zdo>`), and — the real focus here — composing `overwrite:` with the timing fields (`repeat:`, `repeatInterval:`, `delay:`) into patterns that actually hold up under repeated triggering.
+
+<Aside type="note">
+Everything below is checked against the mod's own [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md) and [scripting reference](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md). `name:` still has no partial matching and no helpful error when it's wrong, so every call below is copied verbatim from those docs, never from memory.
+</Aside>
+
+## The rule that governs every `objectRpc:` call
+
+The mod's own docs state it in one line: **"objectRpc: List of RPC calls. The RPC must be related to the triggering object."** In plain terms — the object whose rule fires the `objectRpc:` has to actually own the Component that call belongs to. The RPC list is organized by Component for exactly this reason: `SetName` sits under `### Tameable`, `RPC_Heal` sits under `### Character (Humanoid + Player)`, and so on. A call from a Component the triggering object doesn't have just does nothing — no error, no warning.
+
+This is easy to get wrong the moment a rule fires directly on `Player`. `SetName` looks like a natural fit for a "rename my tamed wolf" command, but `Player` doesn't have `Tameable` — the wolf does:
+
+```yaml
+# WRONG — Player doesn't have Tameable, so SetName never fires
+- prefab: Player
+  type: say, rename wolf
+  objectRpc:
+  - name: SetName  # Tameable: renames a tamed creature
+    1: string, "Good Boy"
+    2: string, "New Owner"
+```
+
+```yaml
+# CORRECT — poke the Wolf so the call fires from an object that actually has Tameable
+- prefab: Player
+  type: say, rename wolf
+  poke:
+  - prefab: Wolf
+    limit: 1
+    filter: int, tamed, 1  # only pokes an already-tamed Wolf
+    parameter: renameWolf
+
+- prefab: Wolf
+  type: poke, renameWolf
+  objectRpc:
+  - name: SetName  # Wolf has Tameable, so this actually fires
+    1: string, "Good Boy"
+    2: string, "New Owner"
+```
+
+The fix is the same [poke](/ew_wiki/ewp/concepts/poke/) relay used everywhere else in this wiki: don't fire the call from wherever the trigger happened, fire it from the object the call is actually about. `clientRpc:` calls don't have this problem — the mod's docs say plainly that they're "not related to any object at all," so they can fire from anywhere.
+
+<Aside type="caution">
+Every example below was checked against this rule specifically — not just against the RPC list's own parameter shapes. Before reusing any `objectRpc:` call from the mod's docs on a prefab of your own choosing, check which `###` heading it's filed under and confirm your triggering object actually has that Component.
+</Aside>
+
+## `packaged:`, `source:`, `target: <zdo>` — copy the shape, don't overthink it
+
+In practice you'll rarely write one of these calls from scratch — you'll find the call you need in the [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md) and copy its exact shape, parameters included. So here's what to recognize, not memorize:
+
+- **`packaged:`** (default `false`) — some calls simply don't work unless it's set `true`. The doc entry tells you which.
+- **`source:`** — a ZDO id; fakes the call as coming from that ZDO's owner instead of the server. Usually `<zdo>` (the triggering object's own id).
+- **`target: <zdo>`** — same idea aimed the other way: sends the call to that specific object's owner instead of `owner`/`all`.
+
+`RPC_DamageText` is a real call that requires `packaged: true`:
+
+```yaml
+- prefab: Player
+  type: say, ouch
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true  # required for this call — leaving it off silently does nothing
+    1: enum_damagetext, Normal/Resistant/Weak/Immune/Heal/TooHard/Blocked/Bonus  # - int, 0/1/2/3/4/5/6/7
+    2: vec, <pos>  # position the floating text appears at
+    3: string, "Self-inflicted!"
+    4: bool, true  # counts as self damage
+```
+
+The mod's own doc entry for `OfferingBowl`'s boss-spawn call, exactly as written there, shows `source:` in a real request-response pair — each half fires from the object it's actually about:
+
+```yaml
+# Attempts to spawn the boss.
+  objectRpc:
+  - name: RPC_SpawnBoss
+    source: <zdo>
+    1: vec, "spawn position"
+    2: bool, "remove spawn items?"
+```
+
+That's the whole pattern: wire it under whichever rule fires on the object the call belongs to (same rule as above), point `source:`/`target:` at `<zdo>` when the doc's own example does, and move on.
+
+<Aside type="note">
+`packaged:` isn't unique to `RPC_DamageText` — `DestroyZDO`, `LocationIcons`, and `MapTable`'s `MapData` all require it too. Not a complete list — check a call's own doc entry before assuming either way.
+</Aside>
+
+## Composing `overwrite:` with `repeat:`, `repeatInterval:`, and `delay:`
+
+An RPC entry supports the same timing fields `spawn:` does: `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — already covered on Understanding RPC as "behave the same as their `spawn:` counterparts." What wasn't covered is `overwrite:`, and it only becomes useful once the others are already in play:
+
+**`overwrite:` (default `false`) — if true, this call replaces any existing *delayed* call with the same `name:` and `target:`, instead of stacking behind it.** That matching is specific: same name, same target — a different `name:` or a different `target:` value doesn't get overwritten, it queues separately.
+
+Without `overwrite:`, triggering a delayed or repeating RPC more than once queues a second independent sequence on top of the first — both run to completion. With it, retriggering resets the sequence instead of piling copies of it.
+
+**Example: a reminder banner that resets instead of stacking.** `ShowMessage` is `clientRpc:` (no ownership constraint), so this one needs no poke relay:
+
+```yaml
+- prefab: Player
+  type: say, remind me
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, Center
+    2: string, "Don't forget your reminder!"
+    delay: 5  # first banner 5 seconds after saying it
+    repeat: 2  # fires 3 total: the first, plus 2 repeats
+    repeatInterval: 60  # 60 seconds between each firing
+    overwrite: true  # saying "remind me" again restarts the 3-banner sequence instead of layering a second one on top
+```
+
+Without `overwrite: true`, saying "remind me" twice within a minute would queue two independent 3-banner sequences, doubling up on every future firing instead of just restarting the countdown.
+
+**Example: an auto-repair pulse, composed with the poke-relay rule from above.** `RPC_Repair` is filed under `### WearNTear` — `Player` doesn't have `WearNTear`, a `piece_workbench` does, so this needs the same relay pattern used for `SetName`:
+
+```yaml
+- prefab: Player
+  type: say, schedule repair
+  poke:
+  - prefab: piece_workbench
+    limit: 1
+    maxDistance: 10
+    parameter: scheduleRepair
+
+- prefab: piece_workbench
+  type: poke, scheduleRepair
+  objectRpc:
+  - name: RPC_Repair  # WearNTear: repairs the object, no parameters needed
+    delay: 3  # 3 seconds after the request, not instant
+    overwrite: true  # asking again before the 3 seconds are up just resets the timer, doesn't queue a second repair
+```
+
+<Aside type="tip" title="Media placeholder #1">
+**Recommended: the reminder-banner sequence firing in-game.**
+- Shows: the `ShowMessage` banner from the `overwrite:`/`repeat:`/`repeatInterval:` example above appearing on-screen after saying "remind me" in chat, ideally two screenshots spaced ~60 seconds apart to show the repeat.
+- How to capture: on a dev/test server with this page's script loaded, say "remind me" in chat and screenshot each banner as it appears.
+</Aside>
+
+## The catalog goes well beyond what's shown here
+
+`RPC_Heal`, `ShowMessage`, `SetName`, and `RPC_Repair` were enough to teach the mechanics — the real list runs to dozens of Components, each with its own further calls. Check the [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md) for the full catalog, and remember the one rule this whole page is built around: find the `###` heading the call you want is filed under, then fire it from a rule on an object that actually has that Component.

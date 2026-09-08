@@ -1,0 +1,68 @@
+---
+title: "Advanced Triggers - type: change"
+description: "Reacting to any tracked value changing on an object — the general-purpose sibling of state, its three pars, and conditioning directly on the new or old value in the type: line itself."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers the fifth: `change`.
+
+<Aside type="note">
+Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
+</Aside>
+
+## `change` is the general-purpose sibling of `state`
+
+`state` — already familiar from Understanding Triggers — only fires when the game itself broadcasts a state RPC, and only for a handful of components. `change` is broader: it fires whenever *any* tracked value on an object changes, a real component field or your own custom `data:` name alike, whether or not that component ever broadcasts a state for it.
+
+<Aside type="tip">
+`scripting.md` itself recommends `state` over `change` when both are possible — `state` is more performant, it just only covers specific situations. Reach for `change` once you've checked the [state list](/ew_wiki/ewp/concepts/triggers/#state-reacting-to-the-games-own-broadcasts) and nothing there fits.
+</Aside>
+
+## The three pars `change` gives you
+
+`scripting.md` spells out `change`'s parameters directly: **first parameter is the data name, second is the new value, third is the previous value.** In [par](/ew_wiki/ewp/concepts/pars/) terms: `<par_0>` the field name, `<par_1>` the new value, `<par_2>` the old value.
+
+```yaml
+- prefab: woodwall
+  type: change, health
+  command: s <par_0> went from <par_2> to <par_1>  # "health went from 400 to 320"
+```
+
+## Conditioning on the new or old value, directly in `type:`
+
+`change`'s trigger parameters aren't limited to naming the field — the same condition shape every other `type:` uses (a single value, `value1,value2` for several, or `min;max` for a range) applies to the *new* and *previous* value too, written right after the field name: `type: change, <field> <newValueCondition> <oldValueCondition>`.
+
+For example:
+
+```yaml
+# Fires only when level changes TO 0, FROM 3 or 4
+- prefab: piece_beehive
+  type: change, level 0 3,4
+```
+
+```yaml
+# Fires when Value changes to 0 OR -1, from any previous value
+- prefab: Feast
+  type: change, Value 0,-1
+```
+
+A field that might overshoot a single exact value is exactly what the `value1,value2` and `min;max` forms are for — listing every value you'd otherwise miss, or using a range, catches an overshoot a single literal value can't.
+
+## `filter:` still works — checking the field's own current value
+
+The condition on the `type:` line isn't the only way to react to what a value became. `filter:`/`bannedFilter:` checks a value **already stored on the object** — and the instant a `change` trigger fires, the field it's watching *is* that stored value, already updated to the new one. Checking that same field by its real name is a second, equally valid way to condition on the new value — no `<par_X>` involved at all:
+
+```yaml
+- prefab: Boar
+  type: change, levelUpCounter
+  filter: int, levelUpCounter, 3;10   # only once the counter itself is sitting in this range
+  data: int, level, <add_1_<int_level=1>>   # bump level, defaulting to 1 if it's never been set
+```
+
+Every time `levelUpCounter` changes, this checks its own current value — which, at this point, already *is* the new one — against `3;10`, and only then increments `level`.
+
+## Case study - chaining a `change` trigger off `<sub_X_Y>`
+
+`Understanding Pars` already showed [computing damage taken from a `change, health` trigger](/ew_wiki/ewp/concepts/pars/#non-say-example-what-changed-and-what-it-was-before) using [`<sub_X_Y>`](/ew_wiki/ewp/concepts/advanced-functions/) — subtracting the previous value from the new one. The same pattern generalizes to any numeric field: stamina drained, world-level counters advancing, a custom score incrementing. Whatever the field, `<sub_<par_2>_<par_1>>` (old minus new) or `<sub_<par_1>_<par_2>>` (new minus old) gives you the size of the change itself, not just its before/after snapshot.

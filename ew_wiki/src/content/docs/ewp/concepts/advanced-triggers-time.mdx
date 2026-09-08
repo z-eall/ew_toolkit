@@ -1,0 +1,130 @@
+---
+title: "Advanced Triggers - type: time"
+description: Firing a rule on Valheim's own in-game clock — four granularities, from a single tick to a full in-game day.
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `time` — firing a rule on Valheim's own in-game clock.
+
+<Aside type="note">
+Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
+</Aside>
+
+## Works like `change`, but the "field" is the clock
+
+[`type: change`](/ew_wiki/ewp/concepts/advanced-triggers-change/) fires when a tracked value changes; `type: time` fires when the clock's value changes — same trigger-and-react shape, just watching a value nobody had to set themselves. Instead of naming a field (`type: change, health`), you name a granularity: `tick`, `minute`, `hour`, or `day`, smallest to largest. Each fires the instant Valheim's own clock rolls that unit over.
+
+`<par_X>` works the same way it does on `change`, too: `<par_0>` is the granularity word itself, and each condition value after it becomes its own par, smallest unit first.
+
+## Time functions read the clock; this trigger reacts to it changing
+
+Don't skip past this because it sounds like a rename of something you already know — [Time functions](/ew_wiki/ewp/concepts/advanced-functions/#time-functions) (`<day>`, `<realtime_X>`, and friends) and this `time` **trigger** are two halves of the same idea, not two unrelated features that happen to share a word. The trigger decides *when* a rule fires; a function reads *what the clock says* once it has. They're built to be used together — a `type: time, day` rule almost always wants to say what day it is, and the only way to do that is a Time function inside its own `command:`:
+
+```yaml
+- type: time, day
+  command: s Day <day> dawns.   # <day> reads the in-game day counter the moment this rule fires
+```
+
+## The four granularities
+
+```yaml
+- type: time, tick TICKS
+- type: time, minute MINUTES HOURS DAYS
+- type: time, hour HOURS DAYS
+- type: time, day DAYS
+```
+
+There's no "second" granularity — Valheim itself has no seconds in-game, only ticks, minutes, hours, and days. Each granularity smaller than `day` also accepts the units *above* it, in that order, so you can pin a rule to one exact recurring moment instead of every occurrence — `hour HOURS DAYS` means "this hour, but only on this day."
+
+### `tick` — fires on every single tick
+
+```yaml
+- type: time, tick
+  command: s Hello
+```
+
+With no condition, this runs on Valheim's fastest, most frequent unit of time — expect it to fire far more often than `minute`. Keep whatever runs here cheap; this is the wrong granularity for anything heavier than a quick check.
+
+### `minute` — a repeating heartbeat
+
+A comma checks several values at once:
+
+```yaml
+# Fires when "minute" changes to 0 or 30 — a heartbeat roughly every 30 real-world seconds
+- type: time, minute 0,30
+  command: s Half-hour mark
+```
+
+### `hour` — pinned to one exact moment with the unit above it
+
+`hour`'s shape is `hour HOURS DAYS`, so `<par_1>` is the hour, `<par_2>` the day. A semicolon `;` gives a range:
+
+```yaml
+# Only on in-game day 800, fires once for every hour in range 0-23
+- type: time, hour 0;23 800
+  command: s Hourly check, day 800 only
+```
+
+### `day` — every day, or a `*` wildcard pattern
+
+`day` alone (no condition) matches every day. A `*` wildcard picks out days by their last digit:
+
+```yaml
+# Fires when the day number ends in 5 — day 5, 15, 25, 35...
+- type: time, day *5
+  command: s Today is day <par_1>.
+```
+
+## Real-world lengths
+
+| In-game unit | Real-world length |
+|---|---|
+| day | 30 minutes |
+| hour | 1.25 minutes (1 min 15 sec) |
+| minute | 1.25 seconds |
+
+<Aside type="caution">
+`tick` has no reliable real-world length to put in this table — it's tied to the server's own update rate, not a fixed duration, so don't plan exact timing off it. Treat it as "the smallest unit, fires very often" and use `minute` or a `delay:` instead anywhere you need a specific real-world interval.
+</Aside>
+
+## Case study - a scheduled bonus, with a clean revert
+
+A resource bonus active every 10th in-game day, back to normal otherwise, using the `*` wildcard together with [`fallback:`](/ew_wiki/ewp/concepts/spawn-vs-swap/) so the revert rule only runs when the bonus rule didn't already match:
+
+```yaml
+- type: time, day *0   # day 10, 20, 30...
+  commands:
+  - s Today is a double-yield day!
+  - setkey ResourceRate 200   # see the No-Prefab Triggers page for what setkey actually sets
+
+- type: time, day
+  fallback: true   # only runs when the entry above didn't already match
+  commands:
+  - removekey ResourceRate
+```
+
+A single exact day instead of a repeating pattern reaches for `value1,value2` or `min;max` on the condition instead of a wildcard — whichever shape actually matches the days you care about.
+
+## Case study - a recurring boss-timer reset
+
+Combine `day` with `hour` to pin a recurring event to the *same in-game moment* every cycle, rather than firing continuously across a whole day:
+
+```yaml
+- type: time, hour 0 5,10,15,20   # hour 0, but only on days 5, 10, 15, or 20
+  command: s A new boss encounter has been prepared.
+```
+
+Because `hour` accepts the unit above it (`day`), this fires once per matching day rather than once per hour across every day — the same shape used for the "day 800 only" example above, just generalized to a repeating multi-day schedule.
+
+## Case study - a full day/night announcement
+
+`day` alone (no condition) matches every day — useful for something that should run once, every single in-game day, regardless of which one:
+
+```yaml
+- type: time, day
+  command: s A new day dawns.
+```
+
+Compare this to the scheduled-bonus example above, where `fallback: true` on an identical `type: time, day` entry deliberately runs only when a more specific sibling rule *didn't* match — the same unconditional shape serves two different jobs depending on whether it's paired with a `fallback:` sibling.

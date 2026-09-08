@@ -21,7 +21,7 @@ That's useful for a quick, one-off test: say you want to check that a rule react
 </Aside>
 
 <Aside type="tip">
-`data set=` is a WEC command, not EWP's own — see [Preparation](/ew_wiki/ewp/preparation/#getting-data-onto-your-server-the-part-that-trips-people-up) if the console isn't already familiar.
+`data set=` is a WEC command, not EWP's own — see [Preparation](/ew_wiki/ewp/preparation/#getting-data-onto-your-server) if the console isn't already familiar.
 </Aside>
 
 ## Setting a value from a script
@@ -42,11 +42,11 @@ Swap the value's kind for the matching function name, and the key for the parame
 
 ```yaml
 - prefab: Boar
-  type: say, checkmark
+  type: destroy
   command: s <int_customBoar>  # shouts 0, or whatever this Boar's own customBoar value is
 ```
 
-`<int_customBoar>` doesn't take a number to compute with, the way `<add_2_3>` did on the [functions page](/ew_wiki/ewp/concepts/functions/) — it fetches a value that's already sitting on *this specific object*, the same one the rule is running for. Set it once with `data:`, read it back anywhere a function is allowed: `command:`, another `data:` value, `filter:`, poke parameters, and so on.
+`type: destroy` fires when the Boar dies — a real event a Boar can trigger on its own, testable by just killing one. `<int_customBoar>` doesn't take a number to compute with, the way `<add_2_3>` did on the [functions page](/ew_wiki/ewp/concepts/functions/) — it fetches a value that's already sitting on *this specific object*, the same one the rule is running for. Set it once with `data:`, read it back anywhere a function is allowed: `command:`, another `data:` value, `filter:`, poke parameters, and so on.
 
 The function name has to match the kind of value you stored it as:
 
@@ -64,11 +64,11 @@ Not sure which kind a value was saved as? Reread [Understanding Data](/ew_wiki/e
 
 ## Missing data still needs a fallback
 
-An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` trick from the [functions page](/ew_wiki/ewp/concepts/functions/#missing-data-a-default-with-):
+An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` fallback from the [functions page](/ew_wiki/ewp/concepts/functions/#missing-data-a-default-with-):
 
 ```yaml
 - prefab: Boar
-  type: say, checkmark
+  type: destroy
   command: s <int_customBoar=0>  # 0 if this Boar was never given a customBoar value
 ```
 
@@ -80,11 +80,12 @@ This matters more here than for most functions, since a custom key is something 
 
 ```yaml
 - prefab: Boar
-  type: say, mark
+  type: create
+  filter: int, level, 2;3  # only starred Boars get flagged
   data: int, customBoar, 1  # this Boar is now flagged
 
 - prefab: Boar
-  type: say, checkmark
+  type: destroy
   filter: int, customBoar, 1  # only fires for Boars already flagged
   command: s <int_customBoar>  # shouts 1
 ```
@@ -93,6 +94,6 @@ Same `customBoar` key throughout: `data:` writes it, `filter:` checks it, `<int_
 
 ## What this page doesn't cover
 
-Everything above lives on one specific object — the Boar that got the `data:` line keeps its own `customBoar` value, separate from every other Boar. EWP also has a *global* store not tied to any object (`<save_X_Y>`, `<load_X>`, `<clear_X>`) — a different mechanism from what's on this page, covered in its own Advanced page later.
+Everything above lives on one specific object — the Boar that got the `data:` line keeps its own `customBoar` value, separate from every other Boar. EWP also has a *global* store not tied to any object (`<save_X_Y>`, `<load_X>`, `<clear_X>`) — a different mechanism from what's on this page, covered on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/).
 
 The `<float_WearNTear.m_health>` form — reading a live game Component's field, rather than your own custom data — is different too, and out of scope here.

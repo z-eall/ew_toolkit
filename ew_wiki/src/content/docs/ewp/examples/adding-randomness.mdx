@@ -83,7 +83,7 @@ These examples are written for this wiki, not pulled from a real maintainer scri
 
 5. **When a `weight:` pool doesn't add up to 1: nothing happens**
 
-   Back to `weight:` — its pool is always measured against a total of at least `1`, even if the weights you wrote add up to less than that:
+   Back to `weight:` — picture a bar from `0` to `1`. Each rule's weight claims a slice of that bar. If the weights add up to less than `1`, they don't fill it — the leftover space is "nothing happens." If they add up to more than `1`, the bar stretches to fit them all instead, so every rule still gets a slice, just a smaller one:
 
    ```yaml
    - prefab: Neck
@@ -99,7 +99,7 @@ These examples are written for this wiki, not pulled from a real maintainer scri
      - prefab: Wood
    ```
 
-   Add the weights: `0.3 + 0.2 = 0.5` — under `1`, so the pool is still measured against `1`, not `0.5`. That gives: Coins rule **30%**, Wood rule **20%**, and neither rule firing at all **50%** (the gap between `0.5` and `1`). This is the case a `fallback: true` rule (previous step) is built for — add one alongside these two, and that 50% gap gets a guaranteed default instead of doing nothing.
+   Here the weights add up to `0.3 + 0.2 = 0.5` — half the bar. Coins claims the first `0.3`, Wood claims the next `0.2`, and the remaining `0.5` to `1` is empty. That gives: Coins rule **30%**, Wood rule **20%**, and neither rule firing at all **50%**. This is the case a `fallback: true` rule (previous step) is built for — add one alongside these two, and that 50% gap gets a guaranteed default instead of doing nothing.
 
    <Aside type="tip">
    This is the key difference from `chance:`: two independent `chance: 0.3` and `chance: 0.2` rolls could both succeed, both fail, or either one. Two `weight:` rules can never both succeed — and here, more often than not, neither does.

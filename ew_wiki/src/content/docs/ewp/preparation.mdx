@@ -8,9 +8,9 @@ import { Image } from 'astro:assets';
 import configRoot from '../../../assets/ewp/preparation/config-root.png';
 import dataYamlComparison from '../../../assets/ewp/preparation/data-yaml-comparison.png';
 
-Before you write a single rule, get your setup sorted. It's five minutes now that saves you a confused hour later — especially the data part below, which trips up almost everyone at least once.
+Before you write a single rule, get your setup sorted — where your files live, and how scripts and data actually reach your server.
 
-This guide assumes EWP, WEC, and BepInEx are already installed (via Thunderstore, Gale, or a manual install from GitHub) — that part's already well covered elsewhere. We're picking up from "the mods are in," to "now what?"
+This guide assumes EWP, WEC, and BepInEx are already installed (via Thunderstore, Gale, or a manual install from GitHub) — that part's already well covered elsewhere.
 
 ## Singleplayer vs. dedicated server
 
@@ -38,17 +38,15 @@ Either way, it's a separate install from your normal game — its own `BepInEx\c
 Live-editing works the same on a dedicated server as it does in singleplayer — save a change to the server's YAML, and it applies right away, no restart needed. Just remember it goes live for *everyone connected at once*, so try anything risky on a private or offline world first.
 </Aside>
 
-## A good habit: set up data before scripts
+## Set up data before scripts
 
-Quick bit of friendly advice before you start moving files around: try to get your [**data**](/ew_wiki/ewp/concepts/data/) in place before your [**scripts**](/ew_wiki/ewp/concepts/script/). You don't have to — EWP won't refuse to work if you do it the other way round — but building this habit early will save you some head-scratching later.
+Get your [**data**](/ew_wiki/ewp/concepts/data/) in place before your [**scripts**](/ew_wiki/ewp/concepts/script/). You don't have to — EWP won't refuse to work if you do it the other way round — but it avoids a specific problem: a script's whole job is to look up a data entry and do something with it — spawn this, tweak that. If the data entry it's looking for doesn't exist yet, the script has nothing to point to, and it'll complain (even if the data shows up two seconds later). Data just sitting there with nothing using it yet, though, is fine — it waits quietly until a script needs it.
 
-Here's the why. A script's whole job is to look up a data entry and do something with it — spawn this, tweak that. If the data entry it's looking for doesn't exist yet, the script has nothing to point to, and it'll complain (even if the data shows up two seconds later). Data just sitting there with nothing using it yet, though? Totally fine — it waits quietly until a script needs it.
+So the easy order is: **data first, then the scripts that lean on it.** And if you add new data *after* a script that needs it is already running, resave the script's `.yaml` file — EWP will look at it fresh against the data that's now there.
 
-So the easy order is: **data first, then the scripts that lean on it.** And if you add new data *after* a script that needs it is already running, give the script a little nudge — resave its `.yaml` file, and EWP will look at it fresh against the data that's now there.
+## Getting data onto your server
 
-## Getting data onto your server (the part that trips people up)
-
-Here's the confusing bit, so take it slow: **WEC and EWP don't read the same `data.yaml`.**
+**WEC and EWP don't read the same `data.yaml`.**
 
 - When you use `data save=name` or `data dump=` in-game, WEC writes that entry to **your own local client's** `data.yaml` — `C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\config\data\data.yaml`. Your *client*, not your server.
 - EWP, running on your *server*, reads its own separate `data.yaml` — under the server's own install, e.g. `C:\Program Files (x86)\Steam\steamapps\common\Valheim dedicated server\BepInEx\config\data\data.yaml` on a self-hosted server.

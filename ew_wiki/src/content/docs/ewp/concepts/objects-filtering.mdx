@@ -1,11 +1,11 @@
 ---
-title: Requiring Nearby Objects
+title: Filter by Nearby Objects
 description: Making a rule fire only when other objects are (or aren't) nearby, with objects:, bannedObjects:, and their limits.
 complexity: intermediate
 ---
 
 import { Aside } from '@astrojs/starlight/components';
-import TamedBoarData from '../../../../components/snippets/tamed-boar-data.mdx';
+import MarkedBoarData from '../../../../components/snippets/marked-boar-data.mdx';
 import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
 
 [`filter:`](/ew_wiki/ewp/concepts/filter/) checks something about the object the rule is already looking at. **Object filters** check the world *around* it instead — other objects nearby. A rule can require certain objects to be close by before it fires (`objects:`), or refuse to fire if certain objects are close by (`bannedObjects:`).
@@ -19,12 +19,12 @@ import CommanderBoarData from '../../../../components/snippets/commander-boar-da
   type: create
   objects:
   - prefab: Player  # at least one Player must be within range
-  data: tamedBoar
+  data: markedBoar
 ```
 
-This Boar only gets the `tamedBoar` data if a Player is nearby when it spawns — not on every spawn.
+This Boar only gets the `markedBoar` data if a Player is nearby when it spawns — not on every spawn.
 
-<TamedBoarData />
+<MarkedBoarData />
 
 <Aside type="note">
 By default, `objects:` doesn't count the object the rule is looking at against itself — searching for `Boar` here won't match the Boar being created. Set `self: true` on an entry to include it.
@@ -44,7 +44,7 @@ Each `objects:`/`bannedObjects:` entry accepts a few more fields:
   objects:
   - prefab: Player
     maxDistance: 15  # only counts a Player within 15 meters
-  data: tamedBoar
+  data: markedBoar
 ```
 
 You can also reuse [`filter:`](/ew_wiki/ewp/concepts/filter/) and `bannedFilter:` on an entry, exactly like anywhere else, to narrow which matches count:
@@ -62,11 +62,11 @@ You can also reuse [`filter:`](/ew_wiki/ewp/concepts/filter/) and `bannedFilter:
 <CommanderBoarData />
 
 <Aside type="note">
-`filters:` and `bannedFilters:` (plural) also exist for a nearby-object entry, for checking more than one condition at once — that's its own topic for a future Advanced page.
+`filters:` and `bannedFilters:` (plural) also exist for a nearby-object entry, for checking more than one condition at once — see [Advanced Filter](/ew_wiki/ewp/concepts/advanced-filtering/).
 </Aside>
 
 <Aside type="note">
-An entry can also carry a `condition:` — a full expression, more flexible than `filter:`. That's a big enough topic to get its own Advanced page later; for now, know it exists.
+An entry can also carry a `condition:` — a full expression, more flexible than `filter:`. See [Advanced Filter](/ew_wiki/ewp/concepts/advanced-filtering/).
 </Aside>
 
 ## Requiring a specific count: `objectsLimit`

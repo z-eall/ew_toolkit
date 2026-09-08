@@ -17,23 +17,23 @@ import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## The minimal poke
 
-Think of it like a phone call — one rule dials, another rule picks up:
+One rule sends a poke, another rule reacts to it:
 
 <Steps>
 
-1. **Make the call**
+1. **Send the poke**
 
    ```yaml
    - prefab: Player
      type: say, open
      poke:
      - prefab: wood_door
-       parameter: openDoor  # the "phone number" linking this call to its receiver
+       parameter: openDoor  # the name that links this poke to its receiver
    ```
 
    When **Player** says "open" in chat, this rule pokes every `wood_door` in range, passing `openDoor` along as the parameter.
 
-2. **Answer the call**
+2. **React to the poke**
 
    ```yaml
    - prefab: wood_door
@@ -49,7 +49,7 @@ Both rules live in the same script — see [A script can hold more than one rule
 
 ## The parameter is just a name
 
-The parameter is the "phone number" that links a call to its receiver — any word or number works, but a descriptive name (`openDoor`, not `1` or `hello`) keeps a script with multiple pokes readable.
+The parameter is what links a poke to its receiver — any word or number works, but a descriptive name (`openDoor`, not `1` or `hello`) keeps a script with multiple pokes readable.
 
 <Aside type="caution">
 The two sides have to match — a typo or a renamed parameter on one side breaks the connection silently. Matching itself ignores capitalization (`openDoor` and `opendoor` still connect), so it's a real spelling difference that breaks it, not the letter case. See [When a poke doesn't fire](#when-a-poke-doesnt-fire) below.
@@ -150,9 +150,9 @@ Fix: add a `type: poke, openDoor` rule somewhere in the script.
 If a poke chain isn't working, checking that every `parameter:` name is spelled identically on both sides catches the most common case first.
 
 <Aside type="note">
-Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts. (Note `objects:` entries have their own, separately-scoped `maxDistance:` too — see [Requiring Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) — same field name, different job.)
+Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts. (Note `objects:` entries have their own, separately-scoped `maxDistance:` too — see [Filter by Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) — same field name, different job.) For the rest of poke's field set, and reusable patterns built from it — self-poking, delayed resets, filter-gated counters — see [Advanced Poke - Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/) and [Advanced Poke - Creative Systems](/ew_wiki/ewp/concepts/advanced-poke-creative-systems/).
 </Aside>
 
 <Aside type="tip">
-Looking to message a client directly instead of poking another object? See [Sending RPCs to Clients](/ew_wiki/ewp/concepts/rpcs/).
+To message a client directly instead of poking another object, see [Understanding RPC](/ew_wiki/ewp/concepts/rpcs/).
 </Aside>

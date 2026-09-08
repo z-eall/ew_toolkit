@@ -1,0 +1,138 @@
+---
+title: Advanced Filter
+description: "Checking more than one condition at once with the plural filters:/bannedFilters:, and writing full logical expressions with condition:."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
+
+[Filter by Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) left two things unopened: an `objects:`/`bannedObjects:` entry can check more than one data condition at once with `filters:`/`bannedFilters:` (plural), and it can carry a full expression with `condition:` instead of a data check at all. Both build on [`filter:`/`bannedFilter:`](/ew_wiki/ewp/concepts/filter/), which you already know.
+
+<Aside type="note">
+This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the "Filters" section.
+</Aside>
+
+## Checking more than one condition: `filters:` / `bannedFilters:`
+
+`filter:` and `bannedFilter:` each hold exactly one check. `filters:` and `bannedFilters:` hold a *list* of them — for when a single nearby-object entry needs to require several data conditions at the same time, not just one.
+
+Each list item uses the same format as `filter:` — either `type, key, value` or a saved data entry's name — with an optional trailing weight:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 2
+  objects:
+  - prefab: Boar
+    maxDistance: 10
+    filters:
+    - int, level, 2;3      # starred
+    - bool, boss, false    # not already a boss-tier Boar
+  data: commanderBoar
+```
+
+<CommanderBoarData />
+
+Both listed checks must match for a nearby Boar to count as an escort — something a single `filter:` can't express, since it only ever holds one condition. `filter: int, level, 2;3` alone couldn't also require `bool, boss, false` in the same breath.
+
+### `filterLimit:` — how many of the list must match
+
+Left unset, every entry in `filters:` must match — it behaves like a chain of ANDs. `filterLimit:` changes that to a specific count, the same way `objectsLimit:` does for `objects:`:
+
+```yaml
+filterLimit: 2  # only 2 of the 3 listed filters need to match
+filters:
+- int, level, 2;3
+- bool, boss, false
+- string, TamedName, *(S)*  # weight defaults to 1
+```
+
+Give an item its own weight (`type, key, value, weight`, or `name, weight`) to make it count for more than 1 toward that limit:
+
+```yaml
+filterLimit: 2
+filters:
+- int, level, 3, 2    # a 2-star (max) Boar alone already meets the limit
+- bool, boss, false
+```
+
+<Aside type="tip">
+`bannedFilters:` works the same way, but counts *against* the limit instead of for it — and defaults each item's weight to `10000` rather than `1`, so by default a single banned match is enough to fail the whole entry. Override an item's weight explicitly if you want a banned match to only partially count against the limit.
+</Aside>
+
+<Aside type="note">
+`filters:`/`bannedFilters:` aren't only for `objects:`/`bannedObjects:` entries — like `filter:`/`bannedFilter:`, they also work directly on a rule's own top-level fields, checking the object the rule is already looking at rather than something nearby.
+</Aside>
+
+## Full expressions: `condition:`
+
+`condition:` replaces the whole data-filter system with one free-form expression string. It's valid whenever the expression resolves to something non-empty and non-zero. Where `filter:` only ever compares a field against a fixed literal or range, `condition:` can compare two *dynamic* values against each other — the output of one [function](/ew_wiki/ewp/concepts/functions/) against another — and combine several checks with real logical operators.
+
+Operators (must be separated by spaces to be recognized):
+
+| Operator | Checks |
+|---|---|
+| `and` | both sides are valid |
+| `or` | at least one side is valid |
+| `not` | the side is not valid |
+| `xor` | exactly one side is valid |
+| `in` | left side is in the right side's comma-separated list |
+| `not in` | left side is not in the right side's list |
+| `=` / `!=` | equal / not equal |
+| `>` / `<` / `>=` / `<=` | numeric comparison |
+
+Parentheses control evaluation order, e.g. `(a and b) or c`.
+
+<Aside type="caution">
+`scripting.md` doesn't spell out a default precedence between these operators beyond "parentheses can change it" — it never states, for example, whether `and` binds tighter than `or` when parentheses are left out. Until that's confirmed, parenthesize explicitly rather than relying on an assumed order.
+</Aside>
+
+An `objects:`/`bannedObjects:` entry's `condition:` evaluates against that nearby object's own data — the same way `filter:` on that entry does:
+
+```yaml
+- prefab: Wolf
+  type: create
+  objects:
+  - prefab: Wolf
+    maxDistance: 15
+    condition: (<biome> in Mountain,DeepNorth) and (<int_level> >= 2 or <globalkey_defeated_dvergr=0> = 1)
+  data: frostElite
+```
+
+```yaml
+- name: frostElite
+  floats:
+  - max_health, 200
+```
+
+This nearby Wolf only counts if it's in a cold biome, **and** either it's starred or the world has already cleared the (illustrative) `defeated_dvergr` global key — logic no `filter:`/`filters:` list can express, since those only ever check one object's fields against fixed values, never an `or` between unrelated conditions.
+
+<Aside type="note">
+`defeated_dvergr` here is a made-up global key name for the example, the same way `commanderBoar`/`strongBoar` are made-up data entry names — global keys are whatever a script author chooses to set, not a fixed list to verify against.
+</Aside>
+
+### Where `filters:` and `condition:` genuinely need each other
+
+`filters:` is the right tool for "narrow down which nearby objects qualify, using several static data checks." `condition:` is the right tool for "compare two things that aren't both fixed values." Some rules need both at once — `filters:` can't express a dynamic comparison, and `condition:` alone would mean re-writing every static data check as a clunky expression instead of a clean list:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 2
+  objects:
+  - prefab: Boar
+    maxDistance: 10
+    filterLimit: 2       # both required filters must match
+    filters:
+    - int, level, 2;3    # starred
+    - bool, boss, false  # not already a boss-tier Boar
+    condition: <int_level> >= <globalkey_packrank=1>  # star count must keep pace with the pack's stored rank
+  data: commanderBoar
+```
+
+`filters:` decides which nearby Boars are even eligible escorts (starred, not already a boss). `condition:` then adds a check `filters:` structurally can't make — the Boar's own star count against a number pulled from elsewhere in the world (here, an illustrative `packrank` global key), rather than against a value written into the script itself.
+
+<Aside type="tip">
+`packrank` is another made-up global key, same caveat as `defeated_dvergr` above.
+</Aside>

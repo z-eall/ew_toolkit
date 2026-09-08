@@ -20,7 +20,7 @@ Every function belongs to one of a handful of groups, based on what it works on:
 - **Custom data (global)** — a save slot that isn't tied to any one object, unlike the per-object `data:` you already know: `<save_X_Y>`, `<load_X>`, `<clear_X>`.
 - **Time** — reads or formats the in-game or real-world clock: `<day>`, `<realtime_X>`.
 
-The rest of this page teaches Basic, Text, and Numeric. Vector, Long numbers, Custom data (global), and Time each get their own full page later in Advanced.
+The rest of this page teaches Basic, Text, and Numeric. Vector, Long numbers, Custom data (global), and Time each get their own full treatment on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/).
 
 <Aside type="note">
 For the complete, always-current list of every function in every category, right now: the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md).
@@ -56,7 +56,7 @@ A function that needs input takes it as parameters after the name, each one sepa
 
 `add` takes any number of parameters and sums them — `<add_2_3>` is `2` and `3`, two separate parameters.
 
-## The underscore gotcha
+## A prefab id's own underscores can break parameter splitting
 
 Because underscores separate parameters, an underscore that's meant to be *part of* a parameter's own value can get misread as a separator instead. A prefab id can itself contain underscores (`piece_workbench`, say) — so handing one to a function as a text parameter risks it getting split in the wrong place.
 
@@ -64,12 +64,12 @@ Because underscores separate parameters, an underscore that's meant to be *part 
 
 ```yaml
 - prefab: piece_workbench
-  type: say, check
+  type: create
   command: s <upper_<safeprefab>>  # shouts PIECE-WORKBENCH, not just PIECE
 ```
 
 <Aside type="caution">
-This isn't specific to `<safeprefab>` — *any* parameter whose value might itself contain an underscore risks the same silent misread, not just a prefab id. Keep it in the back of your mind as a recurring gotcha, not a one-off.
+This isn't specific to `<safeprefab>` — *any* parameter whose value might itself contain an underscore risks the same silent misread, not just a prefab id.
 </Aside>
 
 ## Missing data: a default with `=`

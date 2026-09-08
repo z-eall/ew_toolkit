@@ -1,0 +1,440 @@
+---
+title: Wiring a Bee-and-Crop Ecosystem
+description: Chaining poke, weight, objects:, custom data, and change into one script where beehives, honey, and crops all affect each other.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Every earlier example on this wiki reacts to one thing and does one thing. This one is different: four small subsystems, each one a normal rule you already know how to read, but wired together so a change in one changes the odds in another. Extracting honey can silence a hive. A silenced hive stops boosting nearby crops. A fresh flower can bring it back. That loop is the actual teaching point — not any single rule in it.
+
+## What gets chained together
+
+- [`poke:`](/ew_wiki/ewp/concepts/poke/) relays one rule's trigger into another rule, so a `create` on a destroyed-hive effect can cascade into removing nearby drops.
+- `weight:` on a single rule (no sibling to compete against) becomes a plain percentage chance — see [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) for why the underlying math works out that way.
+- [`objects:`](/ew_wiki/ewp/concepts/objects-filtering/) requires a beehive within range before a crop is allowed to get better yield.
+- [`fallback: true`](/ew_wiki/ewp/examples/adding-randomness/) picks between two competing outcomes ("Blooming" vs. "Pollinated") without leaving a gap where neither happens.
+- [Custom data](/ew_wiki/ewp/concepts/custom-data/) (`isSilentBeehive`, `isFertilizedSapling`, ...) is the actual "state" the ecosystem remembers between events.
+- `type: change` reacts to a beehive's own honey level dropping — the extraction event itself, not a poke announcing it.
+- Two mechanics new to this wiki: `value:` and `valueGroup:` entries, covered below, which name a single tunable number or a list of prefabs so a rule can point at `<theName>` instead of repeating it.
+
+<Aside type="note">
+Every prefab id, component field, and function below was checked against EWP's own docs, `ewp_validator`'s schema, and Valheim's real component fields. The balancing numbers (70% chance, 2x yield, and so on) aren't an official Valheim or EWP number — treat them as a starting point, not a target to hit exactly.
+</Aside>
+
+## The tunable values: `value:` and `valueGroup:`
+
+Before the rules themselves, one new idea: a `value:` entry gives a single number or word a name, so every rule that needs it can write `<thatName>` instead of the literal number. A `valueGroup:` entry does the same for a *list* of prefab ids — write the group's name in a `prefab:` field, and it matches any prefab in the list, the same way a component name like `Tameable` already can.
+
+```yaml
+# A single tunable number — <chanceRemoveQueenbee> now means "0.7" everywhere it's used.
+- value: chanceRemoveQueenbee, 0.7
+
+# A named list of prefabs — prefab: allSaplingCrops matches any of these ten.
+- valueGroup: allSaplingCrops
+  values:
+  - sapling_carrot
+  - sapling_turnip
+  - sapling_onion
+  - sapling_barley
+  - sapling_flax
+  - sapling_jotunpuffs
+  - sapling_magecap
+  - sapling_seedcarrot
+  - sapling_seedonion
+  - sapling_seedturnip
+```
+
+<Aside type="caution">
+Value groups are cached — if you change which prefabs belong to `allSaplingCrops` after a script has already used it, resave that script's `.yaml` too, or it keeps matching the old list.
+</Aside>
+
+The full data file below collects every tunable number and every prefab list this script needs, all in one place, so balancing the whole ecosystem later means editing this one file instead of hunting through the script.
+
+```yaml
+# Change these to retune the whole ecosystem.
+- value: chanceRemoveQueenbee, 0.7      # chance a wild hive's guaranteed QueenBee gets removed
+- value: chanceSpawnQueenbee, 0.07      # chance picking a flower near an active hive spawns one instead
+- value: groundFertilizerStackSize, 10  # Honey stack size needed to fertilize the ground
+- value: groundFertilizerAffectUnit, 5  # max saplings/trees affected per fertilizing
+- value: groundFertilizerAffectRange, 5 # search radius in meters
+- value: reduceGrowTimeCrops, 0.5       # 50% shorter grow time for fertilized crops
+- value: reduceGrowTimeTrees, 0.35      # 35% shorter grow time for fertilized trees
+- value: chanceTurnBlooming, 0.3        # chance a grown crop near a hive turns "Blooming" (2x yield)
+- value: chanceTurnPollinated, 0.1      # chance it turns "Pollinated" instead (3x yield)
+- value: betterYieldBlooming, 2
+- value: betterYieldPollinated, 3
+- value: chanceTurnSilentFactor, 0.1    # scales with how much honey was extracted — see below
+- value: chanceResetSilent, 0.2         # chance a nearby blooming flower reactivates a silent hive
+
+# groundFertilizer is a value group with one member — swap Honey for anything else here
+# to change what item counts as fertilizer, without touching the rules that use it.
+- valueGroup: groundFertilizer
+  values:
+  - Honey
+
+- valueGroup: allSaplingCrops
+  values:
+  - sapling_carrot
+  - sapling_turnip
+  - sapling_onion
+  - sapling_barley
+  - sapling_flax
+  - sapling_jotunpuffs
+  - sapling_magecap
+  - sapling_seedcarrot
+  - sapling_seedonion
+  - sapling_seedturnip
+
+- valueGroup: allGrownCrops
+  values:
+  - Pickable_Carrot
+  - Pickable_Turnip
+  - Pickable_Onion
+  - Pickable_Barley
+  - Pickable_Flax
+  - Pickable_Mushroom_JotunPuffs
+  - Pickable_Mushroom_Magecap
+
+- valueGroup: allGrownFlowers
+  values:
+  - Pickable_SeedCarrot
+  - Pickable_SeedTurnip
+  - Pickable_SeedOnion
+
+- valueGroup: allSaplingTrees
+  values:
+  - Beech_Sapling
+  - FirTree_Sapling
+  - PineTree_Sapling
+  - Birch_Sapling
+  - Oak_Sapling
+```
+
+<Aside type="note">
+Every prefab id above was checked against the [Jotunn prefab list](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html) — all real. `Pickable_SeedCarrot`/`SeedTurnip`/`SeedOnion` look like seed items by name, but they're the *grown flower* pickables for those crops (the plant flowers before it's harvestable) — that's the original author's own naming choice for the value group, not a Valheim naming convention.
+</Aside>
+
+Two named data entries feed off those values, applied to a fertilized sapling once it's found:
+
+```yaml
+- name: isFertilizedSaplingCrops
+  ints:
+  - isFertilizedSapling, 1
+  strings:
+  - Plant.m_name, <#00ff00>Fertilized</color> $piece_<prefab>
+  floats:
+  - Plant.m_growTime, <mul_<float_Plant.m_growTime>_<sub_1_<reduceGrowTimeCrops>>>
+  - Plant.m_growTimeMax, <mul_<float_Plant.m_growTimeMax>_<sub_1_<reduceGrowTimeCrops>>>
+
+- name: isFertilizedSaplingTrees
+  ints:
+  - isFertilizedSapling, 1
+  strings:
+  - Plant.m_name, <#00ff00>Fertilized</color> <grown<prefab>> Sapling
+  floats:
+  - Plant.m_growTime, <mul_<float_Plant.m_growTime>_<sub_1_<reduceGrowTimeTrees>>>
+  - Plant.m_growTimeMax, <mul_<float_Plant.m_growTimeMax>_<sub_1_<reduceGrowTimeTrees>>>
+```
+
+`<mul_<float_Plant.m_growTime>_<sub_1_<reduceGrowTimeCrops>>>` reads inside-out: `<sub_1_<reduceGrowTimeCrops>>` is `1 − 0.5 = 0.5`, then that's multiplied by the sapling's own current `Plant.m_growTime` — so the grow time is cut in half, whatever it started at, rather than being set to one fixed number. `Plant.m_name`, `Plant.m_growTime`, and `Plant.m_growTimeMax` are all real fields on Valheim's `Plant` component (confirmed on [valheimtools.stream](https://valheimtools.stream/wiki/components/Plant)).
+
+## Loop 1 — the QueenBee stops being guaranteed
+
+Vanilla drops a QueenBee from most wild beehives. This loop removes that guarantee, then gives the player a second, smaller way to still get one:
+
+<Steps>
+
+1. **A destroyed hive starts a short poke chain**
+
+   ```yaml
+   - prefab: vfx_beehive_destroyed
+     type: create
+     poke:
+     - self: true
+       delay: 0.2
+       parameter: bridgeRemoveQueenbee
+   ```
+
+   `vfx_beehive_destroyed` is the visual effect Valheim spawns the instant a beehive breaks. This rule waits 0.2 seconds (letting the QueenBee/Honey drops actually finish spawning first) then pokes *itself* — `self: true` with no `prefab:` means the object always pokes its own copy.
+
+2. **The poke fans out to nearby drops**
+
+   ```yaml
+   - prefab: vfx_beehive_destroyed
+     type: poke, bridgeRemoveQueenbee
+     poke:
+     - prefab: QueenBee, Honey
+       maxDistance: 5
+       parameter: removeBeehiveDrops
+   ```
+
+   This rule catches that poke, then pokes anything named `QueenBee` or `Honey` within 5 meters — the drops that just landed where the hive stood.
+
+3. **The drop itself decides whether to survive**
+
+   ```yaml
+   - prefab: QueenBee, Honey
+     type: poke, removeBeehiveDrops
+     weight: <chanceRemoveQueenbee>
+     remove: true
+     spawn: vfx_spawn_small
+   ```
+
+   `weight: <chanceRemoveQueenbee>` looks like the sibling-rule mechanic from [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/), but there's no second weighted rule competing with this one for the same trigger — and a weight pool is always measured against a total of *at least 1*. With only this one rule in the pool, its odds are just `0.7 / 1 = 70%`. That's the whole mechanism: a lone `weight:` on an otherwise-unopposed rule behaves like a `chance:` roll, without needing a separate `chance:` field at all.
+
+</Steps>
+
+A separate, independent rule gives flowers their own small shot at a QueenBee:
+
+```yaml
+- prefab: allGrownFlowers
+  type: state, picked
+  weight: <chanceSpawnQueenbee>
+  objects:
+  - prefab: piece_beehive
+    bannedFilter: int, isSilentBeehive, 1  # only counts an active hive, not a silent one
+    maxDistance: 10
+  spawn:
+  - prefab: QueenBee
+    pos: 0,0,1.5
+  - prefab: fx_skeleton_pet
+```
+
+Picking a grown flower ([`type: state, picked`](/ew_wiki/ewp/concepts/triggers/) — `Pickable`'s own state broadcast) rolls its own independent `weight:` chance (same single-rule mechanism as above, 7% here), but only counts at all if a non-silent `piece_beehive` is within 10 meters — the first place this script checks that a hive is actually active before letting it help the player.
+
+## Loop 2 — Honey becomes fertilizer
+
+Drop a big enough stack of Honey on cultivated ground, and it speeds up nearby crops instead of just sitting there:
+
+<Steps>
+
+1. **A dropped Honey stack checks itself a few seconds later**
+
+   ```yaml
+   - prefab: groundFertilizer
+     type: create
+     filter: int, pickedUp, 1
+     poke:
+     - self: true
+       delay: 3
+       parameter: checkFertilizePossible
+   ```
+
+   `groundFertilizer` is the value group defined above — right now it only contains `Honey`, so this fires whenever a Honey item drop is created. `filter: int, pickedUp, 1` narrows it to a stack a player actually dropped from their inventory (a real `ItemDrop` field), not one spawned some other way. After 3 seconds it pokes itself to check whether it's still sitting there.
+
+2. **The stack size and the ground both have to qualify**
+
+   ```yaml
+   - prefab: groundFertilizer
+     type: poke, checkFertilizePossible
+     filter: int, stack, <groundFertilizerStackSize>
+     paint: cultivated
+     spawn:
+     - prefab: fx_jelly_pickup
+     remove: true
+     poke:
+     - prefab: allSaplingCrops, allSaplingTrees
+       limit: <groundFertilizerAffectUnit>
+       maxDistance: <groundFertilizerAffectRange>
+       parameter: findNearbySapling
+   ```
+
+   Two conditions here, and they're different kinds: `filter: int, stack, <groundFertilizerStackSize>` checks the *item's own data* (its stack count must be at least 10). `paint: cultivated` is a *terrain filter* — it checks what the ground underneath already is, it doesn't paint anything itself. So this rule only fires for a big-enough Honey stack that's already sitting on ground the player cultivated. Once both pass, the stack disappears (`remove: true`) with a little effect, and pokes up to 5 nearby crop/tree saplings within 5 meters to let them know fertilizer just happened.
+
+3. **Each found sapling starts its own grow-time reduction**
+
+   ```yaml
+   - prefab: allSaplingCrops, allSaplingTrees
+     type: poke, findNearbySapling
+     bannedFilter: int, isFertilizedSapling, 1  # skip one that's already fertilized
+     poke:
+     - self: true
+       delay: <randf_0_1.1>
+       parameter: reduceGrowTime
+   ```
+
+   `bannedFilter` stops a sapling that's already fertilized from re-triggering the whole chain again. The random delay (`<randf_0_1.1>` — a random decimal between 0 and 1.1 seconds) spreads out several saplings getting fertilized at once, rather than all of them applying their data in the exact same instant.
+
+4. **Crops and trees apply different data, since their display names differ**
+
+   ```yaml
+   - prefab: allSaplingCrops
+     type: poke, reduceGrowTime
+     data: isFertilizedSaplingCrops
+     spawn:
+     - prefab: fx_FeastPlainsEat
+       pos: 0,0,0.5
+
+   - prefab: allSaplingTrees
+     type: poke, reduceGrowTime
+     data: isFertilizedSaplingTrees
+     spawn:
+     - prefab: fx_FeastPlainsEat
+       pos: 0,0,0.5
+   ```
+
+   Same poke parameter, two separate rules — one per value group — because `isFertilizedSaplingCrops`/`isFertilizedSaplingTrees` (defined earlier) build their display-name string differently for a crop versus a tree sapling.
+
+</Steps>
+
+## Loop 3 — crops grown near a hive yield more
+
+This one's a single rule chain, no poke needed — `objects:` alone does the "is a hive nearby" check:
+
+```yaml
+- prefab: allGrownCrops
+  type: create
+  objects:
+  - prefab: piece_beehive
+    bannedFilter: int, isSilentBeehive, 1
+    maxDistance: 10
+  poke:
+  - self: true
+    parameter: turnBetterYield
+```
+
+A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter by Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
+
+```yaml
+- prefab: allGrownCrops
+  type: poke, turnBetterYield
+  weight: <chanceTurnBlooming>
+  fallback: true
+  data: isBetterCropsBlooming
+  spawn:
+  - prefab: vfx_creature_soothed
+  - prefab: fx_FeastMistlandsEat
+    pos: 0,0,1
+
+- prefab: allGrownCrops
+  type: poke, turnBetterYield
+  weight: <chanceTurnPollinated>
+  fallback: true
+  data: isBetterCropsPollinated
+  spawn:
+  - prefab: vfx_creature_soothed
+  - prefab: fx_FeastAshlandsEat
+    pos: 0,0,1
+```
+
+<Aside type="tip">
+`weight:` and `fallback: true` together, on both competing rules, isn't a combination this wiki's own [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) page walks through — that page covers each field on its own. Read only for what's confirmed: the two `weight:` values (0.3 and 0.1) add up to 0.4, and a weight pool is always measured against a total of *at least 1* — so there's a genuine 60% gap where the weight roll picks neither entry, and the crop just stays an ordinary grown crop. That gap is the point; most crops near a hive shouldn't get the bonus. `fallback: true` here reads as defensive rather than load-bearing: with only these two rules reacting to `turnBetterYield`, it mainly future-proofs against a *third*, non-fallback rule someone else adds later reacting to the same poke — that third rule would then always get first refusal over these two.
+</Aside>
+
+`isBetterCropsBlooming` and `isBetterCropsPollinated` are two more named data entries, built the same way as the fertilizer ones:
+
+```yaml
+- name: isBetterCropsBlooming
+  ints:
+  - isBetterCrops, 1
+  - Pickable.m_amount, <mul_<pickAmount<prefab>>_<betterYieldBlooming>>
+  strings:
+  - Pickable.m_overrideName, <#ff9933>Blooming</color> <grown<prefab>>
+
+- name: isBetterCropsPollinated
+  ints:
+  - isBetterCrops, 1
+  - Pickable.m_amount, <mul_<pickAmount<prefab>>_<betterYieldPollinated>>
+  strings:
+  - Pickable.m_overrideName, <#ff00ff>Pollinated</color> <grown<prefab>>
+```
+
+`Pickable.m_amount` and `Pickable.m_overrideName` are real fields on the `Pickable` component — the pick yield and the display name shown when picking it. `<pickAmountPickable_Carrot>` and friends are more `value:` entries (not shown here — same pattern as the ezConfig block above) recording each crop's normal vanilla yield, so `betterYieldBlooming`'s ×2 multiplies from the *real* base amount instead of a guessed one.
+
+## Loop 4 — extraction can silence a hive, blooming can undo it
+
+The last loop is the one that actually closes the circle: pulling honey out of a hive can turn it silent (no more honey, no more crop bonus, can't be repaired), and a fresh flower nearby has a chance to bring it back.
+
+```yaml
+- prefab: piece_beehive
+  type: change, level 0 3,4
+  weight: <mul_<par_2>_<chanceTurnSilentFactor>>
+  bannedFilter: int, isSilentBeehive, 1
+  data: isSilentBeehive
+  spawn:
+  - prefab: vfx_spawn_small
+```
+
+`level` is `Beehive`'s own honey-stage counter (a real ZDO field) — it climbs as honey builds up and drops back to 0 when a player extracts it. `type: change, level 0 3,4` fires specifically when `level` changes *to* 0 *from* 3 or 4 — i.e., extracting from a hive that was nearly or fully stocked, not a small top-up.
+
+<Aside type="caution">
+Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_wiki/ewp/concepts/pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
+</Aside>
+
+With that fix, `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
+
+Reactivating a silenced hive works the same shape as Loop 1's flower-QueenBee roll, plus one more step to actually respawn a fresh hive:
+
+```yaml
+- prefab: allGrownFlowers
+  type: create
+  weight: <chanceResetSilent>
+  objects:
+  - prefab: piece_beehive
+    filter: int, isSilentBeehive, 1
+    maxDistance: 10
+  poke:
+  - prefab: piece_beehive
+    filter: int, isSilentBeehive, 1
+    parameter: resetSilentBeehive
+
+- prefab: piece_beehive
+  type: poke, resetSilentBeehive
+  remove: true
+  spawn:
+  - prefab: <prefab>
+    triggerRules: true
+  - prefab: fx_skeleton_pet
+    pos: 0,0,1
+```
+
+A fresh grown flower rolls `chanceResetSilent` (20%), and only counts if a silent hive is within 10 meters — then pokes that specific hive. The hive removes itself and spawns a brand-new copy of `<prefab>` (a [function](/ew_wiki/ewp/concepts/functions/) meaning "this same object's own prefab id") in its place — a clean respawn rather than trying to un-set every silent-hive field one at a time. `triggerRules: true` matters here: without it, this spawn wouldn't itself be checked against any other rule in the script — see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/) for why a spawned object normally skips rule-triggering by default.
+
+Last piece — stop a silent hive from just getting repaired back to normal:
+
+```yaml
+- prefab: piece_beehive
+  type: state, repair
+  filter: int, isSilentBeehive, 1
+  data: isSilentBeehive
+```
+
+`state, repair` fires whenever `WearNTear`'s health changes via a repair (one of the states EWP's own docs list for `WearNTear`). Re-applying `isSilentBeehive` here doesn't cancel the repair interaction itself — it just re-stamps the silent-hive's health and stats right after, undoing whatever the repair just restored.
+
+The `isSilentBeehive` data entry itself, applied throughout this loop:
+
+```yaml
+- name: isSilentBeehive
+  ints:
+  - isSilentBeehive, 1
+  - Beehive.m_maxHoney, 0
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - Beehive.m_secPerUnit, 0
+  - Beehive.m_maxCover, 1E-23
+  - health, 50
+  - WearNTear.m_health, 100
+  strings:
+  - Beehive.m_name, Silent Beehive<br><size=12><#00ff00>Fresh</color> blooming flowers shall <#fff000>re-activate</color> the beehive.<size=0>
+  - Beehive.m_happyText, The nearby flowers are lacking sweetness for the bees.
+  - Beehive.m_freespaceText, The nearby flowers are lacking sweetness for the bees.
+```
+
+Every field here is real and checked: `Beehive.m_maxHoney`, `Beehive.m_secPerUnit`, `Beehive.m_maxCover`, `Beehive.m_name`, `Beehive.m_happyText`, and `Beehive.m_freespaceText` are all documented `Beehive` component fields; `Piece.m_canBeRemoved` is a real `Piece` field; `WearNTear.m_health` is the component's configured max health, while the bare `health` field (no component prefix) is the object's own *current* health value on its ZDO — setting both together means a freshly silenced hive spawns already at 50 out of a 100 max, rather than full health.
+
+## The full script, in load order
+
+<Aside type="note">
+Following [Preparation](/ew_wiki/ewp/preparation/#set-up-data-before-scripts)'s own advice, save the data (values, value groups, and named data entries) into your `expand_world` folder first, then the script. Neither file's name matters to EWP itself — it reads every `.yaml` it finds there — but loading data first avoids a script erroring on a data entry that doesn't exist yet.
+</Aside>
+
+**Data** — every `value:`, `valueGroup:`, and named `data:` entry shown above, collected in one file.
+
+**Script** — every rule shown above, collected in trigger order: QueenBee control, then fertilizing, then better yield, then hive silence/reactivation.
+
+<Aside type="tip">
+Nothing above is copy-paste-and-done — it's meant to be read block by block, the way the four loops were introduced.
+</Aside>
+
+Four separate, ordinary-looking rule chains — but because each one reads or writes the same handful of custom-data flags (`isSilentBeehive`, `isFertilizedSapling`, `isBetterCrops`) and the same `piece_beehive` proximity check, extracting honey now has a real, felt consequence three loops away from where the extraction actually happened. That's the pattern worth taking from this page more than any single rule in it: small, independent-looking rules, tied together by a few shared data flags and one shared nearby-object check.
