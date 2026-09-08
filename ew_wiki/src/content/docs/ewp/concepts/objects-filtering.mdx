@@ -1,0 +1,158 @@
+---
+title: Requiring Nearby Objects
+description: Making a rule fire only when other objects are (or aren't) nearby, with objects:, bannedObjects:, and their limits.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import TamedBoarData from '../../../../components/snippets/tamed-boar-data.mdx';
+import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
+
+[`filter:`](/ew_wiki/ewp/concepts/filter/) checks something about the object the rule is already looking at. **Object filters** check the world *around* it instead — other objects nearby. A rule can require certain objects to be close by before it fires (`objects:`), or refuse to fire if certain objects are close by (`bannedObjects:`).
+
+## Requiring a nearby object: `objects:`
+
+`objects:` is a list of objects that must be found nearby. Each entry needs at least a `prefab:` — the object id to search for:
+
+```yaml
+- prefab: Boar
+  type: create
+  objects:
+  - prefab: Player  # at least one Player must be within range
+  data: tamedBoar
+```
+
+This Boar only gets the `tamedBoar` data if a Player is nearby when it spawns — not on every spawn.
+
+<TamedBoarData />
+
+<Aside type="note">
+By default, `objects:` doesn't count the object the rule is looking at against itself — searching for `Boar` here won't match the Boar being created. Set `self: true` on an entry to include it.
+</Aside>
+
+### Narrowing the search on an entry
+
+Each `objects:`/`bannedObjects:` entry accepts a few more fields:
+
+- `minDistance:` / `maxDistance:` — how close (or far) the match has to be. `maxDistance:` defaults to 100 meters; set it above 10000 to search all objects regardless of distance.
+- `minHeight:` / `maxHeight:` — the same idea, but for height difference rather than flat distance.
+- `offset:` — shifts the search position by `x,z,y`, relative to the original object's position and rotation, instead of searching from the object itself.
+
+```yaml
+- prefab: Boar
+  type: create
+  objects:
+  - prefab: Player
+    maxDistance: 15  # only counts a Player within 15 meters
+  data: tamedBoar
+```
+
+You can also reuse [`filter:`](/ew_wiki/ewp/concepts/filter/) and `bannedFilter:` on an entry, exactly like anywhere else, to narrow which matches count:
+
+```yaml
+- prefab: Boar
+  type: create
+  objects:
+  - prefab: Boar
+    filter: int, level, 2;3  # only a starred Boar counts as a match
+    maxDistance: 10
+  data: commanderBoar
+```
+
+<CommanderBoarData />
+
+<Aside type="note">
+`filters:` and `bannedFilters:` (plural) also exist for a nearby-object entry, for checking more than one condition at once — that's its own topic for a future Advanced page.
+</Aside>
+
+<Aside type="note">
+An entry can also carry a `condition:` — a full expression, more flexible than `filter:`. That's a big enough topic to get its own Advanced page later; for now, know it exists.
+</Aside>
+
+## Requiring a specific count: `objectsLimit`
+
+Left unset, every entry in `objects:` just needs to be found once. `objectsLimit:` changes that to a specific count, written as `min` or `min;max`:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 3  # at least 3 matches required, combined across all objects: entries
+  objects:
+  - prefab: Boar
+    filter: int, level, 2;3
+    maxDistance: 10
+  data: commanderBoar
+```
+
+Now the Boar only becomes a `commanderBoar` if at least 3 nearby starred Boars are found within 10 meters — a lone Boar, or two, doesn't cut it.
+
+<Aside type="tip">
+`objectsLimit` counts matches across *all* `objects:` entries combined, not once per entry — one entry can be satisfied by several different objects, and one object can count toward several entries at once.
+</Aside>
+
+### `weight:` — how much a match counts
+
+Each `objects:` entry can also set `weight:` — how much one matching object counts toward `objectsLimit`. Default is `1`, so normally each match counts as one. A higher weight lets a single match count for more:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 3
+  objects:
+  - prefab: Boar
+    filter: int, level, 3  # a 2-star (max) Boar counts extra
+    weight: 2
+  - prefab: Boar
+    filter: int, level, 2
+    weight: 1
+  data: commanderBoar
+```
+
+Here, two 2-star Boars alone (2 + 2 = 4) already clear the `objectsLimit: 3` requirement, without needing a third Boar at all.
+
+<Aside type="caution">
+This `weight:` is unrelated to the loot-table `weight:` used on [`spawn:` entries](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — same word, different job. This one only affects how an `objects:` match counts toward `objectsLimit`.
+</Aside>
+
+<Aside type="note">
+Setting a `max` on `objectsLimit` (`min;max`) forces EWP to search every matching object rather than stopping early once the minimum is met — worth knowing if you're tuning a rule for performance on a busy server.
+</Aside>
+
+## Blocking on a nearby object: `bannedObjects:`
+
+`bannedObjects:` is the mirror image — the rule refuses to fire if these objects are found nearby. It takes the same entry fields as `objects:` (`prefab:`, `maxDistance:`, `filter:`, and so on):
+
+```yaml
+- prefab: Neck
+  type: destroy
+  bannedObjects:
+  - prefab: wood_door
+    maxDistance: 20  # skip this rule if a wood_door is within 20 meters
+  spawn:
+  - prefab: TrophyNeck
+```
+
+This Neck only drops a `TrophyNeck` if there's no `wood_door` within 20 meters — keeping the rare drop away from player bases.
+
+Left unset, `bannedObjectsLimit:` requires *none* of the `bannedObjects:` entries to be found — a single match blocks the rule. Set it, using the same `min` or `min;max` form as `objectsLimit`, to allow a small number of banned matches through before the rule actually gets blocked:
+
+```yaml
+- prefab: Neck
+  type: destroy
+  bannedObjectsLimit: 2  # blocks once 2 or more wood_door matches are found
+  bannedObjects:
+  - prefab: wood_door
+    maxDistance: 20
+  spawn:
+  - prefab: TrophyNeck
+```
+
+Now a single nearby `wood_door` is tolerated — the drop still happens. It's **2 or more** matches (counted the same combined, weighted way as `objectsLimit`) that blocks the rule, not just one.
+
+<Aside type="caution">
+`bannedObjectsLimit: 2` means "block once 2 are found" — the limit itself is the blocking threshold, not one past it. It's an easy off-by-one to trip on if you're picturing "how many are I'm allowed" rather than "how many trips the block."
+</Aside>
+
+<Aside type="tip">
+`objects:` and `bannedObjects:` can both appear on the same rule at once — a rule can require some objects nearby *and* refuse to fire near others, at the same time.
+</Aside>

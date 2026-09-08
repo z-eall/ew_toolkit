@@ -1,0 +1,93 @@
+---
+title: Understanding Functions
+description: The <name_param1_param2> syntax EWP uses everywhere to compute or fetch a value inline, and the categories functions fall into.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+You've already seen `<par_X>` used to hand a trigger's information into a rule — it's one example of a **function**. A function is anything written `<name>` or `<name_param1_param2>` (underscores separate the parameters). EWP replaces it with a computed or fetched value *before* the rest of the line is read, so wherever you could type a literal number or word, you can usually drop in a function instead.
+
+## Kinds of functions
+
+Every function belongs to one of a handful of groups, based on what it works on:
+
+- **Basic** — reads something off the current object or its surroundings, no parameters needed: `<biome>`, `<prefab>`, `<x>`/`<z>`. Covered on this page, below.
+- **Text** — reads or reshapes words and strings: `<upper_X>`, `<lower_X>`, `<len_X>`. Covered on this page, below.
+- **Numeric** — arithmetic, comparisons, trig: `<add_X_Y>`, `<sin_X>`. Covered on this page, below.
+- **Vector** — 3D position and rotation math: `<distance_A_B>`, `<lerp_A_B_T>`.
+- **Long numbers** — the same arithmetic as Numeric, but for the oversized integers Valheim uses internally for game ticks: `<addlong_X_Y>`.
+- **Custom data (global)** — a save slot that isn't tied to any one object, unlike the per-object `data:` you already know: `<save_X_Y>`, `<load_X>`, `<clear_X>`.
+- **Time** — reads or formats the in-game or real-world clock: `<day>`, `<realtime_X>`.
+
+The rest of this page teaches Basic, Text, and Numeric. Vector, Long numbers, Custom data (global), and Time each get their own full page later in Advanced.
+
+<Aside type="note">
+For the complete, always-current list of every function in every category, right now: the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md).
+</Aside>
+
+## The shape: name, then parameters
+
+A function with no parameters is just its name between angle brackets:
+
+```yaml
+- prefab: Player
+  type: say, whereami
+  command: s <biome>  # shouts the biome the player is standing in
+```
+
+`<biome>` needs nothing else to work — it just reads something off the object that triggered the rule. `<prefab>` (the object's own prefab id) and `<x>`/`<z>` (its position) work the same way — zero-argument functions that fetch something instead of computing it.
+
+A function that needs input takes it as parameters after the name, each one separated by an underscore:
+
+```yaml
+- prefab: Player
+  type: say, shout
+  command: s <upper_hello>  # shouts HELLO
+```
+
+`upper` is the function name, `hello` is its one parameter. Stack more parameters the same way:
+
+```yaml
+- prefab: Player
+  type: say, addup
+  command: s <add_2_3>  # shouts 5
+```
+
+`add` takes any number of parameters and sums them — `<add_2_3>` is `2` and `3`, two separate parameters.
+
+## The underscore gotcha
+
+Because underscores separate parameters, an underscore that's meant to be *part of* a parameter's own value can get misread as a separator instead. A prefab id can itself contain underscores (`piece_workbench`, say) — so handing one to a function as a text parameter risks it getting split in the wrong place.
+
+**Use `<safeprefab>` instead of `<prefab>` whenever you're passing the current object's prefab id into another function as a parameter.** It's the same prefab id with every underscore swapped for a dash, so it can't be misread as several separate parameters:
+
+```yaml
+- prefab: piece_workbench
+  type: say, check
+  command: s <upper_<safeprefab>>  # shouts PIECE-WORKBENCH, not just PIECE
+```
+
+<Aside type="caution">
+This isn't specific to `<safeprefab>` — *any* parameter whose value might itself contain an underscore risks the same silent misread, not just a prefab id. Keep it in the back of your mind as a recurring gotcha, not a one-off.
+</Aside>
+
+## Missing data: a default with `=`
+
+Some functions read a value that might not exist yet — add `=value` right after the parameter to supply a fallback:
+
+```yaml
+- prefab: Player
+  type: say, mylevel
+  command: s <int_level=1>  # shouts this object's own "level" value, or 1 if it hasn't been set yet
+```
+
+`<int_level=1>` reads the object's own `level` value if it's there, or falls back to `1` if it isn't.
+
+## A function can fetch, not just compute
+
+`<upper_X>` and `<add_X_Y>` compute a new value from what you hand them. Other functions fetch a value that already exists somewhere — `<biome>` and `<prefab>` above are two examples, and so are `<int_*>`, `<float_*>`, and `<key_*>`, which read a value back off an object's own data. Reading your own values back this way is its own topic — see [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/).
+
+## Where functions can go
+
+Everything above used `command:`, but functions aren't specific to it — they work the same way inside `data:` values, `filter:` conditions, poke parameters, and anywhere else EWP reads a value from your script. Anywhere you could type a literal, a function is fair game.

@@ -57,7 +57,7 @@ The two sides have to match — a typo or a renamed parameter on one side breaks
 
 ## Narrowing who gets poked: `filter:`
 
-[`filter:`](/ew_wiki/ewp/concepts/script/#only-affecting-the-right-objects-filter) works under `poke:` the same way it does anywhere else — it doesn't set anything, it only checks a condition, and only pokes the objects that already pass:
+[`filter:`](/ew_wiki/ewp/concepts/filter/) works under `poke:` the same way it does anywhere else — it doesn't set anything, it only checks a condition, and only pokes the objects that already pass:
 
 ```yaml
 poke:
@@ -150,5 +150,9 @@ Fix: add a `type: poke, openDoor` rule somewhere in the script.
 If a poke chain isn't working, checking that every `parameter:` name is spelled identically on both sides catches the most common case first.
 
 <Aside type="note">
-Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts.
+Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts. (Note `objects:` entries have their own, separately-scoped `maxDistance:` too — see [Requiring Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) — same field name, different job.)
+</Aside>
+
+<Aside type="tip">
+Looking to message a client directly instead of poking another object? See [Sending RPCs to Clients](/ew_wiki/ewp/concepts/rpcs/).
 </Aside>

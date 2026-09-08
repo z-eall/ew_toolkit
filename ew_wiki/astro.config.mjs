@@ -62,6 +62,8 @@ export default defineConfig({
 								'ewp/concepts/fields',
 								'ewp/concepts/data',
 								'ewp/concepts/script',
+								'ewp/concepts/triggers',
+								'ewp/concepts/filter',
 								'ewp/examples/first-script',
 								'ewp/examples/adding-randomness',
 							],
@@ -69,10 +71,16 @@ export default defineConfig({
 						{
 							label: 'Intermediate',
 							items: [
+								'ewp/concepts/spawn-vs-swap',
+								'ewp/concepts/objects-filtering',
 								'ewp/concepts/poke',
-								// PARS / Type: Time / Type: Realtime land here as each is
-								// ported (ticket 07) — not listed yet since a sidebar
-								// entry needs a real page to link to.
+								'ewp/concepts/pars',
+								'ewp/concepts/functions',
+								'ewp/concepts/custom-data',
+								'ewp/concepts/rpcs',
+								// Type: Time / Type: Realtime land here as each is ported
+								// (ticket 07) — not listed yet since a sidebar entry needs
+								// a real page to link to.
 							],
 						},
 						// Reference/Troubleshooting removed for now (2026-09-07) — placeholder

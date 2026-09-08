@@ -1,0 +1,76 @@
+---
+title: Understanding Triggers
+description: A closer look at create, destroy, state, and say — the four triggers a beginner script already leans on.
+complexity: beginner
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+[Start Writing a Script](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) already introduced four `type:` triggers — `create`, `destroy`, `state`, and `say` — just enough to get a first rule running. This page goes one level deeper on each of those same four, so a rule you write with them does what you expect instead of surprising you.
+
+## `create` and `destroy`
+
+Both fire with no parameter — just `type: create` or `type: destroy`, nothing after the comma. `create` fires the moment a matching object spawns; `destroy` fires the moment one is removed.
+
+<Aside type="caution">
+An object that EWP itself spawns or removes — through [`spawn:`](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).
+</Aside>
+
+Here's that gotcha in practice — a rule that spawns a Boar, expecting another rule to then react to that Boar being created:
+
+<Steps>
+
+1. **This chain silently never fires**
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     spawn:
+     - prefab: Boar  # spawns a Boar when a Neck dies
+
+   - prefab: Boar
+     type: create  # never fires for the Boar spawned above — EWP's own spawns don't count
+     data: int, level, 2  # 1-star, in Valheim's own terms
+   ```
+
+2. **Add `triggerRules: true` to the spawn entry to fix it**
+
+   ```yaml
+   - prefab: Neck
+     type: destroy
+     spawn:
+     - prefab: Boar
+       triggerRules: true  # lets this spawned Boar re-trigger other entries, including type: create
+
+   - prefab: Boar
+     type: create  # now fires, because the spawn above opted in
+     data: int, level, 2  # 1-star, in Valheim's own terms
+   ```
+
+</Steps>
+
+`triggerRules:` defaults to `false` — you have to turn it on per spawn entry whenever you want a chain like this to actually connect.
+
+## `state`: reacting to the game's own broadcasts
+
+`state` fires when an object broadcasts a state change — something the game itself already does for specific components, not something you invent yourself. The parameter has two parts: the state's name, then its value.
+
+```yaml
+- prefab: Raspberry
+  type: state, picked  # fires when this object's Pickable component reports "picked"
+  data: int, respawnFast, 1
+```
+
+Which state names exist depends entirely on the object's component — a `Pickable` reports `picked`/`unpicked`, a structure's `WearNTear` reports `damage`/`repair` when its health changes, and so on. There's a longer list of components and their state names once you're ready to look one up, but you don't need to memorize it — just know the pattern is `type: state, <name>` (and sometimes a second value after that, depending on the component).
+
+## `say`: watching chat
+
+`say`'s parameter is the exact text to match — `type: say, open` fires only on a chat message that's exactly "open", not "please open" or "open please".
+
+<Aside type="note">
+The moment any rule uses `type: say`, EWP quietly adds a server-controlled "player" to the player list, so it can watch chat messages at all. That extra list entry also counts as an extra player when a boss is killed — which increases the boss's loot drop, since Valheim scales boss loot by player count. Worth knowing if your loot amounts look off after adding a `say` rule.
+</Aside>
+
+## Many more triggers exist
+
+`create`, `destroy`, `state`, and `say` are just the four you'll reach for first. EWP understands quite a few more `type:` values — `change`, `time`, `realtime`, `event`, `key`, `globalkey`, and others — each reacting to something different, with its own parameter shape and quirks. None of them fit a first script yet, so they're saved for later: covered one at a time, in depth, once you're further along.

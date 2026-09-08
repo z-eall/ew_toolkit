@@ -1,0 +1,98 @@
+---
+title: Spawn vs. Swap
+description: The difference between adding a new object alongside the original and replacing the original outright.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Start Writing a Script](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) already used [`spawn:`](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) to drop a Coins pile when a Neck dies. This page goes deeper on `spawn:` itself, then introduces its close sibling `swap:` — same shape, very different effect.
+
+## `spawn:`, beyond the bare minimum
+
+The beginner example only used `prefab:`. A spawn entry can carry a lot more:
+
+```yaml
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Boar
+    data: int, level, 2  # sets the field named level (an int) to 2 — 1-star, in Valheim's own terms — the instant this Boar spawns
+    pos: 0, 0, 1  # x, z, y offset from where the Neck died
+    chance: 0.5  # 50% chance this entry spawns at all
+```
+
+## Turning a spawn list into a loot table: `chance` and `weight`
+
+You already met `chance:` and `weight:` in [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) — `chance:` rolls each entry independently, `weight:` picks exactly one entry from a shared pool. Both work the same way nested inside a `spawn:` list here.
+
+One thing that page doesn't cover: `chance` and `weight` can combine on the same entry — `weight:` picks which one candidate is in the running, then that candidate still has to pass its own `chance:` roll:
+
+```yaml
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Coins
+    weight: 3  # 3-in-4 chance of being the one picked
+    chance: 0.5  # ...and even then, only a 50% chance it actually spawns
+  - prefab: TrophyNeck
+    weight: 1  # 1-in-4 chance of being the one picked
+```
+
+## Timing a spawn: `delay`, `removeDelay`, and `repeat`
+
+- `delay:` — seconds to wait before this entry actually spawns, counted from when the rule fired.
+- `removeDelay:` — seconds after spawning before the spawned object is automatically removed again.
+- `repeat:` (default `0`) — how many extra times to repeat this same spawn, on top of the first one.
+- `repeatInterval:` (default `0`) — seconds to wait between each repeat.
+- `repeatChance:` (default `1`) — the `chance:` roll applied separately to *every* repeat attempt, including the first — so a `repeat: 4` entry with `repeatChance: 0.5` won't reliably spawn all five times.
+
+```yaml
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Coins
+    delay: 2  # waits 2 seconds after the Neck dies before spawning
+    repeat: 2  # spawns 3 total: the first spawn, plus 2 repeats
+    repeatInterval: 1  # 1 second between each of those spawns
+    removeDelay: 30  # each spawned Coins pile despawns 30 seconds after it appears
+```
+
+## Fields with their own page later
+
+A few more `spawn:` fields exist, each big enough to earn a dedicated page once you're further along rather than a quick mention here:
+
+- `condition:` — a full expression to gate whether this entry spawns at all, beyond a plain `chance:` roll.
+- `connect:` / `attach:` — link the spawned object to another object, so they move or interact together.
+- `owner:` — overrides who the spawned object counts as belonging to, tied into the player-identity functions covered later.
+
+<Aside type="tip">
+These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Sending RPCs to Clients](/ew_wiki/ewp/concepts/rpcs/) too — same mechanics, different action.
+</Aside>
+
+## `swap:`: same shape, replaces instead of adds
+
+`swap:` uses the exact same fields as `spawn:` — `prefab:`, `data:`, `pos:`, `chance:`, all of it. The difference is what happens to the *original* object:
+
+- `spawn:` leaves the original object alone and adds a new one next to it.
+- `swap:` removes the original object, then spawns the new one in its place.
+
+```yaml
+- prefab: Boar
+  type: create
+  filter: int, level, 3  # only the toughest boars (2-star)
+  swap:
+  - prefab: Troll  # the plain Boar is removed; a Troll takes its place
+```
+
+<Aside type="tip">
+`swap:`'s initial data is copied from the original object automatically — unlike `spawn:`, you don't need a `data:` entry just to carry over what the original already had.
+</Aside>
+
+<Aside type="caution">
+Three gotchas worth knowing before relying on `swap:`:
+
+- If the swapped object fails to spawn (a `condition:` doesn't pass, or `chance:` misses), the **original is still removed** — a failed swap doesn't roll back and leave the original in place.
+- Swapping can break the object's ZDO connection (the game's own link between an object and its spawn point) — a spawn point may keep trying to respawn a creature that's technically still "alive" as the swapped-in object.
+- Spawn limits are counted against the *original* prefab, not the swapped-in one. Swapping creatures at scale can quietly push past the intended population cap for the new creature type.
+</Aside>

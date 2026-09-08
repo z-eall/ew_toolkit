@@ -1,0 +1,125 @@
+---
+title: Understanding Pars
+description: How <par_X> and <rest_X> hand a trigger's information to the rule reacting to it, and where the numbering actually starts.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A **par** is a piece of information a [trigger](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) hands to the rule reacting to it — `<par_0>` is the first piece, `<par_1>` the second, and so on. `<par_X>` is itself one example of a [function](/ew_wiki/ewp/concepts/functions/) — the same `<name_param>` syntax used everywhere else in EWP. A par can be almost anything: a word said in chat, a value that just changed, a key's name. That flexibility is also the catch — when you see a `<par_X>` in a script, you're looking at the *receiving* end, and you have to trace backward to find where that value actually came from.
+
+<Aside type="note">
+Only some triggers pass pars: `say`, `change`, `state`, `key`, `globalkey`, `event`, and `time`/`realtime`. What each par actually means depends entirely on which trigger sent it — covered case by case below.
+</Aside>
+
+## Indexing starts at 0
+
+`<par_0>` is always the first piece of information, `<par_1>` the second:
+
+```yaml
+- prefab: Player
+  type: say, test1
+  command: s <par_0>  # shouts "test1" itself — the matched trigger word IS par_0
+```
+
+<Aside type="caution">
+"First" means index `0`, not `1` — the everyday habit of counting from one is the trip-up here. But there's a second, easier trap: when the trigger has a literal word like `test1` (not a wildcard `*`), that word fills the whole chat message's word list from the start — so `<par_0>` is `test1` itself, not the word after it. Want the word said *after* `test1`? That's `<par_1>`:
+
+```yaml
+- prefab: Player
+  type: say, test1
+  command: s <par_1>  # shouts the first word said AFTER "test1"
+```
+</Aside>
+
+## Grabbing more than one
+
+Shout only the very first word of *anything* said:
+
+```yaml
+- prefab: Player
+  type: say, *
+  command: s <par_0>
+```
+
+Shout the first four words said:
+
+```yaml
+- prefab: Player
+  type: say, *
+  command: s <par_0> <par_1> <par_2> <par_3>
+```
+
+## Everything from a point on: `<rest_X>`
+
+Four fixed pars breaks if more than four words get said. `<rest_X>` grabs word `X` *and everything after it*, so it works no matter how much was actually said:
+
+```yaml
+- prefab: Player
+  type: say, *
+  command: s <rest_0>
+```
+
+`<rest_X>` counts the same way `<par_X>` does — `<rest_0>` starts from the first word, `<rest_1>` would drop the first word and start from the second.
+
+### `par` vs `rest`, side by side
+
+Say a player types `test1 red blue green` in chat. `type: say, test1` matches on that literal first word, so — same trap as above — `test1` itself is index `0`:
+
+```yaml
+- prefab: Player
+  type: say, test1
+  command: s <par_1>   # shouts "red" — just the one word at index 1
+```
+
+```yaml
+- prefab: Player
+  type: say, test1
+  command: s <rest_1>  # shouts "red blue green" — index 1 and everything after it
+```
+
+`<par_1>` grabs exactly one word. `<rest_1>` grabs that word *and* every word still left after it — the difference only shows up once more than one word follows.
+
+## Non-`say` example: what changed and what it was before
+
+`type: change` fires whenever a specific field on an object changes — a wall's health dropping after it takes damage, say. It always passes pars in the same fixed order: `<par_0>` is the field name, `<par_1>` is the value it changed *to*, `<par_2>` is the value it changed *from*.
+
+```yaml
+- prefab: woodwall
+  type: change, health
+  command: s <par_1> <par_2>
+```
+
+Hitting a fresh wall (400 hp) for 80 damage shouts `"320 400"` — `<par_1>` (320, the new health) then `<par_2>` (400, the health right before the hit).
+
+<Aside type="tip">
+Each trigger exposes different pars in a different order — build a quick throwaway rule like the ones above (just shout every `<par_X>` you can think of) to see what a given trigger actually hands you, rather than guessing.
+</Aside>
+
+## Saving a par into `data:`
+
+A par is only available for the instant its rule fires — save it into [`data:`](/ew_wiki/ewp/concepts/data/) to keep it around:
+
+```yaml
+- prefab: woodwall
+  type: change, health
+  data: float, lastDamageTaken, <sub_<par_2>_<par_1>>
+```
+
+`<sub_X_Y>` is another [function](/ew_wiki/ewp/concepts/functions/) — it just subtracts `Y` from `X`, so `<sub_<par_2>_<par_1>>` works out "health before minus health after" and stores that as the damage taken. Math functions like this get their own full page later in Advanced — for now, just know it's doing subtraction.
+
+The same thing works through a named data entry instead of the `type, key, value` shorthand:
+
+```yaml
+- prefab: woodwall
+  type: change, health
+  data: saveLastDamage
+
+- name: saveLastDamage
+  floats:
+  - lastDamageTaken, <sub_<par_2>_<par_1>>
+```
+
+<Aside type="note">
+Pars also apply to [`poke:`](/ew_wiki/ewp/concepts/poke/) — reading a value a poke carried along — but that's different enough from the trigger pars covered here that it isn't on this page.
+</Aside>

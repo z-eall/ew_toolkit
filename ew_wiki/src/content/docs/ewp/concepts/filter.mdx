@@ -1,0 +1,33 @@
+---
+title: Understanding Filter
+description: "Narrowing a rule down to only the objects that match a condition, with filter: and bannedFilter:."
+complexity: beginner
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Sometimes `prefab:` + `type:` matches more than you want — every Boar, say, not just the tough ones. `filter:` narrows it down to only the objects that match a condition:
+
+```yaml
+- prefab: Boar
+  type: create
+  filter: int, level, 2;3  # only 1-star or 2-star — semicolon separates a list/range, not a comma
+  data: strongBoar
+```
+
+Same three pieces as a field edit (see [Understanding Fields](/ew_wiki/ewp/concepts/fields/)) — `type, field, value` — just checking a value instead of setting one. `bannedFilter:` does the opposite: matches everything *except* that condition:
+
+```yaml
+- prefab: Boar
+  type: create
+  bannedFilter: int, level, 1  # skip the plain, un-starred ones
+  data: strongBoar
+```
+
+<Aside type="tip">
+`filter:` and `bannedFilter:` also accept a saved data entry's name instead of spelling out a field, e.g. `filter: strongBoar` — matches whenever the object already has that entry applied.
+</Aside>
+
+<Aside type="tip">
+`filter:`/`bannedFilter:` also work inside a nearby-object check, not just on the object itself — see [Requiring Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/).
+</Aside>

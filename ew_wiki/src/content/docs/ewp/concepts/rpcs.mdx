@@ -1,0 +1,118 @@
+---
+title: Sending RPCs to Clients
+description: What an RPC call is, the objectRpc/clientRpc split, and how to fire one safely at a basic level.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+An **RPC call** ("remote procedure call") sends data straight to a client — usually to make something happen on the player's own screen, like a message popup or a healing number. The game fires these calls itself, all the time: eat food and a heal number floats up, die and your death visuals play. That's not what this page is about.
+
+**EWP lets you fire the exact same calls yourself, from any rule — not just the moment the game would normally send them.** Nothing about typing a word in chat would ever heal you in vanilla Valheim. With a script, it can, because the RPC that heals a player doesn't care *why* it was called — only that it was. That's the actual point of `objectRpc:`/`clientRpc:`: not replaying what the game already does under a different name, but making a real effect happen somewhere it normally couldn't.
+
+This page covers `objectRpc:` and `clientRpc:` — naming an RPC, aiming it with `target:`, passing parameters, and `chance:`. A deeper page ("Advanced RPC stuff") covers everything past that once you need it.
+
+## `objectRpc:` vs. `clientRpc:`
+
+Both fields hold a list of RPC calls, written under a rule the same way `spawn:` or `poke:` are. The difference is what the call is *about*:
+
+- **`objectRpc:`** — the call is tied to the object that triggered the rule. Use this when the RPC needs to know which object it's about.
+- **`clientRpc:`** — the call isn't related to any object at all. Use this for a call that only needs to reach a client, with nothing about a specific object attached.
+
+```yaml
+- prefab: Player
+  type: say, heal
+  objectRpc:
+  - name: RPC_Heal  # tied to the Player object — it needs to know who's healing
+    1: float, 50  # amount of health restored
+    2: bool, true  # show the floating heal number
+```
+
+Saying "heal" doesn't restore health in vanilla play — `RPC_Heal` is the same call the game fires when you eat food or sit by a fire, just set off by a chat line instead.
+
+```yaml
+- prefab: Player
+  type: say, alert
+  clientRpc:
+  - name: ShowMessage  # not about any object — just pops text on the client's screen
+    1: enum_message, Center
+    2: string, "Something happened!"
+```
+
+Nothing in the base game shows a custom banner because a player typed a word — this rule makes it happen anyway.
+
+## `name:` must match exactly
+
+`name:` picks which RPC call to fire. It has to be an **exact match** to a real, supported call.
+
+<Aside type="note">
+The mod's own [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md) is the full, always-current list of every supported call.
+</Aside>
+
+<Aside type="caution">
+There's no partial matching and no helpful error — a misspelled or unsupported `name:` just does nothing, the same way a mismatched [poke `parameter:`](/ew_wiki/ewp/concepts/poke/#the-parameter-is-just-a-name) goes quiet instead of failing loudly. Copy the name from the RPC list rather than typing it from memory.
+</Aside>
+
+## `target:`: who receives the call
+
+`target:` decides where the RPC goes. At this level, two values matter:
+
+- `owner` (the default) — sent only to the client that owns the triggering object.
+- `all` — sent to every connected client.
+
+```yaml
+- prefab: Player
+  type: say, alert
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, Center
+    2: string, "Something happened!"
+    target: all  # every connected client sees this, not just the Player who said "alert"
+```
+
+One player types a word, and the whole server sees a banner — leaving `target:` at its default (`owner`) would only show it to that one player. It's worth setting `target:` explicitly on any call meant for everyone, so the next reader doesn't have to check the default.
+
+<Aside type="note">
+`target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — saved for "Advanced RPC stuff."
+</Aside>
+
+## Passing parameters: `1:`, `2:`, `3:`, ...
+
+Some RPC calls need arguments — the RPC list says how many, and what each one is. List them as numbered fields, in order, starting from `1:`:
+
+```yaml
+- prefab: Player
+  type: say, heal
+  objectRpc:
+  - name: RPC_Heal
+    1: float, 50  # how much health to restore
+    2: bool, true  # whether to show the floating heal number
+```
+
+Some calls need more than two: `ChatMessage`, for instance, takes a `userinfo`-typed parameter identifying the sender, on top of a position and a message. Other calls need none at all — just `name:` and nothing else. That level of detail is out of scope here — the point for now is just that the numbered fields always work the same way, however many a given call needs.
+
+## `chance:`
+
+`chance:` (default `1`, meaning always) works exactly like `spawn:`'s [`chance`](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — a fraction between `0` and `1` deciding whether this entry fires at all:
+
+```yaml
+- prefab: Player
+  type: say, heal
+  objectRpc:
+  - name: RPC_Heal
+    1: float, 50
+    2: bool, true
+    chance: 0.5  # saying "heal" only actually heals half the time
+```
+
+An RPC list also supports [`weight:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) the same pick-one-from-the-group way `spawn:` does, and `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) all behave the same as their `spawn:` counterparts too — no need to re-learn the timing mechanics here.
+
+## Fields with their own page later
+
+A few `objectRpc:`/`clientRpc:` fields exist beyond what's shown here, each big enough to earn its own page once you're further along:
+
+- `packaged:` — required by some RPC calls to bundle parameters together; skipped here.
+- `source:` — fakes the call as coming from a different object's owner, using the same `<zdo>`-function pattern covered elsewhere.
+- `overwrite:` — replaces any pending delayed call of the same name/target instead of stacking another one.
+
+All three, plus the full per-component RPC catalog, are covered in "Advanced RPC stuff."

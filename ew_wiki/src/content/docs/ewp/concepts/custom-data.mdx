@@ -1,0 +1,98 @@
+---
+title: "Custom Data: Your Own Flags"
+description: Setting a value on one object with data, then reading it back later with <int_*>, <string_*>, and friends — plus the console command that can set one by hand, no script involved.
+complexity: intermediate
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Not only from a script
+
+Every value on this page could come from a rule's `data:` line — but it doesn't have to. WEC's console has its own `data set=` command, which sets the exact same kind of value by hand, on whatever object you're currently hovering over:
+
+`data set=int,customBoar,1`
+
+Hover a Boar and run that, and it now has `customBoar = 1` — a rule reading it back later on this page (`<int_customBoar>`, or a `filter: int, customBoar, 1` check) can't tell it apart from a Boar that got the same value from a script. The value doesn't remember how it got set.
+
+That's useful for a quick, one-off test: say you want to check that a rule reacts correctly to a Boar you've hand-picked, without first writing (and debugging) a whole separate rule whose only job is deciding which Boars get picked. Hover the one Boar you want to test, set the flag by hand, and try the real rule against it directly.
+
+<Aside type="caution">
+`customBoar` is a name made up for this page — it isn't a field Valheim or EWP already tracks. That matters: Boar actually *does* have its own real `tamed` value, and setting that one by hand would genuinely tame the creature in-game, not just flag it for a script. Your own flags need a name that couldn't collide with a real one — see [Understanding Fields](/ew_wiki/ewp/concepts/fields/#finding-a-field-with-autocomplete) if you want to check what a Component's real fields actually are before picking a name.
+</Aside>
+
+<Aside type="tip">
+`data set=` is a WEC command, not EWP's own — see [Preparation](/ew_wiki/ewp/preparation/#getting-data-onto-your-server-the-part-that-trips-people-up) if the console isn't already familiar.
+</Aside>
+
+## Setting a value from a script
+
+You already know how to set a value on an object — `data: type, key, value` is the shorthand form of [`data:`](/ew_wiki/ewp/concepts/data/) for setting a single value, no named entry needed:
+
+```yaml
+- prefab: Boar
+  type: create
+  data: int, customBoar, 0  # marks every new Boar as not flagged yet
+```
+
+This page is about the other half: reading that value back later, with a [function](/ew_wiki/ewp/concepts/functions/) like `<int_*>`. Set here, read there — that's the whole idea.
+
+## Reading back what you stored
+
+Swap the value's kind for the matching function name, and the key for the parameter:
+
+```yaml
+- prefab: Boar
+  type: say, checkmark
+  command: s <int_customBoar>  # shouts 0, or whatever this Boar's own customBoar value is
+```
+
+`<int_customBoar>` doesn't take a number to compute with, the way `<add_2_3>` did on the [functions page](/ew_wiki/ewp/concepts/functions/) — it fetches a value that's already sitting on *this specific object*, the same one the rule is running for. Set it once with `data:`, read it back anywhere a function is allowed: `command:`, another `data:` value, `filter:`, poke parameters, and so on.
+
+The function name has to match the kind of value you stored it as:
+
+- `<int_*>` — a whole number, stored as `ints`
+- `<float_*>` — a decimal, stored as `floats`
+- `<string_*>` — text, stored as `strings`
+- `<bool_*>` — stored as an integer, read back as true/false
+- `<key_*>` — the generic one, works regardless of what kind the value was stored as
+
+(and a handful of more specific cases — `<long_*>` for big integers, `<hash_*>` and `<vec_*>`/`<quat_*>` that convert the stored number into a prefab name or a position/rotation, `<byte_*>` and `<zdo_*>` — same pattern, just narrower use)
+
+<Aside type="tip">
+Not sure which kind a value was saved as? Reread [Understanding Data](/ew_wiki/ewp/concepts/data/#what-a-data-entry-looks-like) — `ints`/`floats`/`strings`/`bools` there are exactly the kinds these functions read back.
+</Aside>
+
+## Missing data still needs a fallback
+
+An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` trick from the [functions page](/ew_wiki/ewp/concepts/functions/#missing-data-a-default-with-):
+
+```yaml
+- prefab: Boar
+  type: say, checkmark
+  command: s <int_customBoar=0>  # 0 if this Boar was never given a customBoar value
+```
+
+This matters more here than for most functions, since a custom key is something *you* invented — nothing sets it for you before your own rule runs for the first time.
+
+## The same key, two different jobs
+
+`filter:` already checks a `type, key, value` triple to decide whether a rule matches — that's exactly the same key you set with `data:` and can now read back with `<int_*>`. One rule sets it, another reads it, and a third can gate on it:
+
+```yaml
+- prefab: Boar
+  type: say, mark
+  data: int, customBoar, 1  # this Boar is now flagged
+
+- prefab: Boar
+  type: say, checkmark
+  filter: int, customBoar, 1  # only fires for Boars already flagged
+  command: s <int_customBoar>  # shouts 1
+```
+
+Same `customBoar` key throughout: `data:` writes it, `filter:` checks it, `<int_customBoar>` reads it out loud. Nothing new about `filter:` here — see [Understanding Filter](/ew_wiki/ewp/concepts/filter/) if that part's unfamiliar.
+
+## What this page doesn't cover
+
+Everything above lives on one specific object — the Boar that got the `data:` line keeps its own `customBoar` value, separate from every other Boar. EWP also has a *global* store not tied to any object (`<save_X_Y>`, `<load_X>`, `<clear_X>`) — a different mechanism from what's on this page, covered in its own Advanced page later.
+
+The `<float_WearNTear.m_health>` form — reading a live game Component's field, rather than your own custom data — is different too, and out of scope here.
