@@ -44,7 +44,7 @@ One thing that page doesn't cover: `chance` and `weight` can combine on the same
 - `delay:` — seconds to wait before this entry actually spawns, counted from when the rule fired.
 - `removeDelay:` — seconds after spawning before the spawned object is automatically removed again.
 - `repeat:` (default `0`) — how many extra times to repeat this same spawn, on top of the first one.
-- `repeatInterval:` (default `0`) — seconds to wait between each repeat.
+- `repeatInterval:` (default: whatever `delay:` is) — seconds to wait between each repeat. Leave it unset and repeats space out by the same gap as `delay:` itself, not `0`.
 - `repeatChance:` (default `1`) — the `chance:` roll applied separately to *every* repeat attempt, including the first — so a `repeat: 4` entry with `repeatChance: 0.5` won't reliably spawn all five times.
 
 ```yaml

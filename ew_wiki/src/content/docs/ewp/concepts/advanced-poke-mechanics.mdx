@@ -146,7 +146,7 @@ poke:
 
 ## Timing: `delay:`, `repeat:`, `repeatInterval:`, `repeatChance:`
 
-These four behave exactly like their [`spawn:` counterparts](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — `delay:` waits before the first poke fires, `repeat:` (default `0`) fires it that many *extra* times on top of the first, `repeatInterval:` (default `0`) is the gap between each, and `repeatChance:` (default `1`) rolls separately for every attempt including the first:
+These four behave exactly like their [`spawn:` counterparts](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — `delay:` waits before the first poke fires, `repeat:` (default `0`) fires it that many *extra* times on top of the first, `repeatInterval:` (default: whatever `delay:` is) is the gap between each, and `repeatChance:` (default `1`) rolls separately for every attempt including the first:
 
 ```yaml
 - prefab: wood_door
