@@ -16,9 +16,9 @@ EWP's own docs say it plainly: objects spawned or removed by the mod don't trigg
 
 A rule that matches by bare `prefab:` name fires for *every* live instance of that prefab, not just the one this script cares about. If a rule's own logic depends on reacting to "the one I spawned" specifically, tag that instance with `data:` at spawn time and `filter:` the reacting rule on the same tag — otherwise a wild instance, a player's own, or one from an unrelated rule triggers it too.
 
-## Does a `poke:` or `objects:` entry need a `limit:`?
+## Does a `poke:` or `objects:` entry need a `limit:` — or a filter?
 
-Matching by bare prefab name reaches every instance in range, not one. If the intent is "poke this one specific marker object," say so with `limit: 1` (or a tighter filter) — otherwise, if more than one instance happens to be in range, each one gets poked, and each poke independently fires whatever rule is listening.
+Matching by bare prefab name reaches every instance in range, not one. `limit:` only caps *how many* get poked — with no `random:`, it picks whichever matching instances are *closest*, not "the specific one I placed." If the intent is "poke this one specific marker object," that needs a uniqueness `filter:` (tag the instance at placement, `filter:` on that tag) — `limit: 1` alone still risks poking a closer stray instead of the one you meant. Reach for `limit:` alone only when any matching instance is fine to poke and count is the only thing being capped — not identity.
 
 ## Then validate
 

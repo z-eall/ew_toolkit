@@ -20,6 +20,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-checklist-read.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-script-field-order.cjs"
           }
         ]
       }

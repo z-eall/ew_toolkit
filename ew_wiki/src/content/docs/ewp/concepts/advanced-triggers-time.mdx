@@ -4,7 +4,7 @@ description: Firing a rule on Valheim's own in-game clock — four granularities
 complexity: advanced
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 [Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `time` — firing a rule on **Valheim's own in-game clock**, the one that drives day/night and the calendar day counter inside the world itself. It has nothing to do with your server's real-world wall clock — for that, see the separate [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/) trigger, same shape, different clock.
 
@@ -109,42 +109,70 @@ A single exact day instead of a repeating pattern reaches for `value1,value2` or
 
 ## Case study - a recurring boss-timer reset
 
-Combine `day` with `hour` to pin a recurring event to the *same in-game moment* every cycle, rather than firing continuously across a whole day. `type: time` has no prefab of its own, and its position always defaults to the world origin `(0,0,0)`, so it can't `spawn:` a boss directly — the real move is to have it `poke:` a marker object already standing in the arena, and let *that* object's own rule do the spawning:
-
-```yaml
-- type: time, hour 0 5,10,15,20   # hour 0, but only on days 5, 10, 15, or 20
-  bannedGlobalKeys: BossArenaActive   # skip the reset if the last boss is still standing
-  commands:
-  - s A dark presence stirs in the Swamp arena.
-  poke:
-  - prefab: piece_banner01   # a real, purely decorative banner piece — placed once in the arena, its only job here is to give this poke something to reach
-    position: 320, -140, 0   # x, z, y — a time trigger's own position always defaults to (0,0,0), so this overrides it to the arena's real coordinates
-    limit: 1   # if more than one piece_banner01 happens to stand within range, only poke one — otherwise every one of them spawns its own boss
-    parameter: spawnBoss
-
-- prefab: piece_banner01
-  type: poke, spawnBoss
-  commands:
-  - setkey BossArenaActive
-  spawn:
-  - prefab: Bonemass
-    data: int, arenaBoss, 1   # flags this specific Bonemass, so the destroy rule below reacts only to it
-    triggerRules: true   # spawned objects don't trigger other rules by default — without this, the destroy rule below never fires
-
-- prefab: Bonemass
-  type: destroy
-  filter: int, arenaBoss, 1   # only this arena's own Bonemass — a wild Bonemass dying elsewhere must not clear the guard
-  commands:
-  - removekey BossArenaActive   # clears the guard so the next matching day can respawn it
-```
-
-Because `hour` accepts the unit above it (`day`), the first rule fires once per matching day rather than once per hour across every day. `bannedGlobalKeys: BossArenaActive` is what makes this a real recurring encounter instead of a stacking one: if players haven't killed the last Bonemass yet, the scheduled hour skips the reset instead of queuing up a second boss on top of it. `position:` on the poke is what overrides a time trigger's always-zero default position to reach the arena's real coordinates instead — see [Advanced Poke Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range).
-
-Three easy-to-miss requirements make this actually work as one boss, not several, and make the last rule fire at all: `limit: 1` on the poke, because a plain `piece_banner01` match has no idea which banner is "the" arena marker — without a limit, every banner within range gets poked, and every poke spawns its own boss; `triggerRules: true` on the spawn, because EWP's own docs are explicit that objects spawned or removed by the mod don't trigger `create`/`destroy` rules unless this is set; and `filter: int, arenaBoss, 1` on the destroy rule, because without it *any* Bonemass dying anywhere in the world — not just this arena's — would clear the guard early. The `data:` on the spawn is what makes that filter possible: it tags this one Bonemass so the destroy rule can tell it apart from every other.
+Combine `day` with `hour` to pin a recurring event to the *same in-game moment* every cycle, rather than firing continuously across a whole day. `type: time` has no prefab of its own, and its position always defaults to the world origin `(0,0,0)`, so it can't `spawn:` a boss directly — the real move is to have it `poke:` a marker object already standing in the arena, and let *that* object's own rule do the spawning.
 
 <Aside type="caution">
 Pick the marker prefab carefully: it needs to be real (any name typed here has to exist in Valheim) and it needs to do nothing on its own. `guard_stone` looks like an obvious choice for "a marker object standing in the arena," but it's a real structure with a real side effect — it blocks nearby monster spawns — which would fight the very boss spawn this case study is trying to trigger. `piece_banner01` is purely decorative, so it's safe to repurpose as a poke target.
 </Aside>
+
+<Steps>
+
+1. **Schedule the reset, guarded against stacking**
+
+   ```yaml
+   - type: time, hour 0 5,10,15,20   # hour 0, but only on days 5, 10, 15, or 20
+     bannedGlobalKeys: BossArenaActive   # skip the reset if the last boss is still standing
+     commands:
+     - s A dark presence stirs in the Swamp arena.
+     poke:
+     - prefab: piece_banner01
+       filter: string, Piece.m_name, arenaBossMarker
+       position: 320, -140, 0
+       parameter: spawnBoss
+   ```
+
+   Because `hour` accepts the unit above it (`day`), this fires once per matching day, not once per hour across every day. `bannedGlobalKeys: BossArenaActive` is what makes it a recurring encounter instead of a stacking one — if the last Bonemass isn't dead yet, the scheduled hour skips the reset instead of queuing a second boss on top of it.
+
+2. **Reach the arena, and only the one banner tagged for it**
+
+   ```yaml
+   poke:
+   - prefab: piece_banner01
+     filter: string, Piece.m_name, arenaBossMarker   # matches only the one banner hand-tagged for this arena
+     position: 320, -140, 0   # x, z, y — a time trigger's own position always defaults to (0,0,0), so this overrides it to the arena's real coordinates
+     parameter: spawnBoss
+   ```
+
+   `position:` is what reaches the arena at all — see [Advanced Poke Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range). `filter:` is what makes it *this* banner: a poke search defaults to a 100m radius and picks whichever match is closest, so without a uniqueness tag, any `piece_banner01` within that range — including a player's own decoration — could get poked instead. Tag the arena's banner when it's placed, with WEC's `data set=` or a build-time `data:` (see [Custom Data: Not Only From a Script](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) — the same pattern used in [World Bosses](/ew_wiki/ewp/examples/world-bosses/#what-it-builds).
+
+3. **The banner answers the poke and spawns the boss**
+
+   ```yaml
+   - prefab: piece_banner01
+     type: poke, spawnBoss
+     spawn:
+     - prefab: Bonemass
+       data: int, arenaBoss, 1   # flags this specific Bonemass
+       triggerRules: true   # spawned objects don't trigger other rules by default — without this, the destroy rule below never fires
+     commands:
+     - setkey BossArenaActive
+   ```
+
+   `setkey BossArenaActive` raises the guard the first rule checks. `data:` tags this one Bonemass so the next rule can tell it apart from any other; `triggerRules: true` is what lets that Bonemass's own death fire a rule at all.
+
+4. **Clear the guard when this Bonemass dies — not any Bonemass**
+
+   ```yaml
+   - prefab: Bonemass
+     type: destroy
+     filter: int, arenaBoss, 1   # only this arena's own Bonemass
+     commands:
+     - removekey BossArenaActive
+   ```
+
+   Without `filter:`, any Bonemass dying anywhere in the world would clear the guard early — a wild one, or a different arena's. With it, only this tagged Bonemass's death resets the timer for the next matching day.
+
+</Steps>
 
 ## Case study - tracking day and night as global keys
 
@@ -166,7 +194,9 @@ Valheim's own night doesn't start at an even hour — it begins at the in-game c
   - setkey daytime
 ```
 
-`minute 24;59` is a range, not one exact minute — it stays open for the rest of hour 20, from `:24` through `:59`. That's a safety window, not a schedule: `type: time, minute` only fires the instant the clock rolls onto a new minute value, so an exact-minute rule (`minute 24 20`) that gets missed once — a laggy tick, a busy server — has no other chance to fire that whole in-game day. The range keeps the rule armed for the rest of the hour instead, and `bannedGlobalKeys:` is what stops it from re-firing on every one of those later minutes once the key has already flipped — wide window for reliability, single flip per transition.
+`minute 24;59` is a range, not one exact minute — it stays open for the rest of hour 20, from `:24` through `:59`. That's a safety window, not a schedule: `type: time, minute` only fires the instant the clock rolls onto a new minute value, so an exact-minute rule (`minute 24 20`) that gets missed once — a laggy tick, a busy server — has no other chance to fire that whole in-game day. The range keeps the rule armed for the rest of the hour instead.
+
+`bannedGlobalKeys:` is what stops that wide window from re-firing on every later minute once the key has already flipped — one flip per transition, no matter how many minutes the window covers.
 
 <Aside type="tip">
 If a rule only needs to *behave differently* by day or night — not track the transition itself as something other rules can check — EWP already has a `day:`/`night:` filter field available on any rule, reading Valheim's day/night state directly rather than approximating it from the clock. The global-key pattern above exists for the other case: making "is it night right now" something readable outside of a single rule's own filter.

@@ -4,7 +4,7 @@ description: Firing a rule on the real-world wall clock instead of Valheim's own
 complexity: advanced
 ---
 
-import { Aside } from '@astrojs/starlight/components';
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 [Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `realtime` — firing a rule on the real-world wall clock.
 
@@ -52,43 +52,103 @@ The par mapping for `realtime` (granularity word as `<par_0>`, own unit then the
 
 ## Case study - a weekday buff rotation
 
-A simplified weekday buff — a `realtime, day` trigger writes the weekday as a [`globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-and-globalkey-reacting-to-a-stored-flag-being-set), and a `globalkey` trigger per day reacts to it:
+A simplified weekday buff — a `realtime, day` trigger writes the weekday as a [`globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-and-globalkey-reacting-to-a-stored-flag-being-set), and a `globalkey` trigger per day reacts to it. `setkey`/`removekey` are ordinary console commands run through the official `command:`/`commands:` fields — vanilla Valheim's own, not EWP's, which is why `scripting.md` doesn't spell out their syntax: `setkey [name]` and `removekey [name]` both take a bare name, no value.
+
+<Steps>
+
+1. **Stamp today's weekday as a global key**
+
+   ```yaml
+   - type: realtime, day
+     commands:
+     - setkey <realtime_dddd>
+     - s A new day begins — today is <realtime_dddd>.
+   ```
+
+   Every real-world day, this writes today's weekday name (`Monday`, `Tuesday`, ...) as a global key and says so in chat — the message alone is what tells players *anything* changed today, even on a day with no other effect.
+
+2. **Each weekday reacts to its own key, clears yesterday's**
+
+   ```yaml
+   - type: globalkey, monday
+     commands:
+     - removekey sunday
+     - setkey EnemyDamage 90
+     - s Monday — the fog lifts early, creatures seem sluggish today.
+
+   - type: globalkey, tuesday
+     commands:
+     - removekey monday
+     - removekey EnemyDamage
+     - setkey SkillGainRate 200
+     - s Tuesday — a restless energy in the air, skills come easier today.
+
+   - type: globalkey, wednesday
+     commands:
+     - removekey tuesday
+     - removekey SkillGainRate
+     - setkey ResourceRate 150
+     - s Wednesday — the forests feel generous today.
+
+   - type: globalkey, thursday
+     commands:
+     - removekey wednesday
+     - removekey ResourceRate
+     - setkey TradeDiscount 20
+     - s Thursday — merchants are in a good mood today.
+
+   - type: globalkey, friday
+     commands:
+     - removekey thursday
+     - removekey TradeDiscount
+     - setkey EnemyDamage 110
+     - s Friday — something restless stirs before the weekend.
+
+   - type: globalkey, saturday
+     commands:
+     - removekey friday
+     - removekey EnemyDamage
+     - setkey LootBonus 150
+     - s Saturday — the tides carry in more than usual today.
+
+   - type: globalkey, sunday
+     commands:
+     - removekey saturday
+     - removekey LootBonus
+     - s Sunday — a calm day, nothing unusual stirring.
+   ```
+
+   Every entry does the same three things in order: clear yesterday's weekday flag, clear yesterday's *effect* key (a plain `removekey`, never `removekey KEY VALUE` — that value doesn't belong there, since removing a key doesn't need one), then set today's own effect and say what it is. Sunday sets no effect key at all — a quiet day is a valid day, not every rotation slot needs a mechanical bonus.
+
+</Steps>
+
+## Case study - warning players before an hourly event, not just after
+
+An event that only ever announces itself the instant it starts gives players no chance to be there for it. Layering a few more `minute`-conditioned rules around the same real-world hour turns a silent flip into a countdown players actually notice:
 
 ```yaml
-# Every real-world day, stamp the new weekday as a global key
-- type: realtime, day
-  command: setkey <realtime_dddd>
+- type: realtime, minute 55
+  command: s A trader's sail glints on the horizon — the port opens in five minutes.
 
-# Monday: weaker monsters
-- type: globalkey, monday
+- type: realtime, minute 59
+  command: s The trader's ship turns toward shore — one minute to port.
+
+- type: realtime, minute 0
   commands:
-  - removekey sunday       # clear yesterday's key
-  - setkey EnemyDamage 95
+  - s The trading post is open!
+  - setkey TradingPostOpen
 
-# Tuesday: double skill gain
-- type: globalkey, tuesday
+- type: realtime, minute 1
   commands:
-  - removekey monday
-  - removekey EnemyDamage 95
-  - setkey SkillGainRate 200
-
-# ...continue the same pattern for the rest of the week
+  - s The trading post has closed for the hour.
+  - removekey TradingPostOpen
 ```
 
-`setkey`/`removekey` are ordinary console commands run through the official `command:`/`commands:` fields — `scripting.md` documents `command:`/`commands:` generically ("console command to run") without listing every console command that exists.
+Each rule fires once, at one specific minute of every real-world hour — the same `minute [minute]` condition shape from [The four granularities](#same-shape-as-time-different-clock-one-extra-granularity) above, just used four times instead of once. `TradingPostOpen` is a global key other rules can gate on — a real vendor or a lootable chest checking `globalKeys: TradingPostOpen` is what would actually make "open" mean something beyond a message, not shown here.
 
-## Case study - an hourly real-world countdown
-
-Combine `hour` with a range condition for a rule that only applies during a specific real-world window, regardless of what's happening in-game — useful for anything tied to a server's actual operating hours rather than the game world's:
-
-```yaml
-- type: realtime, hour 18;23   # only between 6 PM and 11 PM server time
-  command: setkey EveningEvent 1
-
-- type: realtime, hour
-  fallback: true   # any hour the entry above didn't already match
-  command: removekey EveningEvent
-```
+<Aside type="tip">
+This reaches for `minute`, not `second`, on purpose — the page's own caution above already flags `second`'s condition semantics as unconfirmed. `minute [minute]` is the documented, safe way to land a countdown on an exact real-world moment.
+</Aside>
 
 ## Case study - a real-world daily reset, independent of uptime
 
