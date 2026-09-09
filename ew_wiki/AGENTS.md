@@ -83,6 +83,8 @@ Check sources in this order:
 
 Tag each claim by its source's tier, per `docs/sources.md`'s own labels (official / community) — this tagging stays in `docs/sources.md`, it does not get written into the page. A true fact with no single citable source doesn't get dropped, and doesn't get stated as if it were sourced — file it under that document's "Community-observed, no single source" section, and, only if the fact itself is genuinely uncertain, flag that uncertainty on the page with an `<Aside>` (see the confidence-not-source rule above). A fact that's simply true but casually sourced (a forum post, a Discord message) does not need a page-level flag at all once it's checked against a real source — most facts on this wiki land here.
 
+Before landing any example with more than one linked EWP rule entry, also work through [docs/script-writing-checklist.md](docs/script-writing-checklist.md) — real nouns aren't enough; the interactions between rules need their own check.
+
 ## Media placeholders, never guessed media
 
 Static screenshots/diagrams are fair game per-guide (see the map's Not yet specified — this is deliberately per-spot, not blanket); embedded video stays deferred, don't add it without separate signoff. Never generate, source, or guess at an actual image — when a spot in a guide would clearly benefit from one, leave a placeholder for the maintainer to review and capture instead:

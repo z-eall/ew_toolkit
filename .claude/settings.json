@@ -16,6 +16,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-source-verify.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-checklist-read.cjs"
           }
         ]
       }
