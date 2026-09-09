@@ -1,0 +1,99 @@
+---
+title: "Advanced Triggers - type: realtime"
+description: Firing a rule on the real-world wall clock instead of Valheim's own — four granularities, the server's timezone, and reading the result with realtime functions.
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+[Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `realtime` — firing a rule on the real-world wall clock.
+
+<Aside type="note">
+Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
+</Aside>
+
+## Same shape as `time`, different clock, one extra granularity
+
+`type: realtime` fires on the identical schedule shape as [`type: time`](/ew_wiki/ewp/concepts/advanced-triggers-time/) — `<par_0>` the granularity word, each condition value its own par after that — but the clock is the real world instead of Valheim's, in the **server's own timezone**, and it adds a `second` granularity `time` doesn't have (Valheim itself has no in-game seconds; the real world does).
+
+```yaml
+- type: realtime, second [unixEpochTimestamp]
+- type: realtime, minute [minute] [hour] [dayOfYear]
+- type: realtime, hour [hour] [dayOfYear]
+- type: realtime, day [dayOfYear]
+```
+
+Use `time` for anything that should follow Valheim's own day/night rhythm regardless of server uptime; use `realtime` for anything that should follow the wall clock — a daily reset, a weekday-only event, a real-world countdown.
+
+## Reading the result: `<realtime>` and friends
+
+A `realtime` trigger tells you *that* the clock changed; the [`<realtime_X>` functions](/ew_wiki/ewp/concepts/advanced-functions/#time-functions) tell you *what it says now* — the same trigger-reads-function pairing [`type: time`](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing) has with its own Time functions. Three functions cover it:
+
+- **`<realtime>`** — seconds since the Unix epoch (Jan 1, 1970 UTC), as a raw number.
+- **`<realtime_X>`** — the clock formatted your way. `X` is a .NET `DateTime` format string, e.g. `<realtime_yyyy-MM-dd HH:mm:ss>` or `<realtime_dddd>` for the weekday name. Uses the **server's** timezone.
+- **`<realtime_X_Y>`** — same formatting, but in timezone offset `Y` instead of the server's own — `<realtime_HH:mm_-5>` for Eastern Standard Time, regardless of where the server itself runs.
+
+```yaml
+- type: realtime, minute
+  command: s It is now <realtime_mm> minutes past <realtime_HH>.
+
+- type: realtime, hour
+  command: s It is <realtime_HH_-5> sharp in UTC -5.
+
+- type: realtime, day
+  commands:
+  - s Date is <realtime_yyyy-MM-dd>.
+  - s Today is <realtime_dddd>.
+```
+
+<Aside type="caution">
+The par mapping for `realtime` (granularity word as `<par_0>`, own unit then the units above it) follows the same pattern as `time`, but `scripting.md` doesn't spell it out for `realtime` specifically — treat it, and day-of-year counting across leap years, as unconfirmed rather than settled fact. Reach for the `<realtime_X>` functions above instead of counting on a specific par index wherever you can.
+</Aside>
+
+## Case study - a weekday buff rotation
+
+A simplified weekday buff — a `realtime, day` trigger writes the weekday as a [`globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-and-globalkey-reacting-to-a-stored-flag-being-set), and a `globalkey` trigger per day reacts to it:
+
+```yaml
+# Every real-world day, stamp the new weekday as a global key
+- type: realtime, day
+  command: setkey <realtime_dddd>
+
+# Monday: weaker monsters
+- type: globalkey, monday
+  commands:
+  - removekey sunday       # clear yesterday's key
+  - setkey EnemyDamage 95
+
+# Tuesday: double skill gain
+- type: globalkey, tuesday
+  commands:
+  - removekey monday
+  - removekey EnemyDamage 95
+  - setkey SkillGainRate 200
+
+# ...continue the same pattern for the rest of the week
+```
+
+`setkey`/`removekey` are ordinary console commands run through the official `command:`/`commands:` fields — `scripting.md` documents `command:`/`commands:` generically ("console command to run") without listing every console command that exists.
+
+## Case study - an hourly real-world countdown
+
+Combine `hour` with a range condition for a rule that only applies during a specific real-world window, regardless of what's happening in-game — useful for anything tied to a server's actual operating hours rather than the game world's:
+
+```yaml
+- type: realtime, hour 18;23   # only between 6 PM and 11 PM server time
+  command: setkey EveningEvent 1
+
+- type: realtime, hour
+  fallback: true   # any hour the entry above didn't already match
+  command: removekey EveningEvent
+```
+
+## Case study - a real-world daily reset, independent of uptime
+
+`type: time` is tied to Valheim's own in-game day counter, which only advances while the world is actually being played — a server that's offline for real-world days doesn't lose in-game time, but one with light playtime advances its in-game clock slowly. `realtime` follows the wall clock instead, so it's the right choice for anything meant to track the real calendar — a daily reset, a weekend event — rather than how much the world has actually been played.
+
+<Aside type="caution">
+Exactly what happens to a `realtime` trigger while the server is offline (fires once to catch up on restart, or is simply missed for that occurrence) isn't documented — don't design a rule that depends on one specific behavior across a restart without testing it first.
+</Aside>

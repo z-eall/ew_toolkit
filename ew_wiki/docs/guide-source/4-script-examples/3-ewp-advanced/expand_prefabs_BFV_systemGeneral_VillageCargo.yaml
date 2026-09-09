@@ -1,0 +1,178 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin Debug                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# - type: realtime, second
+  # exec: <save_realtimesecond_<modlong_<par_1>_60>>
+
+# - type: key, realtimesecond 0,5,10,15,20,25,30,35,40,45,50,55
+  # bannedKeys: bfvworldlevel 0
+  # exec: <save++_cargospawnfactor>
+  # commands: #debug
+  # - s current cargo factor <load_cargospawnfactor=0>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Village Cargo                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Every realtime hour passed, we add 1 to the factor number
+- type: realtime, hour
+  bannedKeys: bfvworldlevel 0
+  exec: <save++_cargospawnfactor>
+
+# When cargo factor increase and reach the range of 4 - 6
+# Multiply the number by 0.33 (100 divide 3) and decide to spawn
+# 4 = 33%, 5 = 66%, 6 = 100% chance to spawn
+- type: key, cargospawnfactor 4;9999
+  weight: <sub_<ceil_<mul_<par_1>_0.33>>_1>
+  exec: <save_cargospawnfactor_0>
+  poke:
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;14
+    - int, villageCargoReceived, 1
+    maxDistance: 20000
+    parameter: checkCargoExisted
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;<randomVillageLvl<load_bfvworldlevel=0>>
+    - int, villageCargoReceived, 0
+    limit: 1
+    offset: <randi_-3000_3000>,<randi_-3000_3000>,0
+    maxDistance: 20000
+    delay: 1
+    parameter: findEmptyCargoSpawner <randomCargoLvl<load_bfvworldlevel=0>>
+
+# Find tent received and emptied to reset
+- prefab: rug_bogwitch_wolf
+  type: poke, checkCargoExisted
+  # commands: #debug
+  # - s tent <int_villageCargoTent=0> reset
+  bannedObjects:
+  - prefab: Cargo*
+    maxDistance: <cargoResetRange>
+  exec: <save_cargovillage<int_villageCargoTent=0>_0>
+  data: int, villageCargoReceived, 0
+
+# Find tent NOT received and empty to spawn Cargo
+- prefab: rug_bogwitch_wolf
+  type: poke, findEmptyCargoSpawner
+  commands:
+  - s A NEW CARGO HAS ARRIVED IN <upper_<nameVillage<int_villageCargoTent=0>>>!
+  bannedObjects:
+  - prefab: Cargo*
+    maxDistance: 3
+  data: int, villageCargoReceived, 1
+  spawn:
+  - prefab: Cargo<par_1>
+    pos: 0,0,0.5
+  - prefab: fx_BonusYield
+    pos: 0,0,0.5
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Village Cargo Info                              ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Admin debug
+- prefab: Player
+  type: say, !checkcargo
+  admin: true
+  cancel: true
+  poke:
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;14
+    maxDistance: 20000
+    parameter: checkCargoAvailability
+  - self: true
+    delay: 0.5
+    parameter: printCargoInfo 15
+
+# Pay NPC and trigger
+- prefab: sfx_cinder_rain_hit
+  type: create
+  poke:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcProfile, cargomaster
+    maxDistance: 25
+    parameter: findCargoMaster
+
+- prefab: MarketPlaceNPC
+  type: poke, findCargoMaster
+  filter: string, KGnpcProfile, cargomaster
+  # spawn: #debug
+  # - prefab: vfx_spawn
+  poke:
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;14
+    maxDistance: 20000
+    parameter: checkCargoAvailability
+  - prefab: Player
+    maxDistance: 20
+    delay: 0.5
+    parameter: printCargoInfo 15
+
+# Find tent received and cargo existed
+- prefab: rug_bogwitch_wolf
+  type: poke, checkCargoAvailability
+  filter: int, villageCargoTent, 1;<randomVillageLvl<load_bfvworldlevel=0>>
+  objects:
+  - prefab: Cargo*
+    maxDistance: <cargoInfoRange>
+  exec: <save_cargovillage<int_villageCargoTent=0>_1>
+
+# Find tent received and emptied
+- prefab: rug_bogwitch_wolf
+  type: poke, checkCargoAvailability
+  filter: int, villageCargoTent, 1;<randomVillageLvl<load_bfvworldlevel=0>>
+  bannedObjects:
+  - prefab: Cargo*
+    maxDistance: <cargoInfoRange>
+  exec: <save_cargovillage<int_villageCargoTent=0>_0>
+  data: int, villageCargoReceived, 0
+
+# Find tent locked and emptied
+- prefab: rug_bogwitch_wolf
+  type: poke, checkCargoAvailability
+  filter: int, villageCargoTent, <add_1_<randomVillageLvl<load_bfvworldlevel=0>>>;15
+  exec: <save_cargovillage<int_villageCargoTent=0>_-1>
+  data: int, villageCargoReceived, 0
+
+- prefab: Player
+  type: poke, printCargoInfo
+  fallback: true
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, <msgCargoInfo>
+    3: int, 1
+    overwrite: true
+  poke:
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;14
+    maxDistance: 20000
+    parameter: checkCargoAvailability
+  - self: true
+    delay: 1
+    parameter: printCargoInfo <sub_<par_1>_1>
+
+- prefab: Player
+  type: poke, printCargoInfo 0
+  weight: 1e30
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, <msgCargoInfo>
+    3: int, 1
+    overwrite: true

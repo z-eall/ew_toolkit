@@ -9,23 +9,29 @@
 // messages and which ajv instancePaths to suppress.
 //
 // CALL SITE: structuralPrecheck calls `diagnoseEntryShapeIssues()` per list
-// item (before ajv), merges `suppressAjvPaths` with rpcSuppressPaths, and
-// uses scalarDataFieldTypeMessage() only as a fallback when no rule claimed
-// the path. WEC `data:`/`name:` typo uses `skipEntryAjv` so ajv never runs.
+// item (before ajv), merges `suppressAjvPaths` with rpcSuppressPaths. WEC
+// `data:`/`name:` typo uses `skipEntryAjv` so ajv never runs. Ajv-fallback
+// text (fired only when no rule here claimed the path) lives in
+// ajvMessages.ts, a separate catalog module — see diagnosis-arbitration
+// ticket 08.
 //
 // See `.scratch/diagnosis-arbitration/map.md` for the full arbitration stack
 // and rules against duplication with RPC / legacy / format-lint layers.
 
 import { isMap, isSeq, type YAMLMap } from "yaml";
 import {
+  isMalformedTypedLineList,
   looksLikeTypedValueLine,
+  MALFORMED_TYPED_LINE_FIELDS,
   NESTED_LEGACY_FILTER_DATA_FIELD,
   NESTED_SCALAR_REF_FIELDS,
   SPAWN_SCALAR_REF_FIELDS,
+  stringListItems,
   TOP_LEVEL_LIST_REF_FIELDS,
   TOP_LEVEL_SCALAR_REF_FIELDS,
 } from "./dataFieldValidation";
 import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { findOrphanRpcListItems, numberedRpcParamKeys, type RpcActualType, type RpcKeyOwner, type RpcParamIssue } from "./rpcValidation";
 import { findPairRange, getPairValueNode, nodeRange, type Severity } from "./structuralPrecheck";
 
 export interface ShapeMismatchDiagnosis {
@@ -58,25 +64,13 @@ const ORPHAN_SIBLING_PARAM_MESSAGE =
 const MISSING_RPC_NAME_MESSAGE =
   "This RPC list item has numbered parameters but no `name:` — add `name: YourRpcName`.";
 
-function hasNumberedRpcParamKeys(entry: Record<string, unknown>): boolean {
-  return Object.keys(entry).some((k) => /^[1-9][0-9]*$/.test(k));
-}
-
-function numberedParamKeys(entry: Record<string, unknown>): string[] {
-  return Object.keys(entry).filter((k) => /^[1-9][0-9]*$/.test(k));
-}
-
-function isNameOnlyRpcEntry(entry: Record<string, unknown>): boolean {
-  return typeof entry.name === "string" && !hasNumberedRpcParamKeys(entry);
-}
-
 function orphanEntrySuppressPaths(
   field: string,
   entryIdx: number,
   entry: Record<string, unknown>,
 ): string[] {
   const paths = [`/${field}/${entryIdx}`];
-  for (const key of numberedParamKeys(entry)) {
+  for (const key of numberedRpcParamKeys(entry)) {
     paths.push(`/${field}/${entryIdx}/${key}`);
   }
   return paths;
@@ -103,12 +97,6 @@ type ShapeMismatchRule = {
   id: string;
   run: (ctx: RuleContext) => ShapeMismatchDiagnosis[];
 };
-
-function stringListItems(raw: unknown): string[] | null {
-  if (!Array.isArray(raw)) return null;
-  const items = raw.map((item) => (typeof item === "string" ? item.trim() : "")).filter((s) => s !== "");
-  return items.length > 0 ? items : null;
-}
 
 function rangeForScalarListField(parentNode: YAMLMap, field: string): [number, number] {
   const seqNode = getPairValueNode(parentNode, field);
@@ -152,8 +140,6 @@ function messageScalarFieldAsEntryNameList(field: string, lines: string[]): stri
   );
 }
 
-const MALFORMED_TYPED_LINE_FIELDS = new Set(["data", "filter", "bannedFilter"]);
-
 function messageMalformedTypedLineList(field: string, lines: string[]): string {
   const plural =
     field === "filter" ? "filters" : field === "bannedFilter" ? "bannedFilters" : "filters";
@@ -167,14 +153,6 @@ function messageMalformedTypedLineList(field: string, lines: string[]): string {
     `Invalid \`${field}:\` format — lines with commas must be full \`type, key, value\` triples. ` +
     `Put complete lines under \`${plural}:\`, or one triple on \`${field}:\`.`
   );
-}
-
-function isMalformedTypedLineList(field: string, lines: string[]): boolean {
-  if (!MALFORMED_TYPED_LINE_FIELDS.has(field)) return false;
-  const allBareword = lines.every((line) => !line.includes(","));
-  if (allBareword) return false;
-  if (lines.some(looksLikeTypedValueLine)) return false;
-  return lines.some((line) => line.includes(","));
 }
 
 function diagnoseScalarFieldAsList(
@@ -197,12 +175,18 @@ function diagnoseScalarFieldAsList(
     message = messageScalarFieldAsEntryNameList(field, lines);
   } else if (isMalformedTypedLineList(field, lines)) {
     message = messageMalformedTypedLineList(field, lines);
-  } else {
+  } else if (field === "filter" || field === "bannedFilter") {
+    const plural = field === "filter" ? "filters" : "bannedFilters";
     message =
       `Invalid \`${field}:\` format — \`${field}:\` must be a single string, not a YAML list. ` +
-      (field === "data"
-        ? "Use one full `type, key, value` triple, one entry name, or move complete typed lines to `filters:`."
-        : `Use one value on the same line, or the plural \`${field === "filter" ? "filters" : "bannedFilters"}:\` list field.`);
+      `Use one value on the same line, or the plural \`${plural}:\` list field.`;
+  } else if (field === "data") {
+    message =
+      "Invalid `data:` format — `data:` must be a single string, not a YAML list. " +
+      "Use one full `type, key, value` triple, one entry name, or move complete typed lines to `filters:`.";
+  } else {
+    // drops/addItems/removeItems: no plural sibling list field to point at.
+    message = `\`${field}:\` must be a single string value, not a YAML list.`;
   }
 
   return {
@@ -398,33 +382,22 @@ export function diagnoseRpcOrphanListItems(
     const seqNode = getPairValueNode(itemNode, field);
     if (!seqNode || !isSeq(seqNode as any)) continue;
     const items = (seqNode as any).items as unknown[];
-    const skipSet = new Set<number>();
+    const entries = items.map((entryNode) =>
+      isMap(entryNode) ? ((entryNode as YAMLMap).toJSON() as Record<string, unknown>) : {},
+    );
+    const orphans = findOrphanRpcListItems(entries);
+    if (orphans.length === 0) continue;
 
-    for (let entryIdx = 0; entryIdx < items.length; entryIdx++) {
+    const skipSet = new Set<number>();
+    for (const { index: entryIdx, previousIsNameOnly } of orphans) {
       const entryNode = items[entryIdx];
       if (!isMap(entryNode)) continue;
       const entryMap = entryNode as YAMLMap;
-      const entryValue = entryMap.toJSON() as Record<string, unknown>;
+      const entryValue = entries[entryIdx]!;
 
-      if (typeof entryValue.name === "string" || !hasNumberedRpcParamKeys(entryValue)) continue;
-
-      const firstKey = numberedParamKeys(entryValue).sort((a, b) => Number(a) - Number(b))[0]!;
+      const firstKey = numberedRpcParamKeys(entryValue).sort((a, b) => Number(a) - Number(b))[0]!;
       const range = findPairRange(entryMap, firstKey) ?? nodeRange(entryMap as any);
-
-      let message: string;
-      if (entryIdx > 0) {
-        const prevNode = items[entryIdx - 1];
-        const prevValue =
-          prevNode && isMap(prevNode)
-            ? ((prevNode as YAMLMap).toJSON() as Record<string, unknown>)
-            : null;
-        message =
-          prevValue && isNameOnlyRpcEntry(prevValue)
-            ? ORPHAN_SIBLING_PARAM_MESSAGE
-            : MISSING_RPC_NAME_MESSAGE;
-      } else {
-        message = MISSING_RPC_NAME_MESSAGE;
-      }
+      const message = previousIsNameOnly ? ORPHAN_SIBLING_PARAM_MESSAGE : MISSING_RPC_NAME_MESSAGE;
 
       diagnoses.push({
         severity: "warning",
@@ -444,6 +417,67 @@ export function diagnoseRpcOrphanListItems(
   }
 
   return { diagnoses, suppressAjvPaths, skipRpcParamCheck };
+}
+
+function describeActualType(kind: RpcActualType | undefined): string {
+  switch (kind) {
+    case "boolean":
+      return "a boolean";
+    case "number":
+      return "a number";
+    case "list":
+      return "a list";
+    case "mapping":
+      return "a mapping";
+    default:
+      return "a different value";
+  }
+}
+
+function unrecognizedRpcKeyMessage(key: string, belongsTo: RpcKeyOwner): string {
+  if (belongsTo) {
+    const where =
+      belongsTo === "both"
+        ? "the rule entry itself or a spawn:/swap: entry"
+        : belongsTo === "rule-entry"
+          ? "the rule entry itself"
+          : "a spawn:/swap: entry";
+    return (
+      `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+      `correctly (it's a field on ${where}, not on an objectRpc:/clientRpc: entry). Move it there, or remove it.`
+    );
+  }
+  return (
+    `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
+    `correctly. If this is meant as a numbered call parameter, use "1", "2", etc. instead.`
+  );
+}
+
+/** Phrases one {@link checkRpcParams}/{@link checkRpcUnrecognizedKeys} detector result. */
+export function rpcParamIssueMessage(rpcName: string, issue: RpcParamIssue): string {
+  switch (issue.kind) {
+    case "extra": {
+      const count = issue.docParamCount ?? 0;
+      const countDesc = count === 0 ? "no parameters" : `${count} parameter${count === 1 ? "" : "s"}`;
+      return `RPC '${rpcName}' doesn't document a parameter '${issue.key}' (it defines ${countDesc}) — this still works, but worth double-checking it's intentional.`;
+    }
+    case "not-a-string":
+      return (
+        `RPC '${rpcName}' parameter '${issue.key}' should be written as "${issue.docParam!.type}, <value>" (a string), ` +
+        `got ${describeActualType(issue.actualType)} instead. This may still work, but is worth writing out explicitly.`
+      );
+    case "type-mismatch":
+      return issue.caseOnlyMismatch
+        ? `RPC '${rpcName}' parameter '${issue.key}' uses type prefix '${issue.declaredType}', but EWP matches types case-sensitively — use '${issue.docParam!.type}' (${issue.docParam!.desc}).`
+        : `RPC '${rpcName}' parameter '${issue.key}' is declared as '${issue.declaredType}', but the documented type is '${issue.docParam!.type}' (${issue.docParam!.desc}).`;
+    case "missing":
+      return (
+        `RPC '${rpcName}' is missing documented parameter '${issue.key}' (${issue.docParam!.type}: ${issue.docParam!.desc}) — ` +
+        `EWP will still send the RPC with fewer args, but this is worth checking.`
+      );
+    case "unrecognized-key":
+      return unrecognizedRpcKeyMessage(issue.key, issue.belongsTo ?? null);
+  }
 }
 
 /** Exported for tests and future catalog rows. */

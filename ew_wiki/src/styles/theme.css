@@ -1,0 +1,162 @@
+/* Maps the hub's shared identity palette onto Starlight's own CSS
+   variables, per ticket 01 (ew-wiki-real-build)'s Variant A decision.
+   Imports shared/theme.css instead of copying its hex values (AGENTS.md's
+   shared-visual-identity rule). --bg/--panel/--border/--text already flip
+   for light mode inside shared/theme.css, so a single :root mapping here
+   is enough — no separate light-mode block needed. Starlight's own default
+   accent color (links, current-page highlight, progress bar) is left
+   untouched; it isn't part of the shared 5-color palette. */
+@import '../../../shared/theme.css';
+
+:root {
+	--sl-color-bg: var(--bg);
+	--sl-color-bg-nav: var(--panel);
+	--sl-color-bg-sidebar: var(--panel);
+	--sl-color-bg-inline-code: var(--panel);
+	--sl-color-text: var(--text);
+	--sl-color-text-accent: var(--text);
+	--sl-color-hairline: var(--border);
+	--sl-color-hairline-light: var(--border);
+	--sl-color-hairline-shade: var(--border);
+	/* Wider center content column (Starlight default 45rem) so the "On this
+	   page" rail sits further right instead of floating in a wide empty gap
+	   — same formula Starlight uses, just fed a bigger number. */
+	--sl-content-width: 56rem;
+}
+
+/* Prev/next footer: Starlight's default is a bulky bordered card with a
+   shadow and 2xl title text. Hub-wide style is flatter — a plain panel-tint
+   hover, no border/shadow gimmicks (see ew_toolkit/src/style.css's
+   .tool-btn) — so this reshapes the same markup to match instead of adding
+   a heavier card here. The nudge-on-hover arrow is the one added flourish,
+   kept subtle and cheap (transform only, no layout shift). */
+.pagination-links a {
+	border: none;
+	box-shadow: none;
+	border-radius: 6px;
+	background: transparent;
+	padding: 0.75rem 0.5rem;
+	transition: background-color 0.15s ease;
+}
+.pagination-links a:hover {
+	background: var(--panel);
+}
+.pagination-links svg {
+	transition: transform 0.15s ease;
+}
+.pagination-links a[rel='next']:hover svg {
+	transform: translateX(3px);
+}
+.pagination-links a[rel='prev']:hover svg {
+	transform: translateX(-3px);
+}
+.pagination-links .link-title {
+	font-size: var(--sl-text-base);
+	color: var(--sl-color-text);
+}
+
+/* Home page's component picker, styled to match the hub landing page's own
+   .tool-row/.tool-btn/.tool-desc exactly (ew_toolkit/src/style.css) — same
+   pill-button-plus-description row, not a Starlight-native pattern. --accent
+   mirrors the hub's own local token (a hover-only brightening, not part of
+   the shared 5-color palette — see that file's comment on why it's named
+   this and not reused from shared/theme.css). */
+:root {
+	--accent: var(--text);
+}
+/* Same pattern as the hub landing page's own h1 + .tagline pair
+   (ew_toolkit/src/style.css) — a muted one-line lead-in right under the H1. */
+.home-tagline {
+	margin: 0 0 1rem;
+	color: var(--muted);
+	font-size: 0.95rem;
+}
+.home-tool-rows {
+	margin: 1.5rem 0;
+}
+.home-tool-row {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.home-tool-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	flex: none;
+	background: var(--panel);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 8px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.home-tool-btn:hover {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+.home-tool-desc {
+	color: var(--muted);
+	font-size: 13.5px;
+}
+
+/* <Steps> title lines (the bold first line of each numbered item) rendered
+   as plain body text — same size/color as everything else, so a reader
+   scanning a procedural page couldn't pick out where one step ends and the
+   next begins. Starlight's own accent tokens were tried first, but that's
+   Starlight's default blue — it clashed against this wiki's warm dark
+   palette (the hub's #222831/#393e46/#948979/#dfd0b8 set, see the ticket 01
+   comment above). A dedicated warm gold, kept local to this rule only (not
+   added to shared/theme.css's 5-color palette, since it's page decoration,
+   not brand identity), matches instead — chosen and previewed with the
+   maintainer before landing here. A left border instead of Aside's full
+   tint, so the two aren't visually confused. */
+.sl-steps > li > p:first-child {
+	margin: 0 0 0.6rem;
+	padding: 0.3rem 0.75rem;
+	font-size: var(--sl-text-base);
+	line-height: 1.5;
+	color: #f0d9ae;
+	background: rgba(230, 193, 138, 0.14);
+	border-left: 3px solid #e6c18a;
+	border-radius: 0 4px 4px 0;
+}
+/* <Steps> wraps the whole title line in one <strong> — connector words
+   like "combined with" inherited the same bold weight as the code parts,
+   reading heavier/bigger than the rest of the title needed. Dialing the
+   plain-word weight back down (the code rule below re-bolds just the
+   `code:` parts) puts the emphasis back on the code, not the glue words. */
+.sl-steps > li > p:first-child strong {
+	color: inherit;
+	font-weight: 500;
+}
+/* Light mode flips the page to a cream background (shared/theme.css). A
+   gold-on-cream banner (tried first) still fought the page for attention;
+   the maintainer pointed at the sidebar's own current-page highlight in
+   light mode instead — a dark grey/navy chip with white text (confirmed
+   via computed style: bg rgb(34,40,49), text white) — and asked to reuse
+   that same grey/white contrast here instead of a second gold treatment.
+   The gold border-left is kept as the one thread tying it back to the
+   dark-mode banner's identity. */
+:root[data-theme='light'] .sl-steps > li > p:first-child {
+	color: #ffffff;
+	background: #222831;
+	border-left-color: #e6c18a;
+}
+/* A step title can include a `code:` mention (e.g. **`chance:` — an
+   independent roll**). Starlight's default inline-code chip is a
+   panel-grey box — dropped onto the banner above, it read as a
+   mismatched sticker instead of part of the same title. Dropping the
+   chip's own background/border and just inheriting the banner's text
+   color + extra weight keeps it reading as one title, not two colliding
+   boxes — and gives the code the emphasis the connector words gave up
+   above, instead of both fighting for the same bold weight. */
+.sl-steps > li > p:first-child code {
+	background: transparent;
+	color: inherit;
+	font-weight: 700;
+	padding: 0;
+}

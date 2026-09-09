@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/ew_wiki/.claude/hooks/restart-dev-server-clean.cjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/ew_wiki/.claude/hooks/verify-dev-server-ready.cjs",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

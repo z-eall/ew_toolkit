@@ -3,7 +3,6 @@ import {
   collectRuleEntryDataReferences,
   isBarewordDataReference,
   normalizeDataReferenceValue,
-  scalarDataFieldTypeMessage,
 } from "./dataFieldValidation";
 import { parseDocument } from "yaml";
 import { isMap, isSeq } from "yaml";
@@ -41,12 +40,5 @@ describe("dataFieldValidation", () => {
     const { usages, legacyNotices } = collectRuleEntryDataReferences(itemNode, value);
     expect(legacyNotices).toHaveLength(1);
     expect(usages).toEqual([{ name: "legacyName", range: expect.any(Array), suppressUndefinedError: true }]);
-  });
-
-  it("provides clearer scalar-field type messages", () => {
-    expect(scalarDataFieldTypeMessage("data")).toContain("filters:");
-    expect(scalarDataFieldTypeMessage("filter")).toContain("filters:");
-    expect(scalarDataFieldTypeMessage("bannedFilter")).toContain("bannedFilters:");
-    expect(scalarDataFieldTypeMessage("unknown")).toBeNull();
   });
 });

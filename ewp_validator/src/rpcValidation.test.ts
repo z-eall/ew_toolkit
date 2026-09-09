@@ -23,7 +23,6 @@ describe("checkRpcParams", () => {
       3: true, // should be a string like "int, 0"
     });
     expect(issues).toEqual([expect.objectContaining({ key: "3", kind: "not-a-string" })]);
-    expect(issues[0].message).toContain("should be written as");
   });
 
   it("flags a declared type that doesn't match the documented type for that parameter", () => {
@@ -110,8 +109,7 @@ describe("checkRpcParams", () => {
       name: "RPC_SetPose",
       1: "Int, 3",
     });
-    expect(issues).toEqual([expect.objectContaining({ key: "1", kind: "type-mismatch" })]);
-    expect(issues[0].message).toContain("case-sensitively");
+    expect(issues).toEqual([expect.objectContaining({ key: "1", kind: "type-mismatch", caseOnlyMismatch: true })]);
   });
 
   it("warns when documented parameters are omitted (FN-1)", () => {
@@ -128,16 +126,12 @@ describe("checkRpcParams", () => {
 describe("checkRpcUnrecognizedKeys", () => {
   it("flags a rule-entry-only field (remove) nested under an RPC entry, naming the rule entry", () => {
     const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", 1: "hit, x=1", remove: true });
-    expect(issues).toEqual([expect.objectContaining({ key: "remove", kind: "unrecognized-key" })]);
-    expect(issues[0].message).toContain("'remove:'");
-    expect(issues[0].message).toContain("rule entry itself");
-    expect(issues[0].message).not.toContain("spawn:/swap:");
+    expect(issues).toEqual([expect.objectContaining({ key: "remove", kind: "unrecognized-key", belongsTo: "rule-entry" })]);
   });
 
   it("flags a field that exists on both the rule entry and spawnData (triggerRules), naming both", () => {
     const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", triggerRules: true });
-    expect(issues).toEqual([expect.objectContaining({ key: "triggerRules", kind: "unrecognized-key" })]);
-    expect(issues[0].message).toContain("rule entry itself or a spawn:/swap: entry");
+    expect(issues).toEqual([expect.objectContaining({ key: "triggerRules", kind: "unrecognized-key", belongsTo: "both" })]);
   });
 
   it("still flags the same key once its value is quoted — this is a wrong-key mistake, not a type mistake", () => {
@@ -148,10 +142,9 @@ describe("checkRpcUnrecognizedKeys", () => {
     expect(stringIssues[0].key).toBe("triggerRules");
   });
 
-  it("flags a key that isn't a field anywhere in the schema with a generic message", () => {
+  it("flags a key that isn't a field anywhere in the schema, with no known owner", () => {
     const issues = checkRpcUnrecognizedKeys({ name: "RPC_Damage", totallyMadeUp: "x" });
-    expect(issues).toEqual([expect.objectContaining({ key: "totallyMadeUp", kind: "unrecognized-key" })]);
-    expect(issues[0].message).toContain("numbered call parameter");
+    expect(issues).toEqual([expect.objectContaining({ key: "totallyMadeUp", kind: "unrecognized-key", belongsTo: null })]);
   });
 
   it("does not flag known RPC entry keys or numbered call-arg keys", () => {

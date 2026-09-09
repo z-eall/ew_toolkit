@@ -1,0 +1,224 @@
+---
+title: Building a Custom Ship Class
+description: Tuning Ship, Container, and GlobalWind fields into a reusable, named ship class with custom data — plus the flip-fix script every ship guide needs first.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Every field on a ship — how fast it sails, how hard the rudder fights back, how much it wallows in waves — is a normal [field](/ew_wiki/ewp/concepts/fields/) you already know how to edit. This page assumes you've already got [`data:`](/ew_wiki/ewp/concepts/data/), [custom data](/ew_wiki/ewp/concepts/custom-data/), [`poke:`](/ew_wiki/ewp/concepts/poke/), and [functions](/ew_wiki/ewp/concepts/functions/) down, and spends its time on three things the earlier pages didn't need: a physics-heavy field list unique to `Ship`, a matching technique specific to vehicle components, and a full worked example that turns a plain Karve into a distinct, reusable "ship class."
+
+<Aside type="note">
+The balancing numbers below (`0.03`, `0.2`, and so on) are a live data-dump of a Karve, not Valheim's own documented defaults — neither `ewp_validator`'s schema nor valheimtools.stream's component dump lists default values, only field names and types. Treat every number here as a tested starting point, not a guaranteed factory default or a hard ceiling — re-test after any Valheim update.
+</Aside>
+
+## Required first: fixing a flipped ship
+
+Push `Ship.m_force` or `m_damping` too far and a ship will eventually capsize — floating upside down, unsailable. Every example on this page risks that, so copy this two-rule script into your EWP folder **before** touching anything below:
+
+<Steps>
+
+1. **A chat command that flips the nearest ship**
+
+   ```yaml
+   - prefab: Player
+     type: say, flip
+     poke:
+     - prefab: Ship
+       limit: 1
+       maxDistance: 10
+       parameter: flipit
+
+   - prefab: Ship
+     type: poke, flipit
+     data: flipper
+   ```
+
+   Typing `flip` in chat [pokes](/ew_wiki/ewp/concepts/poke/) the nearest `Ship`-component object within 10 meters (`limit: 1` caps it to just one, in case you're near a dock full of them), which then applies the `flipper` data entry to itself.
+
+2. **The data entry that does the actual flipping**
+
+   ```yaml
+   - name: flipper
+     rotation: <a>,0,0
+   ```
+
+   `rotation:` is a data-entry field (documented in [WEC's own data reference](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md#data-properties)) that sets an object's absolute rotation as a `y,x,z` vector — order matters, and it's not the same order as `pos:`. [`<a>`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) is a zero-parameter function meaning "this object's own rotation" — specifically the `y` component (heading), the same value `<rot>` would give as its first number. So `<a>,0,0` keeps the ship pointed the direction it was already facing, and zeroes out `x` (pitch) and `z` (roll) — exactly the two axes a capsize throws off. The ship rights itself without spinning around.
+
+</Steps>
+
+<Aside type="tip">
+`prefab: Ship` above doesn't match anything actually named "Ship" — see [Matching `Ship` by component](#matching-ship-by-component-not-by-name) below for why it still works on a Karve, Raft, or VikingShip.
+</Aside>
+
+<Aside type="tip" title="Media placeholder #1">
+**Recommended: two still images — one before, one after.**
+- Image 1: a Karve floating upside down (deliberately capsized by cranking `Ship.m_force` too high — see below).
+- Image 2: the same Karve, right-side up, immediately after typing `flip` in chat.
+- How to capture: apply an aggressive `data:` entry from this page to a test ship until it capsizes, then run the flip script and screenshot the moment it rights itself.
+</Aside>
+
+## The fields that shape a ship
+
+Every field below lives on a `Karve`, `Raft`, `Trailership`, `VikingShip`, or `VikingShip_Ashlands`, per [valheimtools.stream's `Ship` component page](https://valheimtools.stream/wiki/components). Grouped by what they actually control:
+
+**Sailing and steering**
+
+- `Ship.m_sailForceFactor` — how much the sail itself pushes the ship. Higher sails faster, but also harder to control.
+- `Ship.m_sailForceOffset` — where along the ship the sail's force is applied; changes how much the bow dips under sail.
+- `Ship.m_backwardForce` — speed from the rudder alone, independent of the sail. Also affects forward movement, not just reversing.
+- `Ship.m_stearForce` — how strongly the rudder pushes the ship's heading.
+- `Ship.m_stearForceOffset` — where along the ship the rudder's turning force is applied.
+- `Ship.m_stearVelForceFactor` — how much the ship's current speed feeds into how hard the rudder can turn it.
+- `Ship.m_rudderSpeed` — how fast the rudder itself swings to its target angle.
+- `Ship.m_rudderRotationMax` — the rudder's maximum swing angle, in degrees.
+
+**Physics and stability**
+
+- `Ship.m_force` / `Ship.m_forceDistance` — the strength of, and multiplier distance for, the force the game applies to keep the ship upright and moving with the water.
+- `Ship.m_damping` / `Ship.m_dampingSideway` / `Ship.m_dampingForward` — how strongly the ship resists motion on each axis. Lower means more agile and "floaty"; higher means it fights waves and wind harder and feels more planted.
+- `Ship.m_angularDamping` — the same idea, but for rotation (how fast it stops spinning once it starts).
+- `Ship.m_waterLevelOffset` — how high the hull sits on the water surface at rest.
+
+<Aside type="caution">
+Never set a damping field to exactly `0` — reported as a way to make a ship uncontrollable, unconfirmed but not worth risking. Keep every damping value above `0`, even if very small (`0.001` and up).
+</Aside>
+
+**Wind**
+
+- `GlobalWind.m_multiplier` — a percentage multiplier on how much wind boosts sailing speed. As admin, the console command `env wind` (`0` = calm, `1` = storm) lets you watch a ship react to different wind strengths without waiting for real weather.
+
+**Storage, health, and cosmetics**
+
+- `Container.m_width` / `Container.m_height` — the ship's built-in storage grid, same fields as any chest.
+- `Container.m_name` — the label shown when a player opens that storage.
+- `health` (a raw per-object value, not under any Component prefix) — the ship's *current* hit points.
+- `WearNTear.m_health` — the ship's *maximum* hit points. The examples below always raise both together — a ship whose current health wasn't also lifted stays capped at whatever `WearNTear.m_health` used to allow.
+- `Ladder.m_name` — hover text for the ship's boarding ladder.
+- `Chair.m_name` — hover text for its seats.
+- `ShipControlls.m_hoverText` — hover text for the wheel itself (yes, `Controlls` — that's the component's real, misspelled name).
+
+<Aside type="tip">
+Want to pull this list yourself, or find a field this page didn't cover? [Understanding Fields](/ew_wiki/ewp/concepts/fields/#finding-a-field-with-autocomplete) shows the in-game autocomplete method — `spawn_object Karve f=Ship,` lists every field the console knows about for that component.
+</Aside>
+
+## Matching `Ship` by component, not by name
+
+`Ship` is not a real prefab id — it's a Component every actual ship prefab (`Karve`, `Raft`, `Trailership`, `VikingShip`, `VikingShip_Ashlands`) shares. EWP's own [scripting reference](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md#prefab) documents `prefab:` matching by Component name as a built-in value group — "by default, each object component has its own value group. For example `Tameable` or `Piece`." Writing `prefab: Ship` matches any object carrying the `Ship` component, all five ship prefabs at once, without listing them by hand.
+
+<Aside type="tip">
+Want to scope a rule to one hull only? Use the real prefab id instead — `prefab: Karve` — or add `excludePrefab:` to skip specific ones while still matching by component.
+</Aside>
+
+## Composing a ship class
+
+The interesting part isn't tuning one field — it's combining several, plus a [custom-data](/ew_wiki/ewp/concepts/custom-data/) flag, into something a script can recognize and react to later. This example builds a "Privateer" class: fast and agile, with a custom flag other rules can check.
+
+<Steps>
+
+1. **Bundle the physics into one data entry, plus a flag that isn't a real field**
+
+   ```yaml
+   - name: privateerClass
+     floats:
+     - Ship.m_sailForceFactor, 0.05      # faster under sail than the karve default (0.03)
+     - Ship.m_backwardForce, 0.4         # more speed from the rudder alone
+     - Ship.m_damping, 0.03              # lower damping = more agile, less "self-driving"
+     - Ship.m_dampingSideway, 0.1
+     - Ship.m_dampingForward, 0.001
+     - Ship.m_angularDamping, 0.03
+     strings:
+     - shipClass, Privateer              # our own flag — not a real field, just a marker
+     - Container.m_name, Privateer's Hold
+   ```
+
+   `shipClass` is invented for this page — like [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script) warns, it needs a name that can't collide with a real field, so it's stored as a plain `strings` value rather than reusing any `Ship.*`/`Container.*` name above.
+
+2. **A chat command that turns the nearest new Karve into a Privateer**
+
+   ```yaml
+   - prefab: Player
+     type: say, privateer
+     spawn:
+     - prefab: Karve
+       data: privateerClass
+       triggerRules: true  # lets this spawned Karve fire its own create/etc. rules — off by default
+   ```
+
+   `triggerRules: true` matters here — as [`create`/`destroy` explains](/ew_wiki/ewp/concepts/triggers/#create-and-destroy), an object EWP itself spawns doesn't re-fire other rules unless this is set. Without it, step 3 below would silently never run for this Karve.
+
+3. **A second rule that reacts to the flag, not to the ship's identity**
+
+   ```yaml
+   - prefab: Karve
+     type: create
+     filter: string, shipClass, Privateer
+     spawn:
+     - prefab: vfx_spawn
+       pos: 0,0,3
+   ```
+
+   [`filter:`](/ew_wiki/ewp/concepts/filter/) checks the flag set in step 1, not anything about the Karve itself — so this rule only fires for a Privateer-class Karve, never a plain one. This is the actual point of the class: any number of rules elsewhere can gate on `filter: string, shipClass, Privateer` without needing to know how that ship got its stats.
+
+4. **A command that reports a ship's class back in chat**
+
+   ```yaml
+   - prefab: Player
+     type: say, shipclass
+     poke:
+     - prefab: Ship
+       limit: 1
+       maxDistance: 10
+       parameter: reportClass
+
+   - prefab: Ship
+     type: poke, reportClass
+     command: s This is a <string_shipClass=standard> ship.
+   ```
+
+   Same poke shape as the flip script, reused for a different job. `<string_shipClass=standard>` reads the flag back — falling back to `standard` for any ship that was never given one, per [the missing-data default pattern](/ew_wiki/ewp/concepts/custom-data/#missing-data-still-needs-a-fallback). A plain Karve reports "standard"; one built with step 2's command reports "Privateer."
+
+</Steps>
+
+<Aside type="tip">
+Nothing above is specific to "Privateer" — swap the numbers, the flag's value, and the name in `Container.m_name`, and the same four rules give you a second class (a "Tanker," say) without touching steps 3 or 4 at all, since both already key off `shipClass` generically... except step 3's `filter:` — copy that rule once per class you want a distinct spawn-time effect for.
+</Aside>
+
+## More classes
+
+Two more recipes, built the same way — same fields, same idea of naming the result — adapt these into the `data:`/`filter:` pattern above if you want them to carry a `shipClass` flag too.
+
+**Tanker** — big, slow, and hard to sink. Raises storage and both health fields together (see the health note above):
+
+```yaml
+- name: tankerClass
+  ints:
+  - Container.m_height, 4
+  - Container.m_width, 8
+  floats:
+  - health, 5000
+  - WearNTear.m_health, 5000
+  - Ship.m_forceDistance, 3
+  - Ship.m_force, 1
+  - Ship.m_damping, 0.1
+  - Ship.m_dampingSideway, 0.5
+  - Ship.m_dampingForward, 0.002
+  - Ship.m_angularDamping, 0.95    # heavy — turns slowly, doesn't "self-drive" like a small hull would
+```
+
+**Reckless** — bouncy and fast, at the cost of control. Needs real sailing skill to handle:
+
+```yaml
+- name: recklessClass
+  floats:
+  - Ship.m_force, 2
+  - Ship.m_forceDistance, 1
+  - Ship.m_damping, 0.1
+  - Ship.m_dampingSideway, 0.6
+  - Ship.m_dampingForward, 0.005
+  - Ship.m_angularDamping, 0.1
+```
+
+<Aside type="caution">
+Both recipes above are a starting point, not re-tested against a live server. Expect to nudge these numbers once you try them, especially `recklessClass`, which is easy to capsize (that's what the [flip script](#required-first-fixing-a-flipped-ship) at the top of this page is for).
+</Aside>

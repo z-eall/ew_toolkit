@@ -1,0 +1,240 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data - Village Stations                   ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# 01 - Workbench
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_piece_workbench, 0
+- value: requiredWorldLevel_piece_workbench_ext1, 0
+- value: requiredWorldLevel_piece_workbench_ext2, 0
+- value: requiredWorldLevel_piece_workbench_ext3, 1
+- value: requiredWorldLevel_piece_workbench_ext4, 3
+
+# Display name
+- value: displayName_piece_workbench, Workbench
+- value: displayName_piece_workbench_ext1, Chopping Block
+- value: displayName_piece_workbench_ext2, Tanning Rack
+- value: displayName_piece_workbench_ext3, Adze
+- value: displayName_piece_workbench_ext4, Tool Shelf
+
+# ═══════════════════════════════════════════════════════════
+# 02 - Forge
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_forge, 1
+- value: requiredWorldLevel_forge_ext2, 1
+- value: requiredWorldLevel_forge_ext5, 1
+- value: requiredWorldLevel_forge_ext4, 2
+- value: requiredWorldLevel_forge_ext1, 2
+- value: requiredWorldLevel_forge_ext3, 2
+- value: requiredWorldLevel_forge_ext6, 2
+
+# Display name
+- value: displayName_forge, Forge
+- value: displayName_forge_ext2, Anvils
+- value: displayName_forge_ext5, Forge Cooler
+- value: displayName_forge_ext4, Smith's Anvil
+- value: displayName_forge_ext1, Forge Bellows
+- value: displayName_forge_ext3, Grinding Wheel
+- value: displayName_forge_ext6, Forge Tool Rack
+
+# ═══════════════════════════════════════════════════════════
+# 03 - Cauldron
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_piece_cauldron, 1
+- value: requiredWorldLevel_cauldron_ext1_spice, 2
+- value: requiredWorldLevel_cauldron_ext3_butchertable, 3
+- value: requiredWorldLevel_cauldron_ext4_pots, 4
+- value: requiredWorldLevel_cauldron_ext5_mortarandpestle, 5
+- value: requiredWorldLevel_cauldron_ext6_rollingpins, 6
+
+# Display name
+- value: displayName_piece_cauldron, Cauldron
+- value: displayName_cauldron_ext1_spice, Spice Rack
+- value: displayName_cauldron_ext3_butchertable, Butcher's Table
+- value: displayName_cauldron_ext4_pots, Pots and Pans
+- value: displayName_cauldron_ext5_mortarandpestle, Mortar and Pestle
+- value: displayName_cauldron_ext6_rollingpins, Rolling Pins and Cutting Boards
+
+# ═══════════════════════════════════════════════════════════
+# 04 - Artisan Table
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_piece_artisanstation, 4
+- value: requiredWorldLevel_artisan_ext1, 6
+
+# Display name
+- value: displayName_piece_artisanstation, Artisan Table
+- value: displayName_artisan_ext1, Artisan Press
+
+# ═══════════════════════════════════════════════════════════
+# 05 - Galdr Table
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_piece_magetable, 5
+- value: requiredWorldLevel_piece_magetable_ext, 5
+- value: requiredWorldLevel_piece_magetable_ext2, 5
+- value: requiredWorldLevel_piece_magetable_ext3, 6
+
+# Display name
+- value: displayName_piece_magetable, Galdr Table
+- value: displayName_piece_magetable_ext, Rune Table
+- value: displayName_piece_magetable_ext2, Unfading Candles
+- value: displayName_piece_magetable_ext3, Feathery Wreath
+
+# ═══════════════════════════════════════════════════════════
+# 06 - Black Forge
+# ═══════════════════════════════════════════════════════════
+# Required world level
+- value: requiredWorldLevel_blackforge, 5
+- value: requiredWorldLevel_blackforge_ext1, 5
+- value: requiredWorldLevel_blackforge_ext2_vise, 5
+- value: requiredWorldLevel_blackforge_ext3_metalcutter, 6
+- value: requiredWorldLevel_blackforge_ext4_gemcutter, 6
+
+# Display name
+- value: displayName_blackforge, Black Forge
+- value: displayName_blackforge_ext1, Black Forge Cooler
+- value: displayName_blackforge_ext2_vise, Vice
+- value: displayName_blackforge_ext3_metalcutter, Metal Cutter
+- value: displayName_blackforge_ext4_gemcutter, Gem Cutter
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data - Base Camp Feast                    ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- value: campFeastWorldLevel0, FeastMeadows
+- value: campFeastWorldLevel1, FeastMeadows
+- value: campFeastWorldLevel2, FeastBlackforest
+- value: campFeastWorldLevel3, FeastSwamps
+- value: campFeastWorldLevel4, FeastMountains
+- value: campFeastWorldLevel5, FeastPlains
+- value: campFeastWorldLevel6, FeastMistlands
+- value: campFeastWorldLevelFallback, FeastMistlands
+
+- value: cHouseFeastWorldLevel0, FeastBlackforest
+- value: cHouseFeastWorldLevel1, FeastBlackforest
+- value: cHouseFeastWorldLevel2, FeastSwamps
+- value: cHouseFeastWorldLevel3, FeastMountains
+- value: cHouseFeastWorldLevel4, FeastPlains
+- value: cHouseFeastWorldLevel5, FeastMistlands
+- value: cHouseFeastWorldLevel6, FeastMistlands
+- value: cHouseFeastWorldLevelFallback, FeastMistlands
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Seal Crate - Stations
+- name: isBfvVillageStationSeal
+  ints:
+  - isBfvVillageStationSeal, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - WearNTear.m_minToolTier, 999
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+  strings:
+  - HoverText.m_text, Sealed <#fff000><displayName_<prefab>></color><br>Unseal upon World Level <#00ffff><requiredWorldLevel_<prefab>></color>
+  - sealedPrefab, <prefab>
+
+# Seal Crate - Extensions
+- name: isBfvVillageStationSealExt
+  ints:
+  - isBfvVillageStationSealExt, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - WearNTear.m_minToolTier, 999
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+  strings:
+  - HoverText.m_text, Sealed <#fff000><displayName_<prefab>></color><br>Unseal upon World Level <#00ffff><requiredWorldLevel_<prefab>></color>
+  - sealedPrefab, <prefab>
+
+# Unsealed Stations
+- name: isBfvVillageStation
+  ints:
+  - isBfvVillageStation, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - WearNTear.m_minToolTier, 999
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+
+# Unsealed Extensions
+- name: isBfvVillageStationExt
+  ints:
+  - isBfvVillageStationExt, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - WearNTear.m_minToolTier, 999
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+
+# Base Camp Feast
+- name: isBfvCampFeast
+  ints:
+  - isBfvCampFeast, 1
+  # - Value, 999999999
+  # - Feast.m_eatStacks, 999999999
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noRoofWear, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_minToolTier, 999
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000
+
+- name: isBfvCHouseFeast
+  ints:
+  - isBfvCHouseFeast, 1
+  # - Value, 999999999
+  # - Feast.m_eatStacks, 999999999
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noRoofWear, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_minToolTier, 999
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000

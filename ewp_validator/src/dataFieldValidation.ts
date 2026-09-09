@@ -37,6 +37,11 @@ const SCALAR_DATA_VALUE_FIELDS = new Set<string>([
   NESTED_LEGACY_FILTER_DATA_FIELD,
 ]);
 
+/** True when `field` is one of the scalar data/filter fields shapeMismatchDiagnosis.ts arbitrates. */
+export function isScalarDataValueField(field: string): boolean {
+  return SCALAR_DATA_VALUE_FIELDS.has(field);
+}
+
 export function normalizeDataReferenceValue(raw: unknown): string | null {
   if (typeof raw === "number" && Number.isFinite(raw)) return String(raw);
   if (typeof raw !== "string") return null;
@@ -61,6 +66,25 @@ export function looksLikeTypedValueLine(raw: unknown): boolean {
   const trimmed = raw.trim();
   if (trimmed.includes("<")) return false;
   return /^\w+\s*,\s*\w+\s*,\s*.+/.test(trimmed);
+}
+
+/** Fields where a comma-shaped list item is checked against the typed `type, key, value` grammar. */
+export const MALFORMED_TYPED_LINE_FIELDS = new Set(["data", "filter", "bannedFilter"]);
+
+/** Normalizes a YAML sequence's raw value to a trimmed, non-empty string list, or null if it isn't one. */
+export function stringListItems(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  const items = raw.map((item) => (typeof item === "string" ? item.trim() : "")).filter((s) => s !== "");
+  return items.length > 0 ? items : null;
+}
+
+/** True when `lines` contain commas but don't form complete `type, key, value` triples. */
+export function isMalformedTypedLineList(field: string, lines: string[]): boolean {
+  if (!MALFORMED_TYPED_LINE_FIELDS.has(field)) return false;
+  const allBareword = lines.every((line) => !line.includes(","));
+  if (allBareword) return false;
+  if (lines.some(looksLikeTypedValueLine)) return false;
+  return lines.some((line) => line.includes(","));
 }
 
 function scalarRefPredicate(field: string): (raw: unknown) => raw is string {
@@ -165,25 +189,6 @@ export function collectRuleEntryDataReferences(
   }
 
   return { usages, legacyNotices };
-}
-
-/** Clearer ajv substitute when a scalar data/filter field receives a YAML list. */
-export function scalarDataFieldTypeMessage(field: string): string | null {
-  if (!SCALAR_DATA_VALUE_FIELDS.has(field)) return null;
-  if (field === "data") {
-    return (
-      "`data:` must be a single value (`entryName` or `type, key, value`). " +
-      "For multiple typed lines use `filters:`, or reference a `data.yaml` entry."
-    );
-  }
-  if (field === "filter" || field === "bannedFilter") {
-    const plural = field === "filter" ? "filters" : "bannedFilters";
-    return `\`${field}:\` must be a single value (\`entryName\` or \`type, key, value\`). For multiple lines use \`${plural}:\`.`;
-  }
-  if (field === "drops" || field === "addItems" || field === "removeItems") {
-    return `\`${field}:\` must be a single string value, not a YAML list.`;
-  }
-  return `\`${field}:\` must be a single string value.`;
 }
 
 function hasLiteralAnchor(key: string): boolean {

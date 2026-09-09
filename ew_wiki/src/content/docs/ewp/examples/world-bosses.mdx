@@ -1,0 +1,144 @@
+---
+title: Tracking World Progression by Boss Kills
+description: A real multiplayer script that turns each world-boss kill into a permanent world-level counter, then uses it to tear down the barrier guarding whatever comes next.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+Some servers want more than "kill the boss, get the loot" — they want killing a boss to *open something up*: a physical barrier gone, a number the rest of the script pack can check forever after. This page walks through a real system that does exactly that for Valheim's seven world bosses, built from pieces you already know — [`data:`](/ew_wiki/ewp/concepts/data/), [functions](/ew_wiki/ewp/concepts/functions/), and [`poke:`](/ew_wiki/ewp/concepts/poke/) — plus one data.yaml entry kind this wiki hasn't covered yet.
+
+<Aside type="note">
+The two rules and the data below are trimmed to just the progression-ward mechanism — a separate "unlock a city plot" system drives off the same counter, cut here because it leans on several `Piece`/`WearNTear` internals that aren't confirmed. More on that at the end.
+</Aside>
+
+## What it builds
+
+Seven `dverger_guardstone` ward pieces are placed around the map ahead of time, one per boss, each hand-named (via WEC's `data set=` or a build-time `data:`) to match a specific tag — `ward_forest`, `ward_swamp`, and so on. As long as a ward stands, treat it as "this area isn't open yet." The script's whole job: when a boss dies, remove *its* ward, and permanently record how far the world has progressed.
+
+<Steps>
+
+1. **A lookup table, not a chain of `if`s**
+
+   Both rules below need to go from "which boss just died" to "which ward, which tier" — without hardcoding seven near-identical rules. `data.yaml` has a third entry kind for exactly this, alongside the `name:` entries [Understanding Data](/ew_wiki/ewp/concepts/data/) already covers: a `value:` entry. It's a single named value — `value: name, content` — referenced elsewhere as `<name>`, the same angle-bracket syntax as any [function](/ew_wiki/ewp/concepts/functions/). ([WEC's own data reference](https://github.com/JereKuusela/valheim-world_edit_commands/blob/main/README_data.md) documents it — EWP's `data.yaml` uses the same format.)
+
+   ```yaml
+   - value: progressionWard_Eikthyr, ward_forest
+   - value: progressionWard_gd-king, ward_swamp
+   - value: progressionWard_Bonemass, ward_mountain
+   - value: progressionWard_Dragon, ward_plains
+   - value: progressionWard_GoblinKing, ward_mistlands
+   - value: progressionWard_SeekerQueen, ward_ashlands
+   - value: progressionWard_Fader, ward_deepnorth
+
+   - value: worldLevel_Eikthyr, 1
+   - value: worldLevel_gd-king, 2
+   - value: worldLevel_Bonemass, 3
+   - value: worldLevel_Dragon, 4
+   - value: worldLevel_GoblinKing, 5
+   - value: worldLevel_SeekerQueen, 6
+   - value: worldLevel_Fader, 7
+   ```
+
+   Seven prefab ids — `Eikthyr`, `gd_king` (The Elder), `Bonemass`, `Dragon` (Moder), `GoblinKing` (Yagluth), `SeekerQueen` (The Queen), `Fader` — each get two lookup entries: which ward tag their death should clear, and which tier they represent. `<progressionWard_Eikthyr>` reads back `ward_forest`; `<worldLevel_Eikthyr>` reads back `1`.
+
+   <Aside type="tip">
+   Notice `gd-king` with a dash, not `gd_king`'s real underscore — that's `<safeprefab>` at work, [already covered on Understanding Functions](/ew_wiki/ewp/concepts/functions/#a-prefab-ids-own-underscores-can-break-parameter-splitting). The next step builds `<progressionWard_gd-king>` by gluing `<safeprefab>` onto the end of a name — if the table used the real underscored id, the lookup would silently split into extra parameters and miss.
+   </Aside>
+
+2. **One rule, seven bosses: the kill and the ratchet**
+
+   ```yaml
+   - prefab: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing, SeekerQueen, Fader
+     type: destroy
+     exec: <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_<safeprefab>>>>
+     poke:
+     - prefab: dverger_guardstone
+       filter: string, Piece.m_name, <progressionWard_<safeprefab>>
+       maxDistance: 20000
+       parameter: removeProgressionWard
+   ```
+
+   `prefab:` takes all seven at once — a comma-separated list matches any of them, and whichever one actually died is still recoverable through `<prefab>`/`<safeprefab>` inside this rule. `type: destroy` fires the moment Valheim's own boss-death logic kills it (this doesn't fire for a boss EWP itself removed — see [`create`/`destroy` and EWP's own spawns](/ew_wiki/ewp/concepts/triggers/#create-and-destroy)).
+
+   `exec:` runs a function purely for its side effect and throws away the result — [already introduced for the same job](/ew_wiki/ewp/concepts/advanced-functions/#custom-data-global). Read the nested call from the inside out:
+
+   - `<worldLevel_<safeprefab>>` — this boss's own tier from the table above (`3` for Bonemass, say).
+   - `<load_bfvworldlevel=0>` — whatever tier is already stored under the global key `bfvworldlevel` (the server's own prefix, not an EWP keyword — just a key name), or `0` if nothing's been saved yet.
+   - `<max_X_Y>` — the larger of the two. Same family as `<add_X_Y>` from [Understanding Functions](/ew_wiki/ewp/concepts/functions/#kinds-of-functions).
+   - `<save_bfvworldlevel_...>` — writes that larger value back.
+
+   The `max` is what makes this a **ratchet**: the stored tier only ever goes up. Kill Bonemass (tier 3) after already killing Moder (tier 4, stored), and `max(4, 3)` keeps it at `4` — a boss killed out of order, or re-killed after a respawn, can't drag world progression backward.
+
+3. **Reaching the matching ward, wherever it is**
+
+   The same rule's `poke:` finds the one ward stone that should come down:
+
+   ```yaml
+   poke:
+   - prefab: dverger_guardstone
+     filter: string, Piece.m_name, <progressionWard_<safeprefab>>
+     maxDistance: 20000
+     parameter: removeProgressionWard
+   ```
+
+   [`filter:`](/ew_wiki/ewp/concepts/filter/) checks each nearby `dverger_guardstone`'s `Piece.m_name` — the piece's own display name — against this boss's ward tag from the table (`ward_swamp` for The Elder, and so on). Only the one ward stone actually named for this boss matches; the other six, sitting elsewhere on the map, don't.
+
+   `maxDistance: 20000` is deliberately bigger than Valheim's own map — poke's default reach is 100 meters, nowhere near enough here, since a boss can die anywhere in its biome while its ward sits at a completely different chokepoint. This isn't a [global trigger](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) (the dead boss is still a real object with a position), so the search radius is measured from *where the boss died*, not the world center — pushing it past 10000m in every direction is what guarantees the ward is still found regardless of where that was.
+
+4. **Answering the poke: the ward removes itself**
+
+   ```yaml
+   - prefab: dverger_guardstone
+     type: poke, removeProgressionWard
+     remove: true
+   ```
+
+   Straight out of [Understanding Poke](/ew_wiki/ewp/concepts/poke/) — this rule only exists to answer that one parameter, and `remove: true` deletes the ward stone that received it. Once this runs, that ward is gone for good; the area it was guarding is open.
+
+</Steps>
+
+## The full script, in load order
+
+```yaml
+# data.yaml
+- value: progressionWard_Eikthyr, ward_forest
+- value: progressionWard_gd-king, ward_swamp
+- value: progressionWard_Bonemass, ward_mountain
+- value: progressionWard_Dragon, ward_plains
+- value: progressionWard_GoblinKing, ward_mistlands
+- value: progressionWard_SeekerQueen, ward_ashlands
+- value: progressionWard_Fader, ward_deepnorth
+
+- value: worldLevel_Eikthyr, 1
+- value: worldLevel_gd-king, 2
+- value: worldLevel_Bonemass, 3
+- value: worldLevel_Dragon, 4
+- value: worldLevel_GoblinKing, 5
+- value: worldLevel_SeekerQueen, 6
+- value: worldLevel_Fader, 7
+```
+
+```yaml
+# expand_prefabs.yaml
+- prefab: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing, SeekerQueen, Fader
+  type: destroy
+  exec: <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_<safeprefab>>>>
+  poke:
+  - prefab: dverger_guardstone
+    filter: string, Piece.m_name, <progressionWard_<safeprefab>>
+    maxDistance: 20000
+    parameter: removeProgressionWard
+
+- prefab: dverger_guardstone
+  type: poke, removeProgressionWard
+  remove: true
+```
+
+<Aside type="caution">
+This script only ever *removes* wards — it assumes all seven `dverger_guardstone` pieces already exist in the world, each pre-named to match one `progressionWard_*` value. Placing and naming them (a one-time admin/build step, likely with WEC's `data set=` — see [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) isn't part of what's shown here.
+</Aside>
+
+## What the counter is for
+
+`bfvworldlevel` doesn't do anything by itself once saved — its whole value is being a permanent, ratcheting number the rest of a script pack can `<load_bfvworldlevel=0>` and gate other rules against, anywhere, anytime, without needing to re-check which bosses are dead. The same counter can drive a separate "unlock a reserved city plot" system too, poking a different prefab and comparing it against a per-city threshold. It's left out of this page: that mechanism leans on several `Piece`, `WearNTear`, and `StationExtension` field values that aren't confirmed, and a guessed field is worse than no mechanism at all.

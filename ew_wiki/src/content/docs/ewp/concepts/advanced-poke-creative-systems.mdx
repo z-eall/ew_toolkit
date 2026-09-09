@@ -1,0 +1,253 @@
+---
+title: "Advanced Poke - Creative Systems"
+description: Self-poking, delayed resets, filter-gated counters, and poke-carried countdowns — reusable patterns for turning poke into a custom button, lock, timer, or paired-object system.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+[Advanced Poke - Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/) covered every `poke:` field on its own. This page is the other half: combining those fields — mostly just `self:`, `delay:`, `filter:`, `target:`, and poke-carried pars — into patterns that do real work. Nothing here is a new field; it's the same handful of tools, composed more creatively.
+
+<Aside type="note">
+The patterns below are proven techniques, not mod-official documentation — every prefab and field is checked against this wiki's own sources, but the patterns themselves are one way to combine `poke:`, not the only way.
+</Aside>
+
+## Self-poking: `self: true`
+
+A poke normally targets *other* objects — by default, an object can't poke itself. `self: true` turns that off for one poke entry:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+  poke:
+  - self: true
+    parameter: someLaterStep
+```
+
+The obvious use is a **delayed reset** (below), but `self: true` is also worth reaching for any time you want to split "what detects the trigger" from "what happens as a result" — even when nothing loops back.
+
+### Fan-out: one trigger, many listeners
+
+Say a player says "unlock" near a locked door, and that should both open the door *and* show a message via [`objectRpc:`](/ew_wiki/ewp/concepts/rpcs/). The naive version repeats the trigger:
+
+```yaml
+# Works, but the exact chat text "unlock" now lives in two places
+- prefab: Player
+  type: say, unlock
+  poke:
+  - prefab: wood_door
+    parameter: openDoor
+
+- prefab: Player
+  type: say, unlock
+  objectRpc:
+  - name: Message
+    1: enum_message, Center
+    2: string, Door unlocked.
+    3: int, 0
+```
+
+Nothing is wrong with that — it works. But every later addition ("also play a sound," "also count how many doors this player has opened") means one more rule re-typing `type: say, unlock`, and a typo in any copy of it silently breaks just that one addition. Self-poking gives the trigger a name instead:
+
+```yaml
+- prefab: Player
+  type: say, unlock
+  poke:
+  - self: true
+    parameter: doUnlock   # one detection point; everything else reacts to this name instead
+
+- prefab: Player
+  type: poke, doUnlock
+  poke:
+  - prefab: wood_door
+    parameter: openDoor
+    maxDistance: 5   # only doors within 5m of the player answer
+
+- prefab: Player
+  type: poke, doUnlock
+  objectRpc:
+  - name: Message
+    1: enum_message, Center
+    2: string, Door unlocked.
+    3: int, 0
+
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+```
+
+Now `type: say, unlock` exists exactly once. Adding a third effect later means adding a rule that reacts to `poke, doUnlock` — the original chat-matching rule never needs to change or be copied again.
+
+<Aside type="tip">
+This is the same shape as the shared `closeDoor` reset used further down: several different rules — a `wood_door`, an `iron_grate`, anything else with a `Door` component — can all react to the exact same poke `parameter:`.
+</Aside>
+
+## Delayed self-poke as a reset
+
+`delay:` plus `self: true` turns a one-shot poke into a timed **reset or cooldown** — the object opens (or fires, or unlocks), then quietly pokes itself again after a delay to undo it:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1   # opens the door
+  poke:
+  - self: true
+    delay: 5   # wait 5 seconds, then...
+    parameter: closeDoor
+
+- prefab: wood_door
+  type: poke, closeDoor
+  data: int, state, 0   # ...the same field, flipped back
+```
+
+This is the whole "custom button" pattern: a gate that answers a poke, changes state, and schedules its own reversal. No countdown loop, no extra tracking data — the delay alone carries the timing.
+
+<Aside type="caution">
+A chained, timed script like this one is a case where a schema-valid YAML document only proves the shape is correct, not that the 5-second reset actually fires in-game — the checker has no way to run time forward. Test it on a real server.
+</Aside>
+
+## Filter-gated counters as a mini state machine
+
+`filter:`/`bannedFilter:` on a `poke:` entry doesn't just narrow *who* gets poked — reused against the poker's own [custom data](/ew_wiki/ewp/concepts/custom-data/), it can gate *whether an effect has already happened enough times*. A two-switch lock, where a door only opens once both switches have fired at least once each, needs to track that count somewhere — the door itself is a convenient place to keep it:
+
+```yaml
+- prefab: Player
+  type: say, pull left switch
+  poke:
+  - prefab: wood_door
+    parameter: switchPulled
+
+- prefab: Player
+  type: say, pull right switch
+  poke:
+  - prefab: wood_door
+    parameter: switchPulled
+
+- prefab: wood_door
+  type: poke, switchPulled
+  bannedFilter: int, state, 1   # skip once the door's already open
+  data: int, switches, <add_<int_switches=0>_1>   # +1 each time either switch fires
+
+- prefab: wood_door
+  type: poke, switchPulled
+  filter: int, switches, 2   # only once both switches have fired
+  data: int, state, 1
+```
+
+Both rules react to the exact same poke — [multiple entries matching the same trigger all run, in unspecified order](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), so the counter increments *and* the `filter: int, switches, 2` check both fire off one `switchPulled` poke, every time. The `<int_switches=0>` [function](/ew_wiki/ewp/concepts/functions/) reads the door's own running count back, falling back to `0` the first time it hasn't been set yet — the same read-what-you-stored pattern from [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/), just incremented instead of just read.
+
+<Aside type="note">
+`switches` here is a made-up flag name, not a real field on `Door` — same caveat as any custom data value: pick a name that can't collide with a field the game already tracks.
+</Aside>
+
+## A self-closing timer, carried entirely in the poke itself
+
+The [Mechanics page's poke-carried pars section](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#poke-carried-pars-sending-values-along-with-a-poke) showed how to send a value along with a poke. Here's why that's worth doing: a countdown that never touches `data:` at all, the value just riding along on each self-poke instead:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+  poke:
+  - self: true
+    delay: 1
+    parameter: autoClose 10   # seconds until this door swings shut again
+
+- prefab: wood_door
+  type: poke, autoClose   # matches any countdown value except 0
+  poke:
+  - self: true
+    delay: 1
+    parameter: autoClose <sub_<par_1>_1>
+
+- prefab: wood_door
+  type: poke, autoClose 0   # countdown finished
+  weight: 1e30   # forces this specific match to win over the generic autoClose rule above
+  data: int, state, 0
+```
+
+`<sub_<par_1>_1>` reads the countdown this poke was sent, subtracts `1`, and sends the result on to the next self-poke — the value keeps living inside the poke's own pars, never touching `data:` at all. `weight: 1e30` is what lets the `autoClose 0` rule win once the countdown actually reaches zero, instead of the generic `autoClose` rule catching it first.
+
+## Pairing one specific object to another
+
+`target:` plus a poke-carried `<zdo>` lets two specific objects stay paired — one door, one chest, one lock, one key — instead of every matching object in range reacting together:
+
+```yaml
+- prefab: wood_door
+  type: poke, openDoor
+  data: int, state, 1
+  poke:
+  - prefab: piece_chest_blackmetal
+    maxDistance: 10
+    parameter: doorOpened <zdo>   # this specific door's own id, not "any door in range"
+
+- prefab: piece_chest_blackmetal
+  type: poke, doorOpened
+  data: int, locked, 0   # unlocks only the chest paired to this exact door
+  poke:
+  - target: <par_1>   # pokes back the exact door that opened it, not every door nearby
+    parameter: chestUnlocked
+
+- prefab: wood_door
+  type: poke, chestUnlocked
+  data: int, state, 2   # e.g. swings fully open as visual confirmation the chest responded
+```
+
+Ten chests and ten doors in the same room stay correctly paired — each door only ever talks to the one chest whose id it originally sent, and vice versa.
+
+## Putting it together: a self-poke countdown with a gated reset
+
+The most creative version combines everything above: a self-poke *loop* that counts down instead of firing once, ending in an action that's itself reset by a second, filter-gated self-poke.
+
+<Steps>
+
+1. **Something starts the countdown, carrying a starting number as the poke's own parameter value**
+
+   ```yaml
+   - prefab: Player
+     type: say, arm trap
+     poke:
+     - prefab: wood_door
+       parameter: countdown 5   # "5" rides along as the poke's payload
+   ```
+
+2. **Each tick reads that value back and pokes itself again, one lower**
+
+   ```yaml
+   - prefab: wood_door
+     type: poke, countdown      # matches "countdown 5", "countdown 4", ... "countdown 1" —
+                                 # the same prefix-matching you've already seen with type: say, test1
+     poke:
+     - self: true
+       delay: 1   # a poke loop without delay: risks firing every server tick — keep it, always
+       parameter: countdown <sub_<par_1>_1>   # <par_1> — see Mechanics — is the number this poke was sent with
+   ```
+
+   <Aside type="caution">
+   `delay:` is compulsory on a self-poke loop like this one — without it, the loop can hammer the server hard enough to cause real problems. This isn't documented in the mod's own docs, but treat it as a hard rule and always keep the delay regardless.
+   </Aside>
+
+3. **A separate rule catches the loop's own end condition**
+
+   ```yaml
+   - prefab: wood_door
+     type: poke, countdown 0   # the exact value, not the prefix — this is the loop's exit
+     data: int, state, 1       # door opens once the countdown reaches zero
+     poke:
+     - self: true
+       delay: 5
+       parameter: resetDoor    # the delayed-reset pattern from earlier in this page
+   ```
+
+4. **And the reset closes it again, same as any other delayed self-poke**
+
+   ```yaml
+   - prefab: wood_door
+     type: poke, resetDoor
+     data: int, state, 0
+   ```
+
+</Steps>
+
+Say "arm trap," and five self-pokes later — each one second apart, each carrying a smaller number than the last — the door opens, waits five more seconds, and closes itself. Nothing here is a new field: it's `self: true`, `delay:`, `parameter:`, `target:`, and `<sub_X_Y>` doing the same jobs shown separately on the Mechanics page, chained into one working system.

@@ -1,0 +1,62 @@
+---
+// Override of @astrojs/starlight's PageTitle: adds the reading-level badge
+// (frontmatter `complexity`) directly under the H1, inside the same header
+// block, instead of it floating as a first paragraph in the page body.
+// See ew_wiki/AGENTS.md's "Complexity badge per page" rule.
+import { Badge } from '@astrojs/starlight/components';
+
+// Starlight's own PAGE_TITLE_ID constant isn't part of its public exports
+// map, so this mirrors its value directly (confirmed against the installed
+// package's dist/constants.js) rather than reaching past the package boundary.
+const PAGE_TITLE_ID = '_top';
+
+const { entry } = Astro.locals.starlightRoute;
+const { title, complexity } = entry.data as { title: string; complexity?: 'beginner' | 'intermediate' | 'advanced' };
+
+// Plain badge text matches the sidebar group names exactly (Beginner /
+// Intermediate / Advanced) so the two tally at a glance. The fun badge is a
+// separate, decorative second tag — game-y wording, not meant to be looked
+// up against anything else.
+const badgeText: Record<string, string> = {
+	beginner: 'Beginner',
+	intermediate: 'Intermediate',
+	advanced: 'Advanced',
+};
+const badgeVariant: Record<string, 'success' | 'caution' | 'danger'> = {
+	beginner: 'success',
+	intermediate: 'caution',
+	advanced: 'danger',
+};
+const funText: Record<string, string> = {
+	beginner: 'Getting Started',
+	intermediate: 'Leveling Up',
+	advanced: 'Mastery',
+};
+---
+
+<h1 id={PAGE_TITLE_ID}>{title}</h1>
+{complexity && (
+	<div class="complexity-badges">
+		<Badge text={badgeText[complexity]} variant={badgeVariant[complexity]} />
+		<Badge text={funText[complexity]} variant="note" />
+	</div>
+)}
+
+<style>
+	@layer starlight.core {
+		h1 {
+			margin-top: 1rem;
+			margin-bottom: 0.5rem;
+			font-size: var(--sl-text-h1);
+			line-height: var(--sl-line-height-headings);
+			font-weight: 600;
+			color: var(--sl-color-white);
+		}
+	}
+	.complexity-badges {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin-bottom: 1rem;
+	}
+</style>

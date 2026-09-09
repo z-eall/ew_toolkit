@@ -1,0 +1,107 @@
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Progression - World Bosses                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# GENERAL - PROGRESSION WARDS
+# ═══════════════════════════════════════════════════════════
+# Value data
+- value: progressionWard_Eikthyr, ward_forest
+- value: progressionWard_gd-king, ward_swamp
+- value: progressionWard_Bonemass, ward_mountain
+- value: progressionWard_Dragon, ward_plains
+- value: progressionWard_GoblinKing, ward_mistlands
+- value: progressionWard_SeekerQueen, ward_ashlands
+- value: progressionWard_Fader, ward_deepnorth
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - WORLD LEVEL
+# ═══════════════════════════════════════════════════════════
+- value: worldLevel_Eikthyr, 1
+- value: worldLevel_gd-king, 2
+- value: worldLevel_Bonemass, 3
+- value: worldLevel_Dragon, 4
+- value: worldLevel_GoblinKing, 5
+- value: worldLevel_SeekerQueen, 6
+- value: worldLevel_Fader, 7
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Progression - Castle Blocker                    ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# UNLOCK CASTLE BLOCKER REQUIREMENT
+# ═══════════════════════════════════════════════════════════
+- value: unlockCastleBlockerCity1, 0 # Riverstone
+- value: unlockCastleBlockerCity2, 0 # Windhaven
+- value: unlockCastleBlockerCity3, 5 # Banegard
+- value: unlockCastleBlockerCity4, 4 # Frosthold
+- value: unlockCastleBlockerCity5, 1 # Varghelm
+- value: unlockCastleBlockerCity6, 1 # Dragonfang
+- value: unlockCastleBlockerCity7, 2 # Stormbreaker
+- value: unlockCastleBlockerCity8, 2 # Seaguard
+- value: unlockCastleBlockerCity9, 2 # Haradin
+- value: unlockCastleBlockerCity10, 2 # Bloodstone
+- value: unlockCastleBlockerCity11, 5 # Selenium
+- value: unlockCastleBlockerCity12, 5 # Sunward
+- value: unlockCastleBlockerCity13, 6 # Brennvik
+- value: unlockCastleBlockerCity14, 6 # Felgar
+
+# ═══════════════════════════════════════════════════════════
+# MESSAGE CASTLE BLOCKER
+# ═══════════════════════════════════════════════════════════
+- value: msgCastleBlockerCity1, 
+- value: msgCastleBlockerCity2, 
+- value: msgCastleBlockerCity3, <#00ffff>Unlocks</color> upon death of <#fff000>Yagluth</color>.
+- value: msgCastleBlockerCity4, <#00ffff>Unlocks</color> upon death of <#fff000>Moder</color>.
+- value: msgCastleBlockerCity5, <#00ffff>Unlocks</color> upon death of <#fff000>Eikthyr</color>.
+- value: msgCastleBlockerCity6, <#00ffff>Unlocks</color> upon death of <#fff000>Eikthyr</color>.
+- value: msgCastleBlockerCity7, <#00ffff>Unlocks</color> upon death of <#fff000>The Elder</color>.
+- value: msgCastleBlockerCity8, <#00ffff>Unlocks</color> upon death of <#fff000>The Elder</color>.
+- value: msgCastleBlockerCity9, <#00ffff>Unlocks</color> upon death of <#fff000>The Elder</color>.
+- value: msgCastleBlockerCity10, <#00ffff>Unlocks</color> upon death of <#fff000>The Elder</color>.
+- value: msgCastleBlockerCity11, <#00ffff>Unlocks</color> upon death of <#fff000>Yagluth</color>.
+- value: msgCastleBlockerCity12, <#00ffff>Unlocks</color> upon death of <#fff000>Yagluth</color>.
+- value: msgCastleBlockerCity13, <#00ffff>Unlocks</color> upon death of <#fff000>The Queen</color>.
+- value: msgCastleBlockerCity14, <#00ffff>Unlocks</color> upon death of <#fff000>The Queen</color>.
+
+# ═══════════════════════════════════════════════════════════
+# STATIC DATA
+# ═══════════════════════════════════════════════════════════
+- name: spawnerCastleBlockerCity
+  ints:
+  - spawnerCastleBlockerCity, <int_spawnerCastleBlockerCity=1>
+  floats:
+  - scaleScalar, 0.001
+  vecs:
+  - scale, 0.001,0.001,0.001
+
+- name: isCastleBlockerCity
+  ints:
+  - isCastleBlockerCity, <int_spawnerCastleBlockerCity=1>
+  - StaticTarget.m_primaryTarget, 0
+  - StaticTarget.m_randomTarget, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - Piece.m_enabled, 1
+  - Piece.m_isUpgrade, 0
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_burnable, 0
+  - StationExtension.m_stack, 0
+  - StationExtension.m_continousConnection, 0
+  floats:
+  - WearNTear.m_health, -4
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000
+  - StationExtension.m_maxStationDistance, 0
+  strings:
+  - Piece.m_name, <msgCastleBlockerCity<int_spawnerCastleBlockerCity=1>>
+  - WearNTear.m_broken, vfx_odin_despawn
+  longs:
+  - creator, 0

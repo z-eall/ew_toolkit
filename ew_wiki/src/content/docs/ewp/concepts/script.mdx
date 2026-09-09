@@ -1,0 +1,94 @@
+---
+title: Start Writing a Script
+description: What a script is, in the simplest terms.
+complexity: beginner
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
+
+A **script** is just the `.yaml` file you write. "Writing a script" and "editing a `.yaml` file" mean the same thing.
+
+## What goes inside a script
+
+Most of what you write follows one pattern: "when X happens, do Y."
+
+```yaml
+- prefab: Boar
+  type: create  # fires when this prefab is spawned/created
+  data: strongBoar
+```
+
+This says: whenever a Boar spawns, apply this data entry to it (see [Understanding Data](/ew_wiki/ewp/concepts/data/) for how these work in general):
+
+<StrongBoarData />
+
+A single block like this is already a complete, working script — you don't need dozens of lines to get started.
+
+<Aside type="caution">
+Keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. `Prefab`/`Type` won't cause an error, it'll just silently not match anything.
+</Aside>
+
+## What `type:` can trigger on
+
+The example above used `type: create` — that's just one of several triggers `type:` understands. The ones you'll reach for most as a beginner:
+
+- `create` — the moment this prefab spawns
+- `destroy` — the moment it's destroyed
+- `state` — it broadcasts a state change (used for things like a door opening)
+- `say` — it, or a player, says something in chat
+
+(and others — [`poke`](/ew_wiki/ewp/concepts/poke/), `change`, `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
+
+Some triggers take a parameter, written after a comma: `type: say, spawn` fires only when the chat message is exactly "spawn" — not on any chat message. What the parameter means depends on the trigger (`time`'s is a granularity like `day`/`hour`); `say`'s is the exact text to match.
+
+<Aside type="note">
+Watching for more than one *type* at once (not more than one parameter) uses a different field, `types:`, as a list — that's further out than a beginner script needs.
+</Aside>
+
+<Aside type="tip">
+See [Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) for a closer look at these same four triggers, including a couple of ways they don't behave quite how their name suggests.
+</Aside>
+
+## A rule can do more than set data
+
+Every example so far used `data:` to change something that already exists. A rule can also **create a new object**, with `spawn:`:
+
+```yaml
+- prefab: Neck
+  type: destroy
+  spawn:
+  - prefab: Coins
+```
+
+Whenever a Neck is destroyed, this spawns a Coins drop where it died. `spawn:` takes a list, so one rule can spawn more than one thing.
+
+<Aside type="tip">
+See `data:` and `spawn:` used together, built up one rule at a time, in [Your First Script, Step by Step](/ew_wiki/ewp/examples/first-script/). For more of what a spawn entry can do, and its close sibling `swap:` (replaces the original object instead of adding to it), see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/).
+</Aside>
+
+## A script can hold more than one rule
+
+Stack as many blocks as you like in the same file:
+
+```yaml
+- prefab: Boar
+  type: create
+  data: strongBoar
+
+- prefab: Greydwarf
+  type: create
+  data: strongGreydwarf
+```
+
+EWP reads the whole file and applies whichever block matches what's happening. (`strongGreydwarf` here is just a stand-in name — you'd define it in your own `data.yaml` the same way [`strongBoar`](/ew_wiki/ewp/concepts/data/) was defined.)
+
+## Getting your script running
+
+Saving the file in the right folder is the only "install" step there is — see [Preparation](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
+
+<Aside type="tip">
+Get your [data](/ew_wiki/ewp/concepts/data/) ready before your script needs it — see [Preparation](/ew_wiki/ewp/preparation/#set-up-data-before-scripts) for why.
+</Aside>
+
+Every example on this page matched every Boar, every Neck — no picking and choosing. Want a rule that only fires for *some* of them? See [Understanding Filter](/ew_wiki/ewp/concepts/filter/).
