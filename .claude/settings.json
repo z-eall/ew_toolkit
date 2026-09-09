@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/block-windows-npm.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-source-verify.cjs"
+          }
+        ]
+      }
+    ]
+  }
+}
