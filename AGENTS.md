@@ -27,9 +27,15 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 
 State an external or domain fact — a file path, how a tool behaves, install steps — only when it's already confirmed in the repo, cited from a source, or confirmed by the maintainer this session. When a needed fact isn't established yet, ask or get permission to check a source first — never assert it and move on.
 
-## Confirm, don't guess
+## Script field order
 
-State an external or domain fact — a file path, how a tool behaves, install steps — only when it's already confirmed in the repo, cited from a source, or confirmed by the maintainer this session. When a needed fact isn't established yet, ask or get permission to check a source first — never assert it and move on.
+When we write an EWP script together, fields go in this order (skip any that don't apply — don't pad):
+
+Top level: `prefab` > `type` > `weight` > `exec` > `filter` (and its variants `filters`/`bannedFilter`/`bannedFilters`) > `objects`/`bannedObjects` > the rule's action (`data`, `spawn`, `remove`, ...) > `command`/`commands` > `poke`
+
+Inside a `poke:`/`objects:`/`bannedObjects:`/`spawn:` list item: `prefab` > `filter` (poke/objects/bannedObjects) or `data` (spawn) > `position`/`offset` > `rot`/`rotation` > `delay` > `parameter`
+
+This is a personal authoring convention, not an EWP requirement — YAML key order is cosmetic and never changes how a script runs. A field not named here (a new one, or one we're unsure of) doesn't get silently placed — ask before slotting it in, then add the agreed placement into this rule so the next script doesn't need to ask again.
 
 ## UI/UX consistency
 
