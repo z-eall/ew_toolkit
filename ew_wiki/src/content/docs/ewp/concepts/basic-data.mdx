@@ -40,6 +40,24 @@ A data entry is a `name`, plus one or more lists of changes. Which list a change
 
 Apply the whole bundle at once with `data=toughBoar`, instead of listing each change separately.
 
+## Rebuilt or just repainted? `injectData:`
+
+When a rule's `data:` changes something, EWP sometimes has to **rebuild the whole object** to make the change actually show up — like tearing down a toy and snapping it back together with the new piece already in place. Other times it just **saves the value quietly**, no rebuild — like writing a note and tucking it inside, nothing changes on the outside.
+
+Take a Boar's star level: the star glow only appears when the Boar is rebuilt. Save the new level quietly instead, and the Boar's data says it's starred — but it still *looks* like a plain Boar.
+
+```yaml
+- prefab: Boar
+  type: create
+  data: int, level, 3
+  injectData: false   # rebuild the Boar so the star actually shows
+```
+
+- `injectData: false` — always rebuild. Use this when the change needs to be visible on the object right away.
+- `injectData: true` — never rebuild, just save the value quietly. Fine for changes nobody needs to see.
+
+EWP usually picks the right one for you on its own — you only need to set this by hand when that automatic guess gets it wrong.
+
 ## Where data.yaml lives
 
 Your client and your server each keep their own `data.yaml` — they don't share one. See [Preparation](/ew_wiki/ewp/preparation/#getting-data-onto-your-server) for the exact folders and how to copy an entry from one to the other.

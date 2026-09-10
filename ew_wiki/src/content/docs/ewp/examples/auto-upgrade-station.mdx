@@ -1,0 +1,162 @@
+---
+title: Auto-upgrade Stations
+description: Crafting stations and camp feasts that lock and unlock themselves as a shared world-level counter climbs, with no admin needing to touch a single piece by hand.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This page ports one half of a real, live server's village-progression script: crafting stations (and their feast tables) that seal themselves shut until the server has progressed far enough, then unseal automatically the moment it has.
+
+<Aside type="note">
+The *mechanism* is what's being taught here, not a guarantee that every field name below is bug-free. Admin-debug scaffolding and a few unverified fields were trimmed out — see the note at the bottom for exactly what and why.
+</Aside>
+
+<Aside type="tip">
+**Part of a bigger system.** This page, [World Boss Progression](/ew_wiki/ewp/examples/world-progression/), and [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show a boss kill (World Boss Progression) unlock crafting stations here *and* raise the cargo ceiling on Village Cargo Mission, all from one shared number.
+</Aside>
+
+## One counter, one relay
+
+The whole thing hangs off a single EWP key: `bfvworldlevel`, a plain number (0 upward) standing in for "how far this server has progressed." An admin can set it by hand from chat:
+
+<Steps>
+
+1. **The admin command**
+
+   ```yaml
+   - prefab: Player
+     type: say, !wlvl 0;999
+     admin: true
+     cancel: true
+     exec: <save_bfvworldlevel_<max_0_<par_1>>>
+   ```
+
+   `admin: true` restricts this to admins; `cancel: true` stops the chat message itself from showing (it's a command, not something meant to be read as regular chat). `<max_0_<par_1>>` clamps whatever number the admin typed to never go below 0 — `<par_1>` is the number itself, `0;999` in the trigger just tells EWP which range of chat words to match. `exec:` runs the `<save_*>` function purely for its side effect, same as [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) covers.
+
+   The same key can also climb on its own, one tier per boss kill — see [World Boss Progression](/ew_wiki/ewp/examples/world-progression/) for that half of the system.
+
+2. **Everything else reacts to it changing**
+
+   `type: key, <name>` fires whenever a saved key's value actually changes — not on every read, only on a real change:
+
+   ```yaml
+   - type: key, bfvworldlevel
+     poke:
+     - prefab: CraftingStation, StationExtension
+       filters:
+       - int, isBfvVillageStation, 1
+       - int, isBfvVillageStationExt, 1
+       filterLimit: 1
+       maxDistance: 20000
+       parameter: findUnsealedVillageStation
+     - prefab: dvergrprops_crate
+       filters:
+       - int, isBfvVillageStationSeal, 1
+       - int, isBfvVillageStationSealExt, 1
+       filterLimit: 1
+       maxDistance: 20000
+       parameter: findSealedVillageStation
+   ```
+
+   `prefab: CraftingStation, StationExtension` doesn't name one specific object — those are Component names, and [`prefab:` accepts a component as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component. So this one rule reaches every crafting station and every station extension on the whole map in one poke, no matter what they're each individually called. `filters:`/`filterLimit: 1` (see [Advanced Filter: Plurals](/ew_wiki/ewp/concepts/advanced-filter-plural/)) then narrows that flood down to just the ones already flagged as unsealed or sealed, so this rule can re-check every station's lock state the instant the world level changes — without knowing any of their names in advance.
+
+</Steps>
+
+## Crafting stations that lock themselves
+
+Each station tier — Workbench, Forge, Cauldron, and so on — has its own required world level. Rather than write one rule per station name, the script stores that requirement as data, keyed off the station's own prefab id:
+
+```yaml
+- value: requiredWorldLevel_piece_workbench, 0
+- value: requiredWorldLevel_piece_workbench_ext1, 0
+
+- value: displayName_piece_workbench, Workbench
+- value: displayName_piece_workbench_ext1, Chopping Block
+```
+
+`<prefab>` is a [function](/ew_wiki/ewp/concepts/basic-functions/) that returns the calling object's own prefab id — combine it into another function's name, and `<requiredWorldLevel_<prefab>>` resolves to "look up the value entry named `requiredWorldLevel_` plus whatever this exact object is called." One rule, run against every station, reads a different answer for each one:
+
+```yaml
+- prefab: CraftingStation, StationExtension
+  type: poke, findUnsealedVillageStation
+  poke:
+  - self: true
+    parameter: sealIfWorldLevelValid <ge_<load_bfvworldlevel=0>_<requiredWorldLevel_<prefab>>>
+```
+
+`<ge_X_Y>` (see [Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/)) returns `true`/`false` for "is the current world level greater than or equal to this station's requirement" — that result becomes the next poke's own parameter, [self-poked](/ew_wiki/ewp/concepts/basic-poke/) right back onto the same station:
+
+```yaml
+- prefab: CraftingStation
+  type: poke, sealIfWorldLevelValid false
+  swap:
+  - prefab: dvergrprops_crate
+    data: isBfvVillageStationSeal
+```
+
+`type: poke, sealIfWorldLevelValid false` only matches when that parameter actually came out `false` — the world level isn't high enough yet. [`swap:`](/ew_wiki/ewp/concepts/spawn-vs-swap/) replaces the whole station with a `dvergrprops_crate` (a dwarven storage crate), carrying a `data:` entry that locks it down:
+
+```yaml
+- name: isBfvVillageStationSeal
+  ints:
+  - isBfvVillageStationSeal, 1
+  - WearNTear.m_noSupportWear, 0
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  strings:
+  - sealedPrefab, <prefab>
+```
+
+`WearNTear.m_health, -1` makes the crate unbreakable, `Piece.m_canBeRemoved, 0` stops it being picked back up by hand, and `WearNTear.m_noSupportWear, 0` means it never needs a wall or floor under it to stay standing. The interesting line is the last one: `sealedPrefab, <prefab>` runs at swap time, while the object being swapped is still the *original* station — so `<prefab>` captures the station's own id (`piece_workbench`, say) and saves it as a string, right there on the crate that's about to replace it.
+
+That's what makes the reverse direction trivial. When the world level rises again, the same fan-out poke reaches sealed crates instead, and this rule swaps the crate back — reading the id it saved on itself instead of needing a separate lookup table for "what was this crate before it was sealed":
+
+```yaml
+- prefab: dvergrprops_crate
+  type: poke, unsealIfWorldLevelValid true
+  filter: int, isBfvVillageStationSeal, 1
+  swap:
+  - prefab: <string_sealedPrefab>
+    data: isBfvVillageStation
+```
+
+<Aside type="tip">
+`<prefab>` saved into the *new* object's own data, then read back off that same object later, is a reusable pattern any time a swap needs to remember what it replaced — it doesn't need a second `value:` table matched by hand, the object just carries its own history.
+</Aside>
+
+The real script repeats this same pattern for six station tiers and their extensions — this walkthrough only worked through Workbench in detail, since that's the one whose value names line up exactly with the confirmed prefab ids ([`piece_workbench`](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html), [`piece_workbench_ext1`](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html)); the same `<requiredWorldLevel_<prefab>>` mechanism carries the rest, just with more `value:` entries. The full table, straight from the live script:
+
+| World level | Tier | Pieces |
+| :-: | --- | --- |
+| 0 | Workbench | Workbench, Chopping Block, Tanning Rack |
+| 1 | +1 | Adze; Forge, Anvils, Forge Cooler; Cauldron |
+| 2 | +1 | Forge Bellows, Grinding Wheel, Forge Tool Rack; Spice Rack |
+| 3 | +1 | Tool Shelf; Butcher's Table |
+| 4 | +1 | Artisan Table; Pots and Pans |
+| 5 | +1 | Mortar and Pestle; Galdr Table, Rune Table, Unfading Candles; Black Forge, Black Forge Cooler, Vice |
+| 6 | +1 | Rolling Pins and Cutting Boards; Artisan Press; Feathery Wreath; Metal Cutter, Gem Cutter |
+
+## Feast tables upgrade the same way
+
+The same world level also swaps a base camp's Feast piece for a tougher one as the server progresses — `swap: prefab: <campFeastWorldLevel<par_2>>` picks a Feast variant out of another `value:` table keyed by world level number instead of by prefab id, with a plain [`fallback: true`](/ew_wiki/ewp/examples/basic-rng/) rule underneath in case the level is higher than any table entry covers. Same lookup-table idea as the stations, just keyed differently — nothing new to teach here. The script runs two of these tables side by side, one for the player's own Base Camp feast and a tougher one for the shared Command House feast (all [confirmed real Feast prefabs](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html)):
+
+| World level | Base Camp Feast | Command House Feast |
+| :-: | --- | --- |
+| 0–1 | FeastMeadows | FeastBlackforest |
+| 2 | FeastBlackforest | FeastSwamps |
+| 3 | FeastSwamps | FeastMountains |
+| 4 | FeastMountains | FeastPlains |
+| 5 | FeastPlains | FeastMistlands |
+| 6+ (fallback) | FeastMistlands | FeastMistlands |
+
+<Aside type="note">
+Trimmed for this page, and left out rather than guessed at:
+- Admin-debug chat commands and commented-out test blocks from the live script.
+- `HoverText.m_text` and a handful of other Component fields on the sealed-crate data entries (`StaticPhysics.m_pushUp`, `DropOnDestroyed.m_spawnYOffset`, and similar) — plausible, but unconfirmed, so they're not included in the `isBfvVillageStationSeal` entry shown above.
+</Aside>
+
+<Aside type="tip">
+**Where this connects.** [World Boss Progression](/ew_wiki/ewp/examples/world-progression/) shows `bfvworldlevel` climbing automatically from boss kills instead of an admin command. [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) reads the same key to decide how many villages and how much cargo are in play — same counter, a completely different reaction to it.
+</Aside>

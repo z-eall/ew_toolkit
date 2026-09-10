@@ -42,7 +42,7 @@ For example:
   type: change, level 0 3,4
 ```
 
-`prefab:` doesn't only take object ids — [it also accepts a Component name as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component, no matter what each one is individually called. `MonsterAI` reaches every hostile creature at once, `ItemDrop` reaches every item lying on the ground, `Piece` reaches every player-built structure — the same idea works for any component a prefab happens to carry. `Feast` is one such component, shared by every feast piece (`FeastMeadows`, `FeastBlackforest`, `FeastMistlands`, and so on), so one rule below covers all of them at once — no need to list each one by name. The [Village Economy walkthrough](/ew_wiki/ewp/examples/village-economy/#crafting-stations-that-lock-themselves) shows the same trick reaching two components at once (`CraftingStation, StationExtension`) across an entire map.
+`prefab:` doesn't only take object ids — [it also accepts a Component name as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component, no matter what each one is individually called. `MonsterAI` reaches every hostile creature at once, `ItemDrop` reaches every item lying on the ground, `Piece` reaches every player-built structure — the same idea works for any component a prefab happens to carry. `Feast` is one such component, shared by every feast piece (`FeastMeadows`, `FeastBlackforest`, `FeastMistlands`, and so on), so one rule below covers all of them at once — no need to list each one by name. The [Auto-upgrade Stations walkthrough](/ew_wiki/ewp/examples/auto-upgrade-station/#crafting-stations-that-lock-themselves) shows the same trick reaching two components at once (`CraftingStation, StationExtension`) across an entire map.
 
 ```yaml
 # eatStacks counts remaining feast uses — fires when it hits 0 OR -1, from any previous value
@@ -65,6 +65,29 @@ The condition on the `type:` line isn't the only way to react to what a value be
 ```
 
 Every time `levelUpCounter` changes, this checks its own current value — which, at this point, already *is* the new one — against `3;10`, and only then increments `level`.
+
+## `data:` needs `triggerRules: true`, or `change` never fires
+
+Here's a trap that costs no error, no warning — it just silently does nothing: a rule that writes `data:` does **not** fire another rule's `type: change` on that same value, unless the writing rule also has `triggerRules: true`.
+
+```yaml
+- prefab: Boar
+  type: destroy
+  data: int, level, 3   # won't fire the rule below without triggerRules: true
+  triggerRules: true
+
+- prefab: Boar
+  type: change, level
+  command: s A boar's level just changed.
+```
+
+<Aside type="caution">
+EWP's own `scripting.md` only says `triggerRules` covers "spawns or remove" — it doesn't mention `data:` at all. This page's claim comes from reading the mod's own C# directly (`PrefabManager.cs` lines 105-160), not from the doc page.
+</Aside>
+
+Under the hood, it's a one-moment "look away," not a permanent switch: the instant a rule starts writing its `data:`, EWP tells the `change`-watcher to ignore that one object, writes the value, then tells it to look again right after. So `triggerRules: true` doesn't change anything about how the value is stored — it only decides whether *this rule's own write* is allowed to set off someone else's `type: change`.
+
+This is the same `triggerRules:` field `spawn:`/`remove:` use — see the [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/#crafting-stations-that-lock-themselves) and [Bee Ecosystem Overhaul](/ew_wiki/ewp/examples/bee-ecosystem/) case studies for it gating a spawned object's own `create`/`destroy` chain — here it's the same idea, just gating a `data:` write's `change` chain instead.
 
 ## Case study - chaining a `change` trigger off `<sub_X_Y>`
 

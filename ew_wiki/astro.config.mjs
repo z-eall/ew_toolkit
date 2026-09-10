@@ -115,10 +115,11 @@ export default defineConfig({
 						{
 							label: 'Extended Reading',
 							items: [
-								'ewp/examples/ship-modification',
-								'ewp/examples/world-bosses',
-								'ewp/examples/village-economy',
 								'ewp/examples/bee-ecosystem',
+								'ewp/examples/custom-ship-data',
+								'ewp/examples/world-progression',
+								'ewp/examples/auto-upgrade-station',
+								'ewp/examples/village-cargo',
 							],
 						},
 						// Reference/Troubleshooting removed for now (2026-09-07) — placeholder

@@ -164,7 +164,7 @@ Pick the marker prefab carefully: it needs to be real (any name typed here has t
      parameter: spawnBoss
    ```
 
-   `position:` is what reaches the arena at all — see [Advanced Poke Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range). `filter:` is what makes it *this* banner: a poke search defaults to a 100m radius and picks whichever match is closest, so without a uniqueness tag, any `piece_banner01` within that range — including a player's own decoration — could get poked instead. Tag the arena's banner when it's placed, with WEC's `data set=` or a build-time `data:` (see [Custom Data: Not Only From a Script](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) — the same pattern used in [World Bosses](/ew_wiki/ewp/examples/world-bosses/#what-it-builds).
+   `position:` is what reaches the arena at all — see [Advanced Poke Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range). `filter:` is what makes it *this* banner: a poke search defaults to a 100m radius and picks whichever match is closest, so without a uniqueness tag, any `piece_banner01` within that range — including a player's own decoration — could get poked instead. Tag the arena's banner when it's placed, with WEC's `data set=` or a build-time `data:` (see [Custom Data: Not Only From a Script](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) — the same pattern used in [World Boss Progression](/ew_wiki/ewp/examples/world-progression/#what-it-builds).
 
 3. **The banner answers the poke and spawns the boss**
 

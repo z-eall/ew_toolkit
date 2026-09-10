@@ -8,13 +8,6 @@ import { Steps, Aside } from '@astrojs/starlight/components';
 
 **Poke** sends a message from one rule to another — it's how one object tells another "do something now." Every [rule](/ew_wiki/ewp/concepts/start-scripting/) so far reacted only to its own trigger (`create`, `destroy`, `say`, ...). Poke lets one rule trigger another rule directly, instead of waiting for the game to trigger it.
 
-<Aside type="tip" title="Media placeholder #1">
-**Recommended: two still images — one before, one after.**
-- Image 1: a player about to type "open" in chat, next to a closed `wood_door`.
-- Image 2: the same door, now open, right after the chat message sends.
-- How to capture: run the two-rule example below on a test server/world, type `open` in chat next to a `wood_door`, and take both screenshots.
-</Aside>
-
 ## The minimal poke
 
 One rule sends a poke, another rule reacts to it:

@@ -1,0 +1,251 @@
+<!-- PROTOTYPE v2 — throwaway, not production. Tests: plain-English lines instead of a raw score number. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FilterLimit Explainer — Prototype v2 (throwaway)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 30px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 1.4em; }
+  .note { background: #fff3cd; border: 1px solid #e0c46a; padding: 8px 12px; border-radius: 6px; font-size: 0.9em; }
+  textarea { width: 100%; height: 140px; font-family: monospace; font-size: 0.95em; box-sizing: border-box; }
+  button { padding: 6px 14px; margin: 6px 4px 6px 0; cursor: pointer; }
+  #checklist { margin: 14px 0; padding: 0; list-style: none; }
+  #checklist li { padding: 6px 8px; border-radius: 4px; margin-bottom: 4px; font-family: monospace; }
+  #checklist li.ok { background: #e6f4ea; }
+  #checklist li.banned-hit { background: #fbe4e4; }
+  #checklist li.unmatched { background: #f2f2f2; color: #777; }
+  #checklist label { cursor: pointer; display: block; }
+  #summary { font-size: 1.1em; padding: 12px; border-radius: 6px; margin: 14px 0; }
+  #summary.pass { background: #e6f4ea; border: 1px solid #4caf50; }
+  #summary.fail { background: #fbe4e4; border: 1px solid #d9534f; }
+  #math { font-size: 0.85em; color: #555; background: #f7f7f7; padding: 8px 12px; border-radius: 6px; margin-top: 6px; }
+  .tabs button.active { font-weight: bold; text-decoration: underline; }
+  hr { margin: 24px 0; }
+  code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>FilterLimit Explainer — Prototype v2</h1>
+<p class="note">Throwaway test file. v1 showed a raw score number and it was confusing. This version shows plain-English lines instead — no number on screen unless you ask for it.</p>
+
+<h2>Try your own block</h2>
+<textarea id="input">filterLimit: 2
+filters:
+- dataA
+- dataB, 50
+bannedFilters:
+- data1
+- data2</textarea>
+<br>
+<button id="parseBtn">Parse</button>
+
+<h3>Tick what's actually true right now:</h3>
+<ul id="checklist"></ul>
+
+<div id="summary"></div>
+
+<label><input type="checkbox" id="showMath"> Show the math (optional, for the curious)</label>
+<div id="math" hidden></div>
+
+<hr>
+
+<h2>Or walk through the wiki's own examples</h2>
+<div class="tabs">
+  <button data-scenario="filtersAlone">1. filters: alone</button>
+  <button data-scenario="bannedAlone">2. bannedFilters: alone</button>
+  <button data-scenario="bannedOverride">3. bannedFilters: tolerate one</button>
+  <button data-scenario="shared">4. shared score (armor)</button>
+</div>
+
+<script>
+const scenarios = {
+  filtersAlone: {
+    input: `filterLimit: 2
+filters:
+- int, level, 2;3
+- int, tamed, 0
+- string, TamedName, *(S)*`,
+    trueLabels: ['int, level, 2;3', 'int, tamed, 0']
+  },
+  bannedAlone: {
+    input: `bannedFilters:
+- int, tamed, 1
+- bool, boss, true`,
+    trueLabels: ['int, tamed, 1']
+  },
+  bannedOverride: {
+    input: `filterLimit: -1
+bannedFilters:
+- int, tamed, 1, 1
+- bool, boss, true, 1`,
+    trueLabels: ['int, tamed, 1']
+  },
+  shared: {
+    input: `filterLimit: 2
+filters:
+- hash, HelmetItem, HelmetBronze, 2
+- hash, ChestItem, ArmorBronzeChest
+- hash, LegsItem, ArmorBronzeLegs
+bannedFilters:
+- hash, HelmetItem, HelmetIron
+- hash, ChestItem, ArmorIronChest
+- hash, LegsItem, ArmorIronLegs`,
+    trueLabels: ['hash, ChestItem, ArmorBronzeChest', 'hash, LegsItem, ArmorBronzeLegs']
+  }
+};
+
+// ---- pure logic (no DOM) ----
+
+function parseItem(raw, isBanned) {
+  const parts = raw.split(',').map(s => s.trim());
+  let weight = null;
+  let labelParts = parts;
+  if (parts.length === 4 || parts.length === 2) {
+    const last = parts[parts.length - 1];
+    if (/^-?\d+$/.test(last)) {
+      weight = parseInt(last, 10);
+      labelParts = parts.slice(0, -1);
+    }
+  }
+  if (weight === null) weight = isBanned ? 10000 : 1;
+  return { label: labelParts.join(', '), weight };
+}
+
+function parseFilterBlock(text) {
+  const lines = text.split('\n');
+  let section = null;
+  const filters = [];
+  const bannedFilters = [];
+  let filterLimit = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (/^filters:/i.test(line)) { section = 'filters'; continue; }
+    if (/^bannedFilters:/i.test(line)) { section = 'banned'; continue; }
+    const limitMatch = line.match(/^filterLimit:\s*(-?\d+)/i);
+    if (limitMatch) { filterLimit = parseInt(limitMatch[1], 10); continue; }
+    if (line.startsWith('-')) {
+      const raw = line.slice(1).split('#')[0].trim();
+      if (section === 'filters') filters.push(parseItem(raw, false));
+      else if (section === 'banned') bannedFilters.push(parseItem(raw, true));
+    }
+  }
+  if (filterLimit === null) filterLimit = filters.length;
+  return { filters, bannedFilters, filterLimit };
+}
+
+function evaluate(parsed, trueLabels) {
+  const trueSet = new Set(trueLabels);
+  const filtersState = parsed.filters.map(f => ({ ...f, matched: trueSet.has(f.label) }));
+  const bannedState = parsed.bannedFilters.map(f => ({ ...f, matched: trueSet.has(f.label) }));
+  const positive = filtersState.filter(f => f.matched).reduce((s, f) => s + f.weight, 0);
+  const negative = bannedState.filter(f => f.matched).reduce((s, f) => s + f.weight, 0);
+  const total = positive - negative;
+  const pass = total >= parsed.filterLimit;
+  return { filtersState, bannedState, positive, negative, total, limit: parsed.filterLimit, pass };
+}
+
+function names(list) {
+  return list.length ? list.map(x => '`' + x.label + '`').join(' and ') : 'nothing';
+}
+
+function explain(result) {
+  const matchedBanned = result.bannedState.filter(b => b.matched);
+  const matchedFilters = result.filtersState.filter(f => f.matched);
+  const hasFilters = result.filtersState.length > 0;
+
+  if (result.pass) {
+    if (matchedBanned.length === 0) {
+      return { pass: true, text: `✅ This passes. You matched enough of the required items: ${names(matchedFilters)}.` };
+    }
+    if (matchedFilters.length > 0) {
+      return { pass: true, text: `✅ This still passes. ${names(matchedBanned)} matched — normally that blocks things — but you had enough good matches (${names(matchedFilters)}) to outweigh it.` };
+    }
+    return { pass: true, text: `✅ This still passes. ${names(matchedBanned)} matched, but the limit here was set loose enough to allow it.` };
+  }
+
+  if (matchedBanned.length > 0) {
+    if (!hasFilters) {
+      return { pass: false, text: `❌ This fails. ${names(matchedBanned)} matched — a banned match like this is usually enough to block everything by itself.` };
+    }
+    return { pass: false, text: `❌ This fails. ${names(matchedBanned)} matched, which blocks this — and you didn't have enough good matches to make up for it.` };
+  }
+  return { pass: false, text: `❌ This fails. You matched ${matchedFilters.length} of ${result.filtersState.length} required item(s) — not enough to reach the limit.` };
+}
+
+// ---- DOM wiring ----
+
+let currentParsed = null;
+let currentTrue = new Set();
+
+function render() {
+  if (!currentParsed) return;
+  const result = evaluate(currentParsed, [...currentTrue]);
+
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = '';
+  const addItem = (item, isBanned) => {
+    const li = document.createElement('li');
+    li.className = item.matched ? (isBanned ? 'banned-hit' : 'ok') : 'unmatched';
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = item.matched;
+    cb.style.marginRight = '8px';
+    cb.addEventListener('change', () => {
+      if (cb.checked) currentTrue.add(item.label); else currentTrue.delete(item.label);
+      render();
+    });
+    label.appendChild(cb);
+    const icon = isBanned ? (item.matched ? '🚫' : '⬜') : (item.matched ? '✅' : '⬜');
+    const kind = isBanned ? 'banned item' : 'required item';
+    label.appendChild(document.createTextNode(`${icon} ${item.label}  (${kind}${item.matched ? ', found' : ', not found'})`));
+    li.appendChild(label);
+    ul.appendChild(li);
+  };
+  result.filtersState.forEach(f => addItem(f, false));
+  result.bannedState.forEach(b => addItem(b, true));
+
+  const { pass, text } = explain(result);
+  const summary = document.getElementById('summary');
+  summary.className = pass ? 'pass' : 'fail';
+  summary.textContent = text;
+
+  document.getElementById('math').textContent =
+    `Behind the scenes: matched required items add up to ${result.positive}. Matched banned items subtract ${result.negative}. Total = ${result.total}. Needed: ${result.limit}.`;
+}
+
+function loadBlock(text, trueLabels) {
+  document.getElementById('input').value = text;
+  currentParsed = parseFilterBlock(text);
+  currentTrue = new Set(trueLabels || []);
+  render();
+}
+
+document.getElementById('parseBtn').addEventListener('click', () => {
+  const text = document.getElementById('input').value;
+  currentParsed = parseFilterBlock(text);
+  currentTrue = new Set();
+  render();
+});
+
+document.getElementById('showMath').addEventListener('change', (e) => {
+  document.getElementById('math').hidden = !e.target.checked;
+});
+
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sc = scenarios[btn.dataset.scenario];
+    loadBlock(sc.input, sc.trueLabels);
+  });
+});
+
+// initial load
+loadBlock(document.getElementById('input').value, ['dataB, 50']);
+</script>
+</body>
+</html>

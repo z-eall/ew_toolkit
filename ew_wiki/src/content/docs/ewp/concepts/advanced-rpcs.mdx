@@ -135,12 +135,6 @@ Without `overwrite: true`, saying "remind me" twice within a minute would queue 
     overwrite: true  # asking again before the 3 seconds are up just resets the timer, doesn't queue a second repair
 ```
 
-<Aside type="tip" title="Media placeholder #1">
-**Recommended: the reminder-banner sequence firing in-game.**
-- Shows: the `ShowMessage` banner from the `overwrite:`/`repeat:`/`repeatInterval:` example above appearing on-screen after saying "remind me" in chat, ideally two screenshots spaced ~60 seconds apart to show the repeat.
-- How to capture: on a dev/test server with this page's script loaded, say "remind me" in chat and screenshot each banner as it appears.
-</Aside>
-
 ## The catalog goes well beyond what's shown here
 
 `RPC_Heal`, `ShowMessage`, `SetName`, and `RPC_Repair` were enough to teach the mechanics — the real list runs to dozens of Components, each with its own further calls. Check the [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md) for the full catalog, and remember the one rule this whole page is built around: find the `###` heading the call you want is filed under, then fire it from a rule on an object that actually has that Component.

@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PROTOTYPE — filterLimit score calculator</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --hairline: #2a2f3a;
+    --text: #e8eaf0;
+    --muted: #9aa3b2;
+    --accent: #d98e3c;
+    --good: #4caf7d;
+    --bad: #d9564c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 4px; }
+  .question {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 20px 0 28px;
+    font-size: 0.95rem;
+  }
+  .question b { color: var(--accent); }
+  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 32px 0 12px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 18px;
+  }
+  .cond-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+  .cond-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #12141a;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cond-row:hover { border-color: var(--accent); }
+  .cond-row input { transform: scale(1.2); accent-color: var(--accent); }
+  .cond-row .name { flex: 1; font-family: ui-monospace, monospace; font-size: 0.92rem; }
+  .cond-row .weight { color: var(--muted); font-size: 0.85rem; }
+  .cond-row.banned .weight { color: var(--bad); }
+  .cond-row.filters .weight { color: var(--good); }
+  .score-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 16px 0 6px;
+    font-size: 1.1rem;
+  }
+  .score-num { font-family: ui-monospace, monospace; font-weight: 600; }
+  .verdict {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .verdict.pass { background: rgba(76,175,125,0.18); color: var(--good); }
+  .verdict.fail { background: rgba(217,86,76,0.18); color: var(--bad); }
+  .limit-note { color: var(--muted); font-size: 0.85rem; }
+  textarea {
+    width: 100%;
+    min-height: 130px;
+    background: #12141a;
+    color: var(--text);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.88rem;
+    padding: 10px;
+    resize: vertical;
+  }
+  button.parse {
+    margin-top: 8px;
+    background: var(--accent);
+    color: #1a1200;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab-btn {
+    background: #12141a;
+    color: var(--muted);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .tab-btn.active { color: var(--text); border-color: var(--accent); }
+  .scenario-desc { font-size: 0.9rem; color: var(--muted); margin-bottom: 12px; }
+  .step-btn {
+    background: #1c2030;
+    color: var(--text);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin: 0 6px 6px 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .step-btn:hover { border-color: var(--accent); }
+  .step-btn.done { opacity: 0.4; }
+  code { background: #12141a; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>PROTOTYPE — filterLimit score calculator</h1>
+  <p class="subtitle">Throwaway file. Not the real wiki page. Delete once the question below is answered.</p>
+
+  <div class="question">
+    <b>Question this answers:</b> if the Advanced Filter: Plurals page offered an interactive tool, is a
+    "numbers-only score calculator" (parse <code>filters:</code>/<code>bannedFilters:</code>/<code>filterLimit:</code>,
+    let you tick which named conditions are currently true, show the running score and pass/fail) both
+    <i>clear</i> and <i>impossible to phrase misleadingly</i> — compared to a tool that tries to compose an
+    English sentence like "requires at least 2 of X"? Click through the scenarios below and see if the
+    numbers alone make the model click, with no sentence for anyone to get wrong.
+  </div>
+
+  <h2>Paste a filter block</h2>
+  <div class="panel">
+    <textarea id="input">filters:
+- dataA
+- dataB, 50
+bannedFilters:
+- data1
+- data2
+filterLimit: 100</textarea>
+    <div>
+      <button class="parse" id="parseBtn">Parse</button>
+      <span class="limit-note" id="parseNote"></span>
+    </div>
+  </div>
+
+  <h2>Current state</h2>
+  <div class="panel">
+    <div id="condList" class="cond-list"></div>
+    <div class="score-line">
+      <span>Running score: <span class="score-num" id="scoreNum">0</span> &nbsp;/&nbsp; filterLimit: <span class="score-num" id="limitNum">0</span></span>
+      <span id="verdict" class="verdict pass">PASSES</span>
+    </div>
+    <div class="limit-note" id="limitSource"></div>
+  </div>
+
+  <h2>Guided walkthroughs (the wiki page's own four scenarios)</h2>
+  <div class="tabs" id="tabs"></div>
+  <div class="panel">
+    <div class="scenario-desc" id="scenarioDesc"></div>
+    <div id="scenarioSteps"></div>
+  </div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------
+// Pure module — the part that would actually get lifted into the
+// real component if this prototype is approved. No DOM access
+// below this line until "PAGE WIRING" further down.
+// ---------------------------------------------------------------
+
+// A parsed condition: { list: 'filters' | 'bannedFilters', name: string, weight: number }
+function parseFilterBlock(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const conditions = [];
+  let currentList = null;
+  let explicitLimit = null;
+
+  for (const line of lines) {
+    if (/^filters:/i.test(line)) { currentList = 'filters'; continue; }
+    if (/^bannedFilters:/i.test(line)) { currentList = 'bannedFilters'; continue; }
+    const limitMatch = line.match(/^filterLimit:\s*(-?\d+)/i);
+    if (limitMatch) { explicitLimit = parseInt(limitMatch[1], 10); continue; }
+    if (line.startsWith('-') && currentList) {
+      const body = line.slice(1).trim();
+      const parts = body.split(',').map(p => p.trim());
+      const weight = parts.length > 1 && !isNaN(parseFloat(parts[parts.length - 1]))
+        ? parseFloat(parts[parts.length - 1])
+        : (currentList === 'bannedFilters' ? 10000 : 1);
+      const name = parts.length > 1 && !isNaN(parseFloat(parts[parts.length - 1]))
+        ? parts.slice(0, -1).join(', ')
+        : body;
+      conditions.push({ list: currentList, name, weight });
+    }
+  }
+
+  const defaultLimit = conditions.filter(c => c.list === 'filters').length;
+  const filterLimit = explicitLimit !== null ? explicitLimit : defaultLimit;
+
+  return { conditions, filterLimit, limitWasExplicit: explicitLimit !== null, defaultLimit };
+}
+
+// trueSet: Set of condition indices currently toggled "true"
+function computeScore(conditions, trueSet) {
+  let score = 0;
+  conditions.forEach((c, i) => {
+    if (!trueSet.has(i)) return;
+    score += c.list === 'filters' ? c.weight : -c.weight;
+  });
+  return score;
+}
+
+function evaluate(conditions, filterLimit, trueSet) {
+  const score = computeScore(conditions, trueSet);
+  return { score, filterLimit, passes: score >= filterLimit };
+}
+
+// ---------------------------------------------------------------
+// PAGE WIRING — throwaway, not meant to survive past this prototype.
+// ---------------------------------------------------------------
+
+let state = {
+  conditions: [],
+  filterLimit: 0,
+  limitWasExplicit: false,
+  defaultLimit: 0,
+  trueSet: new Set(),
+};
+
+function reparse(text) {
+  const parsed = parseFilterBlock(text);
+  state = { ...parsed, trueSet: new Set() };
+  render();
+}
+
+function toggle(i) {
+  if (state.trueSet.has(i)) state.trueSet.delete(i);
+  else state.trueSet.add(i);
+  render();
+}
+
+function render() {
+  const condList = document.getElementById('condList');
+  condList.innerHTML = '';
+  state.conditions.forEach((c, i) => {
+    const row = document.createElement('label');
+    row.className = 'cond-row ' + (c.list === 'filters' ? 'filters' : 'banned');
+    row.innerHTML = `
+      <input type="checkbox" ${state.trueSet.has(i) ? 'checked' : ''} data-i="${i}" />
+      <span class="name">${c.list === 'filters' ? '+' : '−'} ${c.name}</span>
+      <span class="weight">weight ${c.weight}${c.list === 'bannedFilters' && c.weight === 10000 ? ' (default veto)' : ''}</span>
+    `;
+    row.querySelector('input').addEventListener('change', () => toggle(i));
+    condList.appendChild(row);
+  });
+
+  const { score, filterLimit, passes } = evaluate(state.conditions, state.filterLimit, state.trueSet);
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('limitNum').textContent = filterLimit;
+  const verdict = document.getElementById('verdict');
+  verdict.textContent = passes ? 'PASSES' : 'FAILS';
+  verdict.className = 'verdict ' + (passes ? 'pass' : 'fail');
+
+  document.getElementById('limitSource').textContent = state.limitWasExplicit
+    ? `filterLimit: ${state.filterLimit} was written explicitly in the block.`
+    : `filterLimit: ${state.filterLimit} is the DEFAULT — no filterLimit: line was given, so it's the count of filters: items (${state.defaultLimit}).`;
+}
+
+document.getElementById('parseBtn').addEventListener('click', () => {
+  reparse(document.getElementById('input').value);
+  document.getElementById('parseNote').textContent = 'Parsed ' + state.conditions.length + ' condition(s).';
+});
+
+// ---------------------------------------------------------------
+// Guided walkthroughs — the wiki page's own four scenarios,
+// reproduced exactly so you can check the calculator against
+// what the page already teaches.
+// ---------------------------------------------------------------
+
+const scenarios = [
+  {
+    label: 'filters: alone',
+    desc: 'A Boar needs to be starred (weight 2) AND wild — filterLimit: 2, no bannedFilters at all. The wiki page’s own "custom weight" example.',
+    input: `filters:
+- level 2-3 (starred), 2
+- tamed = 0 (wild)
+filterLimit: 2`,
+    steps: [
+      { label: 'Tick "starred, weight 2"', action: (s) => s.trueSet.add(0) },
+      { label: 'Check the verdict (should PASS — the wiki text says "a 2-star Boar alone already meets the limit")', action: () => {} },
+      { label: 'Untick it, tick "tamed = 0" instead', action: (s) => { s.trueSet.delete(0); s.trueSet.add(1); } },
+      { label: 'Check the verdict (should FAIL — weight 1 alone can’t reach filterLimit: 2)', action: () => {} },
+    ],
+  },
+  {
+    label: 'bannedFilters: alone (default)',
+    desc: 'No filters: list at all — just two bannedFilters, default weight 10000 each, no filterLimit: written. The page’s "how many are tolerated" default case.',
+    input: `bannedFilters:
+- tamed = 1 (already tamed)
+- boss = true`,
+    steps: [
+      { label: 'Check the default filterLimit shown below (should be 0 — there are zero filters: items)', action: () => {} },
+      { label: 'Tick "tamed = 1"', action: (s) => s.trueSet.add(0) },
+      { label: 'Check the verdict (should FAIL — one banned match already drops below 0)', action: () => {} },
+    ],
+  },
+  {
+    label: 'bannedFilters: with override',
+    desc: 'Same two banned conditions, but each given weight 1 instead of the 10000 default, and filterLimit pulled down to -1 to tolerate exactly one match.',
+    input: `bannedFilters:
+- tamed = 1, 1
+- boss = true, 1
+filterLimit: -1`,
+    steps: [
+      { label: 'Tick "tamed = 1" only', action: (s) => s.trueSet.add(0) },
+      { label: 'Check the verdict (should PASS — score -1 still meets filterLimit: -1)', action: () => {} },
+      { label: 'Also tick "boss = true"', action: (s) => s.trueSet.add(1) },
+      { label: 'Check the verdict (should FAIL — score -2, below the limit)', action: () => {} },
+    ],
+  },
+  {
+    label: 'Shared score (bronze/iron armor)',
+    desc: 'EWP’s own official example — filters: and bannedFilters: on the same entry, one shared score.',
+    input: `filters:
+- bronze helmet, 2
+- bronze chest
+- bronze legs
+bannedFilters:
+- iron helmet
+- iron chest
+- iron legs
+filterLimit: 2`,
+    steps: [
+      { label: 'Tick "bronze chest" and "bronze legs"', action: (s) => { s.trueSet.add(1); s.trueSet.add(2); } },
+      { label: 'Check the verdict (should PASS — 1 + 1 = 2, no iron worn)', action: () => {} },
+      { label: 'Also tick "iron chest"', action: (s) => s.trueSet.add(4) },
+      { label: 'Check the verdict (should FAIL hard — 1 + 1 - 10000, no amount of bronze recovers this)', action: () => {} },
+    ],
+  },
+];
+
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  scenarios.forEach((sc, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (i === activeScenario ? ' active' : '');
+    btn.textContent = sc.label;
+    btn.addEventListener('click', () => { activeScenario = i; startScenario(); });
+    tabs.appendChild(btn);
+  });
+}
+
+let activeScenario = 0;
+let stepIndex = 0;
+
+function startScenario() {
+  const sc = scenarios[activeScenario];
+  document.getElementById('input').value = sc.input;
+  reparse(sc.input);
+  stepIndex = 0;
+  document.getElementById('scenarioDesc').textContent = sc.desc;
+  renderSteps();
+  renderTabs();
+}
+
+function renderSteps() {
+  const sc = scenarios[activeScenario];
+  const container = document.getElementById('scenarioSteps');
+  container.innerHTML = '';
+  sc.steps.forEach((step, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'step-btn' + (i < stepIndex ? ' done' : '');
+    btn.textContent = (i + 1) + '. ' + step.label;
+    btn.disabled = i !== stepIndex;
+    btn.addEventListener('click', () => {
+      step.action(state);
+      stepIndex++;
+      render();
+      renderSteps();
+    });
+    container.appendChild(btn);
+  });
+}
+
+renderTabs();
+startScenario();
+</script>
+</body>
+</html>

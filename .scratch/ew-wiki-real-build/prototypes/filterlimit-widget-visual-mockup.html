@@ -1,0 +1,295 @@
+<!-- PROTOTYPE — throwaway, not production. Visual-fit check only: same colors/spacing the real site uses (from shared/theme.css + ew_wiki/src/styles/theme.css), dropped next to a copy of the real Steps banner style so you can judge if the widget looks native or bolted-on. Font is a generic stand-in, not Starlight's real font — not confirmed from source, so not asserted here. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FilterLimit Widget — Visual Fit Mockup</title>
+<style>
+  :root {
+    --bg: #222831; --panel: #393e46; --border: #948979; --text: #dfd0b8; --muted: #948979;
+    /* Widget-local only (same pattern as the Steps gold accent) — not added
+       to the shared palette, since pass/fail is page decoration, not brand identity. */
+    --ok: #8fbf7f; --fail: #d98a7a;
+  }
+  [data-theme="light"] {
+    --bg: #dfd0b8; --panel: #948979; --border: #393e46; --text: #222831; --muted: #393e46;
+    --ok: #4f7a3f; --fail: #a8402e;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, sans-serif; /* stand-in only, not Starlight's real font */
+    max-width: 720px; margin: 0 auto; padding: 24px 20px 60px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .mockup-note {
+    background: #fff3cd; color: #222; border: 1px solid #e0c46a; border-radius: 6px;
+    padding: 8px 12px; font-size: 13px; margin-bottom: 20px;
+  }
+  #toggle {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; margin-bottom: 24px;
+  }
+  h2 { font-size: 1.15em; }
+  code { background: var(--panel); padding: 1px 5px; border-radius: 3px; }
+  pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; overflow-x: auto; font-size: 13px;
+  }
+
+  /* --- copied 1:1 from ew_wiki/src/styles/theme.css's real Steps rule --- */
+  .sl-steps-title {
+    margin: 0 0 0.6rem; padding: 0.3rem 0.75rem; font-size: 0.9rem; line-height: 1.5;
+    color: #f0d9ae; background: rgba(230, 193, 138, 0.14);
+    border-left: 3px solid #e6c18a; border-radius: 0 4px 4px 0;
+  }
+  [data-theme="light"] .sl-steps-title {
+    color: #ffffff; background: #222831; border-left-color: #e6c18a;
+  }
+
+  /* --- the new widget, built from the SAME tokens, nothing new invented --- */
+  .filterlimit-widget {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 16px; margin: 18px 0; font-size: 13.5px;
+  }
+  .filterlimit-widget h4 {
+    margin: 0 0 4px; font-size: 0.95em; color: var(--text);
+  }
+  .filterlimit-widget .sub {
+    margin: 0 0 10px; color: var(--muted); font-size: 0.9em;
+  }
+  .fl-columns {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start;
+  }
+  @media (max-width: 480px) {
+    .fl-columns { grid-template-columns: 1fr; }
+  }
+  .filterlimit-widget textarea {
+    width: 100%; box-sizing: border-box; min-height: 130px; font-family: monospace;
+    font-size: 13px; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px; resize: vertical;
+  }
+  .filterlimit-widget button {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+  }
+  .filterlimit-widget button:hover { border-color: var(--text); }
+  .filterlimit-widget button.stale {
+    border-color: #e6c18a; color: #e6c18a;
+  }
+  .stale-note {
+    margin: 6px 0 0; font-size: 12px; color: #e6c18a; display: none;
+  }
+  .stale-note.shown { display: block; }
+  .checklist {
+    list-style: none; margin: 0; padding: 0;
+    max-height: 160px; overflow-y: auto;
+  }
+  .checklist li { padding: 3px 0; font-family: monospace; font-size: 12.5px; }
+  .checklist label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .checklist li.hit-ok label { color: var(--ok); }
+  .checklist li.hit-fail label { color: var(--fail); }
+  .summary-box {
+    margin-top: 10px; padding: 0.4rem 0.75rem; border-radius: 0 4px 4px 0;
+  }
+  .summary-box.pass { border-left: 3px solid var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+  .summary-box.fail { border-left: 3px solid var(--fail); background: color-mix(in srgb, var(--fail) 16%, transparent); }
+  .summary-box .verdict { font-size: 1.05em; font-weight: 700; }
+  .summary-box.pass .verdict { color: var(--ok); }
+  .summary-box.fail .verdict { color: var(--fail); }
+  .summary-box .detail { margin-top: 4px; font-size: 13px; color: var(--text); font-weight: 400; line-height: 1.4; }
+  details.math { margin-top: 8px; font-size: 12px; color: var(--muted); }
+  details.math summary { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="mockup-note">Prototype — visual-fit check only. Toggle light/dark to see both. Checkboxes are wired up so you can click them, but this file is just for looking at, not the final code.</div>
+
+<button id="toggle">Switch to light mode</button>
+
+<h2>3. <code>filterLimit:</code> shared between both — one running score, not two</h2>
+<p>Put <code>filters:</code> and <code>bannedFilters:</code> on the same entry, and it's easy to picture them as two independent checks, each with its own pass/fail. They aren't...</p>
+
+<pre>filterLimit: 2
+filters:
+- hash, HelmetItem, HelmetBronze, 2
+- hash, ChestItem, ArmorBronzeChest
+- hash, LegsItem, ArmorBronzeLegs
+bannedFilters:
+- hash, HelmetItem, HelmetIron
+- hash, ChestItem, ArmorIronChest
+- hash, LegsItem, ArmorIronLegs</pre>
+
+<p class="sl-steps-title"><strong>Only <code>filters:</code> matching, no iron worn.</strong> A player wearing the bronze chest and bronze legs matches two <code>filters:</code> items...</p>
+<p class="sl-steps-title"><strong>A <code>bannedFilters:</code> item joins the same score.</strong> Same player, but now also wearing the iron chest...</p>
+
+<!-- ================= THE NEW WIDGET ================= -->
+<div class="filterlimit-widget">
+  <h4>Try it yourself</h4>
+  <p class="sub">Paste your own block, tick what's actually true, see if it passes.</p>
+  <div class="fl-columns">
+    <div class="fl-left">
+      <textarea id="input">filterLimit: 2
+filters:
+- dataA
+- dataB, 50
+bannedFilters:
+- data1
+- data2</textarea>
+      <button id="parseBtn">Check</button>
+      <p class="stale-note" id="staleNote">⚠ Input changed — click Check to update the list.</p>
+    </div>
+    <div class="fl-right">
+      <ul class="checklist" id="checklist"></ul>
+      <div class="summary-box" id="summaryBox">
+        <div class="verdict" id="verdict"></div>
+        <div class="detail" id="detail"></div>
+      </div>
+      <details class="math">
+        <summary>Show the math</summary>
+        <div id="math" style="margin-top:4px;"></div>
+      </details>
+    </div>
+  </div>
+</div>
+<!-- ================= END WIDGET ================= -->
+
+<p>Everything above works the same way one level down — a single <code>objects:</code>/<code>bannedObjects:</code> or <code>poke:</code> entry can also carry its own <code>filters:</code>...</p>
+
+<script>
+document.getElementById('toggle').addEventListener('click', () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');
+  document.getElementById('toggle').textContent = isLight ? 'Switch to light mode' : 'Switch to dark mode';
+});
+
+function parseItem(raw, isBanned) {
+  const parts = raw.split(',').map(s => s.trim());
+  let weight = null, labelParts = parts;
+  if (parts.length === 4 || parts.length === 2) {
+    const last = parts[parts.length - 1];
+    if (/^-?\d+$/.test(last)) { weight = parseInt(last, 10); labelParts = parts.slice(0, -1); }
+  }
+  if (weight === null) weight = isBanned ? 10000 : 1;
+  return { label: labelParts.join(', '), weight };
+}
+function parseFilterBlock(text) {
+  const lines = text.split('\n'); let section = null;
+  const filters = [], bannedFilters = []; let filterLimit = null;
+  for (const rawLine of lines) {
+    const line = rawLine.trim(); if (!line) continue;
+    if (/^filters:/i.test(line)) { section = 'filters'; continue; }
+    if (/^bannedFilters:/i.test(line)) { section = 'banned'; continue; }
+    const m = line.match(/^filterLimit:\s*(-?\d+)/i);
+    if (m) { filterLimit = parseInt(m[1], 10); continue; }
+    if (line.startsWith('-')) {
+      const raw = line.slice(1).split('#')[0].trim();
+      if (section === 'filters') filters.push(parseItem(raw, false));
+      else if (section === 'banned') bannedFilters.push(parseItem(raw, true));
+    }
+  }
+  if (filterLimit === null) filterLimit = filters.length;
+  return { filters, bannedFilters, filterLimit };
+}
+function evaluate(parsed, trueLabels) {
+  const trueSet = new Set(trueLabels);
+  const filtersState = parsed.filters.map(f => ({ ...f, matched: trueSet.has(f.label) }));
+  const bannedState = parsed.bannedFilters.map(f => ({ ...f, matched: trueSet.has(f.label) }));
+  const positive = filtersState.filter(f => f.matched).reduce((s, f) => s + f.weight, 0);
+  const negative = bannedState.filter(f => f.matched).reduce((s, f) => s + f.weight, 0);
+  const total = positive - negative;
+  return { filtersState, bannedState, positive, negative, total, limit: parsed.filterLimit, pass: total >= parsed.filterLimit };
+}
+function names(list) { return list.length ? list.map(x => '`' + x.label + '`').join(' and ') : 'nothing'; }
+
+// Same outline shell as shared/icons.ts (viewBox 24, stroke currentColor, stroke-width 1.7,
+// round caps) — these two paths (check, triangle-alert) don't exist there yet. If this
+// widget goes real, propose adding them to shared/icons.ts rather than keeping them local.
+function outlineIcon(pathData, size) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex:none;">${pathData}</svg>`;
+}
+const ICON_CHECK = '<path d="M5 12l5 5L19 7"/>';
+const ICON_ALERT = '<path d="M12 3l9.5 16.5H2.5z"/><path d="M12 9.5v4.5"/><path d="M12 17h.01"/>';
+// This one's already in shared/icons.ts as "close" — reused verbatim, not reinvented.
+const ICON_CLOSE = '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>';
+function explain(result) {
+  const matchedBanned = result.bannedState.filter(b => b.matched);
+  const matchedFilters = result.filtersState.filter(f => f.matched);
+  const hasFilters = result.filtersState.length > 0;
+  let detail;
+  if (result.pass) {
+    if (matchedBanned.length === 0) detail = `You matched enough of the required items: ${names(matchedFilters)}.`;
+    else if (matchedFilters.length > 0) detail = `${names(matchedBanned)} matched, but ${names(matchedFilters)} outweighed it.`;
+    else detail = `${names(matchedBanned)} matched, but the limit here was loose enough to allow it.`;
+  } else if (matchedBanned.length > 0) {
+    detail = !hasFilters
+      ? `${names(matchedBanned)} matched — a banned match like this usually blocks everything by itself.`
+      : `${names(matchedBanned)} matched, and you didn't have enough good matches to make up for it.`;
+  } else {
+    detail = `You matched ${matchedFilters.length} of ${result.filtersState.length} required item(s) — not enough.`;
+  }
+  return { pass: result.pass, detail };
+}
+let currentParsed = parseFilterBlock(document.getElementById('input').value);
+let currentTrue = new Set(['dataB']); // parseItem strips the trailing weight, so the label is just "dataB"
+function render() {
+  const result = evaluate(currentParsed, [...currentTrue]);
+  const ul = document.getElementById('checklist'); ul.innerHTML = '';
+  const addItem = (item, isBanned) => {
+    const li = document.createElement('li');
+    li.className = isBanned && item.matched ? 'hit-fail' : (!isBanned && item.matched ? 'hit-ok' : '');
+    const label = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = item.matched;
+    cb.addEventListener('change', () => { if (cb.checked) currentTrue.add(item.label); else currentTrue.delete(item.label); render(); });
+    label.appendChild(cb);
+    const textSpan = document.createElement('span');
+    if (isBanned) {
+      textSpan.innerHTML = item.matched
+        ? `${outlineIcon(ICON_ALERT, 14)} ${item.label} matched and it is banned`
+        : `${item.label} (banned)`;
+    } else {
+      textSpan.innerHTML = item.matched
+        ? `${outlineIcon(ICON_CHECK, 14)} ${item.label} (required, found)`
+        : `${item.label} (required)`;
+    }
+    label.appendChild(textSpan);
+    li.appendChild(label); ul.appendChild(li);
+  };
+  result.filtersState.forEach(f => addItem(f, false));
+  result.bannedState.forEach(b => addItem(b, true));
+  const { pass, detail } = explain(result);
+  const box = document.getElementById('summaryBox');
+  box.className = 'summary-box ' + (pass ? 'pass' : 'fail');
+  document.getElementById('verdict').innerHTML = pass
+    ? `${outlineIcon(ICON_CHECK, 18)} PASS`
+    : `${outlineIcon(ICON_CLOSE, 18)} FAIL`;
+  document.getElementById('detail').textContent = detail;
+  document.getElementById('math').textContent = `Matched required items add up to ${result.positive}. Matched banned items subtract ${result.negative}. Total = ${result.total}. Needed: ${result.limit}.`;
+}
+const inputEl = document.getElementById('input');
+const parseBtn = document.getElementById('parseBtn');
+const staleNote = document.getElementById('staleNote');
+let lastCheckedText = inputEl.value;
+
+function setStale(isStale) {
+  parseBtn.classList.toggle('stale', isStale);
+  staleNote.classList.toggle('shown', isStale);
+}
+
+inputEl.addEventListener('input', () => {
+  setStale(inputEl.value !== lastCheckedText);
+});
+
+parseBtn.addEventListener('click', () => {
+  currentParsed = parseFilterBlock(inputEl.value);
+  currentTrue = new Set();
+  lastCheckedText = inputEl.value;
+  setStale(false);
+  render();
+});
+render();
+</script>
+</body>
+</html>

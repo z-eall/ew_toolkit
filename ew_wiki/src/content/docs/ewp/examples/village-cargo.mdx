@@ -1,0 +1,171 @@
+---
+title: Village Cargo Mission
+description: A self-resetting real-world timer delivers cargo to a growing pool of villages, with a weight computed from a live counter instead of a fixed number.
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This page ports the other half of a real, live server's village-progression script: a real-world-clock timer that delivers cargo shipments to villages, using a `weight:` built from a live counter instead of a fixed number.
+
+<Aside type="note">
+The *mechanism* is what's being taught here, not a guarantee that every field name below is bug-free. Admin-debug scaffolding and one unconfirmed prefab were trimmed out — see the note at the bottom for exactly what and why.
+</Aside>
+
+<Aside type="tip">
+**Part of a bigger system.** This page, [World Boss Progression](/ew_wiki/ewp/examples/world-progression/), and [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show a boss kill (World Boss Progression) widen which villages and how much cargo this page can deliver, at the same time it's unlocking crafting stations on Auto-upgrade Stations.
+</Aside>
+
+## A weight built from a live counter
+
+The timer runs on [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/) (real-world clock time, not in-game time), so it keeps climbing even with nobody online:
+
+```yaml
+- type: realtime, hour
+  exec: <save++_cargospawnfactor>
+```
+
+Every real-world hour, `<save++_X>` bumps a counter by 1 (see [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/)). Nothing spawns yet — this rule only counts. The spawn attempt is a separate rule watching that same counter through a `type: key` range:
+
+```yaml
+- type: key, cargospawnfactor 4;9999
+  weight: <sub_<ceil_<mul_<par_1>_0.33>>_1>
+  exec: <save_cargospawnfactor_0>
+  poke:
+  - prefab: rug_bogwitch_wolf
+    filters:
+    - int, villageCargoTent, 1;<randomVillageLvl<load_bfvworldlevel=0>>
+    - int, villageCargoReceived, 0
+    limit: 1
+    parameter: findEmptyCargoSpawner <randomCargoLvl<load_bfvworldlevel=0>>
+```
+
+This is the main thing worth taking away from this whole page: `weight:` doesn't have to be a fixed number. [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) only showed constants, but a weight can just as well be the result of a function, recomputed fresh every time the rule is checked — here, built from `<par_1>`, the current counter value itself (see [Understanding Pars](/ew_wiki/ewp/concepts/basic-pars/)).
+
+<Aside type="caution">
+This is described as a 33% / 66% / 100% ramp as the counter climbs through 4, 5, 6 real hours, but that exact curve can't be independently re-derived from `weight:`'s documented pool math — probability depends on every other rule sharing the same weight pool at match time, which isn't fully knowable from the docs alone. Treat the specific percentages as unconfirmed; the technique itself — computing a weight from a live value instead of hardcoding it, plus the reset below — is what's solid here.
+</Aside>
+
+`exec: <save_cargospawnfactor_0>` resets the counter back to 0 the moment a shipment does go out, so the whole climb starts over — a self-resetting real-world timer, built entirely out of fields [Adding Randomness](/ew_wiki/ewp/examples/basic-rng/) already introduced.
+
+### Where the world level comes back in
+
+The poke above reads `<randomVillageLvl<load_bfvworldlevel=0>>` and `<randomCargoLvl<load_bfvworldlevel=0>>` — two more `value:` tables, keyed by the same `bfvworldlevel` [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) reads. This is the seam joining the two systems: a low world level narrows which villages are even eligible for a delivery and shrinks how much cargo they can receive; a high one opens up the whole map and raises the ceiling. Nothing about the cargo timer above needed to know that detail — it just asked "how many villages, how much cargo" and let the shared counter answer. The full table, straight from the live script:
+
+| World level | Eligible villages | Cargo amount |
+| :-: | :-: | --- |
+| 0 | 0 | none |
+| 1 | 4 | 1–5 |
+| 2 | 7 | 1–7 |
+| 3 | 10 | 1–9 |
+| 4 | 12 | 1–9 |
+| 5 | 14 | 1–12 |
+| 6–8 (max) | 14 | 1–12 |
+
+The script names 15 villages and 11 cargo destinations, purely for flavor in the chat messages below — none of it changes how the script runs, it's just what a player sees:
+
+<details>
+<summary>Full village and destination name list</summary>
+
+Villages: Eldervik, Denbark, Rokentop, Timberfall, Duskmire, Konbrad, Rootmere, Evergrove, Albinar, Skeldore, Craghaven, Gullrock, Erikstead, Leifstead, Sorrowfen.
+
+Cargo destinations: Dragonfang, Varghelm, Haradin, Seaguard, Stormbreaker, Bloodstone, Windhaven, Riverstone, Sunward, Selenium, Banegard.
+
+</details>
+
+### An existing prefab, repurposed as a marker
+
+`rug_bogwitch_wolf` is a real, ordinary decorative rug prefab — not a custom object built for this script. The script plants one per village and gives it two custom flags that mean something only in this script's own context:
+
+```yaml
+- prefab: rug_bogwitch_wolf
+  type: poke, findEmptyCargoSpawner
+  data: int, villageCargoReceived, 1
+  spawn:
+  - prefab: MyVillageCargoItem
+    pos: 0,0,0.5
+```
+
+`villageCargoTent` (which village this rug stands for) and `villageCargoReceived` (whether that village's last delivery is still sitting there, uncollected) exist only because this rule set them — the rug component itself never heard of either one. Any harmless, easy-to-place decorative prefab works the same way: a free, invisible-in-plain-sight marker object, carrying whatever custom state a script wants to track per location.
+
+<Aside type="caution">
+The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items from another mod bundled into that server, not vanilla Valheim or anything in Jotunn's prefab list. This page uses the placeholder `MyVillageCargoItem` above instead of presenting that name as a confirmed prefab — swap in a real, verified lootable prefab of your own.
+</Aside>
+
+### Resetting once a delivery is collected
+
+A cargo tent flagged `villageCargoReceived` stays that way until the actual `Cargo*` item near it is gone — [`bannedObjects:`](/ew_wiki/ewp/concepts/objects-filtering/) checks for its *absence*, the mirror image of `objects:` checking for presence:
+
+```yaml
+- prefab: rug_bogwitch_wolf
+  type: poke, checkCargoExisted
+  bannedObjects:
+  - prefab: Cargo*
+    maxDistance: <cargoResetRange>
+  exec: <save_cargovillage<int_villageCargoTent=0>_0>
+  data: int, villageCargoReceived, 0
+```
+
+Once nothing named `Cargo*` remains within `cargoResetRange`, this rule clears the flag and resets that village's own status key (`cargovillage1`, `cargovillage2`, and so on — one per village, an EWP key per village id) back to `0`, making that tent eligible for a fresh delivery again.
+
+### Telling a player what's available
+
+The live script answers a chat command with every village's delivery status at once:
+
+<Steps>
+
+1. **The admin trigger**
+
+   ```yaml
+   - prefab: Player
+     type: say, !checkcargo
+     admin: true
+     cancel: true
+     poke:
+     - prefab: rug_bogwitch_wolf
+       filters:
+       - int, villageCargoTent, 1;14
+       maxDistance: 20000
+       parameter: checkCargoAvailability
+     - self: true
+       delay: 0.5
+       parameter: printCargoInfo 15
+   ```
+
+   Two separate pokes fire from one command: one reaches every cargo tent at once to refresh each village's saved status (`cargovillage<n>`, one of `1` delivered-and-available, `0` empty, or `-1` still locked at this world level — matched against the same `randomVillageLvl<load_bfvworldlevel=0>>` range [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) uses), the other [self-pokes](/ew_wiki/ewp/concepts/basic-poke/) back onto the player half a second later, once those statuses have had time to update.
+
+2. **A self-closing countdown prints the result**
+
+   ```yaml
+   - prefab: Player
+     type: poke, printCargoInfo
+     fallback: true
+     objectRpc:
+     - name: Message
+       1: enum_message, 2
+       2: string, <msgCargoInfo>
+       3: int, 1
+       overwrite: true
+     poke:
+     - self: true
+       delay: 1
+       parameter: printCargoInfo <sub_<par_1>_1>
+   ```
+
+   [`objectRpc:`](/ew_wiki/ewp/concepts/basic-rpcs/) with the `Message` RPC pops the full 15-village status list on screen every second, counting `<par_1>` down by 1 each time — the exact same loop-with-terminal-case pattern [Advanced Poke - Creative Systems](/ew_wiki/ewp/concepts/advanced-poke-creative-systems/#a-self-closing-timer-carried-entirely-in-the-poke-itself) already covers in full. Nothing new to teach there — this is a second real example of that same pattern, not a different one.
+
+</Steps>
+
+**A second way to trigger the same check**, without a chat command: the live script also pokes a `MarketPlaceNPC` prefab tagged `cargomaster` when the player interacts with it, running the exact same `checkCargoAvailability`/`printCargoInfo` chain shown above. `MarketPlaceNPC` isn't in Jotunn's prefab list or valheim.wiki, meaning it comes from a separate NPC mod bundled into that server — the pattern (an NPC as a physical trigger for a chat-style status report) is real and reusable, but that specific prefab isn't something this wiki can confirm exists in a vanilla or Jotunn-covered install.
+
+## What got cut, and why
+
+<Aside type="note">
+Trimmed for this page, and left out rather than guessed at:
+- Admin-debug chat commands and commented-out test blocks from the live script.
+- The exact interaction that pays and triggers the `MarketPlaceNPC` "cargo master" — described above as a pattern, not taught step by step, since the prefab itself isn't a confirmed one.
+</Aside>
+
+<Aside type="tip">
+**Where this connects.** [World Boss Progression](/ew_wiki/ewp/examples/world-progression/) shows `bfvworldlevel` climbing automatically from boss kills. [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) reacts to the exact same key to lock and unlock crafting stations — same counter, a completely different reaction to it.
+</Aside>

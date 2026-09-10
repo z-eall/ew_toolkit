@@ -36,6 +36,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "ew_wiki"],
       "port": 4321
+    },
+    {
+      "name": "ew-wiki-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--prefix", "ew_wiki"],
+      "port": 4321
     }
   ]
 }

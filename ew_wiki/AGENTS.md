@@ -87,22 +87,6 @@ Tag each claim by its source's tier, per `docs/sources.md`'s own labels (officia
 
 Before landing any example with more than one linked EWP rule entry, also work through [docs/script-writing-checklist.md](docs/script-writing-checklist.md) — real nouns aren't enough; the interactions between rules need their own check.
 
-## Media placeholders, never guessed media
-
-Static screenshots/diagrams are fair game per-guide (see the map's Not yet specified — this is deliberately per-spot, not blanket); embedded video stays deferred, don't add it without separate signoff. Never generate, source, or guess at an actual image — when a spot in a guide would clearly benefit from one, leave a placeholder for the maintainer to review and capture instead:
-
-```mdx
-<Aside type="tip" title="Media placeholder #N">
-**Recommended: [short name of the shot].**
-- Shows: [exactly what should be in frame]
-- How to capture: [the concrete steps to get that shot]
-</Aside>
-```
-
-Number placeholders in reading order, per page (`#1`, `#2`, ...), so the maintainer can say "here's the file for #2 on the Preparation page" without re-describing the spot. Renumber a page's placeholders only when one is added or removed on it; once real media replaces a placeholder, that number is retired, not reused. One supplied image can satisfy more than one placeholder (or one placeholder can need more than one image) — the maintainer will say so, no separate scheme needed for that case.
-
-Leave the placeholder in place until the maintainer replaces it with a real image — don't strip it silently. Sweep and clear any remaining placeholders before ticket 08 (deploy); a placeholder is a working TODO, not reader-facing content.
-
 ## Cross-link on first use
 
 The first time any page uses a term with its own page elsewhere in the wiki (`data`, `script`, a field, another guide's topic), link it there rather than assuming the reader already knows it. Applies wiki-wide, not just newly-written pages — when a new page defines a term, sweep existing pages for that term's first use and add the link.

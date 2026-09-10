@@ -1,5 +1,5 @@
 ---
-title: Building a Custom Ship Class
+title: Build Custom Ship with Data
 description: Tuning Ship, Container, and GlobalWind fields into a reusable, named ship class with custom data — plus the flip-fix script every ship guide needs first.
 complexity: advanced
 ---
@@ -49,13 +49,6 @@ Push `Ship.m_force` or `m_damping` too far and a ship will eventually capsize �
 
 <Aside type="tip">
 `prefab: Ship` above doesn't match anything actually named "Ship" — see [Matching `Ship` by component](#matching-ship-by-component-not-by-name) below for why it still works on a Karve, Raft, or VikingShip.
-</Aside>
-
-<Aside type="tip" title="Media placeholder #1">
-**Recommended: two still images — one before, one after.**
-- Image 1: a Karve floating upside down (deliberately capsized by cranking `Ship.m_force` too high — see below).
-- Image 2: the same Karve, right-side up, immediately after typing `flip` in chat.
-- How to capture: apply an aggressive `data:` entry from this page to a test ship until it capsizes, then run the flip script and screenshot the moment it rights itself.
 </Aside>
 
 ## The fields that shape a ship

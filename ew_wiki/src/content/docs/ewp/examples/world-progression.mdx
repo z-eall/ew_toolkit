@@ -1,5 +1,5 @@
 ---
-title: Tracking World Progression by Boss Kills
+title: World Boss Progression
 description: A real multiplayer script that turns each world-boss kill into a permanent world-level counter, then uses it to tear down the barrier guarding whatever comes next.
 complexity: advanced
 ---
@@ -10,6 +10,10 @@ Some servers want more than "kill the boss, get the loot" — they want killing 
 
 <Aside type="note">
 The two rules and the data below are trimmed to just the progression-ward mechanism — a separate "unlock a city plot" system drives off the same counter, cut here because it leans on several `Piece`/`WearNTear` internals that aren't confirmed. More on that at the end.
+</Aside>
+
+<Aside type="tip">
+**Part of a bigger system.** This page, [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/), and [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show one boss kill here unlocking crafting stations *and* raising the cargo ceiling, all from the one number this page writes.
 </Aside>
 
 ## What it builds
@@ -138,6 +142,10 @@ Seven `dverger_guardstone` ward pieces are placed around the map ahead of time, 
 <Aside type="caution">
 This script only ever *removes* wards — it assumes all seven `dverger_guardstone` pieces already exist in the world, each pre-named to match one `progressionWard_*` value. Placing and naming them (a one-time admin/build step, likely with WEC's `data set=` — see [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) isn't part of what's shown here.
 </Aside>
+
+## Where this counter goes next
+
+Once saved, `bfvworldlevel` doesn't just sit here — [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) reads the exact same key to decide which crafting stations and feast tiers are unlocked, and [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) reads it to decide how many villages and how much cargo are in play. Neither of those pages needs anything from this one beyond that one shared number.
 
 ## What the counter is for
 
