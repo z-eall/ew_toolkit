@@ -1,0 +1,197 @@
+---
+// Override for Starlight's default TableOfContents component (wired in
+// astro.config.mjs). Replaces the always-open "On this page" list with an
+// icon rail (☰ toggle, ↑ back-to-top) that pushes open a panel anchored to
+// the rail itself — ticket 09 (ew-wiki-real-build), Variant A from
+// .scratch/ew-wiki-real-build/prototypes/toc-sidebar-3variants-prototype.html.
+// Collapsed by default, state persisted via localStorage.
+const { toc } = Astro.locals.starlightRoute;
+---
+
+{
+	toc && (
+		<ewp-toc-rail class="ewp-toc-rail" data-min-h={toc.minHeadingLevel} data-max-h={toc.maxHeadingLevel}>
+			<button type="button" class="ewp-toc-btn" id="ewp-toc-toggle" title="On this page" aria-expanded="false" aria-controls="ewp-toc-panel">
+				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" /></svg>
+			</button>
+			<button type="button" class="ewp-toc-btn" id="ewp-toc-top" title="Back to top">
+				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 5l7 7-1.41 1.41L13 8.83V19h-2V8.83l-4.59 4.58L5 12z" /></svg>
+			</button>
+			<nav class="ewp-toc-panel" id="ewp-toc-panel" aria-labelledby="ewp-toc-heading" hidden>
+				<h2 id="ewp-toc-heading">{Astro.locals.t('tableOfContents.onThisPage')}</h2>
+				<ul id="ewp-toc-list" />
+			</nav>
+		</ewp-toc-rail>
+	)
+}
+
+<style>
+	@layer starlight.components {
+		.ewp-toc-rail {
+			position: relative; /* containing block the panel anchors to */
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			align-items: flex-end;
+			width: fit-content;
+			margin-inline-start: auto;
+		}
+		.ewp-toc-btn {
+			width: 2.125rem;
+			height: 2.125rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: var(--sl-color-bg-nav);
+			border: 1px solid var(--sl-color-hairline);
+			border-radius: 0.375rem;
+			color: var(--sl-color-text);
+			cursor: pointer;
+		}
+		.ewp-toc-btn:hover {
+			border-color: var(--sl-color-text-accent);
+		}
+		.ewp-toc-btn[aria-expanded='true'] {
+			background: var(--sl-color-bg);
+		}
+		.ewp-toc-panel {
+			/* Anchored to .ewp-toc-rail (its nearest positioned ancestor), not
+			   the surrounding sidebar column — so it always opens flush under
+			   the rail's own bottom-right corner regardless of that column's
+			   rendered width. A width-dependent anchor was what let the panel
+			   drift to an unpredictable spot in the prototype (see ticket 09's
+			   round-2 fix). */
+			position: absolute;
+			top: calc(100% + 0.5rem);
+			right: 0;
+			width: 13.5rem;
+			max-width: calc(100vw - 2rem);
+			background: var(--sl-color-bg-nav);
+			border: 1px solid var(--sl-color-hairline);
+			border-radius: 0.5rem;
+			padding: 0.75rem 0.875rem;
+			z-index: 30;
+		}
+		.ewp-toc-panel[hidden] {
+			display: none;
+		}
+		.ewp-toc-panel h2 {
+			font-size: var(--sl-text-xs);
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: var(--sl-color-gray-3);
+			margin: 0 0 0.5rem;
+		}
+		.ewp-toc-panel ul {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.ewp-toc-panel :global(li) {
+			margin: 0;
+		}
+		.ewp-toc-panel :global(li.ewp-toc-sub) {
+			padding-inline-start: 0.875rem;
+		}
+		.ewp-toc-panel :global(a) {
+			display: block;
+			padding-block: 0.25rem;
+			color: var(--sl-color-gray-3);
+			text-decoration: none;
+			font-size: var(--sl-text-xs);
+			overflow-wrap: anywhere;
+		}
+		.ewp-toc-panel :global(a:hover) {
+			color: var(--sl-color-white);
+		}
+		.ewp-toc-panel :global(a[aria-current='true']) {
+			color: var(--sl-color-text-accent);
+			font-weight: 600;
+		}
+	}
+</style>
+
+<script>
+	// Section-jump drives scrollIntoView() explicitly rather than relying on
+	// native <a href="#id"> anchor navigation — see ticket 09's round-2 fix
+	// (the prototype's local-file sandbox didn't reliably fire plain anchor
+	// jumps; scrollIntoView is also unaffected by any host-page routing that
+	// might intercept a hash-only navigation).
+	class EwpTocRail extends HTMLElement {
+		toggle = this.querySelector<HTMLButtonElement>('#ewp-toc-toggle')!;
+		top = this.querySelector<HTMLButtonElement>('#ewp-toc-top')!;
+		panel = this.querySelector<HTMLElement>('#ewp-toc-panel')!;
+		list = this.querySelector<HTMLUListElement>('#ewp-toc-list')!;
+		storageKey = 'ewp-toc-collapsed';
+
+		constructor() {
+			super();
+			this.buildList();
+			this.wireToggle();
+			this.wireBackToTop();
+			this.wireScrollSpy();
+		}
+
+		buildList() {
+			const minH = parseInt(this.dataset.minH || '2', 10);
+			const maxH = parseInt(this.dataset.maxH || '3', 10);
+			const selector = `:where(${Array.from({ length: 1 + maxH - minH }, (_, i) => `h${minH + i}`).join()})[id]`;
+			for (const heading of document.querySelectorAll<HTMLElement>(`main ${selector}`)) {
+				const li = document.createElement('li');
+				if (heading.tagName.toLowerCase() !== `h${minH}`) li.className = 'ewp-toc-sub';
+				const a = document.createElement('a');
+				a.href = '#' + heading.id;
+				a.textContent = heading.textContent;
+				a.dataset.id = heading.id;
+				a.addEventListener('click', (e) => {
+					e.preventDefault();
+					heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				});
+				li.appendChild(a);
+				this.list.appendChild(li);
+			}
+		}
+
+		wireToggle() {
+			let collapsed = localStorage.getItem(this.storageKey) !== 'false';
+			const render = () => {
+				this.panel.hidden = collapsed;
+				this.toggle.setAttribute('aria-expanded', String(!collapsed));
+			};
+			this.toggle.addEventListener('click', () => {
+				collapsed = !collapsed;
+				localStorage.setItem(this.storageKey, String(collapsed));
+				render();
+			});
+			render();
+		}
+
+		wireBackToTop() {
+			this.top.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+		}
+
+		wireScrollSpy() {
+			const links = Array.from(this.list.querySelectorAll<HTMLAnchorElement>('a[data-id]'));
+			const setCurrent = (id: string) => {
+				for (const a of links) {
+					if (a.dataset.id === id) a.setAttribute('aria-current', 'true');
+					else a.removeAttribute('aria-current');
+				}
+			};
+			const headingTop = (document.querySelector('header')?.getBoundingClientRect().height || 0) + 32;
+			const observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						if (entry.isIntersecting) setCurrent(entry.target.id);
+					}
+				},
+				{ rootMargin: `-${headingTop}px 0px -70% 0px` },
+			);
+			const minH = parseInt(this.dataset.minH || '2', 10);
+			const maxH = parseInt(this.dataset.maxH || '3', 10);
+			const selector = `:where(${Array.from({ length: 1 + maxH - minH }, (_, i) => `h${minH + i}`).join()})[id]`;
+			for (const heading of document.querySelectorAll(`main ${selector}`)) observer.observe(heading);
+		}
+	}
+	customElements.define('ewp-toc-rail', EwpTocRail);
+</script>

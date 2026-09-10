@@ -12,12 +12,21 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Expand World Wiki',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			// No `social` entry — the GitHub link is dropped from the header
+			// entirely (see Header.astro override below), so this would be
+			// unused config anyway.
 			customCss: ['./src/styles/theme.css'],
 			components: {
 				// Renders the `complexity` frontmatter badge under the H1 instead
 				// of it floating as a first paragraph in the page body.
 				PageTitle: './src/components/PageTitle.astro',
+				// Drops the theme toggle + GitHub link entirely — ew_wiki is a
+				// sub-tool under the ew_toolkit hub, whose own header already
+				// has a dark/light control (ticket 09, ew-wiki-real-build map).
+				Header: './src/components/Header.astro',
+				// Collapsible icon-rail "On this page" TOC with a back-to-top
+				// button, replacing Starlight's always-open default (ticket 09).
+				TableOfContents: './src/components/CollapsibleToc.astro',
 			},
 			// Everything nests one level under 'EWP' so a future second mod
 			// component is a sibling top-level group, not a rebuild of this one.

@@ -1,7 +1,7 @@
 # Collapsible, scroll-following TOC sidebar
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: none
 
 ## Question
@@ -16,5 +16,18 @@ This is a real UI component build, not a config change: overriding Starlight's d
 
 **Scope addition (2026-09-07):** the top-right header controls (theme mode switch, GitHub link) are Starlight's own default styling and don't visually match the toolkit hub's own header treatment (`ew_toolkit/src/style.css`/`nav.ts`) — maintainer wants them adjusted for alignment. Not its own ticket since it's the same header area this ticket already touches (the TOC toggle likely lands in this same top bar); include in the design pass.
 
+**Scope revision (2026-09-11), supersedes the line above:** restyling isn't the right call — since `ew_wiki` runs as a sub-tool under the `ew_toolkit` hub, the hub's own top banner already provides a dark/light toggle, so Starlight's own theme-select in `ew_wiki`'s header would just be a duplicate control. No GitHub login is required for this wiki either, so that link goes too. Both are removed from the header entirely (not restyled), leaving just the site title and search.
+
 ## Answer
 
+Design pass done via `ew_toolkit:prototype` (3 structurally different variants — icon rail, click-the-heading, compact pill+FAB — see `.scratch/ew-wiki-real-build/prototypes/toc-sidebar-3variants-prototype.html`, captured on branch `prototype/toc-sidebar-widget`). Maintainer picked **Variant A**: an icon rail (`☰` toggle, `↑` back-to-top) that's always visible, pushing open a panel anchored to the rail itself. Collapsed by default, state persisted via `localStorage`.
+
+Two round-2 fixes came out of live-testing the prototype, both carried into the real build: the panel anchors via `position: relative`/`absolute` directly to the rail (not the surrounding sidebar column, which drifted at real browser widths and put the panel in a "weird spot"); and heading links call `scrollIntoView()` explicitly instead of relying on plain `<a href="#id">` anchor-jumps, which don't reliably fire in some contexts.
+
+**Scope revision, same round:** the header controls (theme select, GitHub link) are dropped entirely rather than restyled — `ew_wiki` runs as a sub-tool under the `ew_toolkit` hub, whose own top banner already provides dark/light mode, and no GitHub login applies here.
+
+Landed as two new components, wired in via `astro.config.mjs`'s `components` map:
+- [`src/components/CollapsibleToc.astro`](../../../ew_wiki/src/components/CollapsibleToc.astro) — overrides Starlight's `TableOfContents`. Builds its own heading list (reusing the page's real heading ids), wires the collapse toggle + `localStorage` persistence, drives section-jump via `scrollIntoView()`, and runs its own `IntersectionObserver` for scroll-spy (`aria-current` on the active link).
+- [`src/components/Header.astro`](../../../ew_wiki/src/components/Header.astro) — overrides Starlight's `Header`. Renders just the site title and search; drops `ThemeSelect`/`SocialIcons`/`LanguageSelect`. `astro.config.mjs`'s `social` entry removed too since it's now unused.
+
+Verified live via the `ew-wiki` dev server (not just `build-check.sh`): toggle open/close, panel anchoring under scroll, click-to-jump landing on the correct heading with the panel's current-link highlight updating, back-to-top, and `localStorage` persistence across a real page reload — all confirmed working on `advanced-triggers-time.mdx`. `npm run build` via WSL also verified clean (33 pages, no errors).

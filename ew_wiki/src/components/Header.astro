@@ -1,0 +1,42 @@
+---
+// Override for Starlight's default Header component. Drops the theme
+// toggle, GitHub link, and language select entirely — not just restyled —
+// since ew_wiki runs as a sub-tool under the ew_toolkit hub, whose own top
+// banner already provides dark/light mode, and no GitHub login applies
+// here (ticket 09, ew-wiki-real-build map, scope revision 2026-09-11).
+import config from 'virtual:starlight/user-config';
+
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+
+const shouldRenderSearch =
+	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<div class="header">
+	<div class="title-wrapper sl-flex">
+		<SiteTitle />
+	</div>
+	<div class="sl-flex print:hidden">
+		{shouldRenderSearch && <Search />}
+	</div>
+</div>
+
+<style>
+	@layer starlight.core {
+		.header {
+			display: flex;
+			gap: var(--sl-nav-gap);
+			justify-content: space-between;
+			align-items: center;
+			height: 100%;
+		}
+
+		.title-wrapper {
+			overflow: clip;
+			padding: 0.25rem;
+			margin: -0.25rem;
+			min-width: 0;
+		}
+	}
+</style>
