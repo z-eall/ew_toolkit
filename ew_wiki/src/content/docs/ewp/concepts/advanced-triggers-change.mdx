@@ -82,7 +82,7 @@ Here's a trap that costs no error, no warning — it just silently does nothing:
 ```
 
 <Aside type="caution">
-EWP's own `scripting.md` only says `triggerRules` covers "spawns or remove" — it doesn't mention `data:` at all. This page's claim comes from reading the mod's own C# directly (`PrefabManager.cs` lines 105-160), not from the doc page.
+This `data:`-gating behavior isn't written down anywhere in EWP's own docs — expect it to catch you off guard if you've only read the docs and never hit it in practice.
 </Aside>
 
 Under the hood, it's a one-moment "look away," not a permanent switch: the instant a rule starts writing its `data:`, EWP tells the `change`-watcher to ignore that one object, writes the value, then tells it to look again right after. So `triggerRules: true` doesn't change anything about how the value is stored — it only decides whether *this rule's own write* is allowed to set off someone else's `type: change`.
