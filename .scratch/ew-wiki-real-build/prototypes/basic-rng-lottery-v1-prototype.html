@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<!--
+  PROTOTYPE — throwaway, not production code. Answers one question for
+  ticket 21 (basic-rng.mdx widget): does an editable weight: list + a
+  "Roll 100 times" button that visibly builds up a live tally make the
+  weight: pool math (basic-rng.mdx steps 3/5/6) click, including the
+  "leftover space = nothing happens" case?
+
+  Roll math confirmed against the mod's real source before writing this
+  (ExpandWorldPrefabs/InfoSelector.cs, Randomize()):
+    totalWeight = max(1, sum(weights))
+    roll = uniform(0, totalWeight)
+    walk the list subtracting each weight from roll; first item where
+    roll drops to <= 0 wins; if the loop runs out (only possible when
+    totalWeight got floored up to 1 above the real sum), nothing wins.
+  This is exactly the proportional model the page already teaches — no
+  surprises, but now double-checked instead of assumed.
+
+  Reuses the same palette as ticket 19's accepted prototype
+  (trigger-change-checker-v1-prototype.html) for visual-family
+  consistency, and FilterLimitExplainer.astro's "paste a real script
+  block" input convention (a spawn: list with weight: lines) rather than
+  a from-scratch input widget, per the ticket's own "reuse that pattern"
+  instruction.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>basic-rng lottery prototype</title>
+<style>
+  :root {
+    --bg: #222831;
+    --panel: #393e46;
+    --border: #948979;
+    --text: #dfd0b8;
+    --muted: #948979;
+    --ok: #8fbf7f;
+    --gap: #d98a7a;
+  }
+  [data-theme="light"] {
+    --bg: #dfd0b8;
+    --panel: #948979;
+    --border: #393e46;
+    --text: #222831;
+    --muted: #393e46;
+    --ok: #2f5233;
+    --gap: #7a2e1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 40px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-size: 20px; margin: 0 0 4px; }
+  .page-header p { color: var(--muted); margin: 0; font-size: 14px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 24px; }
+  .toolbar button {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+
+  .widget {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .widget h4 { margin: 0 0 4px; font-size: 0.95em; }
+  .sub { margin: 0 0 14px; color: var(--muted); font-size: 0.9em; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 640px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  textarea {
+    width: 100%;
+    height: 140px;
+    font-family: monospace;
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    resize: vertical;
+    box-sizing: border-box;
+    margin: 0;
+  }
+  .actions { display: flex; gap: 10px; margin-top: 10px; }
+  .actions button {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .actions button:disabled { opacity: 0.5; cursor: default; }
+
+  .tally { display: flex; flex-direction: column; gap: 10px; }
+  .tally-row { margin: 0; }
+  .tally-label {
+    display: flex; justify-content: space-between; font-size: 13px; margin: 0 0 4px;
+  }
+  .tally-label .name { font-family: monospace; }
+  .tally-label .nums { color: var(--muted); }
+  .bar-track {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--ok);
+    width: 0%;
+    transition: width 0.15s linear;
+  }
+  .bar-fill.gap { background: var(--gap); }
+  .theory-tick {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--text);
+    opacity: 0.6;
+  }
+  .roll-count { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .roll-count strong { color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Prototype: "Run the Lottery" (basic-rng.mdx)</h1>
+    <p>Toggle theme, edit the weight list, click Roll. Tally bar's thin vertical tick = the theoretical share; the filled bar = what actually happened so far.</p>
+  </div>
+  <div class="toolbar">
+    <button onclick="document.documentElement.setAttribute('data-theme','dark')">Dark</button>
+    <button onclick="document.documentElement.setAttribute('data-theme','light')">Light</button>
+  </div>
+
+  <div class="widget">
+    <h4>Try it yourself</h4>
+    <p class="sub">Paste your own <code>weight:</code> list, then roll 100 times and watch the tally build.</p>
+    <div class="layout">
+      <div>
+        <textarea id="input">- prefab: Coins
+  weight: 3
+- prefab: Wood
+  weight: 1</textarea>
+        <div class="actions">
+          <button id="rollBtn">Roll 100 times</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div class="roll-count">Rolls so far: <strong id="rollCounter">0</strong> / 100</div>
+      </div>
+      <div class="tally" id="tally"></div>
+    </div>
+  </div>
+
+<script>
+function parseWeightList(text) {
+  const lines = text.split('\n');
+  const items = [];
+  let current = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const prefabMatch = line.match(/^-\s*prefab:\s*(.+)$/i);
+    if (prefabMatch) {
+      current = { label: prefabMatch[1].trim(), weight: 1 };
+      items.push(current);
+      continue;
+    }
+    const weightMatch = line.match(/^weight:\s*([\d.]+)$/i);
+    if (weightMatch && current) {
+      current.weight = parseFloat(weightMatch[1]);
+    }
+  }
+  return items;
+}
+
+// Mirrors ExpandWorldPrefabs/InfoSelector.cs Randomize(): total floors at 1,
+// so an under-1 pool leaves a real gap ("nothing happened").
+function rollOnce(items, totalWeight) {
+  let r = Math.random() * totalWeight;
+  for (const item of items) {
+    r -= item.weight;
+    if (r <= 0) return item;
+  }
+  return null; // gap
+}
+
+const GAP_LABEL = 'Nothing happened';
+
+function run() {
+  const input = document.getElementById('input');
+  const tallyEl = document.getElementById('tally');
+  const rollBtn = document.getElementById('rollBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const counterEl = document.getElementById('rollCounter');
+
+  let items = [];
+  let totalWeight = 1;
+  let counts = {};
+  let rolled = 0;
+  let timer = null;
+
+  function setup() {
+    items = parseWeightList(input.value);
+    const sum = items.reduce((s, i) => s + i.weight, 0);
+    totalWeight = Math.max(1, sum);
+    counts = {};
+    for (const i of items) counts[i.label] = 0;
+    counts[GAP_LABEL] = 0;
+    rolled = 0;
+    counterEl.textContent = '0';
+    render();
+  }
+
+  function render() {
+    tallyEl.innerHTML = '';
+    const rows = [...items.map((i) => i.label), GAP_LABEL];
+    for (const label of rows) {
+      const isGap = label === GAP_LABEL;
+      const item = items.find((i) => i.label === label);
+      const theoreticalPct = isGap
+        ? Math.max(0, 1 - items.reduce((s, i) => s + i.weight, 0) / totalWeight) * 100
+        : (item.weight / totalWeight) * 100;
+      const actualPct = rolled ? (counts[label] / rolled) * 100 : 0;
+
+      const row = document.createElement('div');
+      row.className = 'tally-row';
+      const labelRow = document.createElement('div');
+      labelRow.className = 'tally-label';
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = label;
+      const numsSpan = document.createElement('span');
+      numsSpan.className = 'nums';
+      numsSpan.textContent = `${counts[label]} rolls · ${actualPct.toFixed(0)}% actual · ${theoreticalPct.toFixed(0)}% expected`;
+      labelRow.append(nameSpan, numsSpan);
+
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill' + (isGap ? ' gap' : '');
+      fill.style.width = actualPct + '%';
+      const tick = document.createElement('div');
+      tick.className = 'theory-tick';
+      tick.style.left = theoreticalPct + '%';
+      track.append(fill, tick);
+
+      row.append(labelRow, track);
+      tallyEl.appendChild(row);
+    }
+  }
+
+  function rollBatch() {
+    // 5 rolls per tick so the tally visibly builds instead of instantly jumping to 100.
+    let step = 0;
+    rollBtn.disabled = true;
+    timer = setInterval(() => {
+      for (let k = 0; k < 5 && rolled < 100; k++) {
+        const winner = rollOnce(items, totalWeight);
+        counts[winner ? winner.label : GAP_LABEL]++;
+        rolled++;
+      }
+      counterEl.textContent = String(rolled);
+      render();
+      step++;
+      if (rolled >= 100) {
+        clearInterval(timer);
+        rollBtn.disabled = false;
+      }
+    }, 80);
+  }
+
+  rollBtn.addEventListener('click', rollBatch);
+  resetBtn.addEventListener('click', setup);
+  input.addEventListener('input', setup);
+
+  setup();
+}
+run();
+</script>
+</body>
+</html>
