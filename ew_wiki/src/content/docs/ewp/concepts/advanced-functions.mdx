@@ -1,29 +1,19 @@
 ---
 title: Advanced Functions
-description: Combining Numeric and Text functions creatively, plus a quick reference for two categories used less often — 3D vector math and Valheim's oversized tick numbers.
+description: Combining Numeric and Text functions creatively, plus a quick reference for 3D vector math, a category used less often.
 complexity: advanced
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 import NestingPeelExplainer from '../../../../components/NestingPeelExplainer.astro';
 
-[Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them **combined** — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, chained as deep as the problem needs. Vector and Long numbers get a quick reference too, since they're genuinely new categories Understanding Functions didn't cover, just rarely-needed ones.
+[Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them chained — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, as deep as the problem needs. That splits into two kinds of chaining: combining *different* categories (Text + Numeric), and chaining Numeric functions with themselves for a math trick EWP has no single function for. Vector gets a quick reference too, since it's a genuinely new category Understanding Functions didn't cover, just a rarely-needed one.
 
 <Aside type="note">
 As always, the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) is the complete, always-current list. This page picks out the ones worth a worked example — not every function in every category.
 </Aside>
 
 ## Combining functions across categories
-
-### Case study: mixing two different clocks in one message
-
-Valheim's in-game clock ([Time functions](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing), `<day>`) and the server's real-world clock ([Realtime functions](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends), `<realtime_X>`) are two entirely separate systems, each taught on its own trigger page — but nothing stops a single `command:` from reading both at once:
-
-```yaml
-- prefab: Player
-  type: say, worldclock
-  command: s Day <day>, server time is <realtime_HH:mm>
-```
 
 ### Case study: a Text-and-Numeric combo for a chat-submitted name
 
@@ -39,21 +29,63 @@ Text functions reshape words; Numeric functions do arithmetic — nesting one in
 
 <NestingPeelExplainer />
 
-### Case study: a Numeric-only weighted roll
+## Chaining Numeric functions
+
+Every example below stays inside one category — Numeric functions fed into other Numeric functions — to do something no single function manages alone.
+
+### Case study: rounding to a fixed number of decimal places
+
+`<round_X>` only ever returns a whole number — there's no built-in "round to 2 decimal places." Shifting the decimal point out of the way first, rounding, then shifting it back gets the same result:
+
+```yaml
+- prefab: Player
+  type: say, piapprox
+  command: s <mul_0.01_<round_<mul_100_<div_22_7>>>>
+```
+
+`<div_22_7>` is `3.142857...`; `<mul_100_X>` shifts it to `314.2857...` so `<round_X>` has two digits worth keeping when it rounds to the nearest whole number (`314`); `<mul_0.01_X>` shifts it back down to `3.14`. Multiply by `1000`/`0.001` instead of `100`/`0.01` for 3 decimal places, and so on.
+
+### Case study: a weighted roll
 
 Adding two random rolls together weights the result toward the middle of the range, instead of an even spread — the same reason two dice most often sum to 7:
 
 ```yaml
 - prefab: Player
   type: say, rolldamage
-  command: s You deal <add_<randi_1_7>_<randi_1_7>> damage (two small rolls, weighted toward the middle instead of one flat roll)
+  command: s You deal <add_<randi_1_7>_<randi_1_7>> damage
+  # two small rolls summed, weighted toward the middle instead of one flat roll
 ```
 
 `<randi_1_7>` (Numeric) rolls a random whole number from 1 up to, but not including, 7 — twice, independently — and `<add_X_Y>` sums them. A single `<randi_1_13>` would spread evenly across the same 2-12 range; summing two smaller rolls instead makes the middle of that range far more likely than either end.
 
+### Case study: advantage and disadvantage rolls
+
+`<max_X_Y>`/`<min_X_Y>` don't just pick between two known numbers — feeding them two separate dice rolls gives the classic D&D "advantage" (roll twice, keep the better) and "disadvantage" (roll twice, keep the worse) mechanic, no extra data or filters needed:
+
+```yaml
+- prefab: Player
+  type: say, attack
+  command: s Advantage roll: <max_<randi_1_21>_<randi_1_21>>
+  # disadvantage would swap <max_ for <min_
+```
+
+Two independent `<randi_1_21>` rolls (1-20, a d20's usual range); `<max_X_Y>` keeps the higher for advantage, `<min_X_Y>` the lower for disadvantage — the same two functions [Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) already introduced, just fed two random rolls instead of two fixed numbers.
+
+### Case study: distance without the Vector category
+
+[Vector functions](#vector-functions) below have a ready-made `<distance_A_B>` for 3D positions — but the same idea (Pythagoras: distance² = X² + Y²) works with plain Numeric functions too, useful any time the two numbers aren't already packaged as a vector:
+
+```yaml
+- prefab: Player
+  type: say, !triangle * *
+  command: s That's <sqrt_<add_<pow_<par_1>_2>_<pow_<par_2>_2>>>m away.
+```
+
+Saying `!triangle 5 10` (5 meters right, 10 forward) reports `11.18m`: `<pow_X_2>` squares each leg, `<add_A_B>` sums the squares, `<sqrt_X>` finishes the formula.
+
 ## Custom data (global)
 
-`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) — one shared slot, not attached to any object, most players call it an **EWP key**. Full explanation, every function, and worked examples (simple and advanced) live on their own page: [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) — including how an EWP key compares to the older, simpler `globalkey` world flag.
+`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) — one shared slot, not attached to any object, most players call it an **EWP key**. Full explanation, every function, and worked examples (including a one-line toggle) live on their own page: [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) — including how an EWP key compares to the older, simpler `globalkey` world flag.
 
 ## Vector functions
 
@@ -83,22 +115,3 @@ A worked example — distance to the nearest of two fixed points, useful for som
 ```
 
 `<pos>` supplies the player's own position; each `<distance_A_B>` measures to one fixed gate coordinate; `<min_X_Y>` (a Numeric function — plain numbers work fine as its input, since distance already returned one) picks the smaller result.
-
-## Long numbers
-
-<Aside type="note">
-Used less often than the category above — kept brief here as a quick reference, not a full walkthrough.
-</Aside>
-
-Valheim tracks time internally as ticks — a number far bigger than the ordinary [Numeric functions](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) are built for, per `functions.md`'s own note that these exist "usually only needed when calculating with game ticks." [`<ticks>`](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing) returns one of these oversized numbers — arithmetic on it needs the `long` variant of the function, not the regular one:
-
-- `<addlong_X_Y>`, `<sublong_X_Y>`, `<mullong_X_Y>`, `<divlong_X_Y>`, `<modlong_X_Y>` — same jobs as `<add_X_Y>`/`<sub_X_Y>`/`<mul_X_Y>`/`<div_X_Y>`/`<mod_X_Y>`, just returning a long instead of a regular number.
-- `<calclong_X>` — evaluates a whole math expression (built from regular functions) and returns the result as a long, for when nesting individual `long` functions gets clunky.
-
-`functions.md` states each second is `10000000` ticks. Working out the tick value 10 seconds from now:
-
-```yaml
-- prefab: Player
-  type: say, tickcheck
-  command: s <addlong_<ticks>_100000000>  # <ticks> now, plus 10 seconds' worth of ticks
-```

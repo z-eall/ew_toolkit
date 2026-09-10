@@ -91,6 +91,19 @@ One rule, set and read together — testable by just saying `hello` more than on
 
 Every player shares the same `helloCount` — it isn't attached to whichever Player triggered the rule, so the number keeps climbing no matter who says it.
 
+## Toggle use case: flipping a shared switch on and off
+
+Reading a key back and writing the opposite value in the same `exec:` turns it into an on/off switch, no `filter:` or second rule needed:
+
+```yaml
+- prefab: Player
+  type: say, togglebuildmode
+  exec: <save_buildModeOn_<abs_<sub_<load_buildModeOn=0>_1>>>
+  command: s Build mode is now <load_buildModeOn=0>.
+```
+
+`<load_buildModeOn=0>` reads the current value, defaulting to `0` the first time. `<sub_X_1>` flips it to the *other* number rather than the same one: `0 - 1 = -1`, and `1 - 1 = 0`. `<abs_X>` turns that `-1` back into a plain `1`, so the whole expression lands on exactly `0` or `1`, never anything else. `<save_X_Y>` writes that flipped value back under the same key.
+
 ## Advanced use case: a boar-cull bounty that eases off each day
 
 This ties three trigger types to one EWP key: a real game event increments it, `type: key` announces it, and a scheduled reset lets it fade instead of vanish. Genuinely advanced, since none of the three rules would make sense reacting alone:

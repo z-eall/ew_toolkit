@@ -29,11 +29,11 @@ Don't skip past this because it sounds like a rename of something you already kn
 
 - `<day>` — whole days since the world started.
 - `<time>` — seconds since the world started (`1800` seconds per in-game day).
-- `<ticks>` — the same, in ticks. Needs the `long`-variant Numeric functions (`<addlong_X_Y>`, etc.) for any arithmetic on it — see [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/#long-numbers).
+- `<ticks>` — the same, in ticks. Needs the `long`-variant of a function (`<addlong_X_Y>`, etc.) for any arithmetic on it, not the regular one — see the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) for the full list.
 - `<time_X>` — formats game time using a .NET `DateTime` format string, e.g. `<time_yyyy-MM-dd HH:mm:ss>`.
 
 <Aside type="note">
-This page's clock has its own separate reading functions from the real-world wall clock — see [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends) for `<realtime>`/`<realtime_X>`/`<realtime_X_Y>`. A worked example combining both clocks in one line lives on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/#combining-functions-across-categories).
+This page's clock has its own separate reading functions from the real-world wall clock — see [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends) for `<realtime>`/`<realtime_X>`/`<realtime_X_Y>`. Nothing stops a single `command:` from reading both clocks at once, e.g. `s Day <day>, server time is <realtime_HH:mm>`.
 </Aside>
 
 ### Case study - counting down to a fixed day
