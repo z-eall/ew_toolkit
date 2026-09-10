@@ -1,5 +1,4 @@
 // @ts-check
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
@@ -10,20 +9,6 @@ export default defineConfig({
 	// (ew-wiki-real-build), leaving room for a future second mod component
 	// as a sibling top-level folder/sidebar group.
 	base: '/ew_wiki/',
-	// astro dev's on-demand esbuild transform doesn't apply CJS->ESM interop
-	// to path-browserify (a CommonJS dep monaco-yaml's yaml.worker imports)
-	// before the worker requests it, so the raw CJS file gets served as-is and
-	// throws "module is not defined" inside the module worker. `astro build`
-	// doesn't have this problem (Rollup's commonjs plugin handles it), so this
-	// alias only matters for `astro dev`. See src/playground/path-browserify-esm.js
-	// for the shim.
-	vite: {
-		resolve: {
-			alias: {
-				'path-browserify': fileURLToPath(new URL('./src/playground/path-browserify-esm.js', import.meta.url)),
-			},
-		},
-	},
 	integrations: [
 		starlight({
 			title: 'Expand World Wiki',

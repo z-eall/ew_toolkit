@@ -1,7 +1,7 @@
 # "How to use this guide" page
 
 Type: task
-Status: open
+Status: closed — out of scope
 Blocked by: 07
 
 ## Question
@@ -12,3 +12,6 @@ Write one reader-facing "How to use this guide" page (not a run of chapters): ex
 
 ## Answer
 
+Superseded, not resolved. The interactive-widget phase (tickets 17-22) already gave the wiki 6 real interactive components — the Try-It playground would have been a second, weaker way to hit the same goal ("make it not read boringly"), and ticket 07's re-check confirmed it was never actually wired into any real page (see ticket 07's Answer). Maintainer's call: scrap the Try-It playground concept entirely rather than build a page around it, and drop this ticket's other half (callout boxes + reading-order page) along with it rather than salvaging a smaller version.
+
+Cleanup done as part of closing this out: deleted `src/playground/` (`MonacoPlayground.astro`, `path-browserify-esm.js`, `schema.generated.json`), removed the now-unused `monaco-editor`/`monaco-yaml` deps from `package.json`, and removed the `path-browserify` Vite alias from `astro.config.mjs` that existed only to support them. `npm install` via WSL cleanly dropped 17 packages; `npm run build` verified clean afterward (33 pages, same count as before — nothing depended on the playground).
