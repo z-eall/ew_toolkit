@@ -6,10 +6,24 @@
 //
 // Validated as a throwaway HTML prototype first (branch
 // prototype/nesting-peel-widget, nesting-peel-widget-v1-prototype.html).
-// That round used a free-text name input; maintainer feedback swapped it
-// for a 3-scenario dropdown (fixed, teachable cases instead of open-ended
-// typing) and asked for the example name to be visible beside the
-// dropdown, not just inside the (narrow, truncating) <select> itself.
+// Round 1 used a free-text name input; maintainer feedback swapped it for
+// a 3-scenario dropdown. Round 2 dropped the separate "Example: ..."
+// preview line as redundant (every option's own text already names the
+// example, e.g. "Ragnar (6 chars)", and none truncate inside the select)
+// and reserved min-height on the narration/result zones (a floor, not a
+// hard height+overflow:hidden ceiling -- that first attempt silently
+// clipped the longest result sentence on a narrow mobile viewport, caught
+// by actually resizing to mobile and reading the text, not assumed safe
+// from a desktop screenshot). Round 3 dropped Back/Next's arrow glyphs and
+// the "Step X of 3" label entirely (both flagged as redundant/noisy). The
+// real cause of Back sitting out of line with Next/Reset (confirmed via
+// getBoundingClientRect, not guessed) turned out to be Starlight's own
+// global CSS handing every non-first button a stray margin-top:16px -- the
+// same recurring bug already fought in FilterLimitExplainer.astro and
+// ObjectsNearbyExplainer.astro -- not a height mismatch; margin:0 on every
+// button fixes it. An explicit button height stays too, as a second,
+// independent guarantee against :disabled reintroducing a height
+// difference later.
 //
 // The 3 scenarios are deliberately chosen to show all three shapes the
 // clamp can produce:
@@ -21,11 +35,10 @@
 //     0 -- the actual <max_0_X> clamp firing, the whole reason that layer
 //     exists.
 //
-// Spacing mirrors TriggerChangeExplainer.astro's numbers exactly (12px
-// horizontal / ~6-8px vertical, tighter than ConditionExplainer's) per the
-// maintainer's "tighten to match all other widgets" note -- measured
-// against this widget's own content, not guessed further down from
-// another widget.
+// Spacing mirrors TriggerChangeExplainer.astro's numbers (12px horizontal),
+// tightened further this round per the maintainer's "minimal spacing, no
+// gaps between lines" note -- measured against this widget's own content,
+// not guessed further down from another widget.
 ---
 
 <div class="np-widget">
@@ -39,7 +52,6 @@
 			<option value="Bjorn Ironsideson II">Bjorn Ironsideson II (20 chars)</option>
 			<option value="Ragnar the Unbroken of Northshire">Ragnar the Unbroken of Northshire (33 chars)</option>
 		</select>
-		<span class="np-name-preview" data-name-preview></span>
 	</div>
 
 	<div class="np-zone-expr">
@@ -52,10 +64,9 @@
 	</div>
 
 	<div class="np-zone-controls">
-		<button type="button" data-back>&larr; Back</button>
-		<p class="np-step-label" data-step-label></p>
-		<button type="button" data-next>Next &rarr;</button>
-		<button type="button" data-reset class="np-reset-btn">Reset</button>
+		<button type="button" data-back>Back</button>
+		<button type="button" data-next>Next</button>
+		<button type="button" data-reset>Reset</button>
 	</div>
 </div>
 
@@ -76,15 +87,14 @@
 		--np-done: #2c5f78;
 		--np-final: #2f5233;
 	}
-	.np-widget h4 { margin: 0; padding: 10px 12px 0; font-size: 0.95em; color: var(--text); }
-	.np-sub { margin: 0; padding: 2px 12px 8px; color: var(--muted); font-size: 0.9em; }
+	.np-widget h4 { margin: 0; padding: 8px 12px 0; font-size: 0.95em; color: var(--text); line-height: 1.3; }
+	.np-sub { margin: 0; padding: 2px 12px 6px; color: var(--muted); font-size: 0.9em; line-height: 1.35; }
 
 	.np-zone-input {
 		display: flex;
 		align-items: center;
-		flex-wrap: wrap;
 		gap: 8px;
-		padding: 8px 12px;
+		padding: 6px 12px;
 		margin: 0;
 		border-top: 1px solid var(--border);
 		border-bottom: 1px solid var(--border);
@@ -103,25 +113,22 @@
 		border: 1px solid var(--border);
 		color: var(--text);
 		border-radius: 5px;
-		padding: 5px 6px;
+		padding: 4px 6px;
 		font-size: 13px;
 		font-family: inherit;
-		flex: 1 1 200px;
+		flex: 1 1 auto;
 		min-width: 0;
 	}
-	.np-name-preview {
-		margin: 0;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-		font-size: 12px;
-		color: var(--text);
-		flex: 1 1 100%;
-	}
 
-	.np-zone-expr { padding: 8px 12px; margin: 0; }
+	/* Fixed height, not min-height -- the expression is always exactly one
+	   line across all 3 scenarios and every step, so a hard height (not
+	   just a floor) keeps this zone from ever contributing to layout
+	   shift, matching the "stay static" requirement below. */
+	.np-zone-expr { padding: 6px 12px; margin: 0; height: 2.2em; display: flex; align-items: center; justify-content: center; }
 	.np-expr {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 		font-size: 14px;
-		line-height: 1.4;
+		line-height: 1.3;
 		word-break: break-word;
 		margin: 0;
 		text-align: center;
@@ -149,36 +156,57 @@
 	.np-expr :global(.np-par-chip) { color: var(--text); font-weight: 600; }
 	.np-expr :global(.np-fn-open) { color: var(--muted); }
 
-	.np-zone-narration { padding: 8px 12px 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
-	.np-narration-text { margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; min-height: 2.6em; }
+	.np-zone-narration { padding: 6px 12px 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+	/* Reserved for the longest real narration string across all 3 scenarios
+	   x 4 steps (the step-2 subtraction sentence with the 33-char name is
+	   the tallest, wrapping to 3 lines at the widget's own desktop width)
+	   -- min-height, a FLOOR not a ceiling: it stops normal desktop
+	   stepping from resizing the widget, but still lets the box grow
+	   instead of clipping text on a narrow viewport where the same
+	   sentence wraps further. A hard height + overflow:hidden was tried
+	   first and silently cut off the tail of the longest result sentence
+	   at mobile width -- caught in a real mobile-viewport check, not
+	   assumed safe from the desktop screenshot alone. */
+	.np-narration-text { margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.4; min-height: 3.9em; }
 	.np-narration-text :global(code) {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 		color: var(--np-active);
 	}
-	.np-result-line { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--np-final); min-height: 1.3em; }
+	/* Reserved for the longest final-result sentence (the 33-char name,
+	   uppercased, can wrap to 2 lines on desktop, 3 on mobile) -- same
+	   floor-not-ceiling reasoning as above. */
+	.np-result-line { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--np-final); line-height: 1.35; min-height: 2.7em; }
 
-	.np-zone-controls { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px 10px; margin: 0; }
+	.np-zone-controls { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px 8px; margin: 0; }
+	/* margin:0 here is load-bearing, not decorative -- confirmed via
+	   getBoundingClientRect that Starlight's own global CSS was giving every
+	   non-first button here a stray margin-top:16px (Back, the first child,
+	   got 0), pushing Next/Reset down inside the flex row even with
+	   align-items:center on the parent. Same recurring "stray external
+	   margin from outside this component" bug documented in
+	   FilterLimitExplainer.astro/ObjectsNearbyExplainer.astro -- zeroing it
+	   explicitly is the established fix, not a new one. The explicit height
+	   (not just padding+line-height) additionally guarantees all 3 buttons
+	   share one box height regardless of :disabled's own rendering quirks. */
 	.np-zone-controls button {
+		box-sizing: border-box;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 26px;
+		margin: 0;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		color: var(--text);
 		border-radius: 6px;
-		padding: 4px 10px;
+		padding: 0 12px;
 		font-size: 12.5px;
 		font-weight: 600;
+		line-height: 1;
 		cursor: pointer;
 	}
 	.np-zone-controls button:disabled { opacity: 0.4; cursor: default; }
 	.np-zone-controls button:not(:disabled):hover { border-color: var(--text); }
-	.np-step-label {
-		font-size: 11px;
-		color: var(--muted);
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-		min-width: 64px;
-		text-align: center;
-		margin: 0;
-	}
-	.np-reset-btn { margin-left: 4px; }
 </style>
 
 <script>
@@ -242,26 +270,22 @@
 
 	for (const widget of document.querySelectorAll<HTMLElement>('.np-widget')) {
 		const nameSel = widget.querySelector<HTMLSelectElement>('[data-ctl="name"]')!;
-		const namePreview = widget.querySelector<HTMLElement>('[data-name-preview]')!;
 		const exprEl = widget.querySelector<HTMLElement>('[data-expr]')!;
 		const narrationEl = widget.querySelector<HTMLElement>('[data-narration]')!;
 		const resultEl = widget.querySelector<HTMLElement>('[data-result]')!;
 		const backBtn = widget.querySelector<HTMLButtonElement>('[data-back]')!;
 		const nextBtn = widget.querySelector<HTMLButtonElement>('[data-next]')!;
 		const resetBtn = widget.querySelector<HTMLButtonElement>('[data-reset]')!;
-		const stepLabelEl = widget.querySelector<HTMLElement>('[data-step-label]')!;
 
 		let step = 0;
 
 		function render() {
 			const name = nameSel.value;
 			const v = computeValues(name);
-			namePreview.textContent = 'Example: "' + name + '"';
 			exprEl.innerHTML = renderExpr(step, v);
 			narrationEl.innerHTML = NARRATIONS[step](name, v);
 			resultEl.textContent =
 				step === TOTAL_STEPS ? 'Registered as ' + name.toUpperCase() + ' — ' + v.result + ' character(s) left before the 20-limit.' : '';
-			stepLabelEl.textContent = 'Step ' + step + ' of ' + TOTAL_STEPS;
 			backBtn.disabled = step === 0;
 			nextBtn.disabled = step === TOTAL_STEPS;
 		}
