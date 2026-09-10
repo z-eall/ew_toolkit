@@ -31,7 +31,7 @@ State an external or domain fact — a file path, how a tool behaves, install st
 
 When we write an EWP script together, fields go in this order (skip any that don't apply — don't pad):
 
-Top level: `prefab` > `type` > `weight` > `exec` > `filter` (and its variants `filters`/`bannedFilter`/`bannedFilters`) > `objects`/`bannedObjects` > the rule's action (`data`, `spawn`, `remove`, ...) > `command`/`commands` > `poke`
+Top level: `prefab` > `type` > `weight` > `exec` > `filter` (and its variants `filters`/`bannedFilter`/`bannedFilters`) > `objects`/`bannedObjects` > the rule's action (`data`, `spawn`, `remove`, ...) > `injectData` (only with `data`, goes directly after it) > `command`/`commands` > `poke`
 
 Inside a `poke:`/`objects:`/`bannedObjects:`/`spawn:` list item: `prefab` > `filter` (poke/objects/bannedObjects) or `data` (spawn) > `position`/`offset` > `rot`/`rotation` > `delay` > `parameter`
 
