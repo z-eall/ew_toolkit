@@ -19,8 +19,10 @@
 // (world-progression.mdx, auto-upgrade-station.mdx, village-cargo.mdx) —
 // not re-derived or guessed. bfvworldlevel range is 0-8: boss tiers only
 // go 1-7 (one per real boss), so level 8 is a genuine fallback/overflow no
-// boss kill can ever produce; the station/feast and cargo tables both cap
-// at level 6, so 7-8 fall back to that same max tier.
+// boss kill can ever produce; the station and cargo tables both cap at
+// level 6, so 7-8 fall back to that same max tier. Auto-upgrade Stations'
+// own feast-table section was intentionally left out of this widget —
+// not important for the dial demo, real page still covers it in prose.
 //
 // defaultTab lets each page open the widget already on its own topic
 // (confirmed feasible in the prototype via a ?page= stand-in) — falls back
@@ -169,6 +171,7 @@ const { defaultTab = 'progression' } = Astro.props;
 	   already warn about. */
 	:global(.wld-result table) {
 		width: 100%;
+		table-layout: fixed;
 		border-collapse: collapse;
 		font-size: 12px;
 	}
@@ -178,6 +181,18 @@ const { defaultTab = 'progression' } = Astro.props;
 		padding: 3px 6px;
 		border-bottom: 1px solid var(--border);
 		color: var(--text);
+		overflow-wrap: break-word;
+	}
+	/* Column widths deliberately echo the 3 tab buttons' equal thirds above,
+	   so the table's own vertical divisions line up with them instead of
+	   bunching to the left at whatever width the cell content happens to
+	   need — table-layout: fixed is what makes an explicit width here
+	   actually stick regardless of content length. */
+	:global(.wld-result .wld-col-1of3) {
+		width: 33.333%;
+	}
+	:global(.wld-result .wld-col-2of3) {
+		width: 66.667%;
 	}
 	:global(.wld-result th) {
 		color: var(--muted);
@@ -218,15 +233,6 @@ const { defaultTab = 'progression' } = Astro.props;
 		background: var(--border);
 		color: var(--bg);
 	}
-
-	:global(.wld-feast-block) {
-		margin-top: 8px;
-	}
-	:global(.wld-feast-block h5) {
-		margin: 0 0 4px;
-		font-size: 11.5px;
-		color: var(--muted);
-	}
 </style>
 
 <script>
@@ -252,26 +258,6 @@ const { defaultTab = 'progression' } = Astro.props;
 		{ level: 6, pieces: '+ Rolling Pins and Cutting Boards; Artisan Press; Feathery Wreath; Metal Cutter, Gem Cutter' },
 	];
 
-	const BASE_CAMP_FEAST = [
-		{ max: 1, name: 'FeastMeadows' },
-		{ max: 2, name: 'FeastBlackforest' },
-		{ max: 3, name: 'FeastSwamps' },
-		{ max: 4, name: 'FeastMountains' },
-		{ max: 5, name: 'FeastPlains' },
-		{ max: Infinity, name: 'FeastMistlands' },
-	];
-	const COMMAND_HOUSE_FEAST = [
-		{ max: 1, name: 'FeastBlackforest' },
-		{ max: 2, name: 'FeastSwamps' },
-		{ max: 3, name: 'FeastMountains' },
-		{ max: 4, name: 'FeastPlains' },
-		{ max: 5, name: 'FeastMistlands' },
-		{ max: Infinity, name: 'FeastMistlands' },
-	];
-	function feastFor(table: typeof BASE_CAMP_FEAST, level: number) {
-		return table.find((row) => level <= row.max)!.name;
-	}
-
 	const CARGO_TABLE = [
 		{ level: 0, villages: 0, cargo: 'none' },
 		{ level: 1, villages: 4, cargo: '1–5' },
@@ -284,7 +270,7 @@ const { defaultTab = 'progression' } = Astro.props;
 
 	const SUB_TEXT: Record<Tab, string> = {
 		progression: "Each boss kill ratchets bfvworldlevel up to its own tier — the level never drops, even if a lower-tier boss dies after a higher one.",
-		stations: 'Every crafting-station tier and camp feast reads the same bfvworldlevel to decide what stays unlocked.',
+		stations: 'Every crafting-station tier reads the same bfvworldlevel to decide what stays unlocked.',
 		cargo: 'Eligible villages and cargo amount both scale off the same bfvworldlevel — level 6 is already the max the real script defines.',
 	};
 
@@ -299,7 +285,7 @@ const { defaultTab = 'progression' } = Astro.props;
 		const isFallback = level === 8;
 		rows += `<tr class="${isFallback ? 'wld-row-fallback' : ''}"><td>8${isFallback ? '<span class="wld-tag wld-tag-fallback">fallback</span>' : ''}</td><td colspan="2">Overflow only — no boss saves this tier in the real script</td></tr>`;
 		return `<table>
-			<tr><th>Level</th><th>Boss killed</th><th>Ward removed</th></tr>
+			<tr><th class="wld-col-1of3">Level</th><th class="wld-col-1of3">Boss killed</th><th class="wld-col-1of3">Ward removed</th></tr>
 			${rows}
 		</table>`;
 	}
@@ -322,16 +308,9 @@ const { defaultTab = 'progression' } = Astro.props;
 			rows += `<tr class="${cls}"><td>${t.level}${tag}</td><td>${t.pieces}</td></tr>`;
 		}
 		return `<table>
-			<tr><th>Requires level</th><th>Unlocked pieces</th></tr>
+			<tr><th class="wld-col-1of3">Requires level</th><th class="wld-col-2of3">Unlocked pieces</th></tr>
 			${rows}
-		</table>
-		<div class="wld-feast-block">
-			<h5>Feast tables at this level</h5>
-			<table>
-				<tr><th>Base Camp Feast</th><th>Command House Feast</th></tr>
-				<tr><td>${feastFor(BASE_CAMP_FEAST, level)}</td><td>${feastFor(COMMAND_HOUSE_FEAST, level)}</td></tr>
-			</table>
-		</div>`;
+		</table>`;
 	}
 
 	function renderCargo(level: number): string {
@@ -341,7 +320,7 @@ const { defaultTab = 'progression' } = Astro.props;
 			rows += `<tr class="${cls}"><td>${c.level}${c.level === 6 ? '–8 (max)' : ''}</td><td>${c.villages}</td><td>${c.cargo}</td></tr>`;
 		}
 		return `<table>
-			<tr><th>World level</th><th>Eligible villages</th><th>Cargo amount</th></tr>
+			<tr><th class="wld-col-1of3">World level</th><th class="wld-col-1of3">Eligible villages</th><th class="wld-col-1of3">Cargo amount</th></tr>
 			${rows}
 		</table>`;
 	}
