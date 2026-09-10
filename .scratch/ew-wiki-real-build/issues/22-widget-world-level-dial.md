@@ -41,3 +41,13 @@ Applied `table-layout: fixed` plus explicit width classes (`wld-col-1of3` = 33.3
 Also dropped the Auto-upgrade Stations tab's feast-table section (Base Camp Feast / Command House Feast) entirely per feedback — not important for this dial demo; the real page still covers it in prose.
 
 Verified live: all 3 tabs' table columns now line up with the tab buttons and fill the box edge to edge, mobile width (375px) still stacks/wraps cleanly with the same column proportions. Build verified clean, 33 pages.
+
+## Follow-up round 3: Cargo tab still broken, and a fully static box
+
+Maintainer caught that round 2's 3-column fix hadn't actually reached the Village Cargo tab — its columns still looked bunched left.
+
+**Root cause, found live in the Browser pane:** Starlight's own doc CSS forces every `<table>` inside the content body to `display: block` — its own responsive-scroll behavior for wide docs tables. That silently defeats `table-layout: fixed`: with the table no longer establishing a real table formatting context, the browser falls back to an anonymous table box sized to its *content*, ignoring the outer element's own `width: 100%`. This was actually broken on **all 3 tabs** already, but only visibly so on Cargo — its short numeric cells (single digits, "1–5") kept that auto-fit width narrow, while Boss Progression's long boss/ward names happened to pad its auto-fit width out close to the real box width by coincidence, masking the bug there. Fixed by adding `display: table` back onto the result tables, confirmed via `getComputedStyle`/`getBoundingClientRect` that all 3 columns now measure equal thirds of the real box on every tab.
+
+**Second ask: make the whole widget static** — switching tabs or dragging the slider shouldn't resize or move the box. Measured (not guessed, per the standing widget-build rule) the tallest real render of the sub-caption, level caption, and result table across every tab × every slider level (0–8) at both desktop and mobile width, then set `min-height` floors from those numbers with a small buffer — never a fixed height + `overflow: hidden`, which would silently clip. Verified programmatically that the widget's own outer height is now a single constant value across all 27 tab/level combinations at both widths, and confirmed visually that the reserved space doesn't look broken on the shorter tabs (just extra breathing room at the bottom of the card).
+
+Build verified clean, 33 pages. No further known gaps.
