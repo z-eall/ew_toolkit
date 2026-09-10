@@ -84,10 +84,26 @@ const { defaultTab = 'progression' } = Astro.props;
 		font-size: 0.95em;
 		color: var(--text);
 	}
+	/* min-height reservations below are measured, not guessed (per the
+	   house rule on this — a hard height+overflow:hidden clips real
+	   content, so these are floors, confirmed by actually driving every
+	   tab through every slider level at both desktop and mobile width and
+	   taking the tallest real render, not an estimate). Sub-caption text
+	   differs per tab (3 different sentences), the level caption differs
+	   per level (short vs. the long level-8 sentence), and each tab's
+	   result table has a different row count/wrap profile — without this,
+	   switching tabs or dragging the slider visibly resizes the whole
+	   widget and shifts the page content below it. */
 	.wld-sub {
 		margin: 0 0 8px;
 		color: var(--muted);
 		font-size: 0.9em;
+		min-height: 46px;
+	}
+	@media (max-width: 480px) {
+		.wld-sub {
+			min-height: 68px;
+		}
 	}
 
 	.wld-tabs {
@@ -155,6 +171,12 @@ const { defaultTab = 'progression' } = Astro.props;
 		margin: 6px 0 0;
 		font-size: 12px;
 		color: var(--muted);
+		min-height: 25px;
+	}
+	@media (max-width: 480px) {
+		.wld-level-caption {
+			min-height: 46px;
+		}
 	}
 
 	.wld-result {
@@ -162,6 +184,12 @@ const { defaultTab = 'progression' } = Astro.props;
 		border: 1px solid var(--border);
 		border-radius: 5px;
 		padding: 10px;
+		min-height: 349px;
+	}
+	@media (max-width: 480px) {
+		.wld-result {
+			min-height: 475px;
+		}
 	}
 
 	/* :global — every rule below targets elements the client <script> builds
@@ -170,6 +198,7 @@ const { defaultTab = 'progression' } = Astro.props;
 	   nothing — the exact bug class WeightLotteryExplainer's tally rows
 	   already warn about. */
 	:global(.wld-result table) {
+		display: table;
 		width: 100%;
 		table-layout: fixed;
 		border-collapse: collapse;
@@ -187,7 +216,16 @@ const { defaultTab = 'progression' } = Astro.props;
 	   so the table's own vertical divisions line up with them instead of
 	   bunching to the left at whatever width the cell content happens to
 	   need — table-layout: fixed is what makes an explicit width here
-	   actually stick regardless of content length. */
+	   actually stick regardless of content length. This only works because
+	   the table rule above also forces display: table: Starlight's own doc
+	   CSS sets every <table> in the content body to display: block (its own
+	   responsive-scroll behavior for wide tables), which silently defeats
+	   table-layout: fixed — the browser then falls back to an anonymous
+	   table box sized to fit its content, ignoring the outer block's own
+	   100% width. That's why this bug showed up worst on the Cargo tab
+	   (short numbers, so its auto-fit width stayed narrow) despite the
+	   Boss Progression tab looking fine by accident (long boss/ward names
+	   happened to pad its auto-fit width out close to the real box width). */
 	:global(.wld-result .wld-col-1of3) {
 		width: 33.333%;
 	}
