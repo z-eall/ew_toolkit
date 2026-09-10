@@ -1,0 +1,801 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// FilterLimitExplainer.astro: class-scoped (not id-scoped) so more than one
+// instance can coexist, client-side <script> does the drawing/state, no
+// client:load needed.
+//
+// Validated as a throwaway HTML prototype first (8 rounds on the maintainer's
+// feedback — see this ticket's Answer for the branch note and the final
+// prototype file). Models the real objects:/objectsLimit:/weight: mechanic
+// from this page's own "weight: — how much a match counts" example
+// (commander-boar-data.mdx): a fixed script, walked through as two
+// three-or-four-step scripted scenarios (Success / Fail) rather than a free
+// editable config, since round 1's raw editable fields tested as too
+// technical for this page's `intermediate` audience.
+//
+// Key mechanic this widget exists to correct a wrong mental model about:
+// objects:/objectsLimit is checked exactly ONCE, the instant the object is
+// `type: create`d — not a live/continuous re-check. The Fail scenario's
+// 4th step (a strong Boar wandering in afterwards, too late to help) exists
+// specifically to make that visible.
+---
+
+<div class="on-widget">
+	<h4>Watch it happen</h4>
+	<p class="on-sub">Pick Success or Fail, then step through what EWP actually does.</p>
+
+	<div class="on-tab-bar">
+		<button type="button" class="on-tab-btn" data-tab="pass">Success</button>
+		<button type="button" class="on-tab-btn" data-tab="fail">Fail</button>
+	</div>
+
+	<div class="on-grid">
+		<div class="on-spawner-panel">
+			<div class="on-radar-wrap">
+				<svg class="on-radar" width="220" height="220" viewBox="0 0 220 220"></svg>
+			</div>
+			<div class="on-story-controls">
+				<button type="button" class="on-btn on-ghost" data-story-back>Back</button>
+				<button type="button" class="on-btn" data-story-next>Next</button>
+				<button type="button" class="on-btn on-ghost" data-story-reset>Reset</button>
+			</div>
+			<div class="on-story-step-count" data-story-count></div>
+		</div>
+
+		<div class="on-condition-panel">
+			<h5>Does it become a commander?</h5>
+
+			<pre class="on-script-block"><span class="on-k">objects:</span>
+  - <span class="on-k">prefab:</span> Boar
+    <span class="on-k">filter:</span> int, level, 3
+    <span class="on-k">weight:</span> 2       <span class="on-c"># this entry's own weight</span>
+  - <span class="on-k">prefab:</span> Boar
+    <span class="on-k">filter:</span> int, level, 2
+    <span class="on-k">weight:</span> 1
+<span class="on-k">objectsLimit:</span> 3     <span class="on-c"># total weighted matches needed</span></pre>
+			<p class="on-script-note">This <code>weight:</code> is per-entry here — different from a <code>spawn:</code> list's <code>weight:</code> (loot chance). Same word, different job.</p>
+
+			<ul class="on-cond-list" data-cond-list></ul>
+
+			<div class="on-story-line" data-story-line></div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.on-widget {
+		--on-ok: #8fbf7f;
+		--on-fail: #d98a7a;
+		--on-neutral: #6b7280;
+		/* Widget-local, same reasoning as FilterLimitExplainer's --fl-ok/--fl-fail:
+		   pass/fail/accent color is page decoration, not brand identity, so it isn't
+		   added to shared/theme.css. */
+		--on-gold: #e6c18a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1.25rem 0;
+		font-size: 14px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .on-widget {
+		/* --on-gold had no light-mode value in early prototype rounds and stayed the
+		   dark-mode pale gold, which nearly vanished on this theme's tan background
+		   (script keywords, the commander star, its label). Darker/more saturated,
+		   same fix pattern as FilterLimitExplainer's own light-mode --fl-ok/--fl-fail. */
+		--on-ok: #2f5233;
+		--on-fail: #7a2e1f;
+		--on-neutral: #5a5a5a;
+		--on-gold: #8a5a12;
+	}
+	.on-widget h4 {
+		margin: 0;
+		padding: 8px 12px 0;
+		font-size: 0.95em;
+		color: var(--text);
+	}
+	.on-sub {
+		margin: 0;
+		/* Zone 1, round 2: was 8px, then 4px — still flagged as too much air above
+		   the tabs. */
+		padding: 0 12px 2px;
+		color: var(--muted);
+		font-size: 0.9em;
+	}
+
+	.on-tab-bar {
+		display: flex;
+		gap: 4px;
+		padding: 0 12px;
+		/* center, not the flex default (normal → effectively stretch) — a stray
+		   external margin-top on every tab but the first (Starlight's prose "flow"
+		   spacing leaking in from outside this component) was making that first
+		   tab stretch to fill the row and read as a visibly taller pill. Centering
+		   sizes every tab to its own content regardless of any margin like that. */
+		align-items: center;
+	}
+	.on-tab-btn {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-bottom: none;
+		color: var(--muted);
+		border-radius: 6px 6px 0 0;
+		padding: 5px 12px;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		position: relative;
+		margin: 0;
+	}
+	.on-tab-btn.on-active {
+		color: var(--text);
+		border-color: var(--on-gold);
+	}
+	.on-tab-btn.on-active.on-pass {
+		color: var(--on-ok);
+		border-color: var(--on-ok);
+	}
+	.on-tab-btn.on-active.on-fail {
+		color: var(--on-fail);
+		border-color: var(--on-fail);
+	}
+
+	.on-grid {
+		display: flex;
+		border-top: 1px solid var(--border);
+		align-items: stretch;
+		/* Zone 2: pulls the divider up flush against the tab row's own bottom edge
+		   (no border-bottom on the tabs, so there was nothing holding this line down
+		   1px — that read as a sliver of extra space under Success/Fail). */
+		margin-top: -1px;
+	}
+	.on-spawner-panel {
+		flex: 0 0 220px;
+		padding: 10px;
+		margin: 0;
+		border-right: 1px solid var(--border);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.on-condition-panel {
+		flex: 1 1 auto;
+		/* Zone 3: top padding matches .on-spawner-panel's above so both columns
+		   start the same distance below the divider. margin:0 is load-bearing, not
+		   decorative — without it this panel (the second flex child of .on-grid)
+		   was picking up a stray 16px external margin-top from something outside
+		   this component (same "flow spacing" rule that hit the buttons earlier),
+		   pushing its whole content down and making the divider-to-title gap look
+		   ~16px bigger than the divider-to-radar gap on the left. */
+		padding: 10px 12px;
+		margin: 0;
+		min-width: 0;
+	}
+	@media (max-width: 600px) {
+		.on-grid {
+			flex-direction: column;
+		}
+		.on-spawner-panel {
+			flex: none;
+			border-right: none;
+			border-bottom: 1px solid var(--border);
+		}
+	}
+
+	.on-condition-panel h5 {
+		margin: 0 0 5px;
+		font-size: 0.92em;
+		color: var(--text);
+	}
+
+	.on-script-block {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 6px 8px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 12px;
+		line-height: 1.45;
+		margin: 0 0 5px;
+		overflow-x: auto;
+		white-space: pre;
+		color: var(--text);
+	}
+	.on-script-block :global(.on-k) {
+		color: var(--on-gold);
+	}
+	.on-script-block :global(.on-c) {
+		color: var(--muted);
+		font-style: italic;
+	}
+	.on-script-note {
+		font-size: 11.5px;
+		color: var(--muted);
+		margin: 0 0 5px;
+		line-height: 1.35;
+	}
+	.on-script-note code {
+		background: var(--bg);
+		padding: 1px 5px;
+		border-radius: 3px;
+	}
+
+	/* min-height reserves room for the tallest case (3 rows: 2 dots + total, or 1 dot
+	   + late + total) so the checklist never grows/shrinks the widget as steps change
+	   which rows are present. */
+	.on-cond-list {
+		list-style: none;
+		/* Zone 4, round 2: was 8px, then 4px — still flagged as too much air above
+		   the story box. */
+		margin: 0 0 2px;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-height: 70px;
+	}
+	.on-cond-list :global(.on-cond-row) {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		font-size: 13px;
+		line-height: 1.3;
+	}
+	.on-cond-list :global(.on-cond-box) {
+		flex: none;
+		width: 16px;
+		height: 16px;
+		border: 1.5px solid var(--muted);
+		border-radius: 3px;
+		margin-top: 1px;
+		/* Flex-centered instead of the earlier absolute-position-with-magic-numbers
+		   version — that placed the tick/cross by eyeballed left/top offsets, which
+		   read as off-center (the maintainer's flagged bug). Centering the box as a
+		   flex container and sizing each glyph as a normal flex child centers both
+		   automatically, no coordinates to get wrong. */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition:
+			border-color 0.2s ease,
+			background 0.2s ease;
+	}
+	.on-cond-list :global(.on-cond-box.on-checked) {
+		border-color: var(--on-ok);
+		background: color-mix(in srgb, var(--on-ok) 18%, transparent);
+	}
+	.on-cond-list :global(.on-cond-box.on-checked::after) {
+		content: '';
+		width: 4px;
+		height: 8px;
+		border: solid var(--on-ok);
+		border-width: 0 2px 2px 0;
+		/* The rotated border-corner tick's own visual weight sits toward its
+		   bottom-right; nudging it up-left by a hair after centering is what
+		   actually reads as centered inside the box, not a 0,0 rotation. */
+		transform: translate(0, -1px) rotate(45deg);
+	}
+	.on-cond-list :global(.on-cond-box.on-unmet) {
+		border-color: var(--on-fail);
+		background: color-mix(in srgb, var(--on-fail) 15%, transparent);
+	}
+	.on-cond-list :global(.on-cond-box.on-moot) {
+		border-color: var(--muted);
+		opacity: 0.4;
+	}
+	.on-cond-list :global(.on-cond-box.on-moot::after) {
+		content: '×';
+		font-size: 13px;
+		line-height: 1;
+		color: var(--muted);
+	}
+	.on-cond-list :global(.on-cond-label) {
+		color: var(--text);
+	}
+	.on-cond-list :global(.on-cond-label .on-pts) {
+		color: var(--muted);
+		font-size: 11.5px;
+	}
+	.on-cond-list :global(.on-cond-label .on-note) {
+		display: block;
+		color: var(--muted);
+		font-size: 11px;
+		font-style: italic;
+	}
+	.on-cond-list :global(.on-cond-total) {
+		border-top: 1px dashed var(--border);
+		padding-top: 5px;
+		font-weight: 700;
+	}
+	.on-cond-list :global(.on-cond-total .on-cond-label) {
+		font-weight: 700;
+	}
+
+	/* The story text sits last in this column; its own min-height (sized for its
+	   longest line across every step) means its height doesn't move the widget's
+	   overall size either — Back/Next/tab-switching resizes nothing. */
+	.on-story-line {
+		font-size: 13.5px;
+		line-height: 1.4;
+		margin: 0;
+		/* Zone: maintainer specified exactly 4.5px top/bottom for the longest
+		   (2-line) case. */
+		padding: 4.5px 10px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		border-left: 3px solid var(--on-gold);
+		min-height: 34px;
+		display: flex;
+		align-items: center;
+		color: var(--text);
+	}
+
+	.on-radar-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+	}
+	.on-radar {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		touch-action: none;
+	}
+	.on-radar :global(.on-ring) {
+		fill: color-mix(in srgb, var(--on-ok) 6%, transparent);
+		stroke: var(--on-ok);
+		stroke-width: 1.5;
+		stroke-dasharray: 4 4;
+	}
+	.on-radar :global(.on-ring-label) {
+		fill: var(--on-ok);
+		font-size: 10px;
+		font-weight: 600;
+	}
+	.on-radar :global(.on-anchor-dot) {
+		fill: var(--text);
+		opacity: 0.6;
+	}
+	.on-radar :global(.on-dummy-dot circle.on-body) {
+		stroke: var(--bg);
+		stroke-width: 2;
+		transition:
+			fill 0.3s ease,
+			opacity 0.3s ease;
+	}
+	.on-radar :global(.on-dummy-dot text.on-num) {
+		fill: var(--bg);
+		font-size: 11px;
+		font-weight: 700;
+		text-anchor: middle;
+		pointer-events: none;
+	}
+	.on-radar :global(.on-toolate-dot circle.on-body) {
+		fill: var(--on-fail);
+		opacity: 0.35;
+	}
+	.on-radar :global(.on-toolate-dot text.on-num) {
+		fill: var(--bg);
+	}
+	.on-radar :global(.on-spawn-marker) {
+		transition:
+			fill 0.25s ease,
+			stroke 0.25s ease;
+	}
+	.on-radar :global(.on-spawn-marker.on-diamond) {
+		fill: var(--on-neutral);
+		stroke: var(--bg);
+		stroke-width: 2;
+	}
+	.on-radar :global(.on-spawn-marker.on-diamond.on-miss) {
+		fill: var(--on-fail);
+	}
+	.on-radar :global(.on-spawn-marker.on-star) {
+		fill: var(--on-gold);
+		stroke: var(--bg);
+		stroke-width: 1.5;
+	}
+	.on-radar :global(.on-spawn-label) {
+		fill: var(--muted);
+		font-size: 10px;
+		font-weight: 600;
+	}
+	.on-radar :global(.on-spawn-label.on-commander) {
+		fill: var(--on-gold);
+	}
+	.on-radar :global(.on-spawn-label.on-stayed-normal) {
+		fill: var(--on-fail);
+	}
+
+	.on-story-controls {
+		display: flex;
+		gap: 5px;
+		justify-content: center;
+		margin-top: 6px;
+		/* center, not stretch — same reason as .on-tab-bar above: without it, any
+		   stray external margin on some siblings but not others turns into a
+		   visible height mismatch between the buttons. */
+		align-items: center;
+	}
+	.on-btn {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 5px 10px;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		margin: 0;
+		/* Back/Next/Reset are different lengths, so text-driven width made three
+		   visibly mismatched pill sizes (the maintainer's flagged bug) — a fixed
+		   width makes all three the same shape regardless of label length. */
+		width: 64px;
+		text-align: center;
+	}
+	.on-btn:hover:not(:disabled) {
+		border-color: var(--on-gold);
+	}
+	.on-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.on-btn.on-ghost {
+		background: transparent;
+	}
+	.on-story-step-count {
+		text-align: center;
+		font-size: 11.5px;
+		color: var(--muted);
+		margin-top: 3px;
+	}
+</style>
+
+<script>
+	const RADAR_METERS = 30;
+	const IN_RANGE_M = 10;
+	const NS = 'http://www.w3.org/2000/svg';
+	const GOAL = 3;
+
+	interface Dot {
+		distance: number;
+		angle: number;
+		level: number;
+	}
+	interface Step {
+		dots: Dot[];
+		spawned: boolean;
+		evaluated?: boolean;
+		pass?: boolean;
+		lateDot?: Dot;
+		line: string;
+	}
+
+	const SCRIPTS: Record<'pass' | 'fail', Step[]> = {
+		pass: [
+			{
+				dots: [
+					{ distance: 8, angle: 40, level: 3 },
+					{ distance: 9, angle: 260, level: 2 },
+				],
+				spawned: false,
+				line: 'Two Boars are already nearby: one 3★, one 2★. Nothing has spawned yet.',
+			},
+			{
+				dots: [
+					{ distance: 8, angle: 40, level: 3 },
+					{ distance: 9, angle: 260, level: 2 },
+				],
+				spawned: true,
+				evaluated: false,
+				line: 'A new Boar spawns here.',
+			},
+			{
+				dots: [
+					{ distance: 8, angle: 40, level: 3 },
+					{ distance: 9, angle: 260, level: 2 },
+				],
+				spawned: true,
+				evaluated: true,
+				pass: true,
+				line: "The instant it's created, EWP checks who's already close by: 3★ = 2 points, 2★ = 1 point → 3 points total, meeting the goal of 3. It becomes a commander.",
+			},
+		],
+		fail: [
+			{
+				dots: [{ distance: 9, angle: 200, level: 2 }],
+				spawned: false,
+				line: 'Only one 2★ Boar is nearby right now. Nothing has spawned yet.',
+			},
+			{
+				dots: [{ distance: 9, angle: 200, level: 2 }],
+				spawned: true,
+				evaluated: false,
+				line: 'A new Boar spawns here.',
+			},
+			{
+				dots: [{ distance: 9, angle: 200, level: 2 }],
+				spawned: true,
+				evaluated: true,
+				pass: false,
+				line: 'EWP checks right now: 2★ = 1 point — short of the goal of 3. This Boar stays a plain Boar. That decision is already final.',
+			},
+			{
+				dots: [{ distance: 9, angle: 200, level: 2 }],
+				spawned: true,
+				evaluated: true,
+				pass: false,
+				lateDot: { distance: 8, angle: 40, level: 3 },
+				line: 'A 3★ Boar wanders into range afterwards. Too late — the check already happened, so it changes nothing.',
+			},
+		],
+	};
+
+	function polarToXY(cx: number, cy: number, radiusPx: number, distance: number, angleDeg: number, maxMeters: number) {
+		const r = Math.min(distance / maxMeters, 1) * radiusPx;
+		const rad = ((angleDeg - 90) * Math.PI) / 180;
+		return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+	}
+
+	function diamondPath(cx: number, cy: number, r: number) {
+		return 'M' + cx + ',' + (cy - r) + 'L' + (cx + r) + ',' + cy + 'L' + cx + ',' + (cy + r) + 'L' + (cx - r) + ',' + cy + 'Z';
+	}
+
+	function starPath(cx: number, cy: number, outerR: number, innerR: number, rotateDeg = -90) {
+		const pts: string[] = [];
+		for (let i = 0; i < 10; i++) {
+			const r = i % 2 === 0 ? outerR : innerR;
+			const angle = ((rotateDeg + i * 36) * Math.PI) / 180;
+			pts.push((cx + r * Math.cos(angle)).toFixed(1) + ',' + (cy + r * Math.sin(angle)).toFixed(1));
+		}
+		return 'M' + pts.join('L') + 'Z';
+	}
+
+	function pointsFor(dot: Dot) {
+		if (dot.distance > IN_RANGE_M) return 0;
+		return dot.level === 3 ? 2 : dot.level === 2 ? 1 : 0;
+	}
+
+	for (const widget of document.querySelectorAll<HTMLElement>('.on-widget')) {
+		const radar = widget.querySelector<SVGSVGElement>('svg.on-radar')!;
+		const condList = widget.querySelector<HTMLUListElement>('[data-cond-list]')!;
+		const storyLine = widget.querySelector<HTMLElement>('[data-story-line]')!;
+		const backBtn = widget.querySelector<HTMLButtonElement>('[data-story-back]')!;
+		const nextBtn = widget.querySelector<HTMLButtonElement>('[data-story-next]')!;
+		const resetBtn = widget.querySelector<HTMLButtonElement>('[data-story-reset]')!;
+		const stepCount = widget.querySelector<HTMLElement>('[data-story-count]')!;
+		const tabBtns = widget.querySelectorAll<HTMLButtonElement>('.on-tab-btn');
+
+		let activeKey: 'pass' | 'fail' = 'pass';
+		let step = 0;
+
+		function currentScript() {
+			return SCRIPTS[activeKey];
+		}
+
+		function drawRadarBase() {
+			const w = radar.viewBox.baseVal.width;
+			const h = radar.viewBox.baseVal.height;
+			const cx = w / 2;
+			const cy = h / 2;
+			const R = Math.min(w, h) / 2 - 16;
+			radar.innerHTML = '';
+			const ringR = (IN_RANGE_M / RADAR_METERS) * R;
+			const ring = document.createElementNS(NS, 'circle');
+			ring.setAttribute('class', 'on-ring');
+			ring.setAttribute('cx', String(cx));
+			ring.setAttribute('cy', String(cy));
+			ring.setAttribute('r', String(ringR));
+			radar.appendChild(ring);
+			const label = document.createElementNS(NS, 'text');
+			label.setAttribute('class', 'on-ring-label');
+			label.setAttribute('x', String(cx + 4));
+			label.setAttribute('y', String(cy - ringR - 4));
+			label.textContent = 'close enough';
+			radar.appendChild(label);
+			const anchor = document.createElementNS(NS, 'circle');
+			anchor.setAttribute('class', 'on-anchor-dot');
+			anchor.setAttribute('cx', String(cx));
+			anchor.setAttribute('cy', String(cy));
+			anchor.setAttribute('r', '3');
+			radar.appendChild(anchor);
+			return { cx, cy, R };
+		}
+
+		function drawExistingDot(geo: { cx: number; cy: number; R: number }, dot: Dot, opts: { fill?: string; tooLate?: boolean } = {}) {
+			const p = polarToXY(geo.cx, geo.cy, geo.R, dot.distance, dot.angle, RADAR_METERS);
+			const g = document.createElementNS(NS, 'g');
+			g.setAttribute('class', 'on-dummy-dot' + (opts.tooLate ? ' on-toolate-dot' : ''));
+			const circ = document.createElementNS(NS, 'circle');
+			circ.setAttribute('class', 'on-body');
+			circ.setAttribute('cx', String(p.x));
+			circ.setAttribute('cy', String(p.y));
+			circ.setAttribute('r', '13');
+			if (!opts.tooLate) circ.setAttribute('fill', opts.fill || 'var(--on-neutral)');
+			g.appendChild(circ);
+			if (opts.tooLate) {
+				const x1 = document.createElementNS(NS, 'line');
+				x1.setAttribute('x1', String(p.x - 6));
+				x1.setAttribute('y1', String(p.y - 6));
+				x1.setAttribute('x2', String(p.x + 6));
+				x1.setAttribute('y2', String(p.y + 6));
+				x1.setAttribute('stroke', 'var(--bg)');
+				x1.setAttribute('stroke-width', '2');
+				const x2 = document.createElementNS(NS, 'line');
+				x2.setAttribute('x1', String(p.x + 6));
+				x2.setAttribute('y1', String(p.y - 6));
+				x2.setAttribute('x2', String(p.x - 6));
+				x2.setAttribute('y2', String(p.y + 6));
+				x2.setAttribute('stroke', 'var(--bg)');
+				x2.setAttribute('stroke-width', '2');
+				g.appendChild(x1);
+				g.appendChild(x2);
+			} else {
+				const num = document.createElementNS(NS, 'text');
+				num.setAttribute('class', 'on-num');
+				num.setAttribute('x', String(p.x));
+				num.setAttribute('y', String(p.y + 4));
+				num.textContent = dot.level + '★';
+				g.appendChild(num);
+			}
+			radar.appendChild(g);
+		}
+
+		function drawSpawnMarker(geo: { cx: number; cy: number }, state: 'diamond' | 'diamond-miss' | 'star') {
+			const g = document.createElementNS(NS, 'g');
+			const p = document.createElementNS(NS, 'path');
+			let labelText: string;
+			let labelClass: string;
+			if (state === 'star') {
+				p.setAttribute('class', 'on-spawn-marker on-star');
+				p.setAttribute('d', starPath(geo.cx, geo.cy, 16, 6.5));
+				labelText = 'Commander Boar';
+				labelClass = 'on-spawn-label on-commander';
+			} else {
+				p.setAttribute('class', 'on-spawn-marker on-diamond' + (state === 'diamond-miss' ? ' on-miss' : ''));
+				p.setAttribute('d', diamondPath(geo.cx, geo.cy, 11));
+				labelText = 'Normal Boar';
+				labelClass = 'on-spawn-label' + (state === 'diamond-miss' ? ' on-stayed-normal' : '');
+			}
+			g.appendChild(p);
+			const label = document.createElementNS(NS, 'text');
+			label.setAttribute('class', labelClass);
+			label.setAttribute('x', String(geo.cx + 20));
+			label.setAttribute('y', String(geo.cy + 4));
+			label.textContent = labelText;
+			g.appendChild(label);
+			radar.appendChild(g);
+		}
+
+		function renderCondition(s: Step) {
+			condList.innerHTML = '';
+			s.dots.forEach((dot) => {
+				const pts = pointsFor(dot);
+				const li = document.createElement('li');
+				li.className = 'on-cond-row';
+				const box = document.createElement('span');
+				box.className = 'on-cond-box' + (s.evaluated ? (pts > 0 ? ' on-checked' : ' on-unmet') : '');
+				const label = document.createElement('span');
+				label.className = 'on-cond-label';
+				label.innerHTML = dot.level + '★ Boar, ' + dot.distance + 'm away <span class="on-pts">(' + pts + ' pt' + (pts === 1 ? '' : 's') + ')</span>';
+				li.appendChild(box);
+				li.appendChild(label);
+				condList.appendChild(li);
+			});
+			if (s.lateDot) {
+				const pts2 = pointsFor(s.lateDot);
+				const li2 = document.createElement('li');
+				li2.className = 'on-cond-row';
+				const box2 = document.createElement('span');
+				box2.className = 'on-cond-box on-moot';
+				const label2 = document.createElement('span');
+				label2.className = 'on-cond-label';
+				label2.innerHTML =
+					s.lateDot.level +
+					'★ Boar, ' +
+					s.lateDot.distance +
+					'm away <span class="on-pts">(' +
+					pts2 +
+					' pts — too late to count)</span><span class="on-note">Arrived after the check already ran.</span>';
+				li2.appendChild(box2);
+				li2.appendChild(label2);
+				condList.appendChild(li2);
+			}
+			const total = s.evaluated ? s.dots.reduce((sum, d) => sum + pointsFor(d), 0) : 0;
+			const liT = document.createElement('li');
+			liT.className = 'on-cond-row on-cond-total';
+			const boxT = document.createElement('span');
+			boxT.className = 'on-cond-box' + (s.evaluated ? (s.pass ? ' on-checked' : ' on-unmet') : '');
+			const labelT = document.createElement('span');
+			labelT.className = 'on-cond-label';
+			labelT.innerHTML = (s.evaluated ? total : '?') + ' of ' + GOAL + ' points — ' + (s.evaluated ? (s.pass ? 'becomes commander' : 'stays normal') : 'not checked yet');
+			liT.appendChild(boxT);
+			liT.appendChild(labelT);
+			condList.appendChild(liT);
+		}
+
+		function render() {
+			const script = currentScript();
+			const s = script[step];
+			const geo = drawRadarBase();
+			s.dots.forEach((dot) => {
+				const willMatch = pointsFor(dot) > 0;
+				drawExistingDot(geo, dot, { fill: s.evaluated ? (willMatch ? 'var(--on-ok)' : 'var(--on-neutral)') : 'var(--on-neutral)' });
+			});
+			if (s.lateDot) drawExistingDot(geo, s.lateDot, { tooLate: true });
+			if (s.spawned) {
+				const state: 'diamond' | 'diamond-miss' | 'star' = !s.evaluated ? 'diamond' : s.pass ? 'star' : 'diamond-miss';
+				drawSpawnMarker(geo, state);
+			}
+
+			renderCondition(s);
+
+			storyLine.textContent = s.line;
+			backBtn.disabled = step <= 0;
+			nextBtn.disabled = step >= script.length - 1;
+			stepCount.textContent = 'Step ' + (step + 1) + ' of ' + script.length;
+
+			tabBtns.forEach((btn) => {
+				const key = btn.dataset.tab as 'pass' | 'fail';
+				btn.classList.toggle('on-active', key === activeKey);
+				btn.classList.toggle('on-pass', key === activeKey && key === 'pass');
+				btn.classList.toggle('on-fail', key === activeKey && key === 'fail');
+			});
+		}
+
+		tabBtns.forEach((btn) => {
+			btn.addEventListener('click', () => {
+				activeKey = btn.dataset.tab as 'pass' | 'fail';
+				step = 0;
+				render();
+			});
+		});
+		nextBtn.addEventListener('click', () => {
+			if (step < currentScript().length - 1) {
+				step++;
+				render();
+			}
+		});
+		backBtn.addEventListener('click', () => {
+			if (step > 0) {
+				step--;
+				render();
+			}
+		});
+		resetBtn.addEventListener('click', () => {
+			step = 0;
+			render();
+		});
+
+		// The checklist/story box heights were reserved with fixed pixel guesses in the
+		// throwaway prototype (measured at the prototype's own wide, sidebar-free layout),
+		// which held there but broke here: Starlight's real column is narrower, so the
+		// longer condition/story lines wrap onto an extra line the guessed pixel values
+		// didn't account for, and the box grew step to step anyway. Measuring every step's
+		// actual rendered height at THIS page's real width, once on load, and reserving
+		// the true max fixes it regardless of column width.
+		function measureMaxHeights() {
+			const savedKey = activeKey;
+			const savedStep = step;
+			let maxCond = 0;
+			let maxStory = 0;
+			(['pass', 'fail'] as const).forEach((key) => {
+				SCRIPTS[key].forEach((s) => {
+					renderCondition(s);
+					storyLine.textContent = s.line;
+					maxCond = Math.max(maxCond, condList.scrollHeight);
+					maxStory = Math.max(maxStory, storyLine.scrollHeight);
+				});
+			});
+			condList.style.minHeight = maxCond + 'px';
+			storyLine.style.minHeight = maxStory + 'px';
+			activeKey = savedKey;
+			step = savedStep;
+		}
+
+		measureMaxHeights();
+		render();
+	}
+</script>

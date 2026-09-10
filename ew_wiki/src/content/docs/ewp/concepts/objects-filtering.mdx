@@ -7,6 +7,7 @@ complexity: intermediate
 import { Aside } from '@astrojs/starlight/components';
 import MarkedBoarData from '../../../../components/snippets/marked-boar-data.mdx';
 import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
+import ObjectsNearbyExplainer from '../../../../components/ObjectsNearbyExplainer.astro';
 
 [`filter:`](/ew_wiki/ewp/concepts/basic-filter/) checks something about the object the rule is already looking at. **Object filters** check the world *around* it instead — other objects nearby. A rule can require certain objects to be close by before it fires (`objects:`), or refuse to fire if certain objects are close by (`bannedObjects:`).
 
@@ -113,6 +114,8 @@ Here, two 2-star Boars alone (2 + 2 = 4) already clear the `objectsLimit: 3` req
 <Aside type="caution">
 This `weight:` is unrelated to the loot-table `weight:` used on [`spawn:` entries](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — same word, different job. This one only affects how an `objects:` match counts toward `objectsLimit`.
 </Aside>
+
+<ObjectsNearbyExplainer />
 
 <Aside type="note">
 Setting a `max` on `objectsLimit` (`min;max`) forces EWP to search every matching object rather than stopping early once the minimum is met — worth knowing if you're tuning a rule for performance on a busy server.
