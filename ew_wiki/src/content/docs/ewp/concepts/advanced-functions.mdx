@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import NestingPeelExplainer from '../../../../components/NestingPeelExplainer.astro';
 
 [Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them **combined** — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, chained as deep as the problem needs. Vector and Long numbers get a quick reference too, since they're genuinely new categories Understanding Functions didn't cover, just rarely-needed ones.
 
@@ -35,6 +36,8 @@ Text functions reshape words; Numeric functions do arithmetic — nesting one in
 ```
 
 `<len_<par_1>>` (Text) measures what the player typed; `<sub_20_X>` (Numeric) subtracts that from a 20-character budget; `<max_0_X>` clamps it so a name that's already over budget reports `0` left, not a negative number — the same clamp-a-countdown shape used on the [type: time page](/ew_wiki/ewp/concepts/advanced-triggers-time/#case-study---counting-down-to-a-fixed-day). `<upper_<par_1>>` (also Text) just formats the name for display; nothing here actually enforces the limit — EWP has no function that trims a string, so this reports the budget, it doesn't cut anyone off.
+
+<NestingPeelExplainer />
 
 ### Case study: a Numeric-only weighted roll
 

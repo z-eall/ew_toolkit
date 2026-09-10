@@ -1,0 +1,288 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// TriggerChangeExplainer.astro: class-scoped (not id-scoped) so more than
+// one instance can coexist, client-side <script> does the evaluation, no
+// client:load needed.
+//
+// Validated as a throwaway HTML prototype first (branch
+// prototype/nesting-peel-widget, nesting-peel-widget-v1-prototype.html).
+// That round used a free-text name input; maintainer feedback swapped it
+// for a 3-scenario dropdown (fixed, teachable cases instead of open-ended
+// typing) and asked for the example name to be visible beside the
+// dropdown, not just inside the (narrow, truncating) <select> itself.
+//
+// The 3 scenarios are deliberately chosen to show all three shapes the
+// clamp can produce:
+//   - "Ragnar" (6 chars)                          -> budget 14  (plain, no clamp)
+//   - "Bjorn Ironsideson II" (20 chars)            -> budget 0   (exactly at the
+//     limit -- max_0_0 is still 0, so this is the "not negative, nothing to
+//     clamp" case, distinct from the case below on purpose)
+//   - "Ragnar the Unbroken of Northshire" (33 chars) -> budget -13, clamped to
+//     0 -- the actual <max_0_X> clamp firing, the whole reason that layer
+//     exists.
+//
+// Spacing mirrors TriggerChangeExplainer.astro's numbers exactly (12px
+// horizontal / ~6-8px vertical, tighter than ConditionExplainer's) per the
+// maintainer's "tighten to match all other widgets" note -- measured
+// against this widget's own content, not guessed further down from
+// another widget.
+---
+
+<div class="np-widget">
+	<h4>Peel it from the inside out</h4>
+	<p class="np-sub">A nested function resolves its <em>innermost</em> call first — not left to right. Pick a name, then step through to see it happen.</p>
+
+	<div class="np-zone-input">
+		<label>&lt;par_1&gt;</label>
+		<select data-ctl="name">
+			<option value="Ragnar" selected>Ragnar (6 chars)</option>
+			<option value="Bjorn Ironsideson II">Bjorn Ironsideson II (20 chars)</option>
+			<option value="Ragnar the Unbroken of Northshire">Ragnar the Unbroken of Northshire (33 chars)</option>
+		</select>
+		<span class="np-name-preview" data-name-preview></span>
+	</div>
+
+	<div class="np-zone-expr">
+		<p class="np-expr" data-expr></p>
+	</div>
+
+	<div class="np-zone-narration">
+		<p class="np-narration-text" data-narration></p>
+		<p class="np-result-line" data-result></p>
+	</div>
+
+	<div class="np-zone-controls">
+		<button type="button" data-back>&larr; Back</button>
+		<p class="np-step-label" data-step-label></p>
+		<button type="button" data-next>Next &rarr;</button>
+		<button type="button" data-reset class="np-reset-btn">Reset</button>
+	</div>
+</div>
+
+<style>
+	.np-widget {
+		--np-active: #e6c18a;
+		--np-done: #7fa8bf;
+		--np-final: #8fbf7f;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1rem 0;
+		font-size: 14px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .np-widget {
+		--np-active: #8a5a12;
+		--np-done: #2c5f78;
+		--np-final: #2f5233;
+	}
+	.np-widget h4 { margin: 0; padding: 10px 12px 0; font-size: 0.95em; color: var(--text); }
+	.np-sub { margin: 0; padding: 2px 12px 8px; color: var(--muted); font-size: 0.9em; }
+
+	.np-zone-input {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 8px 12px;
+		margin: 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+	}
+	.np-zone-input label {
+		margin: 0;
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		flex: none;
+	}
+	.np-zone-input select {
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 5px;
+		padding: 5px 6px;
+		font-size: 13px;
+		font-family: inherit;
+		flex: 1 1 200px;
+		min-width: 0;
+	}
+	.np-name-preview {
+		margin: 0;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 12px;
+		color: var(--text);
+		flex: 1 1 100%;
+	}
+
+	.np-zone-expr { padding: 8px 12px; margin: 0; }
+	.np-expr {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 14px;
+		line-height: 1.4;
+		word-break: break-word;
+		margin: 0;
+		text-align: center;
+	}
+	.np-expr :global(.np-fn-active) {
+		color: var(--np-active);
+		background: color-mix(in srgb, var(--np-active) 20%, transparent);
+		border-radius: 4px;
+		padding: 1px 3px;
+	}
+	.np-expr :global(.np-chip-done) {
+		color: var(--np-done);
+		background: color-mix(in srgb, var(--np-done) 20%, transparent);
+		border-radius: 4px;
+		padding: 1px 4px;
+		font-weight: 600;
+	}
+	.np-expr :global(.np-chip-final) {
+		color: var(--np-final);
+		background: color-mix(in srgb, var(--np-final) 20%, transparent);
+		border-radius: 4px;
+		padding: 1px 5px;
+		font-weight: 700;
+	}
+	.np-expr :global(.np-par-chip) { color: var(--text); font-weight: 600; }
+	.np-expr :global(.np-fn-open) { color: var(--muted); }
+
+	.np-zone-narration { padding: 8px 12px 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+	.np-narration-text { margin: 0; font-size: 12.5px; color: var(--text); line-height: 1.45; min-height: 2.6em; }
+	.np-narration-text :global(code) {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		color: var(--np-active);
+	}
+	.np-result-line { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--np-final); min-height: 1.3em; }
+
+	.np-zone-controls { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px 10px; margin: 0; }
+	.np-zone-controls button {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 4px 10px;
+		font-size: 12.5px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.np-zone-controls button:disabled { opacity: 0.4; cursor: default; }
+	.np-zone-controls button:not(:disabled):hover { border-color: var(--text); }
+	.np-step-label {
+		font-size: 11px;
+		color: var(--muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		min-width: 64px;
+		text-align: center;
+		margin: 0;
+	}
+	.np-reset-btn { margin-left: 4px; }
+</style>
+
+<script>
+	interface Values {
+		len: number;
+		budget: number;
+		result: number;
+	}
+
+	const TOTAL_STEPS = 3;
+
+	function computeValues(name: string): Values {
+		const len = name.length;
+		const budget = 20 - len;
+		const result = Math.max(0, budget);
+		return { len, budget, result };
+	}
+
+	function renderExpr(s: number, v: Values): string {
+		// Layer 1: <len_<par_1>>
+		let layer1: string;
+		if (s >= 1) {
+			layer1 = '<span class="np-chip-done">' + v.len + '</span>';
+		} else {
+			layer1 = '<span class="np-fn-active">&lt;len_<span class="np-par-chip">&lt;par_1&gt;</span>&gt;</span>';
+		}
+
+		// Layer 2: <sub_20_LAYER1>
+		let layer2: string;
+		if (s >= 2) {
+			layer2 = '<span class="np-chip-done">' + v.budget + '</span>';
+		} else {
+			const cls = s === 1 ? 'np-fn-active' : 'np-fn-open';
+			layer2 = '<span class="' + cls + '">&lt;sub_20_' + layer1 + '&gt;</span>';
+		}
+
+		// Layer 3: <max_0_LAYER2>
+		let layer3: string;
+		if (s >= 3) {
+			layer3 = '<span class="np-chip-final">' + v.result + '</span>';
+		} else {
+			const cls = s === 2 ? 'np-fn-active' : 'np-fn-open';
+			layer3 = '<span class="' + cls + '">&lt;max_0_' + layer2 + '&gt;</span>';
+		}
+
+		return layer3;
+	}
+
+	const NARRATIONS: ((name: string, v: Values) => string)[] = [
+		() => 'The whole thing is one function wrapped in another, wrapped in another. The <code>&lt;len_X&gt;</code> call — innermost, highlighted — goes first.',
+		(name, v) => '<code>&lt;len_X&gt;</code> counted the characters: "' + name + '" is ' + v.len + ' character(s) long. Now <code>&lt;sub_20_X&gt;</code> — highlighted — takes a turn.',
+		(name, v) =>
+			'<code>&lt;sub_20_X&gt;</code> subtracted that from the 20-character budget: 20 − ' +
+			v.len +
+			' = ' +
+			v.budget +
+			(v.budget < 0 ? ' (over budget — a negative number).' : '.') +
+			' Now <code>&lt;max_0_X&gt;</code> — highlighted — takes the last turn.',
+		() => '<code>&lt;max_0_X&gt;</code> clamps a negative budget up to 0, so the reader never sees a negative "characters left." Fully resolved.',
+	];
+
+	for (const widget of document.querySelectorAll<HTMLElement>('.np-widget')) {
+		const nameSel = widget.querySelector<HTMLSelectElement>('[data-ctl="name"]')!;
+		const namePreview = widget.querySelector<HTMLElement>('[data-name-preview]')!;
+		const exprEl = widget.querySelector<HTMLElement>('[data-expr]')!;
+		const narrationEl = widget.querySelector<HTMLElement>('[data-narration]')!;
+		const resultEl = widget.querySelector<HTMLElement>('[data-result]')!;
+		const backBtn = widget.querySelector<HTMLButtonElement>('[data-back]')!;
+		const nextBtn = widget.querySelector<HTMLButtonElement>('[data-next]')!;
+		const resetBtn = widget.querySelector<HTMLButtonElement>('[data-reset]')!;
+		const stepLabelEl = widget.querySelector<HTMLElement>('[data-step-label]')!;
+
+		let step = 0;
+
+		function render() {
+			const name = nameSel.value;
+			const v = computeValues(name);
+			namePreview.textContent = 'Example: "' + name + '"';
+			exprEl.innerHTML = renderExpr(step, v);
+			narrationEl.innerHTML = NARRATIONS[step](name, v);
+			resultEl.textContent =
+				step === TOTAL_STEPS ? 'Registered as ' + name.toUpperCase() + ' — ' + v.result + ' character(s) left before the 20-limit.' : '';
+			stepLabelEl.textContent = 'Step ' + step + ' of ' + TOTAL_STEPS;
+			backBtn.disabled = step === 0;
+			nextBtn.disabled = step === TOTAL_STEPS;
+		}
+
+		nameSel.addEventListener('change', () => {
+			step = 0;
+			render();
+		});
+		backBtn.addEventListener('click', () => {
+			if (step > 0) step -= 1;
+			render();
+		});
+		nextBtn.addEventListener('click', () => {
+			if (step < TOTAL_STEPS) step += 1;
+			render();
+		});
+		resetBtn.addEventListener('click', () => {
+			step = 0;
+			render();
+		});
+
+		render();
+	}
+</script>
