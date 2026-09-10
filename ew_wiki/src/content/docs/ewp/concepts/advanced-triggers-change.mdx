@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import TriggerChangeExplainer from '../../../../components/TriggerChangeExplainer.astro';
 
 [Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers the fifth: `change`.
 
@@ -88,6 +89,8 @@ This `data:`-gating behavior isn't written down anywhere in EWP's own docs — e
 Under the hood, it's a one-moment "look away," not a permanent switch: the instant a rule starts writing its `data:`, EWP tells the `change`-watcher to ignore that one object, writes the value, then tells it to look again right after. So `triggerRules: true` doesn't change anything about how the value is stored — it only decides whether *this rule's own write* is allowed to set off someone else's `type: change`.
 
 This is the same `triggerRules:` field `spawn:`/`remove:` use — see the [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/#crafting-stations-that-lock-themselves) and [Bee Ecosystem Overhaul](/ew_wiki/ewp/examples/bee-ecosystem/) case studies for it gating a spawned object's own `create`/`destroy` chain — here it's the same idea, just gating a `data:` write's `change` chain instead.
+
+<TriggerChangeExplainer />
 
 ## Case study - chaining a `change` trigger off `<sub_X_Y>`
 

@@ -1,0 +1,285 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// ConditionExplainer.astro: class-scoped (not id-scoped) so more than one
+// instance can coexist, client-side <script> does the evaluation, no
+// client:load needed.
+//
+// Validated as a throwaway HTML prototype first (see this ticket's Answer
+// for the branch note). Round-1 feedback moved the dropdown order to match
+// real par order (par_1 = new value comes first, par_2 = old value second
+// — the prototype had them backwards), split the single vague "value
+// condition" chip into two explicit chips (new-value check, old-value
+// check), and fixed the script-line indentation to the real 2-space YAML
+// shape every other page's fenced example uses.
+//
+// Spacing here is deliberately tighter than ConditionExplainer's — this
+// widget has less content per zone (2 short rule lines vs. a condition
+// zone with a precedence-note callout; 3 controls vs. 4), so reusing
+// ConditionExplainer's padding verbatim left visibly oversized gaps in
+// the prototype. Measured against this widget's own real content, not
+// guessed further down from another widget's numbers.
+//
+// Key mechanic this widget exists to make concrete: two independent gates
+// both have to pass before a change trigger fires. Missing either one
+// looks identical from the outside — no error, it just stays silent —
+// so the widget keeps them as separate chips rather than one combined
+// pass/fail, the same way the page's own prose treats them as two
+// separate traps, not one.
+---
+
+<div class="tc-widget">
+	<h4>Would this fire?</h4>
+	<p class="tc-sub">Set the write's new/old value and whether <code>triggerRules:</code> is on, then see if the watcher rule below actually fires.</p>
+
+	<div class="tc-zone-rules">
+		<div class="tc-rule-line">
+			<span class="tc-rule-tag">Rule A — writes the value</span>
+			<span data-writer></span>
+		</div>
+		<div class="tc-rule-line">
+			<span class="tc-rule-tag">Rule B — watches for it</span>
+			<span data-watcher></span>
+		</div>
+	</div>
+
+	<div class="tc-zone-values">
+		<div class="tc-control">
+			<label>New value (&lt;par_1&gt;)</label>
+			<select data-ctl="new">
+				<option value="0" selected>0</option>
+				<option value="1">1</option>
+			</select>
+		</div>
+		<div class="tc-control">
+			<label>Old value (&lt;par_2&gt;)</label>
+			<select data-ctl="old">
+				<option value="3">3</option>
+				<option value="4">4</option>
+				<option value="2" selected>2</option>
+			</select>
+		</div>
+		<div class="tc-control tc-gate">
+			<label>triggerRules:</label>
+			<select data-ctl="gate">
+				<option value="false" selected>false (default)</option>
+				<option value="true">true</option>
+			</select>
+		</div>
+	</div>
+
+	<div class="tc-zone-result">
+		<div class="tc-breakdown" data-breakdown></div>
+	</div>
+</div>
+
+<style>
+	.tc-widget {
+		--tc-ok: #8fbf7f;
+		--tc-fail: #d98a7a;
+		--tc-gold: #e6c18a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1rem 0;
+		font-size: 14px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .tc-widget {
+		--tc-ok: #2f5233;
+		--tc-fail: #7a2e1f;
+		--tc-gold: #8a5a12;
+	}
+	.tc-widget h4 { margin: 0; padding: 10px 12px 0; font-size: 0.95em; color: var(--text); }
+	.tc-sub { margin: 0; padding: 2px 12px 8px; color: var(--muted); font-size: 0.9em; }
+
+	.tc-zone-rules { padding: 0 12px 8px; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+	.tc-rule-line {
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 6px 8px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 12px;
+		line-height: 1.6;
+		white-space: pre-wrap;
+		word-break: break-word;
+		color: var(--text);
+	}
+	.tc-rule-tag {
+		display: block;
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		color: var(--muted);
+		letter-spacing: 0.03em;
+		margin-bottom: 2px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	}
+	.tc-rule-line :global(.tc-key) { color: var(--tc-gold); }
+	.tc-rule-line :global(.tc-leaf) {
+		border-radius: 4px;
+		padding: 1px 3px;
+		transition: background 0.2s ease, color 0.2s ease;
+	}
+	.tc-rule-line :global(.tc-leaf.tc-true) { background: color-mix(in srgb, var(--tc-ok) 22%, transparent); color: var(--tc-ok); }
+	.tc-rule-line :global(.tc-leaf.tc-false) { background: color-mix(in srgb, var(--tc-fail) 18%, transparent); color: var(--tc-fail); }
+	.tc-rule-line :global(.tc-hint) { color: var(--muted); font-size: 11px; }
+
+	.tc-zone-values {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		padding: 8px 12px;
+		margin: 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		justify-content: center;
+	}
+	.tc-control { display: flex; flex-direction: column; gap: 4px; flex: 1 1 130px; max-width: 180px; margin: 0; }
+	.tc-control label {
+		margin: 0;
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	}
+	.tc-control select {
+		/* margin:0 is load-bearing, not decorative — same stray external
+		   margin-top from outside this component that hit every other
+		   widget's <select> (ConditionExplainer, ObjectsNearbyExplainer)
+		   lands here too, since it's the 2nd child of .tc-control. */
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 5px;
+		padding: 5px 6px;
+		font-size: 13px;
+		font-family: inherit;
+		width: 100%;
+	}
+	.tc-control.tc-gate label { color: var(--tc-gold); }
+	.tc-control.tc-gate select { border-color: var(--tc-gold); }
+
+	.tc-zone-result { padding: 8px 12px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+	.tc-breakdown { display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px; font-size: 12.5px; }
+	.tc-breakdown :global(.tc-group) {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		border: 1.5px solid var(--border);
+		border-radius: 7px;
+		padding: 5px 7px;
+		margin: 0;
+		transition: border-color 0.2s ease, background 0.2s ease;
+	}
+	.tc-breakdown :global(.tc-group.tc-true) { border-color: var(--tc-ok); background: color-mix(in srgb, var(--tc-ok) 10%, transparent); }
+	.tc-breakdown :global(.tc-group.tc-false) { border-color: var(--tc-fail); background: color-mix(in srgb, var(--tc-fail) 8%, transparent); }
+	.tc-breakdown :global(.tc-leaf-chip) {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		white-space: nowrap;
+	}
+	.tc-breakdown :global(.tc-leaf-chip .tc-dot) {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex: none;
+		/* flex-centered dot inside a flex row, not an absolute-position offset */
+	}
+	.tc-breakdown :global(.tc-leaf-chip.tc-true .tc-dot) { background: var(--tc-ok); }
+	.tc-breakdown :global(.tc-leaf-chip.tc-false .tc-dot) { background: var(--tc-fail); }
+	.tc-breakdown :global(.tc-top-op) {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--tc-gold);
+		text-transform: uppercase;
+		flex: none;
+	}
+</style>
+
+<script>
+	interface EvalResult {
+		newOk: boolean;
+		oldOk: boolean;
+		gateOk: boolean;
+		fires: boolean;
+	}
+
+	for (const widget of document.querySelectorAll<HTMLElement>('.tc-widget')) {
+		const writerEl = widget.querySelector<HTMLElement>('[data-writer]')!;
+		const watcherEl = widget.querySelector<HTMLElement>('[data-watcher]')!;
+		const breakdownEl = widget.querySelector<HTMLElement>('[data-breakdown]')!;
+		const newSel = widget.querySelector<HTMLSelectElement>('[data-ctl="new"]')!;
+		const oldSel = widget.querySelector<HTMLSelectElement>('[data-ctl="old"]')!;
+		const gateSel = widget.querySelector<HTMLSelectElement>('[data-ctl="gate"]')!;
+
+		const state = { newVal: 0, oldVal: 2, gate: false };
+
+		function leafSpan(text: string, ok: boolean) {
+			return '<span class="tc-leaf ' + (ok ? 'tc-true' : 'tc-false') + '">' + text + '</span>';
+		}
+
+		function evalState(): EvalResult {
+			const newOk = state.newVal === 0;
+			const oldOk = state.oldVal === 3 || state.oldVal === 4;
+			const gateOk = state.gate === true;
+			const fires = newOk && oldOk && gateOk;
+			return { newOk, oldOk, gateOk, fires };
+		}
+
+		function renderRules(r: EvalResult) {
+			// Real 2-space YAML shape, same as every fenced example on the page —
+			// not the tag-label-pushed-it-off-alignment look the prototype had.
+			writerEl.innerHTML =
+				'<span class="tc-key">- prefab:</span> piece_beehive\n' +
+				'<span class="tc-key">  type:</span> destroy\n' +
+				'<span class="tc-key">  data:</span> int, level, ' + leafSpan(String(state.newVal), r.newOk) + '\n' +
+				'<span class="tc-key">  triggerRules:</span> ' + leafSpan(String(state.gate), r.gateOk);
+
+			watcherEl.innerHTML =
+				'<span class="tc-key">- prefab:</span> piece_beehive\n' +
+				'<span class="tc-key">  type:</span> change, level ' + leafSpan('0', r.newOk) + ' ' + leafSpan('3,4', r.oldOk) +
+				'  <span class="tc-hint">(fires TO 0, FROM 3 or 4)</span>';
+		}
+
+		function leafChip(label: string, ok: boolean) {
+			return '<span class="tc-leaf-chip ' + (ok ? 'tc-true' : 'tc-false') + '"><span class="tc-dot"></span>' + label + '</span>';
+		}
+
+		function renderBreakdown(r: EvalResult) {
+			const newChip = '<div class="tc-group ' + (r.newOk ? 'tc-true' : 'tc-false') + '">' + leafChip('new = 0', r.newOk) + '</div>';
+			const oldChip = '<div class="tc-group ' + (r.oldOk ? 'tc-true' : 'tc-false') + '">' + leafChip('old in 3,4', r.oldOk) + '</div>';
+			const gateChip = '<div class="tc-group ' + (r.gateOk ? 'tc-true' : 'tc-false') + '">' + leafChip('triggerRules: true', r.gateOk) + '</div>';
+			const resultChip = '<div class="tc-group ' + (r.fires ? 'tc-true' : 'tc-false') + '">' + leafChip(r.fires ? 'FIRES' : 'SILENT', r.fires) + '</div>';
+			breakdownEl.innerHTML =
+				newChip + '<span class="tc-top-op">and</span>' + oldChip +
+				'<span class="tc-top-op">and</span>' + gateChip +
+				'<span class="tc-top-op">=</span>' + resultChip;
+		}
+
+		function render() {
+			const r = evalState();
+			renderRules(r);
+			renderBreakdown(r);
+		}
+
+		newSel.addEventListener('change', () => {
+			state.newVal = Number(newSel.value);
+			render();
+		});
+		oldSel.addEventListener('change', () => {
+			state.oldVal = Number(oldSel.value);
+			render();
+		});
+		gateSel.addEventListener('change', () => {
+			state.gate = gateSel.value === 'true';
+			render();
+		});
+
+		render();
+	}
+</script>
