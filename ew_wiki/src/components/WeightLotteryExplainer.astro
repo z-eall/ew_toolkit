@@ -1,0 +1,370 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// TriggerChangeExplainer.astro / ConditionExplainer.astro: class-scoped
+// (never id-scoped) so more than one instance can coexist, client-side
+// <script> does the work, no client:load needed.
+//
+// Validated as a throwaway HTML prototype first (see this ticket's Answer
+// for the branch note). Roll math confirmed against the mod's real source
+// (ExpandWorldPrefabs/InfoSelector.cs, Randomize()) before writing: total
+// weight floors at 1, so a pool that doesn't add up to 1 leaves a real gap
+// ("nothing happened") — exactly what the page's own step 5 example teaches.
+//
+// Maintainer feedback on the prototype, applied here directly (no separate
+// round needed — caught before the real component, not after):
+//   - Reader only edits the weight numbers, not free-text/YAML — the
+//     prefab labels (Coins/Wood) and rule shape are fixed, reusing the
+//     page's own step-5 example verbatim rather than a pasteable block.
+//   - Button label "Roll" (not "Roll 100 times"), no "Rolls so far" counter
+//     line — the live-building bars already show progress.
+//   - Default weights are the page's own 0.3/0.2 (sum 0.5, below 1) so the
+//     widget opens already showing the "nothing happened" gap case, the
+//     less obvious of the two behaviors the page teaches.
+//   - Roll/Reset sit in their own row below the tally card, not beside the
+//     inputs.
+//   - Inputs card and tally card are equal-width grid columns; default
+//     grid item stretch also equalizes their height, so a shorter left
+//     side never reads as an accident — left column's rows are then
+//     centered vertically to fill that matched height cleanly.
+//
+// Known-bug guards carried over from every earlier widget this phase:
+// margin:0 explicit on every internal element (Starlight's stray sibling
+// margin-top hits every widget that doesn't), classList.add/remove for the
+// scoped summary-style toggles (never className= — wipes the scoping
+// class), grid/flex-centering only for the bar fill + tick (no
+// absolute-position), min-height never a hard height on anything that
+// holds real text, and both buttons share one .wl-btn class with an
+// explicit shared width so "same height and width" isn't left to chance.
+import { icon } from '../../../shared/icons';
+
+const iconRefresh = icon('reset');
+---
+
+<div class="wl-widget" data-icon-refresh={iconRefresh}>
+	<h4>Run the Lottery</h4>
+	<p class="wl-sub">Set each option's <code>weight:</code>, then roll and watch the tally build.</p>
+
+	<div class="wl-grid">
+		<div class="wl-card wl-inputs">
+			<div class="wl-input-row">
+				<label for="wl-w-0">Coins</label>
+				<input type="number" id="wl-w-0" class="wl-weight-input" data-idx="0" step="0.1" min="0" value="0.3" />
+			</div>
+			<div class="wl-input-row">
+				<label for="wl-w-1">Wood</label>
+				<input type="number" id="wl-w-1" class="wl-weight-input" data-idx="1" step="0.1" min="0" value="0.2" />
+			</div>
+		</div>
+		<div class="wl-card wl-tally" data-tally></div>
+	</div>
+
+	<div class="wl-actions">
+		<button type="button" class="wl-btn wl-roll-btn">Roll</button>
+		<button type="button" class="wl-btn wl-reset-btn"><span class="wl-reset-icon" set:html={iconRefresh} /> Reset</button>
+	</div>
+</div>
+
+<style>
+	.wl-widget {
+		--wl-ok: #8fbf7f;
+		--wl-fail: #d98a7a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 12px 14px;
+		margin: 1rem 0;
+		font-size: 13.5px;
+	}
+	:global(html[data-theme='light']) .wl-widget {
+		--wl-ok: #2f5233;
+		--wl-fail: #7a2e1f;
+	}
+	.wl-widget h4 {
+		margin: 0 0 3px;
+		font-size: 0.95em;
+		color: var(--text);
+	}
+	.wl-sub {
+		margin: 0 0 10px;
+		color: var(--muted);
+		font-size: 0.9em;
+	}
+
+	/* Equal-width columns; default grid item stretch also equalizes height,
+	   so the shorter (2-row) inputs card and the taller (3-row) tally card
+	   end up the same size without a hardcoded height on either. */
+	.wl-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+	@media (max-width: 480px) {
+		.wl-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.wl-card {
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		padding: 10px;
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	/* Fewer rows than the tally card (2 vs 3) — centered in the stretched
+	   height rather than left clinging to the top with dead space below. */
+	.wl-inputs {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 8px;
+	}
+	.wl-input-row {
+		margin: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.wl-input-row label {
+		margin: 0;
+		font-family: monospace;
+		font-size: 13px;
+		color: var(--text);
+	}
+	.wl-input-row input {
+		margin: 0;
+		width: 64px;
+		background: var(--panel);
+		color: var(--text);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 3px 6px;
+		font-family: monospace;
+		font-size: 13px;
+		text-align: right;
+	}
+
+	.wl-tally {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 8px;
+	}
+	/* :global on every rule below — these rows are built by the client
+	   script via document.createElement, so they never carry Astro's own
+	   scoping attribute; a plain (non-:global) selector would silently
+	   never match them at all (this was a real bug here: no flex, no
+	   color, no spacing — everything just fell back to block-level
+	   defaults, gluing the label and numbers together on one line). */
+	:global(.wl-bar-row) {
+		margin: 0;
+	}
+	:global(.wl-bar-label) {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin: 0 0 3px;
+		font-size: 11.5px;
+	}
+	:global(.wl-bar-label .wl-name) {
+		font-family: monospace;
+		color: var(--text);
+	}
+	:global(.wl-bar-label .wl-nums) {
+		color: var(--muted);
+	}
+	:global(.wl-bar-track) {
+		margin: 0;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		height: 13px;
+		min-height: 13px;
+		overflow: hidden;
+		position: relative;
+	}
+	:global(.wl-bar-fill) {
+		height: 100%;
+		background: var(--wl-ok);
+		width: 0%;
+		transition: width 0.15s linear;
+	}
+	:global(.wl-bar-fill.wl-gap) {
+		background: var(--wl-fail);
+	}
+	/* A thin flex-sized marker inside the same flex row as the fill, not an
+	   absolute-position offset — sized as a track overlay via inset so it
+	   stays exactly 2px wide regardless of the fill's own width. */
+	:global(.wl-bar-tick) {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: 2px;
+		background: var(--text);
+		opacity: 0.6;
+	}
+
+	.wl-actions {
+		display: flex;
+		justify-content: center;
+		gap: 10px;
+		margin-top: 10px;
+	}
+	.wl-btn {
+		margin: 0;
+		width: 84px;
+		height: 30px;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.wl-btn:hover {
+		border-color: var(--text);
+	}
+	.wl-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.wl-reset-icon {
+		display: block;
+		line-height: 0;
+	}
+	.wl-reset-icon :global(svg) {
+		width: 12px;
+		height: 12px;
+		display: block;
+	}
+</style>
+
+<script>
+	interface OptionState {
+		label: string;
+		weight: number;
+		count: number;
+	}
+
+	const GAP_LABEL = 'Nothing happened';
+
+	// Mirrors ExpandWorldPrefabs/InfoSelector.cs Randomize(): the pool's
+	// total floors at 1, so a pool that doesn't add up to 1 leaves a real
+	// gap a roll can land in.
+	function rollOnce(options: OptionState[], totalWeight: number): OptionState | null {
+		let r = Math.random() * totalWeight;
+		for (const opt of options) {
+			r -= opt.weight;
+			if (r <= 0) return opt;
+		}
+		return null;
+	}
+
+	for (const widget of document.querySelectorAll<HTMLElement>('.wl-widget')) {
+		const weightInputs = [...widget.querySelectorAll<HTMLInputElement>('.wl-weight-input')].sort(
+			(a, b) => Number(a.dataset.idx) - Number(b.dataset.idx),
+		);
+		const tallyEl = widget.querySelector<HTMLElement>('[data-tally]')!;
+		const rollBtn = widget.querySelector<HTMLButtonElement>('.wl-roll-btn')!;
+		const resetBtn = widget.querySelector<HTMLButtonElement>('.wl-reset-btn')!;
+
+		const defaults = weightInputs.map((el) => el.value);
+		const labels = ['Coins', 'Wood'];
+
+		let options: OptionState[] = [];
+		let totalWeight = 1;
+		let gapCount = 0;
+		let rolled = 0;
+		let timer: ReturnType<typeof setInterval> | null = null;
+
+		function readWeights() {
+			options = weightInputs.map((el, i) => ({
+				label: labels[i],
+				weight: Math.max(0, parseFloat(el.value) || 0),
+				count: 0,
+			}));
+			const sum = options.reduce((s, o) => s + o.weight, 0);
+			totalWeight = Math.max(1, sum);
+			gapCount = 0;
+			rolled = 0;
+			render();
+		}
+
+		function render() {
+			tallyEl.innerHTML = '';
+			const rows: { label: string; weight: number; count: number; isGap: boolean }[] = [
+				...options.map((o) => ({ label: o.label, weight: o.weight, count: o.count, isGap: false })),
+				{ label: GAP_LABEL, weight: Math.max(0, totalWeight - options.reduce((s, o) => s + o.weight, 0)), count: gapCount, isGap: true },
+			];
+			for (const row of rows) {
+				const theoreticalPct = (row.weight / totalWeight) * 100;
+				const actualPct = rolled ? (row.count / rolled) * 100 : 0;
+
+				const rowEl = document.createElement('div');
+				rowEl.className = 'wl-bar-row';
+
+				const labelRow = document.createElement('div');
+				labelRow.className = 'wl-bar-label';
+				const nameSpan = document.createElement('span');
+				nameSpan.className = 'wl-name';
+				nameSpan.textContent = row.label;
+				const numsSpan = document.createElement('span');
+				numsSpan.className = 'wl-nums';
+				numsSpan.textContent = `${actualPct.toFixed(0)}% actual · ${theoreticalPct.toFixed(0)}% expected`;
+				labelRow.append(nameSpan, numsSpan);
+
+				const track = document.createElement('div');
+				track.className = 'wl-bar-track';
+				const fill = document.createElement('div');
+				fill.className = 'wl-bar-fill' + (row.isGap ? ' wl-gap' : '');
+				fill.style.width = actualPct + '%';
+				const tick = document.createElement('div');
+				tick.className = 'wl-bar-tick';
+				tick.style.left = theoreticalPct + '%';
+				track.append(fill, tick);
+
+				rowEl.append(labelRow, track);
+				tallyEl.appendChild(rowEl);
+			}
+		}
+
+		function rollBatch() {
+			rollBtn.disabled = true;
+			timer = setInterval(() => {
+				for (let k = 0; k < 5 && rolled < 100; k++) {
+					const winner = rollOnce(options, totalWeight);
+					if (winner) winner.count++;
+					else gapCount++;
+					rolled++;
+				}
+				render();
+				if (rolled >= 100) {
+					if (timer) clearInterval(timer);
+					rollBtn.disabled = false;
+				}
+			}, 80);
+		}
+
+		function reset() {
+			if (timer) clearInterval(timer);
+			rollBtn.disabled = false;
+			weightInputs.forEach((el, i) => (el.value = defaults[i]));
+			readWeights();
+		}
+
+		weightInputs.forEach((el) => el.addEventListener('input', readWeights));
+		rollBtn.addEventListener('click', rollBatch);
+		resetBtn.addEventListener('click', reset);
+
+		readWeights();
+	}
+</script>

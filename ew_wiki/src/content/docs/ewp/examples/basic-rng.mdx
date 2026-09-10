@@ -6,6 +6,7 @@ complexity: beginner
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
+import WeightLotteryExplainer from '../../../../components/WeightLotteryExplainer.astro';
 
 Every rule in [Your First Script](/ew_wiki/ewp/examples/first-script/) fired every single time its trigger happened. This page covers three rule-level fields that change that — `chance:`, `weight:`, and `fallback:` — then a compact variant that nests the same idea inside a `spawn:` list.
 
@@ -104,6 +105,8 @@ These examples are written to teach the pattern, not pulled from a real server's
    <Aside type="tip">
    This is the key difference from `chance:`: two independent `chance: 0.3` and `chance: 0.2` rolls could both succeed, both fail, or either one. Two `weight:` rules can never both succeed — and here, more often than not, neither does.
    </Aside>
+
+   <WeightLotteryExplainer />
 
 6. **Variant: `chance:` and `weight:` nested inside `spawn:`**
 
