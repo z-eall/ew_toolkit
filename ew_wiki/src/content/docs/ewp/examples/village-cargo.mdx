@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import WorldLevelDialExplainer from '../../../../components/WorldLevelDialExplainer.astro';
 
 This page ports the other half of a real, live server's village-progression script: a real-world-clock timer that delivers cargo shipments to villages, using a `weight:` built from a live counter instead of a fixed number.
 
@@ -15,6 +16,8 @@ The *mechanism* is what's being taught here, not a guarantee that every field na
 <Aside type="tip">
 **Part of a bigger system.** This page, [World Boss Progression](/ew_wiki/ewp/examples/world-progression/), and [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show a boss kill (World Boss Progression) widen which villages and how much cargo this page can deliver, at the same time it's unlocking crafting stations on Auto-upgrade Stations.
 </Aside>
+
+<WorldLevelDialExplainer defaultTab="cargo" />
 
 ## A weight built from a live counter
 

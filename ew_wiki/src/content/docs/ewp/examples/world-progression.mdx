@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import WorldLevelDialExplainer from '../../../../components/WorldLevelDialExplainer.astro';
 
 Some servers want more than "kill the boss, get the loot" — they want killing a boss to *open something up*: a physical barrier gone, a number the rest of the script pack can check forever after. This page walks through a real system that does exactly that for Valheim's seven world bosses, built from pieces you already know — [`data:`](/ew_wiki/ewp/concepts/basic-data/), [functions](/ew_wiki/ewp/concepts/basic-functions/), and [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) — plus one data.yaml entry kind this wiki hasn't covered yet.
 
@@ -15,6 +16,8 @@ The two rules and the data below are trimmed to just the progression-ward mechan
 <Aside type="tip">
 **Part of a bigger system.** This page, [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/), and [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show one boss kill here unlocking crafting stations *and* raising the cargo ceiling, all from the one number this page writes.
 </Aside>
+
+<WorldLevelDialExplainer defaultTab="progression" />
 
 ## What it builds
 
