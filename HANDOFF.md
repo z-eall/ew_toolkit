@@ -1,10 +1,10 @@
 # Handoff
 
-Last updated: 2026-09-10, end of the session that closed [Lottery widget](.scratch/ew-wiki-real-build/issues/21-widget-basic-rng-lottery.md) (wayfinder ticket 21 on the [Ew Wiki Real Build map](.scratch/ew-wiki-real-build/map.md)).
+Last updated: 2026-09-10, end of the session that closed [World-level dial widget](.scratch/ew-wiki-real-build/issues/22-widget-world-level-dial.md) (wayfinder ticket 22 on the [Ew Wiki Real Build map](.scratch/ew-wiki-real-build/map.md)).
 
 ## Where things stand
 
-The `ew_wiki` interactive-widget phase (map Notes, "tickets 17-22") is chained `17→18→19→20→21→22` via `Blocked by`, one ticket unblocks at a time on purpose — **never start the next one without the maintainer's go-ahead**, even though the chain is now mechanically unblocked. Built and closed so far: 17 (Who's nearby), 18 (Expression checker), 19 (Trigger-change), 20 (Nesting-peel), 21 (Lottery). **Next up: [ticket 22, the world-level dial widget](.scratch/ew-wiki-real-build/issues/22-widget-world-level-dial.md)** — the last of this widget phase. Do not start it without a fresh maintainer go-ahead, per the same hard sequencing constraint.
+The `ew_wiki` interactive-widget phase (map Notes, "tickets 17-22") is **fully closed**: 17 (Who's nearby), 18 (Expression checker), 19 (Trigger-change), 20 (Nesting-peel), 21 (Lottery), 22 (World-level dial) — all built, wired in, and build-verified. No further widget ticket remains on the map. **Next up: nothing ticketed yet** — check the map's "Not yet specified" section (Phase 2 content, WEC-as-its-own-component, Reference/Troubleshooting sections) for what's next in scope, or wait for the maintainer to name the next destination.
 
 Read the map first (`.scratch/ew-wiki-real-build/map.md`) — Decisions-so-far has a one-line gist + link for every closed ticket, Notes has the standing widget-phase rules. This file is a distilled supplement for the widget-building pattern specifically, not a replacement for the map.
 
