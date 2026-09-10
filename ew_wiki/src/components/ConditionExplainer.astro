@@ -1,0 +1,353 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// FilterLimitExplainer.astro / ObjectsNearbyExplainer.astro: class-scoped
+// (not id-scoped) so more than one instance can coexist, client-side
+// <script> does the evaluation, no client:load needed.
+//
+// Validated as a throwaway HTML prototype first (4 rounds on the
+// maintainer's feedback — see this ticket's Answer for the branch note).
+// Applies the 4 process rules from ticket 17's own gap (see
+// feedback_widget_prototype_to_build_gap memory): built and tested inside
+// the real page from round 1, no hardcoded heights (content here is fixed
+// length so none are needed), flex-centered dots/chips instead of
+// absolute-position hacks, spacing kept deliberate from the start.
+//
+// Key mechanic this widget exists to make concrete: EWP's condition:
+// evaluates without parentheses in a real default order (not > and > xor >
+// or, confirmed against EWP's own ConditionsTests.cs — scripting.md's prose
+// never states it). The "Grouping" control keeps every other value fixed
+// and only changes where the parentheses sit, so the reader can watch the
+// exact same 3 checks land on a different PASS/FAIL depending only on
+// grouping — the thing prose alone struggles to make click.
+---
+
+<div class="ce-widget">
+	<h4>Try it</h4>
+	<p class="ce-sub">Switch "Grouping" to see parentheses change which order the condition: evaluates in.</p>
+
+	<div class="ce-zone-condition">
+		<div class="ce-expr" data-expr></div>
+		<div class="ce-precedence-note">
+			<strong>Why the result can flip:</strong> left ungrouped, EWP evaluates <code>and</code> before <code>or</code> (full order: <code>not</code> &gt; <code>and</code> &gt; <code>xor</code> &gt; <code>or</code>). Wrapping a different pair in parentheses forces that pair to resolve first instead — same three checks, same values, different answer.
+		</div>
+	</div>
+
+	<div class="ce-zone-values">
+		<div class="ce-control">
+			<label>&lt;biome&gt;</label>
+			<select data-ctl="biome">
+				<option value="Mountain" selected>Mountain</option>
+				<option value="DeepNorth">DeepNorth</option>
+				<option value="Meadows">Meadows</option>
+				<option value="BlackForest">BlackForest</option>
+			</select>
+		</div>
+		<div class="ce-control">
+			<label>&lt;int_level&gt;</label>
+			<select data-ctl="level">
+				<option value="1" selected>1 (no star)</option>
+				<option value="2">2 (1 star)</option>
+				<option value="3">3 (2 star)</option>
+			</select>
+		</div>
+		<div class="ce-control">
+			<label>&lt;globalkey_defeated_dvergr=0&gt;</label>
+			<select data-ctl="key">
+				<option value="0" selected>not set (0)</option>
+				<option value="1">set (1)</option>
+			</select>
+		</div>
+		<div class="ce-control ce-grouping">
+			<label>Grouping</label>
+			<select data-ctl="grouping">
+				<option value="default" selected>No parentheses (default order)</option>
+				<option value="grouped">(biome or level) first</option>
+			</select>
+		</div>
+	</div>
+
+	<div class="ce-zone-result">
+		<div class="ce-breakdown" data-breakdown></div>
+	</div>
+</div>
+
+<style>
+	.ce-widget {
+		--ce-ok: #8fbf7f;
+		--ce-fail: #d98a7a;
+		--ce-gold: #e6c18a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1.25rem 0;
+		font-size: 14px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .ce-widget {
+		/* same fix pattern as FilterLimitExplainer/ObjectsNearbyExplainer's own
+		   light-mode overrides — the dark-mode pale tones nearly vanish on this
+		   theme's tan background. */
+		--ce-ok: #2f5233;
+		--ce-fail: #7a2e1f;
+		--ce-gold: #8a5a12;
+	}
+	.ce-widget h4 {
+		margin: 0;
+		padding: 10px 14px 0;
+		font-size: 0.95em;
+		color: var(--text);
+	}
+	.ce-sub {
+		margin: 0;
+		padding: 2px 14px 10px;
+		color: var(--muted);
+		font-size: 0.9em;
+	}
+
+	.ce-zone-condition { padding: 0 14px 10px; }
+	.ce-expr {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 8px 10px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 12.5px;
+		line-height: 1.6;
+		white-space: pre-wrap;
+		word-break: break-word;
+		color: var(--text);
+	}
+	.ce-expr :global(.ce-key) { color: var(--ce-gold); }
+	.ce-expr :global(.ce-leaf) {
+		border-radius: 4px;
+		padding: 1px 3px;
+		transition: background 0.2s ease, color 0.2s ease;
+	}
+	.ce-expr :global(.ce-leaf.ce-true) { background: color-mix(in srgb, var(--ce-ok) 22%, transparent); color: var(--ce-ok); }
+	.ce-expr :global(.ce-leaf.ce-false) { background: color-mix(in srgb, var(--ce-fail) 18%, transparent); color: var(--ce-fail); }
+	.ce-expr :global(.ce-op) { color: var(--text); font-weight: 700; }
+	.ce-expr :global(.ce-paren) { color: var(--ce-gold); font-weight: 700; }
+
+	.ce-precedence-note {
+		margin: 8px 0 0;
+		padding: 6px 10px;
+		border-left: 3px solid var(--ce-gold);
+		background: color-mix(in srgb, var(--ce-gold) 10%, transparent);
+		font-size: 11.5px;
+		color: var(--muted);
+		border-radius: 0 4px 4px 0;
+		line-height: 1.4;
+	}
+	.ce-precedence-note strong { color: var(--text); }
+	.ce-precedence-note code {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--ce-gold);
+		font-weight: 700;
+		padding: 0 4px;
+		border-radius: 3px;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 11px;
+	}
+
+	.ce-zone-values {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 14px;
+		padding: 10px 14px;
+		margin: 0;
+		border-top: 1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+		justify-content: center;
+	}
+	.ce-control {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1 1 150px;
+		max-width: 200px;
+		margin: 0;
+	}
+	.ce-control label {
+		font-size: 11.5px;
+		font-weight: 600;
+		color: var(--muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	}
+	.ce-control select {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 5px;
+		padding: 5px 6px;
+		font-size: 13px;
+		font-family: inherit;
+		width: 100%;
+	}
+	.ce-control.ce-grouping {
+		/* its own option text ("No parentheses (default order)") is the longest
+		   of the 4 controls — needs more room than the shared 200px cap or it
+		   clips on the real page's narrower column. */
+		flex-basis: 220px;
+		max-width: 260px;
+	}
+	.ce-control.ce-grouping label { color: var(--ce-gold); }
+	.ce-control.ce-grouping select { border-color: var(--ce-gold); }
+
+	.ce-zone-result {
+		padding: 10px 14px;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.ce-breakdown {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+		font-size: 12.5px;
+	}
+	.ce-breakdown :global(.ce-group) {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		border: 1.5px solid var(--border);
+		border-radius: 7px;
+		padding: 6px 8px;
+		margin: 0;
+		transition: border-color 0.2s ease, background 0.2s ease;
+	}
+	.ce-breakdown :global(.ce-group.ce-true) { border-color: var(--ce-ok); background: color-mix(in srgb, var(--ce-ok) 10%, transparent); }
+	.ce-breakdown :global(.ce-group.ce-false) { border-color: var(--ce-fail); background: color-mix(in srgb, var(--ce-fail) 8%, transparent); }
+	.ce-breakdown :global(.ce-leaf-chip) {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		white-space: nowrap;
+	}
+	.ce-breakdown :global(.ce-leaf-chip .ce-dot) {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex: none;
+		/* flex-centered dot inside a flex row, not an absolute-position offset */
+	}
+	.ce-breakdown :global(.ce-leaf-chip.ce-true .ce-dot) { background: var(--ce-ok); }
+	.ce-breakdown :global(.ce-leaf-chip.ce-false .ce-dot) { background: var(--ce-fail); }
+	.ce-breakdown :global(.ce-inline-op) {
+		font-size: 11px;
+		font-weight: 700;
+		color: var(--muted);
+		text-transform: uppercase;
+	}
+	.ce-breakdown :global(.ce-top-op) {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--ce-gold);
+		text-transform: uppercase;
+		flex: none;
+	}
+</style>
+
+<script>
+	interface EvalResult {
+		biomeOk: boolean;
+		levelOk: boolean;
+		keyOk: boolean;
+		overall: boolean;
+	}
+
+	for (const widget of document.querySelectorAll<HTMLElement>('.ce-widget')) {
+		const exprEl = widget.querySelector<HTMLElement>('[data-expr]')!;
+		const breakdownEl = widget.querySelector<HTMLElement>('[data-breakdown]')!;
+		const biomeSel = widget.querySelector<HTMLSelectElement>('[data-ctl="biome"]')!;
+		const levelSel = widget.querySelector<HTMLSelectElement>('[data-ctl="level"]')!;
+		const keySel = widget.querySelector<HTMLSelectElement>('[data-ctl="key"]')!;
+		const groupingSel = widget.querySelector<HTMLSelectElement>('[data-ctl="grouping"]')!;
+
+		const state = { biome: 'Mountain', level: 1, key: 0, grouping: 'default' as 'default' | 'grouped' };
+
+		function evalState(): EvalResult {
+			const biomeOk = state.biome === 'Mountain' || state.biome === 'DeepNorth';
+			const levelOk = state.level >= 2;
+			const keyOk = state.key === 1;
+			// default order: `and` binds tighter than `or` -> A or (B and C)
+			// grouped: explicit parens force (A or B) and C instead
+			const overall = state.grouping === 'default' ? biomeOk || (levelOk && keyOk) : (biomeOk || levelOk) && keyOk;
+			return { biomeOk, levelOk, keyOk, overall };
+		}
+
+		function leafSpan(text: string, ok: boolean) {
+			return '<span class="ce-leaf ' + (ok ? 'ce-true' : 'ce-false') + '">' + text + '</span>';
+		}
+
+		function renderExpr(r: EvalResult) {
+			const biome = leafSpan('&lt;biome&gt; in Mountain,DeepNorth', r.biomeOk);
+			const level = leafSpan('&lt;int_level&gt; &gt;= 2', r.levelOk);
+			const key = leafSpan('&lt;globalkey_defeated_dvergr=0&gt; = 1', r.keyOk);
+			let body: string;
+			if (state.grouping === 'default') {
+				body = biome + ' <span class="ce-op">or</span> ' + level + ' <span class="ce-op">and</span> ' + key;
+			} else {
+				body =
+					'<span class="ce-paren">(</span>' + biome + ' <span class="ce-op">or</span> ' + level + '<span class="ce-paren">)</span> ' +
+					'<span class="ce-op">and</span> ' + key;
+			}
+			exprEl.innerHTML = '<span class="ce-key">condition:</span> ' + body;
+		}
+
+		function leafChip(label: string, ok: boolean) {
+			return '<span class="ce-leaf-chip ' + (ok ? 'ce-true' : 'ce-false') + '"><span class="ce-dot"></span>' + label + '</span>';
+		}
+
+		function renderBreakdown(r: EvalResult) {
+			const biomeChip = leafChip('biome: ' + state.biome, r.biomeOk);
+			const levelChip = leafChip('level &gt;= 2', r.levelOk);
+			const keyChip = leafChip('key = 1', r.keyOk);
+			let html: string;
+			if (state.grouping === 'default') {
+				const rightOk = r.levelOk && r.keyOk;
+				html =
+					'<div class="ce-group ' + (r.biomeOk ? 'ce-true' : 'ce-false') + '">' + biomeChip + '</div>' +
+					'<span class="ce-top-op">or</span>' +
+					'<div class="ce-group ' + (rightOk ? 'ce-true' : 'ce-false') + '">' + levelChip + '<span class="ce-inline-op">and</span>' + keyChip + '</div>';
+			} else {
+				const leftOk = r.biomeOk || r.levelOk;
+				html =
+					'<div class="ce-group ' + (leftOk ? 'ce-true' : 'ce-false') + '">' + biomeChip + '<span class="ce-inline-op">or</span>' + levelChip + '</div>' +
+					'<span class="ce-top-op">and</span>' +
+					'<div class="ce-group ' + (r.keyOk ? 'ce-true' : 'ce-false') + '">' + keyChip + '</div>';
+			}
+			html += '<span class="ce-top-op">=</span><div class="ce-group ' + (r.overall ? 'ce-true' : 'ce-false') + '">' + leafChip(r.overall ? 'PASS' : 'FAIL', r.overall) + '</div>';
+			breakdownEl.innerHTML = html;
+		}
+
+		function render() {
+			const r = evalState();
+			renderExpr(r);
+			renderBreakdown(r);
+		}
+
+		biomeSel.addEventListener('change', () => {
+			state.biome = biomeSel.value;
+			render();
+		});
+		levelSel.addEventListener('change', () => {
+			state.level = Number(levelSel.value);
+			render();
+		});
+		keySel.addEventListener('change', () => {
+			state.key = Number(keySel.value);
+			render();
+		});
+		groupingSel.addEventListener('change', () => {
+			state.grouping = groupingSel.value as 'default' | 'grouped';
+			render();
+		});
+
+		render();
+	}
+</script>
