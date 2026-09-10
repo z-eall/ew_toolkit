@@ -197,7 +197,7 @@ Pick the marker prefab carefully: it needs to be real (any name typed here has t
 
 ## Case study - tracking day and night as global keys
 
-Valheim's own night doesn't start at an even hour — it begins at the in-game clock's `20:24` (hour 20, minute 24), and day begins at `3:36` (hour 3, minute 36), both confirmed against the real-world 21-minute-day/9-minute-night split on the [Valheim Wiki's Environment page](https://valheim.fandom.com/wiki/Environment). `type: time` can turn those two exact moments into global keys any other rule, command, or system can check — not just the rules on this page:
+Valheim's own night doesn't start at an even hour — it begins at the in-game clock's `20:24` (hour 20, minute 24), and day begins at `3:36` (hour 3, minute 36), matching the real-world 21-minute-day/9-minute-night split (see the [Valheim Wiki's Environment page](https://valheim.fandom.com/wiki/Environment) for the full day/night cycle breakdown). `type: time` can turn those two exact moments into global keys any other rule, command, or system can check — not just the rules on this page:
 
 ```yaml
 - type: time, minute 24;59 20   # any minute from :24 onward, but only during hour 20 (8pm) — the window night can start in

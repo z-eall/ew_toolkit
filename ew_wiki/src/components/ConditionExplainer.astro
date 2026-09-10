@@ -104,8 +104,9 @@
 		font-size: 0.9em;
 	}
 
-	.ce-zone-condition { padding: 0 14px 10px; }
+	.ce-zone-condition { padding: 0 14px 10px; margin: 0; }
 	.ce-expr {
+		margin: 0;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		border-radius: 6px;
@@ -169,12 +170,20 @@
 		margin: 0;
 	}
 	.ce-control label {
+		margin: 0;
 		font-size: 11.5px;
 		font-weight: 600;
 		color: var(--muted);
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	}
 	.ce-control select {
+		/* margin:0 is load-bearing, not decorative — same stray external
+		   margin-top from outside this component that hit ticket 17's buttons
+		   and condition-panel (see that ticket's Answer) lands on this select
+		   too, since it's the 2nd child of .ce-control. Without it, the real
+		   gap between label and select was noticeably bigger than the
+		   intended 4px .ce-control gap. */
+		margin: 0;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		color: var(--text);

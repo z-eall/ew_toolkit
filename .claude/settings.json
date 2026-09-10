@@ -28,6 +28,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-doc-example-schema.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-reader-internal-bookkeeping.cjs"
           }
         ]
       }

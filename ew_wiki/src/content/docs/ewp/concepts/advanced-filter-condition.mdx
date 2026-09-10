@@ -15,7 +15,7 @@ This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuus
 
 ## The operators
 
-Operators must be separated by spaces to be recognized:
+Operators must be separated by spaces to be recognized, and are case-insensitive — `AND`, `And`, and `and` all work the same:
 
 | Operator | Checks |
 |---|---|
@@ -30,17 +30,9 @@ Operators must be separated by spaces to be recognized:
 
 <Aside type="caution">
 `in`/`not in` isn't a strict list-membership check — it looks for the left side as a **substring** anywhere in the right side's text, case-insensitive. `Wolf in AlphaWolf` is true, and so is `wolf in wolfpack,boar`, even though `wolf` is only part of `wolfpack`, not its own list entry. Keep list entries spelled far enough apart that one can't hide inside another, or use `=`/`!=` when only one exact value is possible.
-Confirmed from EWP's own test suite ([`ConditionsTests.cs`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/ExpandWorldPrefabs.Tests/ConditionsTests.cs), `Evaluate_InSupportsCaseInsensitiveContainsBehavior`) — `scripting.md`'s prose describes it as a list check, not a substring one.
 </Aside>
 
-<Aside type="note">
-A few more precise rules confirmed from that same test suite, since `scripting.md`'s prose doesn't spell them out:
-- Every operator keyword is case-insensitive — `AND`, `And`, `and` all work the same.
-- `=`/`!=` compare text case-insensitively too (`Player = player` is true); numbers compare numerically (`1 = 1.0` is true).
-- `>`/`<`/`>=`/`<=` need both sides to be numbers — a non-numeric side quietly evaluates to `false` rather than raising an error.
-- A side counts as valid ("truthy") unless it's empty, `0`, or the literal text `false` (any casing) — any other non-empty text counts as valid, including the literal text `true`.
-- Only `=`/`!=` are accepted — `==` and `<>` are rejected as invalid `condition:` syntax, not silently treated as aliases.
-</Aside>
+`=`/`!=` compare text case-insensitively (`Player = player` is true) and numbers numerically (`1 = 1.0` is true) — only `=`/`!=` themselves are valid, `==` and `<>` aren't recognized. `>`/`<`/`>=`/`<=` need both sides to be numbers; a non-numeric side quietly evaluates to `false` rather than raising an error. A side counts as valid ("truthy") unless it's empty, `0`, or the literal text `false` (any casing) — any other non-empty text counts as valid, including the literal text `true`.
 
 Left unparenthesized, operators evaluate in this order — first to last:
 
@@ -50,10 +42,6 @@ Left unparenthesized, operators evaluate in this order — first to last:
 4. `or`
 
 Parentheses override that order, e.g. `(a or b) and c` forces the `or` to resolve first. They're not required to make an expression correct — only to change the default order, or to make a long expression easier to read.
-
-<Aside type="note">
-Confirmed directly from EWP's own test suite ([`ConditionsTests.cs`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/ExpandWorldPrefabs.Tests/ConditionsTests.cs), `Evaluate_UsesLogicalPrecedence`) — `scripting.md`'s prose doesn't state this order itself.
-</Aside>
 
 <ConditionExplainer />
 
