@@ -1,0 +1,32 @@
+# Handoff
+
+Last updated: 2026-09-10, end of the session that closed [Nesting-peel widget](.scratch/ew-wiki-real-build/issues/20-widget-advanced-functions-nesting.md) (wayfinder ticket 20 on the [Ew Wiki Real Build map](.scratch/ew-wiki-real-build/map.md)).
+
+## Where things stand
+
+The `ew_wiki` interactive-widget phase (map Notes, "tickets 17-22") is chained `17→18→19→20→21→22` via `Blocked by`, one ticket unblocks at a time on purpose — **never start the next one without the maintainer's go-ahead**, even though the chain is now mechanically unblocked. Built and closed so far: 17 (Who's nearby), 18 (Expression checker), 19 (Trigger-change), 20 (Nesting-peel). **Next up: [ticket 21, the lottery/RNG widget](.scratch/ew-wiki-real-build/issues/21-widget-basic-rng-lottery.md)** for `basic-rng.mdx`, then 22 (world-level dial).
+
+Read the map first (`.scratch/ew-wiki-real-build/map.md`) — Decisions-so-far has a one-line gist + link for every closed ticket, Notes has the standing widget-phase rules. This file is a distilled supplement for the widget-building pattern specifically, not a replacement for the map.
+
+## The widget-building standard (read before starting ticket 21 or any later one)
+
+1. **Prototype first**, via the `ew_toolkit:prototype` skill, when the interaction isn't already obvious from an existing widget's precedent. Land it as a standalone HTML file on its own throwaway branch (`prototype/<name>-widget`, file at `.scratch/ew-wiki-real-build/prototypes/<name>-vN-prototype.html`) — never on `main`. Show it to the maintainer and wait for go-ahead before building the real component.
+2. **Real component**: plain `.astro`, no UI framework, styles `class`-scoped (never `id`-scoped, so multiple instances can coexist on a page), client-side `<script>`, no `client:load` needed. Reuse the closest existing widget's construction pattern rather than inventing a new one — `TriggerChangeExplainer.astro` (ticket 19) is the tightest/most-refined example as of ticket 20.
+3. **Wire in** right after the page's own relevant paragraph, verify the build clean via `.scratch/ew-wiki-real-build/build-check.sh` (WSL only — see WSL gotcha below), and check it live in the Browser pane at both desktop and mobile width before calling it done.
+4. **Close the ticket**: resolution comment on the ticket (`## Answer`), `Status: resolved`, then a one-line gist + link appended to the map's Decisions-so-far. Log every maintainer follow-up round in the ticket's own Answer, in order — that history is what lets a future session (or a human) see why the code looks the way it does.
+
+## Errors already made once — don't remake them
+
+- **Starlight's own global CSS gives non-first siblings a stray `margin-top` (commonly 16px)** inside a widget — hit `<select>`s, checkbox rows, and control buttons across tickets 17, 18, 19, and 20. Fix: `margin: 0` explicitly on every widget-internal element; don't assume browser/framework defaults are clean. If two sibling controls look misaligned, check `getBoundingClientRect()`/computed `margin` before guessing at a height or padding cause.
+- **Never overwrite a server-rendered, Astro-scoped element's `className =` wholesale** — it wipes the scoping class and silently breaks every scoped CSS rule targeting it. Use `classList.add/remove/toggle`.
+- **No absolute-position hacks for icons/glyphs/dots** — use grid or flex-centered layout.
+- **A hard `height` + `overflow:hidden` used to "reserve space and stay static" will silently clip real content** the moment text wraps further than assumed — happened twice on this same widget (narration/result zones in round 1, the expression zone in round 3) once real variable-length content — like a reader-chosen name — got embedded. Use `min-height` (a floor) instead, and confirm by actually resizing to mobile width and reading the text, not by trusting a desktop screenshot.
+- **A UI regression can hide inside an otherwise-good feedback round.** Swapping the nesting-peel widget's free-text input for a dropdown (a maintainer-requested change) silently reverted the innermost function call's display back to a generic placeholder instead of the prototype's validated "show the real value" behavior. When reworking one part of a widget on feedback, re-diff the whole render path against the last-validated prototype, not just the specific thing that was asked to change.
+- **Never let internal reasoning/source-citing language leak into reader-facing widget or page text** ("per the C# source", "confirmed via X", naming an internal test file) — a standing house-style violation caught twice on `advanced-filter-condition.mdx`/`advanced-triggers-change.mdx`. `guard-reader-internal-bookkeeping.cjs` catches new instances of this automatically, but writing the reader text carefully in the first place is still cheaper.
+- **Confirm mechanics against real source before encoding them in a widget** — per `ew_wiki/AGENTS.md`'s source-verify checklist. Ticket 21 already carries its own reminder not to assume a naive proportional-weight formula for the RNG widget without checking; this generalizes to any widget that models game/mod behavior.
+- **WSL's `astro dev` watcher is unreliable against `/mnt/c` paths and frequently leaves a stale process bound to the port from an earlier session** (see `project_ew_wiki_astro_dev_stale_watcher` memory). Before starting a dev-server preview: `wsl.exe -d Ubuntu -- bash -lc "pkill -9 -f 'astro dev'; sleep 1; ps aux | grep astro | grep -v grep"`, confirm zero processes remain, *then* start fresh. After any CSS/markup edit, curl-verify the served HTML server-side (`wsl.exe -d Ubuntu -- bash -lc "curl -s http://localhost:4322/<path>/ | grep -c '<your-new-class-or-string>'"`) before trusting what the browser renders — HMR has silently served stale content more than once this phase.
+- **Spacing/padding must be measured against the widget's own actual content**, not copied verbatim from another widget's numbers — each widget's content density differs enough that borrowed padding reads as visibly oversized or cramped.
+
+## Dual-agent note
+
+If a Cursor session picks this up instead of Claude Code: pull first, and if you touch `AGENTS.md`/`CLAUDE.md`/`CONTEXT.md`/`docs/agents/` in the meantime, merge that change into the other branch before ending the session — don't wait for the normal commit-push-pull cycle (per `ew_toolkit/AGENTS.md`'s standing-rule-sync rule).
