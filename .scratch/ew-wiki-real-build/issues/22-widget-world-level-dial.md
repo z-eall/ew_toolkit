@@ -31,3 +31,13 @@ Verified live in the Browser pane: all 3 real pages open the widget on their own
 Real component: [`WorldLevelDialExplainer.astro`](../../../ew_wiki/src/components/WorldLevelDialExplainer.astro), wired into [`world-progression.mdx`](../../../ew_wiki/src/content/docs/ewp/examples/world-progression.mdx), [`auto-upgrade-station.mdx`](../../../ew_wiki/src/content/docs/ewp/examples/auto-upgrade-station.mdx), and [`village-cargo.mdx`](../../../ew_wiki/src/content/docs/ewp/examples/village-cargo.mdx), each right after its own "Part of a bigger system" tip.
 
 This closes the interactive-widget phase (tickets 17–22) — no further widget ticket remains on this map.
+
+## Follow-up round 2: 3-column tables, drop the feast section
+
+Maintainer feedback after the first live pass: each tab's result table only filled about half the box left-to-right (browser auto-sizing columns to their content instead of the box's full width), and asked for the columns to line up with the 3 tab buttons above instead. Clarified via `AskUserQuestion` that this meant column *widths*, not a row-layout change — my first guess (a "previous/current/next" 3-card layout) was wrong.
+
+Applied `table-layout: fixed` plus explicit width classes (`wld-col-1of3` = 33.3%, `wld-col-2of3` = 66.7%) to every result table, so column boundaries now match the 3 buttons' own equal thirds instead of bunching to whatever width the content happened to need. Auto-upgrade Stations only has 2 real columns ("Requires level" / "Unlocked pieces"); rather than leave a blank middle column to force 3, split it 1/3 + 2/3 so column 1 matches button 1's width and column 2 spans buttons 2+3's combined width — maintainer explicitly invited an alternative here rather than a literal col-1/col-3 split.
+
+Also dropped the Auto-upgrade Stations tab's feast-table section (Base Camp Feast / Command House Feast) entirely per feedback — not important for this dial demo; the real page still covers it in prose.
+
+Verified live: all 3 tabs' table columns now line up with the tab buttons and fill the box edge to edge, mobile width (375px) still stacks/wraps cleanly with the same column proportions. Build verified clean, 33 pages.
