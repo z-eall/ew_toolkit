@@ -6,7 +6,7 @@ complexity: intermediate
 
 import { Aside } from '@astrojs/starlight/components';
 
-[Start Writing a Script](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) already used [`spawn:`](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) to drop a Coins pile when a Neck dies. This page goes deeper on `spawn:` itself, then introduces its close sibling `swap:` — same shape, very different effect.
+[Start Writing a Script](/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) already used [`spawn:`](/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) to drop a Coins pile when a Neck dies. This page goes deeper on `spawn:` itself, then introduces its close sibling `swap:` — same shape, very different effect.
 
 ## `spawn:`, beyond the bare minimum
 
@@ -24,7 +24,7 @@ The beginner example only used `prefab:`. A spawn entry can carry a lot more:
 
 ## Turning a spawn list into a loot table: `chance` and `weight`
 
-You already met `chance:` and `weight:` in [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) — `chance:` rolls each entry independently, `weight:` picks exactly one entry from a shared pool. Both work the same way nested inside a `spawn:` list here.
+You already met `chance:` and `weight:` in [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) — `chance:` rolls each entry independently, `weight:` picks exactly one entry from a shared pool. Both work the same way nested inside a `spawn:` list here.
 
 One thing that page doesn't cover: `chance` and `weight` can combine on the same entry — `weight:` picks which one candidate is in the running, then that candidate still has to pass its own `chance:` roll:
 
@@ -67,7 +67,7 @@ A few more `spawn:` fields exist, each big enough to earn a dedicated page once 
 - `owner:` — overrides who the spawned object counts as belonging to, tied into the player-identity functions covered later.
 
 <Aside type="tip">
-These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Understanding RPC](/ew_wiki/ewp/concepts/rpcs/) too — same mechanics, different action.
+These same `chance:`/`weight:`/`delay:`/`repeat:` fields power [Understanding RPC](/ew_wiki/ewp/concepts/basic-rpcs/) too — same mechanics, different action.
 </Aside>
 
 ## `swap:`: same shape, replaces instead of adds

@@ -1,0 +1,154 @@
+---
+title: "Advanced Filter: Plurals"
+description: "Checking more than one condition at once with the plural filters:/bannedFilters:, standalone and nested inside objects:/poke:."
+complexity: advanced
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
+import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
+import FilterLimitExplainer from '../../../../components/FilterLimitExplainer.astro';
+
+[`filter:`/`bannedFilter:`](/ew_wiki/ewp/concepts/basic-filter/) each hold exactly one check. `filters:`/`bannedFilters:` (plural) hold a *list* of them — for whenever a single check isn't enough, on the rule's own object or on something nearby.
+
+<Aside type="note">
+This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the "Filters" section.
+</Aside>
+
+## Checking more than one condition at once: `filters:` / `bannedFilters:`
+
+Just like `filter:`, `filters:` works directly on a rule's own top-level fields — it doesn't need `objects:` or `poke:` to be useful. Each list item uses the same format as `filter:` — either `type, key, value` or a saved data entry's name — with an optional trailing weight:
+
+```yaml
+- prefab: Boar
+  type: create
+  filters:
+  - int, level, 2;3   # starred
+  - int, tamed, 0      # still wild, not already tamed
+  data: strongBoar
+```
+
+<StrongBoarData />
+
+Both listed checks must match for this rule to apply `strongBoar` — something a single `filter:` can't express, since it only ever holds one condition. `filter: int, level, 2;3` alone couldn't also require `int, tamed, 0` in the same breath.
+
+### `filterLimit:` with `filters:` alone — how many must match
+
+Left unset, every entry in `filters:` must match — it behaves like a chain of ANDs. `filterLimit:` changes that to a specific count, the same way `objectsLimit:` does for `objects:`:
+
+```yaml
+filterLimit: 2  # only 2 of the 3 listed filters need to match
+filters:
+- int, level, 2;3
+- int, tamed, 0
+- string, TamedName, *(S)*  # weight defaults to 1
+```
+
+Give an item its own weight (`type, key, value, weight`, or `name, weight`) to make it count for more than 1 toward that limit:
+
+```yaml
+filterLimit: 2
+filters:
+- int, level, 3, 2    # a 2-star (max) Boar alone already meets the limit
+- int, tamed, 0
+```
+
+### `filterLimit:` with `bannedFilters:` alone — how many are tolerated
+
+`bannedFilters:` mirrors `filters:` exactly, just in the opposite direction — matching items count *against* `filterLimit:` instead of for it. Left unset, `filterLimit:` defaults to "how many `filters:` items exist" — zero, if there are none at all — so with no `filters:` list, a single `bannedFilters:` match already drops below that default and fails the entry:
+
+```yaml
+- prefab: Boar
+  type: create
+  bannedFilters:
+  - int, tamed, 1     # skip a Boar that's already tamed
+  - bool, boss, true   # skip a boss-tier Boar
+  data: strongBoar
+```
+
+Either condition matching is enough to block `strongBoar` here — same outcome as two separate `bannedFilter:` rules, just combined into one entry.
+
+Give a `bannedFilters:` item its own smaller weight, and pull `filterLimit:` down to match, to tolerate a small number of matches instead of blocking on the first one:
+
+```yaml
+filterLimit: -1   # tolerate one matching bannedFilters item, but not two
+bannedFilters:
+- int, tamed, 1, 1     # custom weight 1, not the default 10000
+- bool, boss, true, 1
+```
+
+One match brings the score to `-1` — still at the limit, so the rule passes. Two matches bring it to `-2` — below the limit, so it fails.
+
+### `filterLimit:` shared between both — one running score, not two
+
+Put `filters:` and `bannedFilters:` on the same entry, and it's easy to picture them as two independent checks, each with its own pass/fail. They aren't — **there's only one `filterLimit:` score, and both lists feed the same number.** A matching `filters:` item *adds* its weight; a matching `bannedFilters:` item *subtracts* its. The entry passes once the running total reaches `filterLimit:`.
+
+EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) example makes the arithmetic concrete — a rule matching a player wearing at least 2 pieces of bronze armor, and none of iron:
+
+```yaml
+filterLimit: 2
+filters:
+- hash, HelmetItem, HelmetBronze, 2  # a bronze helmet alone already meets the limit
+- hash, ChestItem, ArmorBronzeChest
+- hash, LegsItem, ArmorBronzeLegs
+bannedFilters:
+- hash, HelmetItem, HelmetIron
+- hash, ChestItem, ArmorIronChest
+- hash, LegsItem, ArmorIronLegs
+```
+
+<Steps>
+
+1. **Only `filters:` matching, no iron worn.** A player wearing the bronze chest and bronze legs matches two `filters:` items, each weight `1`: running score = `1 + 1 = 2`. That already reaches `filterLimit: 2`, so the rule matches — the bronze helmet was never needed.
+
+2. **A `bannedFilters:` item joins the same score.** Same player, but now also wearing the iron chest (an unusual mixed set, still possible in-game). The iron chest matches a `bannedFilters:` item — default weight `10000` — so the same running score becomes `1 + 1 - 10000 = -9998`. Nowhere near `filterLimit: 2`, so the rule does **not** match, no matter how much bronze is also worn.
+
+3. **Why the default weight is `10000`, not `1`.** A banned match that only cost `1`, same as a normal filter, could get out-weighed by enough bronze pieces and let the entry pass anyway — a "banned" item that can be voted down isn't really banned. The huge default makes one banned match an effective instant veto, the same all-or-nothing feel as the bannedFilters-only case above. Give it a smaller weight only when you deliberately want it to just cost points instead.
+
+</Steps>
+
+<FilterLimitExplainer />
+
+## Using `filters:` inside `objects:` and `poke:` entries
+
+Everything above works the same way one level down — a single `objects:`/`bannedObjects:` or `poke:` entry can also carry its own `filters:`/`bannedFilters:`/`filterLimit:`, checking that specific nearby or poked object instead of the rule's own.
+
+An [`objects:`](/ew_wiki/ewp/concepts/objects-filtering/) entry needing more than one condition on the same nearby object:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 2
+  objects:
+  - prefab: Boar
+    maxDistance: 10
+    filters:
+    - int, level, 2;3      # starred
+    - bool, boss, false    # not already a boss-tier Boar
+  data: commanderBoar
+  command: s A commander boar has rallied its escort.
+```
+
+<CommanderBoarData />
+
+A single `filter:` on this entry could check the star level *or* the boss flag, never both at once — `filters:` is what lets one nearby-object entry require both.
+
+A [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) entry works exactly the same way — it's the same nearby-object matching machinery under the hood, just poking instead of reading:
+
+```yaml
+- prefab: Player
+  type: say, unlockall
+  admin: true
+  poke:
+  - prefab: wood_door
+    filters:
+    - int, isWoodDoor, 1  # only real doors, not something reusing the same prefab
+    - int, state, 0        # only ones not already open
+    parameter: openDoor
+```
+
+Only a `wood_door` that's both flagged `isWoodDoor` *and* currently closed gets poked — a single `filter:` here could check one or the other, not both together.
+
+<Aside type="tip">
+Want a plain on/off switch back at the top level instead of a list? [`condition:`](/ew_wiki/ewp/concepts/advanced-filter-condition/) is a different, newer tool for a different job — comparing two values that aren't both fixed, not narrowing a list of static checks. See Advanced Filter: Condition if a `filters:` list stops being enough.
+</Aside>

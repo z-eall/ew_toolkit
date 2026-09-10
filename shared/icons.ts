@@ -47,6 +47,12 @@ export const ICON_PATHS = {
   // Toolbox — the fallback for a Tool with no hand-picked nav icon.
   toolbox:
     '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M2 13h20"/><path d="M10 13v1a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-1"/>',
+  // Single tick — a "this passed / this matched" affordance. Added for
+  // ew_wiki's FilterLimit explainer (advanced-filter-plural.mdx).
+  check: '<path d="M5 12l5 5L19 7"/>',
+  // Exclamation triangle — the "this is banned/blocked" affordance, paired
+  // with `check` for the same explainer widget.
+  alertTriangle: '<path d="M12 3l9.5 16.5H2.5z"/><path d="M12 9.5v4.5"/><path d="M12 17h.01"/>',
 };
 
 export type IconKey = keyof typeof ICON_PATHS;

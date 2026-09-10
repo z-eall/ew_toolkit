@@ -59,13 +59,13 @@ export default defineConfig({
 						{
 							label: 'Beginner',
 							items: [
-								'ewp/concepts/fields',
-								'ewp/concepts/data',
-								'ewp/concepts/script',
-								'ewp/concepts/triggers',
-								'ewp/concepts/filter',
+								'ewp/concepts/basic-fields',
+								'ewp/concepts/basic-data',
+								'ewp/concepts/start-scripting',
+								'ewp/concepts/basic-triggers',
+								'ewp/concepts/basic-filter',
 								'ewp/examples/first-script',
-								'ewp/examples/adding-randomness',
+								'ewp/examples/basic-rng',
 							],
 						},
 						{
@@ -73,11 +73,11 @@ export default defineConfig({
 							items: [
 								'ewp/concepts/spawn-vs-swap',
 								'ewp/concepts/objects-filtering',
-								'ewp/concepts/poke',
-								'ewp/concepts/pars',
-								'ewp/concepts/functions',
+								'ewp/concepts/basic-poke',
+								'ewp/concepts/basic-pars',
+								'ewp/concepts/basic-functions',
 								'ewp/concepts/custom-data',
-								'ewp/concepts/rpcs',
+								'ewp/concepts/basic-rpcs',
 							],
 						},
 						// Advanced: each page teaches genuinely new fields/functions/trigger
@@ -85,18 +85,27 @@ export default defineConfig({
 						// a real gap. type: time / type: realtime land here, not Intermediate
 						// (supersedes the plan noted above — confirmed with the maintainer
 						// 2026-09-08).
+						// Order echoes the Beginner/Intermediate sequence — each Advanced page
+						// sits roughly where its basic/intermediate counterpart does (triggers,
+						// then filter/objects, then poke, then functions, then custom-data, then
+						// rpcs last, matching rpcs sitting last in Intermediate) — confirmed with
+						// the maintainer 2026-09-10. advanced-filter-condition is the one
+						// exception: forced to the very end regardless of that ranking, since
+						// condition: is EWP's newest and most advanced feature.
 						{
 							label: 'Advanced',
 							items: [
-								'ewp/concepts/advanced-functions',
-								'ewp/concepts/advanced-rpcs',
 								'ewp/concepts/advanced-triggers-change',
 								'ewp/concepts/advanced-triggers-time',
 								'ewp/concepts/advanced-triggers-realtime',
 								'ewp/concepts/advanced-triggers-no-prefab',
-								'ewp/concepts/advanced-filtering',
+								'ewp/concepts/advanced-filter-plural',
 								'ewp/concepts/advanced-poke-mechanics',
 								'ewp/concepts/advanced-poke-creative-systems',
+								'ewp/concepts/advanced-functions',
+								'ewp/concepts/ewp-key',
+								'ewp/concepts/advanced-rpcs',
+								'ewp/concepts/advanced-filter-condition',
 							],
 						},
 						// Extended Reading: full, proven real-world scripts built entirely

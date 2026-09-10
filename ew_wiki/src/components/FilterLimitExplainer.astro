@@ -1,0 +1,470 @@
+---
+// A plain Astro component (no UI framework) — same pattern as
+// src/playground/MonacoPlayground.astro: Astro ships the <script> tag to
+// the client and bundles it through Vite, no client:load needed.
+//
+// Validated as a throwaway HTML prototype first (see this ticket's Answer
+// for the branch note and the prototype file's location on a scratch
+// branch) after two earlier ideas didn't land with the maintainer: a raw
+// score number ("confusing, all three ways"), then a sentence-only
+// explainer. This is the third design: a plain-English checklist plus a
+// PASS/FAIL line — no raw score number shown anywhere.
+//
+// `seed` is the starting block shown in the textarea; multiple instances
+// on one page are supported (scoped by class, not id, like the Monaco
+// playground) though the page currently only uses one.
+import { icon } from '../../../shared/icons';
+
+interface Props {
+	seed?: string;
+}
+const {
+	seed = `filterLimit: 2
+filters:
+- dataA
+- dataB, 50
+bannedFilters:
+- data1
+- data2`,
+} = Astro.props;
+
+const iconCheck = icon('check');
+const iconAlert = icon('alertTriangle');
+const iconClose = icon('close');
+---
+
+<div class="fl-widget" data-icon-check={iconCheck} data-icon-alert={iconAlert} data-icon-close={iconClose}>
+	<h4>Try it yourself</h4>
+	<p class="fl-sub">Paste your own block, tick what's actually true, see if it passes.</p>
+	<!-- Fixed 2x2 grid, on purpose: input/list share one row height, button/result
+	     share another, and neither row ever grows or shrinks with content — every
+	     cell scrolls internally instead. A center line marks the left/right split. -->
+	<div class="fl-grid">
+		<div class="fl-cell fl-cell-input">
+			<textarea class="fl-input">{seed}</textarea>
+		</div>
+		<div class="fl-cell fl-cell-list">
+			<ul class="fl-checklist"></ul>
+		</div>
+		<div class="fl-cell fl-cell-action">
+			<button type="button" class="fl-check-btn">Check</button>
+			<p class="fl-stale-note"><span class="fl-stale-icon" set:html={iconAlert} /> Input changed — click "Check" to update the list below.</p>
+		</div>
+		<div class="fl-cell fl-cell-result">
+			<div class="fl-summary-box">
+				<div class="fl-verdict"></div>
+				<div class="fl-detail"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.fl-widget {
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		padding: 14px 16px;
+		margin: 1.5rem 0;
+		font-size: 13.5px;
+		/* Widget-local only, same reasoning as the Steps gold accent in
+		   ew_wiki/src/styles/theme.css — pass/fail color is page decoration,
+		   not brand identity, so it isn't added to shared/theme.css. */
+		--fl-ok: #8fbf7f;
+		--fl-fail: #d98a7a;
+	}
+	:global(html[data-theme='light']) .fl-widget {
+		/* Darker and more saturated than the dark-mode pair — the first
+		   attempt (#4f7a3f/#a8402e) was too close to the light panel's own
+		   muted tan/grey to read clearly once tinted at low opacity. */
+		--fl-ok: #2f5233;
+		--fl-fail: #7a2e1f;
+	}
+	.fl-widget h4 {
+		margin: 0 0 4px;
+		font-size: 0.95em;
+		color: var(--text);
+	}
+	.fl-sub {
+		margin: 0 0 10px;
+		color: var(--muted);
+		font-size: 0.9em;
+	}
+	/* Fixed 2x2 grid. Row heights are pixel constants, not content-driven —
+	   every cell scrolls its own overflow instead of resizing the grid, so
+	   the box never grows/shrinks regardless of what's pasted, ticked, or
+	   the result text says. Top row (input/list) and bottom row
+	   (button/result) each get their own shared height via the row track;
+	   left/right in each row match automatically because they're the same
+	   grid row. */
+	.fl-grid {
+		position: relative;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 150px 84px;
+		column-gap: 16px;
+		row-gap: 10px;
+	}
+	@media (max-width: 480px) {
+		.fl-grid {
+			grid-template-columns: 1fr;
+			grid-template-rows: 150px 84px 84px 84px;
+		}
+	}
+	/* Explicit height:100%, not relying on grid's default item-stretch — the
+	   .fl-cell-list box was rendering shorter than its row track and
+	   floating away from the top (a real bug: its scrollbar sat visibly
+	   lower than the textarea's, making the two boxes look mismatched in
+	   height even though the grid row itself was the same 150px for both). */
+	.fl-cell {
+		min-width: 0;
+		min-height: 0;
+		height: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
+		/* Some ancestor rule (Starlight's own markdown-content flow spacing,
+		   most likely) was adding a stray 16px margin-top to .fl-cell-list
+		   specifically — not written anywhere in this file — which floated
+		   its scrollbar down relative to the textarea beside it even after
+		   both boxes were forced to the same height. Zeroing margin on every
+		   cell here kills it outright rather than chasing the exact rule. */
+		margin: 0;
+	}
+	.fl-cell-list,
+	.fl-cell-result {
+		overflow-y: auto;
+	}
+	.fl-input {
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		font-family: monospace;
+		font-size: 13px;
+		background: var(--bg);
+		color: var(--text);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 8px;
+		resize: none;
+		/* No outer overflow on .fl-cell-input — the textarea already scrolls
+		   its own overflow, and both scrolling was a real second scrollbar. */
+		overflow: auto;
+	}
+	.fl-cell-action {
+		display: flex;
+		flex-direction: column;
+	}
+	.fl-check-btn {
+		background: var(--panel);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 6px 14px;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		flex: none;
+		align-self: flex-start;
+	}
+	.fl-check-btn:hover {
+		border-color: var(--text);
+	}
+	.fl-check-btn.fl-stale {
+		border-color: #e6c18a;
+		color: #e6c18a;
+	}
+	/* visibility, not display — the line's space is reserved at all times so
+	   showing/hiding it never shifts the button above it or resizes the row. */
+	.fl-stale-note {
+		margin: 6px 0 0;
+		font-size: 12px;
+		color: #e6c18a;
+		visibility: hidden;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		flex: none;
+	}
+	.fl-stale-note.fl-shown {
+		visibility: visible;
+	}
+	.fl-stale-icon :global(svg) {
+		width: 13px;
+		height: 13px;
+		flex: none;
+		display: block;
+	}
+	.fl-checklist {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	/* :global — the <li> rows are appended by the client script, so this must
+	   escape scoping like the other dynamic rules above. Without it, an
+	   outside rule (Starlight's own list styling, not anything in this file)
+	   was giving each <li> its own ~16-20px top margin — the same "stray
+	   margin from outside this component" issue .fl-cell-list had earlier. */
+	:global(.fl-checklist li) {
+		margin: 0;
+		padding: 0;
+	}
+	/* Grid, not flex — a fixed [checkbox][icon-slot][text] column layout so
+	   every row lines up identically whether or not that row's icon slot is
+	   filled. A flex row with an icon only sometimes present was exactly
+	   the misalignment problem: ticking a box added an icon that shifted
+	   the text over, so ticked and unticked rows didn't share a left edge. */
+	.fl-checklist :global(.fl-row) {
+		display: grid;
+		grid-template-columns: 14px 14px 1fr;
+		column-gap: 6px;
+		align-items: start;
+		margin: 0;
+		padding: 0;
+		font-family: monospace;
+		font-size: 12.5px;
+		line-height: 1.25;
+		cursor: pointer;
+	}
+	.fl-checklist :global(.fl-row input[type='checkbox']) {
+		width: 13px;
+		height: 13px;
+		margin: 1px 0 0;
+		padding: 0;
+		display: block;
+	}
+	.fl-checklist :global(.fl-icon-slot) {
+		display: block;
+		line-height: 0;
+	}
+	.fl-checklist :global(.fl-icon-slot svg) {
+		width: 13px;
+		height: 13px;
+		display: block;
+		margin-top: 1px;
+	}
+	/* :global — these rows are created by the client script (document.createElement),
+	   so they never carry Astro's own scoping class; a scoped selector would
+	   silently never match them. */
+	:global(.fl-checklist li.fl-hit-ok .fl-row) {
+		color: var(--fl-ok);
+	}
+	:global(.fl-checklist li.fl-hit-fail .fl-row) {
+		color: var(--fl-fail);
+	}
+	.fl-summary-box {
+		padding: 0.4rem 0.75rem;
+		border-radius: 0 4px 4px 0;
+	}
+	.fl-summary-box.fl-pass {
+		border-left: 3px solid var(--fl-ok);
+		background: color-mix(in srgb, var(--fl-ok) 16%, transparent);
+	}
+	.fl-summary-box.fl-fail {
+		border-left: 3px solid var(--fl-fail);
+		background: color-mix(in srgb, var(--fl-fail) 16%, transparent);
+	}
+	.fl-verdict {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 1.05em;
+		font-weight: 700;
+	}
+	.fl-summary-box.fl-pass .fl-verdict {
+		color: var(--fl-ok);
+	}
+	.fl-summary-box.fl-fail .fl-verdict {
+		color: var(--fl-fail);
+	}
+	.fl-verdict :global(svg) {
+		width: 18px;
+		height: 18px;
+		flex: none;
+		display: block;
+	}
+	.fl-detail {
+		margin-top: 4px;
+		font-size: 13px;
+		color: var(--text);
+		font-weight: 400;
+		line-height: 1.4;
+	}
+</style>
+
+<script>
+	interface ParsedItem {
+		label: string;
+		weight: number;
+	}
+	interface Parsed {
+		filters: ParsedItem[];
+		bannedFilters: ParsedItem[];
+		filterLimit: number;
+	}
+	interface ItemState extends ParsedItem {
+		matched: boolean;
+	}
+
+	function parseItem(raw: string, isBanned: boolean): ParsedItem {
+		const parts = raw.split(',').map((s) => s.trim());
+		let weight: number | null = null;
+		let labelParts = parts;
+		if (parts.length === 4 || parts.length === 2) {
+			const last = parts[parts.length - 1];
+			if (/^-?\d+$/.test(last)) {
+				weight = parseInt(last, 10);
+				labelParts = parts.slice(0, -1);
+			}
+		}
+		if (weight === null) weight = isBanned ? 10000 : 1;
+		return { label: labelParts.join(', '), weight };
+	}
+
+	function parseFilterBlock(text: string): Parsed {
+		const lines = text.split('\n');
+		let section: 'filters' | 'banned' | null = null;
+		const filters: ParsedItem[] = [];
+		const bannedFilters: ParsedItem[] = [];
+		let filterLimit: number | null = null;
+		for (const rawLine of lines) {
+			const line = rawLine.trim();
+			if (!line) continue;
+			if (/^filters:/i.test(line)) {
+				section = 'filters';
+				continue;
+			}
+			if (/^bannedFilters:/i.test(line)) {
+				section = 'banned';
+				continue;
+			}
+			const m = line.match(/^filterLimit:\s*(-?\d+)/i);
+			if (m) {
+				filterLimit = parseInt(m[1], 10);
+				continue;
+			}
+			if (line.startsWith('-')) {
+				const raw = line.slice(1).split('#')[0].trim();
+				if (section === 'filters') filters.push(parseItem(raw, false));
+				else if (section === 'banned') bannedFilters.push(parseItem(raw, true));
+			}
+		}
+		if (filterLimit === null) filterLimit = filters.length;
+		return { filters, bannedFilters, filterLimit };
+	}
+
+	function evaluate(parsed: Parsed, trueLabels: string[]) {
+		const trueSet = new Set(trueLabels);
+		const filtersState: ItemState[] = parsed.filters.map((f) => ({ ...f, matched: trueSet.has(f.label) }));
+		const bannedState: ItemState[] = parsed.bannedFilters.map((f) => ({ ...f, matched: trueSet.has(f.label) }));
+		const positive = filtersState.filter((f) => f.matched).reduce((s, f) => s + f.weight, 0);
+		const negative = bannedState.filter((f) => f.matched).reduce((s, f) => s + f.weight, 0);
+		const total = positive - negative;
+		return { filtersState, bannedState, positive, negative, total, limit: parsed.filterLimit, pass: total >= parsed.filterLimit };
+	}
+
+	function names(list: ItemState[]): string {
+		return list.length ? list.map((x) => '`' + x.label + '`').join(' and ') : 'nothing';
+	}
+
+	function explain(result: ReturnType<typeof evaluate>): { pass: boolean; detail: string } {
+		const matchedBanned = result.bannedState.filter((b) => b.matched);
+		const matchedFilters = result.filtersState.filter((f) => f.matched);
+		const hasFilters = result.filtersState.length > 0;
+		let detail: string;
+		if (result.pass) {
+			if (matchedBanned.length === 0) detail = `You matched enough of the required items: ${names(matchedFilters)}.`;
+			else if (matchedFilters.length > 0) detail = `${names(matchedBanned)} matched, but ${names(matchedFilters)} outweighed it.`;
+			else detail = `${names(matchedBanned)} matched, but the limit here was loose enough to allow it.`;
+		} else if (matchedBanned.length > 0) {
+			detail = !hasFilters
+				? `${names(matchedBanned)} matched — a banned match like this usually blocks everything by itself.`
+				: `${names(matchedBanned)} matched, and you didn't have enough good matches to make up for it.`;
+		} else {
+			detail = `You matched ${matchedFilters.length} of ${result.filtersState.length} required item(s) — not enough.`;
+		}
+		return { pass: result.pass, detail };
+	}
+
+	// One instance per widget on the page — scoped by class (like the Monaco
+	// playground), never by id, so more than one can coexist.
+	for (const widget of document.querySelectorAll<HTMLElement>('.fl-widget')) {
+		const iconCheck = widget.dataset.iconCheck ?? '';
+		const iconAlert = widget.dataset.iconAlert ?? '';
+		const iconClose = widget.dataset.iconClose ?? '';
+
+		const inputEl = widget.querySelector<HTMLTextAreaElement>('.fl-input')!;
+		const checkBtn = widget.querySelector<HTMLButtonElement>('.fl-check-btn')!;
+		const staleNote = widget.querySelector<HTMLElement>('.fl-stale-note')!;
+		const checklistEl = widget.querySelector<HTMLUListElement>('.fl-checklist')!;
+		const summaryBox = widget.querySelector<HTMLElement>('.fl-summary-box')!;
+		const verdictEl = widget.querySelector<HTMLElement>('.fl-verdict')!;
+		const detailEl = widget.querySelector<HTMLElement>('.fl-detail')!;
+
+		let currentParsed = parseFilterBlock(inputEl.value);
+		let currentTrue = new Set<string>();
+		let lastCheckedText = inputEl.value;
+
+		function setStale(isStale: boolean) {
+			checkBtn.classList.toggle('fl-stale', isStale);
+			staleNote.classList.toggle('fl-shown', isStale);
+		}
+
+		function render() {
+			const result = evaluate(currentParsed, [...currentTrue]);
+			checklistEl.innerHTML = '';
+
+			const addItem = (item: ItemState, isBanned: boolean) => {
+				const li = document.createElement('li');
+				li.className = isBanned && item.matched ? 'fl-hit-fail' : !isBanned && item.matched ? 'fl-hit-ok' : '';
+				const label = document.createElement('label');
+				label.className = 'fl-row';
+				const cb = document.createElement('input');
+				cb.type = 'checkbox';
+				cb.checked = item.matched;
+				cb.addEventListener('change', () => {
+					if (cb.checked) currentTrue.add(item.label);
+					else currentTrue.delete(item.label);
+					render();
+				});
+				// Always present, even when empty — a fixed-width slot so every
+				// row's text starts at the same column whether or not this row
+				// has an icon to show.
+				const iconSlot = document.createElement('span');
+				iconSlot.className = 'fl-icon-slot';
+				if (item.matched) iconSlot.innerHTML = isBanned ? iconAlert : iconCheck;
+				const textSpan = document.createElement('span');
+				if (isBanned) {
+					textSpan.textContent = item.matched ? `${item.label} matched and it is banned` : `${item.label} (banned)`;
+				} else {
+					textSpan.textContent = item.matched ? `${item.label} (required, found)` : `${item.label} (required)`;
+				}
+				label.append(cb, iconSlot, textSpan);
+				li.appendChild(label);
+				checklistEl.appendChild(li);
+			};
+			result.filtersState.forEach((f) => addItem(f, false));
+			result.bannedState.forEach((b) => addItem(b, true));
+
+			const { pass, detail } = explain(result);
+			// classList, not className= — this element is server-rendered by
+			// Astro and carries its own scoping class; overwriting the whole
+			// className string wipes that class and silently breaks every
+			// scoped CSS rule that targets it (this was a real bug here).
+			summaryBox.classList.remove('fl-pass', 'fl-fail');
+			summaryBox.classList.add(pass ? 'fl-pass' : 'fl-fail');
+			verdictEl.innerHTML = pass ? `${iconCheck} PASS` : `${iconClose} FAIL`;
+			detailEl.textContent = detail;
+		}
+
+		inputEl.addEventListener('input', () => setStale(inputEl.value !== lastCheckedText));
+		checkBtn.addEventListener('click', () => {
+			currentParsed = parseFilterBlock(inputEl.value);
+			currentTrue = new Set();
+			lastCheckedText = inputEl.value;
+			setStale(false);
+			render();
+		});
+
+		render();
+	}
+</script>

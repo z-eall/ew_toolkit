@@ -1,0 +1,102 @@
+---
+title: "Advanced Filter: Condition"
+description: "condition: — comparing two dynamic values with real logical operators, EWP's newest and most flexible filter tool."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Every filter so far — [`filter:`/`bannedFilter:`](/ew_wiki/ewp/concepts/basic-filter/), and the plural [`filters:`/`bannedFilters:`](/ew_wiki/ewp/concepts/advanced-filter-plural/) — compares one field against a fixed literal or range written into the script. `condition:` is a different, newer tool: one free-form expression string that can compare two *dynamic* values against each other — the output of one [function](/ew_wiki/ewp/concepts/basic-functions/) against another — and combine several checks with real logical operators. It's valid whenever the expression resolves to something non-empty and non-zero.
+
+<Aside type="note">
+This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the "Filters" section — `condition:` is one of the newest additions there, so expect it to show up less often in older example scripts than `filter:`/`filters:`.
+</Aside>
+
+## The operators
+
+Operators must be separated by spaces to be recognized:
+
+| Operator | Checks |
+|---|---|
+| `and` | both sides are valid |
+| `or` | at least one side is valid |
+| `not` | the side is not valid |
+| `xor` | exactly one side is valid |
+| `in` | left side is in the right side's comma-separated list |
+| `not in` | left side is not in the right side's list |
+| `=` / `!=` | equal / not equal |
+| `>` / `<` / `>=` / `<=` | numeric comparison |
+
+Parentheses control evaluation order, e.g. `(a and b) or c`.
+
+<Aside type="caution">
+`scripting.md` doesn't spell out a default precedence between these operators beyond "parentheses can change it" — it never states, for example, whether `and` binds tighter than `or` when parentheses are left out. Until that's confirmed, parenthesize explicitly rather than relying on an assumed order.
+</Aside>
+
+A `condition:` on a top-level rule field evaluates against the rule's own object; on an [`objects:`/`bannedObjects:`](/ew_wiki/ewp/concepts/objects-filtering/) or [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) entry, it evaluates against that specific nearby or poked object instead — same scoping rule `filter:` already follows.
+
+## Simple use case: only fire on a matching day
+
+The simplest `condition:` compares two dynamic values with a single operator — no parentheses, no combining. Here, a Boar only reacts once its own star level happens to match the current in-game day count:
+
+```yaml
+- prefab: Boar
+  type: create
+  condition: <int_level> = <day>
+  command: s A boar synced to today's count has appeared.
+```
+
+`filter:` can only ever compare `level` against a number written into the script — it has no way to compare `level` against `<day>`, since `<day>` isn't known until the rule actually runs. `condition:` can, because both sides are just function output at evaluation time.
+
+## Advanced use case: multiple dynamic checks, parenthesized
+
+A real `condition:` usually combines more than one comparison. Here, a nearby Wolf only counts as a threat if it's in a cold biome, **and** either it's starred or the world has already cleared an (illustrative) global key:
+
+```yaml
+- prefab: Wolf
+  type: create
+  objects:
+  - prefab: Wolf
+    maxDistance: 15
+    condition: (<biome> in Mountain,DeepNorth) and (<int_level> >= 2 or <globalkey_defeated_dvergr=0> = 1)
+  data: frostElite
+  command: s A frost-touched wolf prowls nearby.
+```
+
+```yaml
+- name: frostElite
+  floats:
+  - max_health, 200
+```
+
+No `filter:`/`filters:` list can express this — those only ever check one object's fields against fixed values, never an `or` between unrelated conditions. The two parenthesized groups keep the logic readable: the biome check on the left of `and`, then either half of the starred-or-cleared-key check on the right.
+
+<Aside type="note">
+`defeated_dvergr` here is a made-up global key name for the example, the same way `frostElite` is a made-up data entry name — global keys are whatever a script author chooses to set, not a fixed list to verify against.
+</Aside>
+
+## Combining `filters:` and `condition:` on the same entry
+
+`filters:` is the right tool for "narrow down which nearby objects qualify, using several static data checks." `condition:` is the right tool for "compare two things that aren't both fixed values." Some rules need both at once — `filters:` can't express a dynamic comparison, and `condition:` alone would mean re-writing every static data check as a clunky expression instead of a clean list:
+
+```yaml
+- prefab: Boar
+  type: create
+  objectsLimit: 2
+  objects:
+  - prefab: Boar
+    maxDistance: 10
+    filterLimit: 2       # both required filters must match
+    filters:
+    - int, level, 2;3    # starred
+    - bool, boss, false  # not already a boss-tier Boar
+    condition: <int_level> >= <globalkey_packrank=1>  # star count must keep pace with the pack's stored rank
+  data: commanderBoar
+  command: s A commander boar has rallied its escort.
+```
+
+`filters:` decides which nearby Boars are even eligible escorts (starred, not already a boss). `condition:` then adds a check `filters:` structurally can't make — the Boar's own star count against a number pulled from elsewhere in the world (here, an illustrative `packrank` global key), rather than against a value written into the script itself.
+
+<Aside type="tip">
+`packrank` is another made-up global key, same caveat as `defeated_dvergr` above.
+</Aside>

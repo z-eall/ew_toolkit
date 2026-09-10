@@ -1,0 +1,118 @@
+---
+title: "Custom Data: EWP Key"
+description: "What an EWP key is, how exec:/<save_X_Y>/<load_X>/<clear_X> work together, how it compares to a vanilla globalkey, reacting to a change with type: key, and a simple-then-advanced worked example."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Every value on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) lives on one specific object — every Boar keeps its own copy. An **EWP key** is the other half: one shared slot, not tied to any object at all, holding the same value no matter which rule reads it. The mod's own docs call this "global custom data"; most players just call it an EWP key.
+
+## An EWP key vs. a vanilla `globalkey`
+
+Valheim already has its own world-wide flag system, `globalkey` — set with `setkey`, cleared with `removekey`, reacted to with `type: globalkey` (see [Advanced Triggers - No-Prefab Triggers](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)). It's easy to assume an EWP key is just another name for the same thing. It isn't:
+
+| | vanilla `globalkey` | EWP key |
+|---|---|---|
+| Set/cleared with | `setkey`/`removekey` commands | `exec:` + `<save_X_Y>` / `<clear_X>` |
+| Can hold | nothing but its own existence — present or not, on/off only | a number, text, or position — whatever `Y` is |
+| Read with | `<globalkey_X=default>`, `globalKeys:`/`bannedGlobalKeys:` filters | `<load_X=default>`, `keys:`/`bannedKeys:` filters |
+| Reacts with | `type: globalkey` | `type: key` |
+
+A `globalkey` can tell you *that* something happened — a flag is set or it isn't. An EWP key can tell you *how much*, *what*, or *where* — a count, a name, a saved position. Reach for `globalkey` when a plain on/off switch is really all you need; reach for an EWP key the moment you need to remember an actual value.
+
+<Aside type="note">
+These are two separate systems and don't read each other — see the [No-Prefab Triggers page](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-reacting-to-an-ewp-key-change) for how they sit next to the third lookalike, per-object `data:`.
+</Aside>
+
+## Where a saved key actually lives: `ewp_data.yaml`
+
+Every `<save_X_Y>` you write doesn't just sit in memory — EWP writes it to disk in a file called `ewp_data.yaml`, inside the `expand_world` config folder next to your script files. This file is created automatically the first time any key is saved; you never hand-write it, and it isn't a script you author.
+
+<Aside type="note">
+This is a different file from `data.yaml` (covered on [Preparation](/ew_wiki/ewp/preparation/) and [Understanding Data](/ew_wiki/ewp/concepts/basic-data/)) — `data.yaml` holds the `name:`/`value:` field-edit blocks you write by hand; `ewp_data.yaml` is EWP's own save file for whatever an EWP key currently holds, written and read entirely by the mod itself.
+</Aside>
+
+## Setting a key: `exec:` and `<save_X_Y>`
+
+`exec:` is a rule-entry field whose only job is to run a function and discard whatever it returns — useful specifically because `<save_X_Y>` and `<clear_X>` *write* a value rather than fetch one, so there's nothing worth showing in a `command:` or storing in `data:`.
+
+- `<save_X_Y>` — writes value `Y` under key `X`.
+- `<save++_X>` / `<save--_X>` — shorthand for "add/subtract 1", creating the key at `1`/`-1` if it didn't exist yet.
+- `<clear_X>` — removes the key entirely. Wildcard `*` removes multiple keys at once.
+
+```yaml
+- prefab: Player
+  type: say, markhome
+  exec: <save_homeAnchor_<pos>>  # writes the player's current position to a global slot, shows nothing
+  command: s Anchor saved.
+```
+
+<Aside type="caution">
+A wildcard `*` in `<save_*_Y>`'s key only sets keys that **already exist** — it can't create new ones. `<clear_*>`'s wildcard has no such restriction; it deletes whatever matches.
+</Aside>
+
+## Reading it back: `<load_X>`
+
+`<load_X=default>` reads the key back, or the fallback if it was never saved — same `=default` shape as any other function reading a value that might not exist yet.
+
+```yaml
+- prefab: Player
+  type: say, distancehome
+  command: s <distance_<pos>_<load_homeAnchor=0,0,0>>m from your anchor  # 0,0,0 fallback if no anchor was ever saved
+```
+
+`<pos>` here is whichever player says `distancehome` — not necessarily the one who set the anchor with the rule above. The anchor itself isn't tied to any object, so any player, at any time, can check their distance from it.
+
+## Reacting to a key change: `type: key`
+
+Set and read cover storing a value; `type: key` completes the loop by reacting the instant a key's value actually *changes* — saving the same value again doesn't re-fire it. Add `remove: true` to fire on removal (`<clear_X>`) instead of on set. Because `key` is one of EWP's no-prefab trigger types, `filter:`/`objects:` don't apply to it directly, and a `poke:` under it measures distance from the world center, not from any object — the full mechanics live on [Advanced Triggers - No-Prefab Triggers](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#what-no-prefab-actually-rules-out); this page only needs the shape:
+
+```yaml
+- prefab: Player
+  type: say, ack
+  admin: true
+  exec: <save_raidAck_<time>>   # re-saving this key re-fires type: key below
+
+- type: key, raidAck
+  command: s Acknowledgement logged.
+```
+
+## Simple use case: counting how many times anyone says hello
+
+One rule, set and read together — testable by just saying `hello` more than once:
+
+```yaml
+- prefab: Player
+  type: say, hello
+  exec: <save++_helloCount>
+  command: s Hello! You're greeting number <load_helloCount=0> today.
+```
+
+Every player shares the same `helloCount` — it isn't attached to whichever Player triggered the rule, so the number keeps climbing no matter who says it.
+
+## Advanced use case: a boar-cull bounty that eases off each day
+
+This ties three trigger types to one EWP key: a real game event increments it, `type: key` announces it, and a scheduled reset lets it fade instead of vanish. Genuinely advanced, since none of the three rules would make sense reacting alone:
+
+```yaml
+# 1. Every Boar kill bumps a shared, server-wide counter
+- prefab: Boar
+  type: destroy
+  exec: <save++_boarsCulled>
+
+# 2. Announce the running total the instant it changes
+- type: key, boarsCulled
+  command: s <load_boarsCulled=0> boars culled so far.
+
+# 3. Once every in-game day, halve the count instead of wiping it
+- type: time, day
+  exec: <save_boarsCulled_<floor_<div_<load_boarsCulled=0>_2>>>
+  command: s Today's cull count has settled to <load_boarsCulled=0>.
+```
+
+Rule 1 never needs to know anyone is listening — it just bumps the key. Rule 2 never needs to know what caused the change — it just reacts. Rule 3 shows a key being both read and rewritten in the same function: `<load_boarsCulled=0>` supplies the current value, `<div_X_2>` halves it, `<floor_X>` rounds down since a boar count should never fetch a fraction, and the outer `<save_boarsCulled_...>` writes the result back under the same key. A big cull day still echoes a little into tomorrow instead of resetting to zero — the same nested-function shape used throughout this wiki, just three functions deep instead of two.
+
+<Aside type="tip">
+Want to see this same shape carried further — an EWP key gating what a script lets a player do next, not just tracking a count? [World Bosses](/ew_wiki/ewp/examples/world-bosses/) and [Village Economy](/ew_wiki/ewp/examples/village-economy/) build a whole progression system out of the same `<save_X_Y>`/`<load_X>` pair combined with `<max_>`/`<sub_>`/`<ge_>`.
+</Aside>

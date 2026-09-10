@@ -17,10 +17,10 @@ Every function belongs to one of a handful of groups, based on what it works on:
 - **Numeric** — arithmetic, comparisons, trig: `<add_X_Y>`, `<sin_X>`. Covered on this page, below.
 - **Vector** — 3D position and rotation math: `<distance_A_B>`, `<lerp_A_B_T>`.
 - **Long numbers** — the same arithmetic as Numeric, but for the oversized integers Valheim uses internally for game ticks: `<addlong_X_Y>`.
-- **Custom data (global)** — a save slot that isn't tied to any one object, unlike the per-object `data:` you already know: `<save_X_Y>`, `<load_X>`, `<clear_X>`.
+- **Custom data (global)** — a save slot that isn't tied to any one object, unlike the per-object `data:` you already know: `<save_X_Y>`, `<load_X>`, `<clear_X>`. Most players call this an **EWP key**.
 - **Time** — reads or formats the in-game or real-world clock: `<day>`, `<realtime_X>`.
 
-The rest of this page teaches Basic, Text, and Numeric. Vector, Long numbers, Custom data (global), and Time each get their own full treatment on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/).
+The rest of this page teaches Basic, Text, and Numeric. Vector and Long numbers get their own quick reference on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/), which also shows Text and Numeric functions combined creatively. Time splits by clock: game-clock functions on [type: time](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing), real-world-clock functions on [type: realtime](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends). Custom data (global) gets its own page, [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/).
 
 <Aside type="note">
 For the complete, always-current list of every function in every category, right now: the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md).

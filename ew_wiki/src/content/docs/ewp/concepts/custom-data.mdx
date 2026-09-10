@@ -17,7 +17,7 @@ Hover a Boar and run that, and it now has `customBoar = 1` — a rule reading it
 That's useful for a quick, one-off test: say you want to check that a rule reacts correctly to a Boar you've hand-picked, without first writing (and debugging) a whole separate rule whose only job is deciding which Boars get picked. Hover the one Boar you want to test, set the flag by hand, and try the real rule against it directly.
 
 <Aside type="caution">
-`customBoar` is a name made up for this page — it isn't a field Valheim or EWP already tracks. That matters: Boar actually *does* have its own real `tamed` value, and setting that one by hand would genuinely tame the creature in-game, not just flag it for a script. Your own flags need a name that couldn't collide with a real one — see [Understanding Fields](/ew_wiki/ewp/concepts/fields/#finding-a-field-with-autocomplete) if you want to check what a Component's real fields actually are before picking a name.
+`customBoar` is a name made up for this page — it isn't a field Valheim or EWP already tracks. That matters: Boar actually *does* have its own real `tamed` value, and setting that one by hand would genuinely tame the creature in-game, not just flag it for a script. Your own flags need a name that couldn't collide with a real one — see [Understanding Fields](/ew_wiki/ewp/concepts/basic-fields/#finding-a-field-with-autocomplete) if you want to check what a Component's real fields actually are before picking a name.
 </Aside>
 
 <Aside type="tip">
@@ -26,7 +26,7 @@ That's useful for a quick, one-off test: say you want to check that a rule react
 
 ## Setting a value from a script
 
-You already know how to set a value on an object — `data: type, key, value` is the shorthand form of [`data:`](/ew_wiki/ewp/concepts/data/) for setting a single value, no named entry needed:
+You already know how to set a value on an object — `data: type, key, value` is the shorthand form of [`data:`](/ew_wiki/ewp/concepts/basic-data/) for setting a single value, no named entry needed:
 
 ```yaml
 - prefab: Boar
@@ -34,7 +34,7 @@ You already know how to set a value on an object — `data: type, key, value` is
   data: int, customBoar, 0  # marks every new Boar as not flagged yet
 ```
 
-This page is about the other half: reading that value back later, with a [function](/ew_wiki/ewp/concepts/functions/) like `<int_*>`. Set here, read there — that's the whole idea.
+This page is about the other half: reading that value back later, with a [function](/ew_wiki/ewp/concepts/basic-functions/) like `<int_*>`. Set here, read there — that's the whole idea.
 
 ## Reading back what you stored
 
@@ -46,7 +46,7 @@ Swap the value's kind for the matching function name, and the key for the parame
   command: s <int_customBoar>  # shouts 0, or whatever this Boar's own customBoar value is
 ```
 
-`type: destroy` fires when the Boar dies — a real event a Boar can trigger on its own, testable by just killing one. `<int_customBoar>` doesn't take a number to compute with, the way `<add_2_3>` did on the [functions page](/ew_wiki/ewp/concepts/functions/) — it fetches a value that's already sitting on *this specific object*, the same one the rule is running for. Set it once with `data:`, read it back anywhere a function is allowed: `command:`, another `data:` value, `filter:`, poke parameters, and so on.
+`type: destroy` fires when the Boar dies — a real event a Boar can trigger on its own, testable by just killing one. `<int_customBoar>` doesn't take a number to compute with, the way `<add_2_3>` did on the [functions page](/ew_wiki/ewp/concepts/basic-functions/) — it fetches a value that's already sitting on *this specific object*, the same one the rule is running for. Set it once with `data:`, read it back anywhere a function is allowed: `command:`, another `data:` value, `filter:`, poke parameters, and so on.
 
 The function name has to match the kind of value you stored it as:
 
@@ -59,12 +59,12 @@ The function name has to match the kind of value you stored it as:
 (and a handful of more specific cases — `<long_*>` for big integers, `<hash_*>` and `<vec_*>`/`<quat_*>` that convert the stored number into a prefab name or a position/rotation, `<byte_*>` and `<zdo_*>` — same pattern, just narrower use)
 
 <Aside type="tip">
-Not sure which kind a value was saved as? Reread [Understanding Data](/ew_wiki/ewp/concepts/data/#what-a-data-entry-looks-like) — `ints`/`floats`/`strings`/`bools` there are exactly the kinds these functions read back.
+Not sure which kind a value was saved as? Reread [Understanding Data](/ew_wiki/ewp/concepts/basic-data/#what-a-data-entry-looks-like) — `ints`/`floats`/`strings`/`bools` there are exactly the kinds these functions read back.
 </Aside>
 
 ## Missing data still needs a fallback
 
-An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` fallback from the [functions page](/ew_wiki/ewp/concepts/functions/#missing-data-a-default-with-):
+An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` fallback from the [functions page](/ew_wiki/ewp/concepts/basic-functions/#missing-data-a-default-with-):
 
 ```yaml
 - prefab: Boar
@@ -90,7 +90,7 @@ This matters more here than for most functions, since a custom key is something 
   command: s <int_customBoar>  # shouts 1
 ```
 
-Same `customBoar` key throughout: `data:` writes it, `filter:` checks it, `<int_customBoar>` reads it out loud. Nothing new about `filter:` here — see [Understanding Filter](/ew_wiki/ewp/concepts/filter/) if that part's unfamiliar.
+Same `customBoar` key throughout: `data:` writes it, `filter:` checks it, `<int_customBoar>` reads it out loud. Nothing new about `filter:` here — see [Understanding Filter](/ew_wiki/ewp/concepts/basic-filter/) if that part's unfamiliar.
 
 ## What this page doesn't cover
 

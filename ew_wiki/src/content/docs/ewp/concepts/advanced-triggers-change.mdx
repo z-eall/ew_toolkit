@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Aside } from '@astrojs/starlight/components';
 
-[Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers the fifth: `change`.
+[Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers the fifth: `change`.
 
 <Aside type="note">
 Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
@@ -17,12 +17,12 @@ Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https:/
 `state` — already familiar from Understanding Triggers — only fires when the game itself broadcasts a state RPC, and only for a handful of components. `change` is broader: it fires whenever *any* tracked value on an object changes, a real component field or your own custom `data:` name alike, whether or not that component ever broadcasts a state for it.
 
 <Aside type="tip">
-`scripting.md` itself recommends `state` over `change` when both are possible — `state` is more performant, it just only covers specific situations. Reach for `change` once you've checked the [state list](/ew_wiki/ewp/concepts/triggers/#state-reacting-to-the-games-own-broadcasts) and nothing there fits.
+`scripting.md` itself recommends `state` over `change` when both are possible — `state` is more performant, it just only covers specific situations. Reach for `change` once you've checked the [state list](/ew_wiki/ewp/concepts/basic-triggers/#state-reacting-to-the-games-own-broadcasts) and nothing there fits.
 </Aside>
 
 ## The three pars `change` gives you
 
-`scripting.md` spells out `change`'s parameters directly: **first parameter is the data name, second is the new value, third is the previous value.** In [par](/ew_wiki/ewp/concepts/pars/) terms: `<par_0>` the field name, `<par_1>` the new value, `<par_2>` the old value.
+`scripting.md` spells out `change`'s parameters directly: **first parameter is the data name, second is the new value, third is the previous value.** In [par](/ew_wiki/ewp/concepts/basic-pars/) terms: `<par_0>` the field name, `<par_1>` the new value, `<par_2>` the old value.
 
 ```yaml
 - prefab: woodwall
@@ -42,10 +42,12 @@ For example:
   type: change, level 0 3,4
 ```
 
+`prefab:` doesn't only take object ids — [it also accepts a Component name as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component, no matter what each one is individually called. `MonsterAI` reaches every hostile creature at once, `ItemDrop` reaches every item lying on the ground, `Piece` reaches every player-built structure — the same idea works for any component a prefab happens to carry. `Feast` is one such component, shared by every feast piece (`FeastMeadows`, `FeastBlackforest`, `FeastMistlands`, and so on), so one rule below covers all of them at once — no need to list each one by name. The [Village Economy walkthrough](/ew_wiki/ewp/examples/village-economy/#crafting-stations-that-lock-themselves) shows the same trick reaching two components at once (`CraftingStation, StationExtension`) across an entire map.
+
 ```yaml
-# Fires when Value changes to 0 OR -1, from any previous value
+# eatStacks counts remaining feast uses — fires when it hits 0 OR -1, from any previous value
 - prefab: Feast
-  type: change, Value 0,-1
+  type: change, eatStacks 0,-1
 ```
 
 A field that might overshoot a single exact value is exactly what the `value1,value2` and `min;max` forms are for — listing every value you'd otherwise miss, or using a range, catches an overshoot a single literal value can't.
@@ -59,10 +61,11 @@ The condition on the `type:` line isn't the only way to react to what a value be
   type: change, levelUpCounter
   filter: int, levelUpCounter, 3;10   # only once the counter itself is sitting in this range
   data: int, level, <add_1_<int_level=1>>   # bump level, defaulting to 1 if it's never been set
+  command: s A boar nearby just grew stronger.
 ```
 
 Every time `levelUpCounter` changes, this checks its own current value — which, at this point, already *is* the new one — against `3;10`, and only then increments `level`.
 
 ## Case study - chaining a `change` trigger off `<sub_X_Y>`
 
-`Understanding Pars` already showed [computing damage taken from a `change, health` trigger](/ew_wiki/ewp/concepts/pars/#non-say-example-what-changed-and-what-it-was-before) using [`<sub_X_Y>`](/ew_wiki/ewp/concepts/advanced-functions/) — subtracting the previous value from the new one. The same pattern generalizes to any numeric field: stamina drained, world-level counters advancing, a custom score incrementing. Whatever the field, `<sub_<par_2>_<par_1>>` (old minus new) or `<sub_<par_1>_<par_2>>` (new minus old) gives you the size of the change itself, not just its before/after snapshot.
+`Understanding Pars` already showed [computing damage taken from a `change, health` trigger](/ew_wiki/ewp/concepts/basic-pars/#non-say-example-what-changed-and-what-it-was-before) using [`<sub_X_Y>`](/ew_wiki/ewp/concepts/advanced-functions/) — subtracting the previous value from the new one. The same pattern generalizes to any numeric field: stamina drained, world-level counters advancing, a custom score incrementing. Whatever the field, `<sub_<par_2>_<par_1>>` (old minus new) or `<sub_<par_1>_<par_2>>` (new minus old) gives you the size of the change itself, not just its before/after snapshot.

@@ -7,7 +7,7 @@ complexity: beginner
 import { Steps, Aside } from '@astrojs/starlight/components';
 import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
 
-[Fields](/ew_wiki/ewp/concepts/fields/), [Data](/ew_wiki/ewp/concepts/data/), and [Start Writing a Script](/ew_wiki/ewp/concepts/script/) covered the pieces one at a time. This page puts them together into one small file — copy it, save it, and it just works.
+[Fields](/ew_wiki/ewp/concepts/basic-fields/), [Data](/ew_wiki/ewp/concepts/basic-data/), and [Start Writing a Script](/ew_wiki/ewp/concepts/start-scripting/) covered the pieces one at a time. This page puts them together into one small file — copy it, save it, and it just works.
 
 <Steps>
 
@@ -46,7 +46,7 @@ import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx
        data: int, level, 3
    ```
 
-   `type: say, spawn` fires when a player types exactly `spawn` in chat (see [what `type:` can trigger on](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) for why the comma isn't "either type"). This rule spawns two things at once: a Boar using the `strongBoar` data entry —
+   `type: say, spawn` fires when a player types exactly `spawn` in chat (see [what `type:` can trigger on](/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) for why the comma isn't "either type"). This rule spawns two things at once: a Boar using the `strongBoar` data entry —
 
    <StrongBoarData />
 
@@ -85,4 +85,4 @@ import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx
 Try changing a prefab name or a `pos:` number and resaving — that's the fastest way to see what each piece actually does.
 </Aside>
 
-Every rule above fires every single time its trigger happens. Want a rule that only fires sometimes — or a guaranteed fallback when it doesn't? See [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/).
+Every rule above fires every single time its trigger happens. Want a rule that only fires sometimes — or a guaranteed fallback when it doesn't? See [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/).

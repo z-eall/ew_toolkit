@@ -6,14 +6,14 @@ complexity: beginner
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-[Start Writing a Script](/ew_wiki/ewp/concepts/script/#what-type-can-trigger-on) already introduced four `type:` triggers — `create`, `destroy`, `state`, and `say` — just enough to get a first rule running. This page goes one level deeper on each of those same four, so a rule you write with them does what you expect instead of surprising you.
+[Start Writing a Script](/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) already introduced four `type:` triggers — `create`, `destroy`, `state`, and `say` — just enough to get a first rule running. This page goes one level deeper on each of those same four, so a rule you write with them does what you expect instead of surprising you.
 
 ## `create` and `destroy`
 
 Both fire with no parameter — just `type: create` or `type: destroy`, nothing after the comma. `create` fires the moment a matching object spawns; `destroy` fires the moment one is removed.
 
 <Aside type="caution">
-An object that EWP itself spawns or removes — through [`spawn:`](/ew_wiki/ewp/concepts/script/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).
+An object that EWP itself spawns or removes — through [`spawn:`](/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).
 </Aside>
 
 In practice, this is a rule that spawns a Boar, expecting another rule to then react to that Boar being created:

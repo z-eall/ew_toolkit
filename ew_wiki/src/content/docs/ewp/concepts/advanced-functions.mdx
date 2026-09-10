@@ -1,18 +1,62 @@
 ---
 title: Advanced Functions
-description: The four function categories Understanding Functions saved for later — 3D position/rotation math, arithmetic on Valheim's oversized tick numbers, a save slot that isn't tied to any object, and reading/formatting the clock.
+description: Combining Numeric and Text functions creatively, plus a quick reference for two categories used less often — 3D vector math and Valheim's oversized tick numbers.
 complexity: advanced
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-This page picks up exactly where [Understanding Functions](/ew_wiki/ewp/concepts/functions/) left off — Vector, Long numbers, Custom data (global), and Time, the four categories it named but didn't teach. Everything here still follows the same `<name_param1_param2>` shape; if that part isn't already familiar, start there first.
+[Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them **combined** — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, chained as deep as the problem needs. Vector and Long numbers get a quick reference too, since they're genuinely new categories Understanding Functions didn't cover, just rarely-needed ones.
 
 <Aside type="note">
 As always, the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) is the complete, always-current list. This page picks out the ones worth a worked example — not every function in every category.
 </Aside>
 
+## Combining functions across categories
+
+### Case study: mixing two different clocks in one message
+
+Valheim's in-game clock ([Time functions](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing), `<day>`) and the server's real-world clock ([Realtime functions](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends), `<realtime_X>`) are two entirely separate systems, each taught on its own trigger page — but nothing stops a single `command:` from reading both at once:
+
+```yaml
+- prefab: Player
+  type: say, worldclock
+  command: s Day <day>, server time is <realtime_HH:mm>
+```
+
+### Case study: a Text-and-Numeric combo for a chat-submitted name
+
+Text functions reshape words; Numeric functions do arithmetic — nesting one inside the other answers questions neither could alone, like "how much of a length budget is left":
+
+```yaml
+- prefab: Player
+  type: say, namebase *
+  command: s Base name registered as <upper_<par_1>> — <max_0_<sub_20_<len_<par_1>>>> character(s) left before the 20-limit.
+```
+
+`<len_<par_1>>` (Text) measures what the player typed; `<sub_20_X>` (Numeric) subtracts that from a 20-character budget; `<max_0_X>` clamps it so a name that's already over budget reports `0` left, not a negative number — the same clamp-a-countdown shape used on the [type: time page](/ew_wiki/ewp/concepts/advanced-triggers-time/#case-study---counting-down-to-a-fixed-day). `<upper_<par_1>>` (also Text) just formats the name for display; nothing here actually enforces the limit — EWP has no function that trims a string, so this reports the budget, it doesn't cut anyone off.
+
+### Case study: a Numeric-only weighted roll
+
+Adding two random rolls together weights the result toward the middle of the range, instead of an even spread — the same reason two dice most often sum to 7:
+
+```yaml
+- prefab: Player
+  type: say, rolldamage
+  command: s You deal <add_<randi_1_7>_<randi_1_7>> damage (two small rolls, weighted toward the middle instead of one flat roll)
+```
+
+`<randi_1_7>` (Numeric) rolls a random whole number from 1 up to, but not including, 7 — twice, independently — and `<add_X_Y>` sums them. A single `<randi_1_13>` would spread evenly across the same 2-12 range; summing two smaller rolls instead makes the middle of that range far more likely than either end.
+
+## Custom data (global)
+
+`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) — one shared slot, not attached to any object, most players call it an **EWP key**. Full explanation, every function, and worked examples (simple and advanced) live on their own page: [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) — including how an EWP key compares to the older, simpler `globalkey` world flag.
+
 ## Vector functions
+
+<Aside type="note">
+Used less often than the categories above — kept brief here as a quick reference, not a full walkthrough.
+</Aside>
 
 A **vector** here means a 3D position or direction — the same `x,z,y` order `<pos>` already returns. Vector functions do arithmetic on two or three of those at once instead of one number at a time:
 
@@ -24,7 +68,7 @@ A **vector** here means a 3D position or direction — the same `x,z,y` order `<
 ...and others — `<dot_A_B>`, `<cross_A_B>`, `<angle_A_B>`, `<project_V_N>`, `<reflect_D_N>` cover the rest of the 3D-math toolbox.
 
 <Aside type="note">
-`<add_A_B>`, `<sub_A_B>`, `<mul_A_B>`, and `<div_A_B>` exist in *both* Vector and [Numeric](/ew_wiki/ewp/concepts/functions/#kinds-of-functions) under the exact same names — EWP tells them apart by what you hand in, not by which one you meant. Feed `<add_A_B>` two vectors and every matching component adds; feed it a vector and a plain number and the number adds to *every* component. Same name, different behavior depending on the shape of what's passed in.
+`<add_A_B>`, `<sub_A_B>`, `<mul_A_B>`, and `<div_A_B>` exist in *both* Vector and [Numeric](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) under the exact same names — EWP tells them apart by what you hand in, not by which one you meant. Feed `<add_A_B>` two vectors and every matching component adds; feed it a vector and a plain number and the number adds to *every* component. Same name, different behavior depending on the shape of what's passed in.
 </Aside>
 
 A worked example — distance to the nearest of two fixed points, useful for something like picking whichever of two portals is closer:
@@ -39,7 +83,11 @@ A worked example — distance to the nearest of two fixed points, useful for som
 
 ## Long numbers
 
-Valheim tracks time internally as ticks — a number far bigger than the ordinary [Numeric functions](/ew_wiki/ewp/concepts/functions/#kinds-of-functions) are built for, per `functions.md`'s own note that these exist "usually only needed when calculating with game ticks." `<ticks>` (covered below, under Time) returns one of these oversized numbers — arithmetic on it needs the `long` variant of the function, not the regular one:
+<Aside type="note">
+Used less often than the category above — kept brief here as a quick reference, not a full walkthrough.
+</Aside>
+
+Valheim tracks time internally as ticks — a number far bigger than the ordinary [Numeric functions](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) are built for, per `functions.md`'s own note that these exist "usually only needed when calculating with game ticks." [`<ticks>`](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing) returns one of these oversized numbers — arithmetic on it needs the `long` variant of the function, not the regular one:
 
 - `<addlong_X_Y>`, `<sublong_X_Y>`, `<mullong_X_Y>`, `<divlong_X_Y>`, `<modlong_X_Y>` — same jobs as `<add_X_Y>`/`<sub_X_Y>`/`<mul_X_Y>`/`<div_X_Y>`/`<mod_X_Y>`, just returning a long instead of a regular number.
 - `<calclong_X>` — evaluates a whole math expression (built from regular functions) and returns the result as a long, for when nesting individual `long` functions gets clunky.
@@ -51,69 +99,3 @@ Valheim tracks time internally as ticks — a number far bigger than the ordinar
   type: say, tickcheck
   command: s <addlong_<ticks>_100000000>  # <ticks> now, plus 10 seconds' worth of ticks
 ```
-
-## Custom data (global)
-
-`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) — easy to conflate because both read back with a similarly-named function. The difference:
-
-- Per-object `data:` (`<int_*>`, `<string_*>`, ...) lives *on one object*. Every Boar has its own copy.
-- Global custom data (`<save_X_Y>`, `<load_X>`) isn't attached to any object at all — one shared slot, the same value no matter which object's rule reads it.
-
-- `<save_X_Y>` — writes value Y under key X.
-- `<load_X=default>` — reads the key back, or the fallback if it was never saved.
-- `<clear_X>` — removes the key entirely. Wildcard `*` removes multiple keys at once.
-- `<save++_X>` / `<save--_X>` — shorthand for "add/subtract 1", creating the key at `1`/`-1` if it didn't exist yet.
-
-<Aside type="caution">
-A wildcard `*` in `<save_*_Y>`'s key only sets keys that **already exist** — it can't create new ones. `<clear_*>`'s wildcard has no such restriction; it deletes whatever matches.
-</Aside>
-
-Because `<save_X_Y>`/`<clear_X>` write a value rather than fetch one, they're normally run through `exec:` — a rule-entry field whose only job is to run a function and discard whatever it returns, rather than showing it in a message or storing it in `data:`:
-
-```yaml
-- prefab: Player
-  type: say, markhome
-  exec: <save_homeAnchor_<pos>>  # writes the player's current position to a global slot, shows nothing
-  command: s Anchor saved.
-```
-
-### Combined example: an anchor point any object can check against
-
-This ties a vector function to a global save/load — genuinely advanced, since it needs both pieces at once. One rule drops an anchor at the player's current position; a second rule, triggered from anywhere, reports distance back to it:
-
-```yaml
-- prefab: Player
-  type: say, markhome
-  exec: <save_homeAnchor_<pos>>
-  command: s Anchor saved.
-
-- prefab: Player
-  type: say, distancehome
-  command: s <distance_<pos>_<load_homeAnchor=0,0,0>>m from your anchor  # 0,0,0 fallback if no anchor was ever saved
-```
-
-`<pos>` in the second rule is whichever player says `distancehome` — not necessarily the one who set the anchor. The anchor itself isn't tied to any object, so any player, at any time, can check their distance from it.
-
-## Time functions
-
-<Aside type="note">
-This section is about *functions* that read the clock — not the [`type: time`](/ew_wiki/ewp/concepts/advanced-triggers-time/)/[`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/) **triggers** that fire a rule on a schedule. A function here only reads a value; it never causes a rule to run on its own.
-</Aside>
-
-- `<day>` — whole days since the world started.
-- `<time>` — seconds since the world started (`1800` seconds per in-game day).
-- `<ticks>` — the same, in ticks (see Long numbers above).
-- `<time_X>` — formats game time using a .NET `DateTime` format string, e.g. `<time_yyyy-MM-dd HH:mm:ss>`.
-- `<realtime>` — real-world Unix time in seconds.
-- `<realtime_X>` — formatted real-world time, server's own timezone, e.g. `<realtime_HH:mm:ss>`.
-- `<realtime_X_Y>` — same, with an explicit timezone offset `Y` instead of the server's own.
-
-```yaml
-- prefab: Player
-  type: say, worldclock
-  command: s Day <day>, server time is <realtime_HH:mm>
-```
-
-<Aside type="tip">
-Need Eastern time on a server running elsewhere? `<realtime_HH:mm_-5>` applies the offset without touching the server's own clock — see `functions.md`'s own example for the exact syntax.
-</Aside>

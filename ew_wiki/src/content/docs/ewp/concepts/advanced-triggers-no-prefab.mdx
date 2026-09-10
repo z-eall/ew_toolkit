@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Aside } from '@astrojs/starlight/components';
 
-[Understanding Triggers](/ew_wiki/ewp/concepts/triggers/) covered `create`, `destroy`, `state`, and `say` — every one of them tied to a specific object matched by `prefab:`. This page covers three that aren't: `event`, `key`, and `globalkey`. EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) says the same thing, word for word, for all three: **"There is no prefab or position for this type, so most fields won't work."**
+[Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say` — every one of them tied to a specific object matched by `prefab:`. This page covers three that aren't: `event`, `key`, and `globalkey`. EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) says the same thing, word for word, for all three: **"There is no prefab or position for this type, so most fields won't work."**
 
 ## What "no prefab" actually rules out
 
@@ -18,21 +18,40 @@ Every other trigger this wiki has covered fires *because of* something happening
 - **What still works cleanly:** `command:`/`commands:`, `exec:`, `objectRpc:`/`clientRpc:` aimed with an explicit `target:` (not the default `owner`, since there's no owning object), and reading/writing global state (`setkey`/`removekey`, `<save_X_Y>`).
 
 <Aside type="tip">
-If a rule under one of these three trigger types needs to *do* something to a specific object, [`poke:`](/ew_wiki/ewp/concepts/poke/) with an explicit `prefab:` on the poke entry is the way in — the trigger itself has no object to hand off, but the poke can still target one by name.
+If a rule under one of these three trigger types needs to *do* something to a specific object, [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) with an explicit `prefab:` on the poke entry is the way in — the trigger itself has no object to hand off, but the poke can still target one by name.
 </Aside>
 
 ## `event`: reacting to a named game event
 
-`type: event` fires when a game event starts. Add `end: true` to fire when that same event ends instead. Its parameter is the event's own id — vanilla random events and anything defined through your own world data alike. EWP doesn't publish a fixed list of valid ids anywhere this page can cite, so — same caveat as a `globalkey` name below — check your own event list rather than reusing an id from an example verbatim.
+`type: event` fires when a game event starts; add `end: true` to fire when it ends instead. Its parameter is the event's own id.
+
+Vanilla Valheim's random events all use a fixed id:
+
+| Event | id |
+| --- | --- |
+| Eikthyr rallies the forest | `army_eikthyr` |
+| The Elder stirs the forest | `army_theelder` |
+| A foul smell from the swamp | `army_bonemass` |
+| A cold wind from the mountains | `army_moder` |
+| Goblin horde | `army_goblin` |
+| Gjall attack | `army_gjall` |
+| Seeker swarm | `army_seekers` |
+| Skeleton surprise | `skeletons` |
+| Blob infestation | `blobs` |
+| Forest trolls | `foresttrolls` |
+| Surtling swarm | `surtlings` |
+| Wolf hunt | `wolves` |
+| Bat swarm | `bats` |
+
+A separate mod by the same author, [Expand World Events](https://github.com/JereKuusela/valheim-expand_world_events), lets a world owner define entirely new events with ids of their own choosing in `expand_events.yaml` — `type: event` reacts to whatever id actually fires, vanilla or custom. Check that file before writing a rule against an id that isn't in the table above.
 
 ```yaml
-# "raid_of_the_hour" stands in for a real event id from your own event list
-- type: event, raid_of_the_hour
-  command: s An event has begun!
+- type: event, army_eikthyr
+  command: s Eikthyr has rallied the forest. Stay close to camp.
 
-- type: event, raid_of_the_hour
+- type: event, army_eikthyr
   end: true   # fires when the same event ends, not when it starts
-  command: s The event is over.
+  command: s The forest has gone quiet again.
 ```
 
 ### Case study - tracking multiple events with one shared response
@@ -40,42 +59,26 @@ If a rule under one of these three trigger types needs to *do* something to a sp
 Since `event`'s parameter is the event id itself (`<par_0>`), one rule can react to several different events without repeating the response for each:
 
 ```yaml
-- type: event, raid_of_the_hour,forest_uprising,army_eikthyr
+- type: event, army_eikthyr,foresttrolls,army_bonemass
   command: s <par_0> has begun! Prepare yourselves.
 ```
 
 Saying the event id back via `<par_0>` means the same rule announces whichever of the three actually started, without three separate near-identical rules.
 
-## `key` and `globalkey`: reacting to a stored flag being set
+## `globalkey`: reacting to a world flag being set
 
-Both fire when a saved flag is set or removed. Add `remove: true` to fire on removal instead of on set. But they're two separate stores, easy to conflate:
+`type: globalkey` reacts to Valheim's older, simpler world-wide flag system — set or cleared with the `setkey`/`removekey` commands, and checked with `globalKeys:`/`bannedGlobalKeys:` filters or the `<globalkey_X=default>` function already used on [Advanced Filter: Condition](/ew_wiki/ewp/concepts/advanced-filter-condition/). Add `remove: true` to fire on removal instead of on set. It only fires when the flag actually *changes* — setting an already-set flag again doesn't re-trigger it.
 
-- **`key`** reacts to the same global custom-data store [`<save_X_Y>`/`<load_X>`](/ew_wiki/ewp/concepts/advanced-functions/#custom-data-global) writes to, and that `keys:`/`bannedKeys:` filters check. It only fires when the value actually *changes* — saving the same value again doesn't re-trigger it.
-- **`globalkey`** reacts to the older, simpler world-wide flag system — set or cleared with the `setkey`/`removekey` commands, and checked with `globalKeys:`/`bannedGlobalKeys:` filters or the `<globalkey_X=default>` function already used on [Advanced Filter](/ew_wiki/ewp/concepts/advanced-filtering/).
-
-<Aside type="note">
-Neither of these is the per-object `data:` you already know from [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/). Three separate systems now share the word "data"/"key": a value attached to one object (`data:`), a value in one shared global slot (`<save_X_Y>` / `type: key`), and a world-wide flag (`setkey` / `type: globalkey`). None of them read each other.
-</Aside>
+Unlike an event id, a `globalkey` name isn't game data — it's whatever `setkey` calls it elsewhere in your own script, so `raidCooldown` below is just a name this example picked:
 
 ```yaml
-# raidCooldown is a made-up global key for this example — globalkey names are
-# whatever a script author chooses to set, not a fixed list to verify against
 - type: globalkey, raidCooldown
   command: s The area has calmed down.
-
-# Track that a player manually acknowledged it (global custom data, key)
-- prefab: Player
-  type: say, ack
-  admin: true   # command-style say restricted to admins — see Understanding Triggers
-  exec: <save_raidAck_<time>>   # re-saving this key re-fires type: key below
-
-- type: key, raidAck
-  command: s Acknowledgement logged.
 ```
 
 ### Case study - `remove: true` as an explicit "flag cleared" hook
 
-Because `key`/`globalkey` fire on removal too, a cleanup rule doesn't need to guess when a flag went away — it can react directly:
+Because `globalkey` fires on removal too, a cleanup rule doesn't need to guess when a flag went away — it can react directly:
 
 ```yaml
 - type: globalkey, raidCooldown
@@ -85,12 +88,35 @@ Because `key`/`globalkey` fire on removal too, a cleanup rule doesn't need to gu
 
 Paired with the `set` version above, this gives a complete on/off pair driven entirely by whoever calls `setkey raidCooldown` / `removekey raidCooldown` elsewhere in the script — neither rule needs to know who did it or why, only that the flag changed.
 
-### Case study - poking a real object from a no-prefab trigger
+## `key`: reacting to an EWP key change
+
+`type: key` reacts to the same global custom-data store [`<save_X_Y>`/`<load_X>`](/ew_wiki/ewp/concepts/ewp-key/) writes to — most players call this an **EWP key**, to tell it apart from `globalkey` above. Same rules as `globalkey`: it only fires when the value actually *changes* (saving the same value again doesn't re-trigger it), and `remove: true` fires on removal (`<clear_X>`) instead of on set.
+
+```yaml
+- prefab: Player
+  type: say, ack
+  admin: true   # command-style say restricted to admins — see Understanding Triggers
+  exec: <save_raidAck_<time>>   # re-saving this key re-fires type: key below
+
+- type: key, raidAck
+  command: s Acknowledgement logged.
+```
+
+<Aside type="tip">
+This is the short version — [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) walks through setting, reading, and reacting to an EWP key together as one complete pattern.
+</Aside>
+
+<Aside type="note">
+Neither `key` nor `globalkey` is the per-object `data:` you already know from [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/). Three separate systems now share the word "data"/"key": a value attached to one object (`data:`), a value in one shared global slot (`<save_X_Y>` / `type: key`, an EWP key), and a world-wide flag (`setkey` / `type: globalkey`). None of them read each other.
+</Aside>
+
+## Case study - poking a real object from a no-prefab trigger
 
 Since `event`/`key`/`globalkey` have no triggering object of their own, reaching an actual object still goes through `poke:` with an explicit `prefab:`:
 
 ```yaml
 - type: globalkey, raidCooldown
+  command: s Workbenches nearby reset for the next raid.
   poke:
   - prefab: piece_workbench
     maxDistance: 300  # from world center (0,0,0), not from any triggering object — see below

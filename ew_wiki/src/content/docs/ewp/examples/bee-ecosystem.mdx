@@ -10,16 +10,16 @@ Every earlier example on this wiki reacts to one thing and does one thing. This 
 
 ## What gets chained together
 
-- [`poke:`](/ew_wiki/ewp/concepts/poke/) relays one rule's trigger into another rule, so a `create` on a destroyed-hive effect can cascade into removing nearby drops.
-- `weight:` on a single rule (no sibling to compete against) becomes a plain percentage chance — see [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) for why the underlying math works out that way.
+- [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) relays one rule's trigger into another rule, so a `create` on a destroyed-hive effect can cascade into removing nearby drops.
+- `weight:` on a single rule (no sibling to compete against) becomes a plain percentage chance — see [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) for why the underlying math works out that way.
 - [`objects:`](/ew_wiki/ewp/concepts/objects-filtering/) requires a beehive within range before a crop is allowed to get better yield.
-- [`fallback: true`](/ew_wiki/ewp/examples/adding-randomness/) picks between two competing outcomes ("Blooming" vs. "Pollinated") without leaving a gap where neither happens.
+- [`fallback: true`](/ew_wiki/ewp/examples/basic-rng/) picks between two competing outcomes ("Blooming" vs. "Pollinated") without leaving a gap where neither happens.
 - [Custom data](/ew_wiki/ewp/concepts/custom-data/) (`isSilentBeehive`, `isFertilizedSapling`, ...) is the actual "state" the ecosystem remembers between events.
 - `type: change` reacts to a beehive's own honey level dropping — the extraction event itself, not a poke announcing it.
 - Two mechanics new to this wiki: `value:` and `valueGroup:` entries, covered below, which name a single tunable number or a list of prefabs so a rule can point at `<theName>` instead of repeating it.
 
 <Aside type="note">
-Every prefab id, component field, and function below was checked against EWP's own docs, `ewp_validator`'s schema, and Valheim's real component fields. The balancing numbers (70% chance, 2x yield, and so on) aren't an official Valheim or EWP number — treat them as a starting point, not a target to hit exactly.
+The balancing numbers below (70% chance, 2x yield, and so on) aren't an official Valheim or EWP number — treat them as a starting point, not a target to hit exactly.
 </Aside>
 
 ## The tunable values: `value:` and `valueGroup:`
@@ -137,7 +137,7 @@ Two named data entries feed off those values, applied to a fertilized sapling on
   - Plant.m_growTimeMax, <mul_<float_Plant.m_growTimeMax>_<sub_1_<reduceGrowTimeTrees>>>
 ```
 
-`<mul_<float_Plant.m_growTime>_<sub_1_<reduceGrowTimeCrops>>>` reads inside-out: `<sub_1_<reduceGrowTimeCrops>>` is `1 − 0.5 = 0.5`, then that's multiplied by the sapling's own current `Plant.m_growTime` — so the grow time is cut in half, whatever it started at, rather than being set to one fixed number. `Plant.m_name`, `Plant.m_growTime`, and `Plant.m_growTimeMax` are all real fields on Valheim's `Plant` component (confirmed on [valheimtools.stream](https://valheimtools.stream/wiki/components/Plant)).
+`<mul_<float_Plant.m_growTime>_<sub_1_<reduceGrowTimeCrops>>>` reads inside-out: `<sub_1_<reduceGrowTimeCrops>>` is `1 − 0.5 = 0.5`, then that's multiplied by the sapling's own current `Plant.m_growTime` — so the grow time is cut in half, whatever it started at, rather than being set to one fixed number. `Plant.m_name`, `Plant.m_growTime`, and `Plant.m_growTimeMax` are all real fields on Valheim's `Plant` component.
 
 ## Loop 1 — the QueenBee stops being guaranteed
 
@@ -181,7 +181,7 @@ Vanilla drops a QueenBee from most wild beehives. This loop removes that guarant
      spawn: vfx_spawn_small
    ```
 
-   `weight: <chanceRemoveQueenbee>` looks like the sibling-rule mechanic from [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/), but there's no second weighted rule competing with this one for the same trigger — and a weight pool is always measured against a total of *at least 1*. With only this one rule in the pool, its odds are just `0.7 / 1 = 70%`. That's the whole mechanism: a lone `weight:` on an otherwise-unopposed rule behaves like a `chance:` roll, without needing a separate `chance:` field at all.
+   `weight: <chanceRemoveQueenbee>` looks like the sibling-rule mechanic from [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/), but there's no second weighted rule competing with this one for the same trigger — and a weight pool is always measured against a total of *at least 1*. With only this one rule in the pool, its odds are just `0.7 / 1 = 70%`. That's the whole mechanism: a lone `weight:` on an otherwise-unopposed rule behaves like a `chance:` roll, without needing a separate `chance:` field at all.
 
 </Steps>
 
@@ -201,7 +201,7 @@ A separate, independent rule gives flowers their own small shot at a QueenBee:
   - prefab: fx_skeleton_pet
 ```
 
-Picking a grown flower ([`type: state, picked`](/ew_wiki/ewp/concepts/triggers/) — `Pickable`'s own state broadcast) rolls its own independent `weight:` chance (same single-rule mechanism as above, 7% here), but only counts at all if a non-silent `piece_beehive` is within 10 meters — the first place this script checks that a hive is actually active before letting it help the player.
+Picking a grown flower ([`type: state, picked`](/ew_wiki/ewp/concepts/basic-triggers/) — `Pickable`'s own state broadcast) rolls its own independent `weight:` chance (same single-rule mechanism as above, 7% here), but only counts at all if a non-silent `piece_beehive` is within 10 meters — the first place this script checks that a hive is actually active before letting it help the player.
 
 ## Loop 2 — Honey becomes fertilizer
 
@@ -294,7 +294,7 @@ This one's a single rule chain, no poke needed — `objects:` alone does the "is
     parameter: turnBetterYield
 ```
 
-A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter by Nearby Objects](/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
+A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter: by Objects](/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
 
 ```yaml
 - prefab: allGrownCrops
@@ -319,7 +319,7 @@ A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) 
 ```
 
 <Aside type="tip">
-`weight:` and `fallback: true` together, on both competing rules, isn't a combination this wiki's own [Weight and Chance](/ew_wiki/ewp/examples/adding-randomness/) page walks through — that page covers each field on its own. Read only for what's confirmed: the two `weight:` values (0.3 and 0.1) add up to 0.4, and a weight pool is always measured against a total of *at least 1* — so there's a genuine 60% gap where the weight roll picks neither entry, and the crop just stays an ordinary grown crop. That gap is the point; most crops near a hive shouldn't get the bonus. `fallback: true` here reads as defensive rather than load-bearing: with only these two rules reacting to `turnBetterYield`, it mainly future-proofs against a *third*, non-fallback rule someone else adds later reacting to the same poke — that third rule would then always get first refusal over these two.
+`weight:` and `fallback: true` together, on both competing rules, isn't a combination this wiki's own [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) page walks through — that page covers each field on its own. Read only for what's confirmed: the two `weight:` values (0.3 and 0.1) add up to 0.4, and a weight pool is always measured against a total of *at least 1* — so there's a genuine 60% gap where the weight roll picks neither entry, and the crop just stays an ordinary grown crop. That gap is the point; most crops near a hive shouldn't get the bonus. `fallback: true` here reads as defensive rather than load-bearing: with only these two rules reacting to `turnBetterYield`, it mainly future-proofs against a *third*, non-fallback rule someone else adds later reacting to the same poke — that third rule would then always get first refusal over these two.
 </Aside>
 
 `isBetterCropsBlooming` and `isBetterCropsPollinated` are two more named data entries, built the same way as the fertilizer ones:
@@ -359,7 +359,7 @@ The last loop is the one that actually closes the circle: pulling honey out of a
 `level` is `Beehive`'s own honey-stage counter (a real ZDO field) — it climbs as honey builds up and drops back to 0 when a player extracts it. `type: change, level 0 3,4` fires specifically when `level` changes *to* 0 *from* 3 or 4 — i.e., extracting from a hive that was nearly or fully stocked, not a small top-up.
 
 <Aside type="caution">
-Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_wiki/ewp/concepts/pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
+Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_wiki/ewp/concepts/basic-pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
 </Aside>
 
 With that fix, `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
@@ -389,7 +389,7 @@ Reactivating a silenced hive works the same shape as Loop 1's flower-QueenBee ro
     pos: 0,0,1
 ```
 
-A fresh grown flower rolls `chanceResetSilent` (20%), and only counts if a silent hive is within 10 meters — then pokes that specific hive. The hive removes itself and spawns a brand-new copy of `<prefab>` (a [function](/ew_wiki/ewp/concepts/functions/) meaning "this same object's own prefab id") in its place — a clean respawn rather than trying to un-set every silent-hive field one at a time. `triggerRules: true` matters here: without it, this spawn wouldn't itself be checked against any other rule in the script — see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/) for why a spawned object normally skips rule-triggering by default.
+A fresh grown flower rolls `chanceResetSilent` (20%), and only counts if a silent hive is within 10 meters — then pokes that specific hive. The hive removes itself and spawns a brand-new copy of `<prefab>` (a [function](/ew_wiki/ewp/concepts/basic-functions/) meaning "this same object's own prefab id") in its place — a clean respawn rather than trying to un-set every silent-hive field one at a time. `triggerRules: true` matters here: without it, this spawn wouldn't itself be checked against any other rule in the script — see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/) for why a spawned object normally skips rule-triggering by default.
 
 Last piece — stop a silent hive from just getting repaired back to normal:
 
