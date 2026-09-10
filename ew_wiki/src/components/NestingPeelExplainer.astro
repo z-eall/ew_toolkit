@@ -120,11 +120,13 @@
 		min-width: 0;
 	}
 
-	/* Fixed height, not min-height -- the expression is always exactly one
-	   line across all 3 scenarios and every step, so a hard height (not
-	   just a floor) keeps this zone from ever contributing to layout
-	   shift, matching the "stay static" requirement below. */
-	.np-zone-expr { padding: 6px 12px; margin: 0; height: 2.2em; display: flex; align-items: center; justify-content: center; }
+	/* min-height, not a hard height -- now that the unresolved <len_X> shows
+	   the real name (Bjorn Ironsideson II in full, the 33-char name
+	   shortened to "Ragnar ... Northshire"), the longest embedded name can
+	   push this line onto 2 lines at mobile width. Same floor-not-ceiling
+	   fix already applied to the narration/result zones below, for the
+	   same reason: a hard height clipped real content there. */
+	.np-zone-expr { padding: 6px 12px; margin: 0; min-height: 2.2em; display: flex; align-items: center; justify-content: center; }
 	.np-expr {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 		font-size: 14px;
@@ -225,13 +227,29 @@
 		return { len, budget, result };
 	}
 
-	function renderExpr(s: number, v: Values): string {
-		// Layer 1: <len_<par_1>>
+	// Names past 20 chars get shortened to "first ... last" inside the
+	// expression box only (never in the narration/result text, which keep
+	// the real full name) -- otherwise the 33-char scenario's unresolved
+	// <len_X> call pushes the whole expression onto 2 lines, which is what
+	// the fixed-height .np-zone-expr box exists to avoid. Names at or under
+	// 20 chars (both other scenarios) always show in full, per the
+	// maintainer's explicit call on the Bjorn case.
+	function displayName(name: string): string {
+		if (name.length <= 20) return name;
+		const words = name.trim().split(/\s+/);
+		if (words.length < 2) return name;
+		return words[0] + ' ... ' + words[words.length - 1];
+	}
+
+	function renderExpr(s: number, name: string, v: Values): string {
+		// Layer 1: <len_X> -- shows the real (possibly shortened) name until
+		// it resolves, matching the validated prototype's behavior; not the
+		// literal placeholder "<par_1>".
 		let layer1: string;
 		if (s >= 1) {
 			layer1 = '<span class="np-chip-done">' + v.len + '</span>';
 		} else {
-			layer1 = '<span class="np-fn-active">&lt;len_<span class="np-par-chip">&lt;par_1&gt;</span>&gt;</span>';
+			layer1 = '<span class="np-fn-active">&lt;len_<span class="np-par-chip">' + displayName(name) + '</span>&gt;</span>';
 		}
 
 		// Layer 2: <sub_20_LAYER1>
@@ -282,7 +300,7 @@
 		function render() {
 			const name = nameSel.value;
 			const v = computeValues(name);
-			exprEl.innerHTML = renderExpr(step, v);
+			exprEl.innerHTML = renderExpr(step, name, v);
 			narrationEl.innerHTML = NARRATIONS[step](name, v);
 			resultEl.textContent =
 				step === TOTAL_STEPS ? 'Registered as ' + name.toUpperCase() + ' — ' + v.result + ' character(s) left before the 20-limit.' : '';
