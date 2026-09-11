@@ -32,6 +32,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-reader-internal-bookkeeping.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-nav-registry-addition.cjs"
           }
         ]
       }
