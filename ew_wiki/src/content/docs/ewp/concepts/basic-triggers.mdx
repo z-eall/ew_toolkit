@@ -6,14 +6,14 @@ complexity: beginner
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-[Start Writing a Script](/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) already introduced four `type:` triggers — `create`, `destroy`, `state`, and `say` — just enough to get a first rule running. This page goes one level deeper on each of those same four, so a rule you write with them does what you expect instead of surprising you.
+[Start Writing a Script](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) already introduced four `type:` triggers — `create`, `destroy`, `state`, and `say` — just enough to get a first rule running. This page goes one level deeper on each of those same four, so a rule you write with them does what you expect instead of surprising you.
 
 ## `create` and `destroy`
 
 Both fire with no parameter — just `type: create` or `type: destroy`, nothing after the comma. `create` fires the moment a matching object spawns; `destroy` fires the moment one is removed.
 
 <Aside type="caution">
-An object that EWP itself spawns or removes — through [`spawn:`](/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).
+An object that EWP itself spawns or removes — through [`spawn:`](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).
 </Aside>
 
 In practice, this is a rule that spawns a Boar, expecting another rule to then react to that Boar being created:
@@ -73,4 +73,4 @@ The moment any rule uses `type: say`, EWP quietly adds a server-controlled "play
 
 ## Many more triggers exist
 
-`create`, `destroy`, `state`, and `say` are just the four you'll reach for first. EWP understands quite a few more `type:` values — [`change`](/ew_wiki/ewp/concepts/advanced-triggers-change/), [`time`](/ew_wiki/ewp/concepts/advanced-triggers-time/), [`realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/), and three with no prefab or position of their own ([`event`, `key`, `globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)) — each reacting to something different, with its own parameter shape and edge cases. None of them fit a first script yet, so they're covered one at a time, in depth, once you're further along.
+`create`, `destroy`, `state`, and `say` are just the four you'll reach for first. EWP understands quite a few more `type:` values — [`change`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-change/), [`time`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-time/), [`realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/), and three with no prefab or position of their own ([`event`, `key`, `globalkey`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)) — each reacting to something different, with its own parameter shape and edge cases. None of them fit a first script yet, so they're covered one at a time, in depth, once you're further along.

@@ -9,7 +9,7 @@ import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx
 import CommanderBoarData from '../../../../components/snippets/commander-boar-data.mdx';
 import FilterLimitExplainer from '../../../../components/FilterLimitExplainer.astro';
 
-[`filter:`/`bannedFilter:`](/ew_wiki/ewp/concepts/basic-filter/) each hold exactly one check. `filters:`/`bannedFilters:` (plural) hold a *list* of them — for whenever a single check isn't enough, on the rule's own object or on something nearby.
+[`filter:`/`bannedFilter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/) each hold exactly one check. `filters:`/`bannedFilters:` (plural) hold a *list* of them — for whenever a single check isn't enough, on the rule's own object or on something nearby.
 
 <Aside type="note">
 This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the "Filters" section.
@@ -113,7 +113,7 @@ bannedFilters:
 
 Everything above works the same way one level down — a single `objects:`/`bannedObjects:` or `poke:` entry can also carry its own `filters:`/`bannedFilters:`/`filterLimit:`, checking that specific nearby or poked object instead of the rule's own.
 
-An [`objects:`](/ew_wiki/ewp/concepts/objects-filtering/) entry needing more than one condition on the same nearby object:
+An [`objects:`](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) entry needing more than one condition on the same nearby object:
 
 ```yaml
 - prefab: Boar
@@ -133,7 +133,7 @@ An [`objects:`](/ew_wiki/ewp/concepts/objects-filtering/) entry needing more tha
 
 A single `filter:` on this entry could check the star level *or* the boss flag, never both at once — `filters:` is what lets one nearby-object entry require both.
 
-A [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) entry works exactly the same way — it's the same nearby-object matching machinery under the hood, just poking instead of reading:
+A [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) entry works exactly the same way — it's the same nearby-object matching machinery under the hood, just poking instead of reading:
 
 ```yaml
 - prefab: Player
@@ -150,5 +150,5 @@ A [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) entry works exactly the same way 
 Only a `wood_door` that's both flagged `isWoodDoor` *and* currently closed gets poked — a single `filter:` here could check one or the other, not both together.
 
 <Aside type="tip">
-Want a plain on/off switch back at the top level instead of a list? [`condition:`](/ew_wiki/ewp/concepts/advanced-filter-condition/) is a different, newer tool for a different job — comparing two values that aren't both fixed, not narrowing a list of static checks. See Advanced Filter: Condition if a `filters:` list stops being enough.
+Want a plain on/off switch back at the top level instead of a list? [`condition:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-condition/) is a different, newer tool for a different job — comparing two values that aren't both fixed, not narrowing a list of static checks. See Advanced Filter: Condition if a `filters:` list stops being enough.
 </Aside>

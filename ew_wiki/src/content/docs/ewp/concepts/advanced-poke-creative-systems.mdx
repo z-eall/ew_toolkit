@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-[Advanced Poke - Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/) covered every `poke:` field on its own. This page is the other half: combining those fields — mostly just `self:`, `delay:`, `filter:`, `target:`, and poke-carried pars — into patterns that do real work. Nothing here is a new field; it's the same handful of tools, composed more creatively.
+[Advanced Poke - Mechanics](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/) covered every `poke:` field on its own. This page is the other half: combining those fields — mostly just `self:`, `delay:`, `filter:`, `target:`, and poke-carried pars — into patterns that do real work. Nothing here is a new field; it's the same handful of tools, composed more creatively.
 
 <Aside type="note">
 The patterns below are proven techniques, not mod-official documentation — every prefab and field here is real, but the patterns themselves are one way to combine `poke:`, not the only way.
@@ -29,7 +29,7 @@ The obvious use is a **delayed reset** (below), but `self: true` is also worth r
 
 ### Fan-out: one trigger, many listeners
 
-Say a player says "unlock" near a locked door, and that should both open the door *and* show a message via [`objectRpc:`](/ew_wiki/ewp/concepts/basic-rpcs/). The naive version repeats the trigger:
+Say a player says "unlock" near a locked door, and that should both open the door *and* show a message via [`objectRpc:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/). The naive version repeats the trigger:
 
 ```yaml
 # Works, but the exact chat text "unlock" now lives in two places
@@ -111,7 +111,7 @@ A chained, timed script like this one is a case where a schema-valid YAML docume
 
 ## Filter-gated counters as a mini state machine
 
-`filter:`/`bannedFilter:` on a `poke:` entry doesn't just narrow *who* gets poked — reused against the poker's own [custom data](/ew_wiki/ewp/concepts/custom-data/), it can gate *whether an effect has already happened enough times*. A two-switch lock, where a door only opens once both switches have fired at least once each, needs to track that count somewhere — the door itself is a convenient place to keep it:
+`filter:`/`bannedFilter:` on a `poke:` entry doesn't just narrow *who* gets poked — reused against the poker's own [custom data](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/), it can gate *whether an effect has already happened enough times*. A two-switch lock, where a door only opens once both switches have fired at least once each, needs to track that count somewhere — the door itself is a convenient place to keep it:
 
 ```yaml
 - prefab: Player
@@ -138,7 +138,7 @@ A chained, timed script like this one is a case where a schema-valid YAML docume
   command: s Both switches pulled — the door unlocks.
 ```
 
-Both rules react to the exact same poke — [multiple entries matching the same trigger all run, in unspecified order](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), so the counter increments *and* the `filter: int, switches, 2` check both fire off one `switchPulled` poke, every time. The `<int_switches=0>` [function](/ew_wiki/ewp/concepts/basic-functions/) reads the door's own running count back, falling back to `0` the first time it hasn't been set yet — the same read-what-you-stored pattern from [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/), just incremented instead of just read.
+Both rules react to the exact same poke — [multiple entries matching the same trigger all run, in unspecified order](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), so the counter increments *and* the `filter: int, switches, 2` check both fire off one `switchPulled` poke, every time. The `<int_switches=0>` [function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) reads the door's own running count back, falling back to `0` the first time it hasn't been set yet — the same read-what-you-stored pattern from [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/), just incremented instead of just read.
 
 <Aside type="note">
 `switches` here is a made-up flag name, not a real field on `Door` — same caveat as any custom data value: pick a name that can't collide with a field the game already tracks.
@@ -146,7 +146,7 @@ Both rules react to the exact same poke — [multiple entries matching the same 
 
 ## A self-closing timer, carried entirely in the poke itself
 
-The [Mechanics page's poke-carried pars section](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#poke-carried-pars-sending-values-along-with-a-poke) showed how to send a value along with a poke. Here's why that's worth doing: a countdown that never touches `data:` at all, the value just riding along on each self-poke instead.
+The [Mechanics page's poke-carried pars section](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#poke-carried-pars-sending-values-along-with-a-poke) showed how to send a value along with a poke. Here's why that's worth doing: a countdown that never touches `data:` at all, the value just riding along on each self-poke instead.
 
 <Steps>
 

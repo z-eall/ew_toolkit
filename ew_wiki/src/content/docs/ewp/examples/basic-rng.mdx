@@ -8,10 +8,10 @@ import { Steps, Aside } from '@astrojs/starlight/components';
 import StrongBoarData from '../../../../components/snippets/strong-boar-data.mdx';
 import WeightLotteryExplainer from '../../../../components/WeightLotteryExplainer.astro';
 
-Every rule in [Your First Script](/ew_wiki/ewp/examples/first-script/) fired every single time its trigger happened. This page covers three rule-level fields that change that — `chance:`, `weight:`, and `fallback:` — then a compact variant that nests the same idea inside a `spawn:` list.
+Every rule in [Your First Script](/ew_toolkit/ew_wiki/ewp/examples/first-script/) fired every single time its trigger happened. This page covers three rule-level fields that change that — `chance:`, `weight:`, and `fallback:` — then a compact variant that nests the same idea inside a `spawn:` list.
 
 <Aside type="note">
-These examples are written to teach the pattern, not pulled from a real server's script the way [Your First Script](/ew_wiki/ewp/examples/first-script/) was — schema-valid and built the same way real rules are, but not something anyone's actually run in a live game. Treat them as demos to adapt, not battle-tested drops.
+These examples are written to teach the pattern, not pulled from a real server's script the way [Your First Script](/ew_toolkit/ew_wiki/ewp/examples/first-script/) was — schema-valid and built the same way real rules are, but not something anyone's actually run in a live game. Treat them as demos to adapt, not battle-tested drops.
 </Aside>
 
 <Steps>
@@ -40,7 +40,7 @@ These examples are written to teach the pattern, not pulled from a real server's
      - prefab: Coins
    ```
 
-   [`filter:`](/ew_wiki/ewp/concepts/basic-filter/) narrows this to 1-star or 2-star Necks only; `chance: 0.25` then means even those only drop the bonus Coins a quarter of the time. Both conditions have to pass — an un-starred Neck never reaches the `chance:` roll at all.
+   [`filter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/) narrows this to 1-star or 2-star Necks only; `chance: 0.25` then means even those only drop the bonus Coins a quarter of the time. Both conditions have to pass — an un-starred Neck never reaches the `chance:` roll at all.
 
 3. **`weight:` — a shared pool across sibling rules, not an independent roll**
 

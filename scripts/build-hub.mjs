@@ -12,7 +12,7 @@ function run(cmd, cwd = ".") {
   execSync(cmd, { cwd, stdio: "inherit" });
 }
 
-const tools = ["ewp_validator"];
+const tools = ["ewp_validator", "ew_wiki"];
 
 rmSync("dist", { recursive: true, force: true });
 

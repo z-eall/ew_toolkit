@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-[Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `realtime` — firing a rule on the real-world wall clock.
+[Understanding Triggers](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `realtime` — firing a rule on the real-world wall clock.
 
 <Aside type="note">
 Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
@@ -14,7 +14,7 @@ Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https:/
 
 ## Same shape as `time`, different clock, one extra granularity
 
-`type: realtime` fires on the identical schedule shape as [`type: time`](/ew_wiki/ewp/concepts/advanced-triggers-time/) — `<par_0>` the granularity word, each condition value its own par after that — but the clock is the real world instead of Valheim's, in the **server's own timezone**, and it adds a `second` granularity `time` doesn't have (Valheim itself has no in-game seconds; the real world does).
+`type: realtime` fires on the identical schedule shape as [`type: time`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-time/) — `<par_0>` the granularity word, each condition value its own par after that — but the clock is the real world instead of Valheim's, in the **server's own timezone**, and it adds a `second` granularity `time` doesn't have (Valheim itself has no in-game seconds; the real world does).
 
 ```yaml
 - type: realtime, second [unixEpochTimestamp]
@@ -27,7 +27,7 @@ Use `time` for anything that should follow Valheim's own day/night rhythm regard
 
 ## Reading the result: `<realtime>` and friends
 
-A `realtime` trigger tells you *that* the clock changed; the `<realtime_X>` functions below tell you *what it says now* — the same trigger-reads-function pairing [`type: time`](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing) has with its own Time functions. Three functions cover it:
+A `realtime` trigger tells you *that* the clock changed; the `<realtime_X>` functions below tell you *what it says now* — the same trigger-reads-function pairing [`type: time`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing) has with its own Time functions. Three functions cover it:
 
 - **`<realtime>`** — seconds since the Unix epoch (Jan 1, 1970 UTC), as a raw number.
 - **`<realtime_X>`** — the clock formatted your way. `X` is a .NET `DateTime` format string, e.g. `<realtime_yyyy-MM-dd HH:mm:ss>` or `<realtime_dddd>` for the weekday name. Uses the **server's** timezone.
@@ -52,7 +52,7 @@ The par mapping for `realtime` (granularity word as `<par_0>`, own unit then the
 
 ## Case study - a weekday buff rotation
 
-A simplified weekday buff — a `realtime, day` trigger writes the weekday as a [`globalkey`](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#globalkey-reacting-to-a-world-flag-being-set), and a `globalkey` trigger per day reacts to it. `setkey`/`removekey` are ordinary console commands run through the official `command:`/`commands:` fields — vanilla Valheim's own, not EWP's, which is why `scripting.md` doesn't spell out their syntax: `setkey [name]` and `removekey [name]` both take a bare name, no value.
+A simplified weekday buff — a `realtime, day` trigger writes the weekday as a [`globalkey`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#globalkey-reacting-to-a-world-flag-being-set), and a `globalkey` trigger per day reacts to it. `setkey`/`removekey` are ordinary console commands run through the official `command:`/`commands:` fields — vanilla Valheim's own, not EWP's, which is why `scripting.md` doesn't spell out their syntax: `setkey [name]` and `removekey [name]` both take a bare name, no value.
 
 <Steps>
 

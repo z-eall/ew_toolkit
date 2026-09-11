@@ -7,7 +7,7 @@ complexity: advanced
 import { Aside } from '@astrojs/starlight/components';
 import NestingPeelExplainer from '../../../../components/NestingPeelExplainer.astro';
 
-[Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them chained — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, as deep as the problem needs. That splits into two kinds of chaining: combining *different* categories (Text + Numeric), and chaining Numeric functions with themselves for a math trick EWP has no single function for. Vector gets a quick reference too, since it's a genuinely new category Understanding Functions didn't cover, just a rarely-needed one.
+[Understanding Functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) introduced Basic, Text, and Numeric functions one at a time. This page's main job is showing them chained — a function's result is just a value, so any function that accepts a value can take another function's output as its own parameter, as deep as the problem needs. That splits into two kinds of chaining: combining *different* categories (Text + Numeric), and chaining Numeric functions with themselves for a math trick EWP has no single function for. Vector gets a quick reference too, since it's a genuinely new category Understanding Functions didn't cover, just a rarely-needed one.
 
 <Aside type="note">
 As always, the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) is the complete, always-current list. This page picks out the ones worth a worked example — not every function in every category.
@@ -25,7 +25,7 @@ Text functions reshape words; Numeric functions do arithmetic — nesting one in
   command: s Base name registered as <upper_<par_1>> — <max_0_<sub_20_<len_<par_1>>>> character(s) left before the 20-limit.
 ```
 
-`<len_<par_1>>` (Text) measures what the player typed; `<sub_20_X>` (Numeric) subtracts that from a 20-character budget; `<max_0_X>` clamps it so a name that's already over budget reports `0` left, not a negative number — the same clamp-a-countdown shape used on the [type: time page](/ew_wiki/ewp/concepts/advanced-triggers-time/#case-study---counting-down-to-a-fixed-day). `<upper_<par_1>>` (also Text) just formats the name for display; nothing here actually enforces the limit — EWP has no function that trims a string, so this reports the budget, it doesn't cut anyone off.
+`<len_<par_1>>` (Text) measures what the player typed; `<sub_20_X>` (Numeric) subtracts that from a 20-character budget; `<max_0_X>` clamps it so a name that's already over budget reports `0` left, not a negative number — the same clamp-a-countdown shape used on the [type: time page](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-time/#case-study---counting-down-to-a-fixed-day). `<upper_<par_1>>` (also Text) just formats the name for display; nothing here actually enforces the limit — EWP has no function that trims a string, so this reports the budget, it doesn't cut anyone off.
 
 <NestingPeelExplainer />
 
@@ -69,7 +69,7 @@ Adding two random rolls together weights the result toward the middle of the ran
   # disadvantage would swap <max_ for <min_
 ```
 
-Two independent `<randi_1_21>` rolls (1-20, a d20's usual range); `<max_X_Y>` keeps the higher for advantage, `<min_X_Y>` the lower for disadvantage — the same two functions [Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) already introduced, just fed two random rolls instead of two fixed numbers.
+Two independent `<randi_1_21>` rolls (1-20, a d20's usual range); `<max_X_Y>` keeps the higher for advantage, `<min_X_Y>` the lower for disadvantage — the same two functions [Understanding Functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) already introduced, just fed two random rolls instead of two fixed numbers.
 
 ### Case study: distance without the Vector category
 
@@ -85,7 +85,7 @@ Saying `!triangle 5 10` (5 meters right, 10 forward) reports `11.18m`: `<pow_X_2
 
 ## Custom data (global)
 
-`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) — one shared slot, not attached to any object, most players call it an **EWP key**. Full explanation, every function, and worked examples (including a one-line toggle) live on their own page: [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) — including how an EWP key compares to the older, simpler `globalkey` world flag.
+`<save_X_Y>`/`<load_X>`/`<clear_X>` are a **second, separate storage mechanism** from the per-object `data:` covered on [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/) — one shared slot, not attached to any object, most players call it an **EWP key**. Full explanation, every function, and worked examples (including a one-line toggle) live on their own page: [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/) — including how an EWP key compares to the older, simpler `globalkey` world flag.
 
 ## Vector functions
 
@@ -103,7 +103,7 @@ A **vector** here means a 3D position or direction — the same `x,z,y` order `<
 ...and others — `<dot_A_B>`, `<cross_A_B>`, `<angle_A_B>`, `<project_V_N>`, `<reflect_D_N>` cover the rest of the 3D-math toolbox.
 
 <Aside type="note">
-`<add_A_B>`, `<sub_A_B>`, `<mul_A_B>`, and `<div_A_B>` exist in *both* Vector and [Numeric](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) under the exact same names — EWP tells them apart by what you hand in, not by which one you meant. Feed `<add_A_B>` two vectors and every matching component adds; feed it a vector and a plain number and the number adds to *every* component. Same name, different behavior depending on the shape of what's passed in.
+`<add_A_B>`, `<sub_A_B>`, `<mul_A_B>`, and `<div_A_B>` exist in *both* Vector and [Numeric](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions) under the exact same names — EWP tells them apart by what you hand in, not by which one you meant. Feed `<add_A_B>` two vectors and every matching component adds; feed it a vector and a plain number and the number adds to *every* component. Same name, different behavior depending on the shape of what's passed in.
 </Aside>
 
 A worked example — distance to the nearest of two fixed points, useful for something like picking whichever of two portals is closer:

@@ -10,7 +10,7 @@ An **RPC call** ("remote procedure call") sends data straight to a client — us
 
 **EWP lets you fire the exact same calls yourself, from any rule — not just the moment the game would normally send them.** Nothing about typing a word in chat would ever heal you in vanilla Valheim. With a script, it can, because the RPC that heals a player doesn't care *why* it was called — only that it was. That's the actual point of `objectRpc:`/`clientRpc:`: not replaying what the game already does under a different name, but making a real effect happen somewhere it normally couldn't.
 
-This page covers `objectRpc:` and `clientRpc:` — naming an RPC, aiming it with `target:`, passing parameters, and `chance:`. [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/) covers everything past that once you need it.
+This page covers `objectRpc:` and `clientRpc:` — naming an RPC, aiming it with `target:`, passing parameters, and `chance:`. [Advanced RPC](/ew_toolkit/ew_wiki/ewp/concepts/advanced-rpcs/) covers everything past that once you need it.
 
 ## `objectRpc:` vs. `clientRpc:`
 
@@ -50,7 +50,7 @@ The mod's own [RPC list](https://github.com/JereKuusela/valheim-expand_world_pre
 </Aside>
 
 <Aside type="caution">
-There's no partial matching and no helpful error — a misspelled or unsupported `name:` just does nothing, the same way a mismatched [poke `parameter:`](/ew_wiki/ewp/concepts/basic-poke/#the-parameter-is-just-a-name) goes quiet instead of failing loudly. Copy the name from the RPC list rather than typing it from memory.
+There's no partial matching and no helpful error — a misspelled or unsupported `name:` just does nothing, the same way a mismatched [poke `parameter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/#the-parameter-is-just-a-name) goes quiet instead of failing loudly. Copy the name from the RPC list rather than typing it from memory.
 </Aside>
 
 ## `target:`: who receives the call
@@ -73,7 +73,7 @@ There's no partial matching and no helpful error — a misspelled or unsupported
 One player types a word, and the whole server sees a banner — leaving `target:` at its default (`owner`) would only show it to that one player. It's worth setting `target:` explicitly on any call meant for everyone, so the next reader doesn't have to check the default.
 
 <Aside type="note">
-`target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — see [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/).
+`target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — see [Advanced RPC](/ew_toolkit/ew_wiki/ewp/concepts/advanced-rpcs/).
 </Aside>
 
 ## Passing parameters: `1:`, `2:`, `3:`, ...
@@ -93,7 +93,7 @@ Some calls need more than two: `ChatMessage`, for instance, takes a `userinfo`-t
 
 ## `chance:`
 
-`chance:` (default `1`, meaning always) works exactly like `spawn:`'s [`chance`](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — a fraction between `0` and `1` deciding whether this entry fires at all:
+`chance:` (default `1`, meaning always) works exactly like `spawn:`'s [`chance`](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) — a fraction between `0` and `1` deciding whether this entry fires at all:
 
 ```yaml
 - prefab: Player
@@ -105,7 +105,7 @@ Some calls need more than two: `ChatMessage`, for instance, takes a `userinfo`-t
     chance: 0.5  # saying "heal" only actually heals half the time
 ```
 
-An RPC list also supports [`weight:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) the same pick-one-from-the-group way `spawn:` does, and `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) all behave the same as their `spawn:` counterparts too — no need to re-learn the timing mechanics here.
+An RPC list also supports [`weight:`](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/#turning-a-spawn-list-into-a-loot-table-chance-and-weight) the same pick-one-from-the-group way `spawn:` does, and `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) all behave the same as their `spawn:` counterparts too — no need to re-learn the timing mechanics here.
 
 ## Fields with their own page later
 
@@ -115,4 +115,4 @@ A few `objectRpc:`/`clientRpc:` fields exist beyond what's shown here, each big 
 - `source:` — fakes the call as coming from a different object's owner, using the same `<zdo>`-function pattern covered elsewhere.
 - `overwrite:` — replaces any pending delayed call of the same name/target instead of stacking another one.
 
-All three, plus the full per-component RPC catalog, are covered in [Advanced RPC](/ew_wiki/ewp/concepts/advanced-rpcs/).
+All three, plus the full per-component RPC catalog, are covered in [Advanced RPC](/ew_toolkit/ew_wiki/ewp/concepts/advanced-rpcs/).

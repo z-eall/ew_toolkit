@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-Every field on a ship — how fast it sails, how hard the rudder fights back, how much it wallows in waves — is a normal [field](/ew_wiki/ewp/concepts/basic-fields/) you already know how to edit. This page assumes you've already got [`data:`](/ew_wiki/ewp/concepts/basic-data/), [custom data](/ew_wiki/ewp/concepts/custom-data/), [`poke:`](/ew_wiki/ewp/concepts/basic-poke/), and [functions](/ew_wiki/ewp/concepts/basic-functions/) down, and spends its time on three things the earlier pages didn't need: a physics-heavy field list unique to `Ship`, a matching technique specific to vehicle components, and a full worked example that turns a plain Karve into a distinct, reusable "ship class."
+Every field on a ship — how fast it sails, how hard the rudder fights back, how much it wallows in waves — is a normal [field](/ew_toolkit/ew_wiki/ewp/concepts/basic-fields/) you already know how to edit. This page assumes you've already got [`data:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/), [custom data](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/), [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/), and [functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) down, and spends its time on three things the earlier pages didn't need: a physics-heavy field list unique to `Ship`, a matching technique specific to vehicle components, and a full worked example that turns a plain Karve into a distinct, reusable "ship class."
 
 <Aside type="note">
 The balancing numbers below (`0.03`, `0.2`, and so on) are a live data-dump of a Karve, not Valheim's own documented defaults — no published schema or component reference lists default values, only field names and types (valheimtools.stream's [component dump](https://valheimtools.stream/wiki/components) included). Treat every number here as a tested starting point, not a guaranteed factory default or a hard ceiling — re-test after any Valheim update.
@@ -34,7 +34,7 @@ Push `Ship.m_force` or `m_damping` too far and a ship will eventually capsize �
      data: flipper
    ```
 
-   Typing `flip` in chat [pokes](/ew_wiki/ewp/concepts/basic-poke/) the nearest `Ship`-component object within 10 meters (`limit: 1` caps it to just one, in case you're near a dock full of them), which then applies the `flipper` data entry to itself.
+   Typing `flip` in chat [pokes](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) the nearest `Ship`-component object within 10 meters (`limit: 1` caps it to just one, in case you're near a dock full of them), which then applies the `flipper` data entry to itself.
 
 2. **The data entry that does the actual flipping**
 
@@ -92,7 +92,7 @@ Never set a damping field to exactly `0` — reported as a way to make a ship un
 - `ShipControlls.m_hoverText` — hover text for the wheel itself (yes, `Controlls` — that's the component's real, misspelled name).
 
 <Aside type="tip">
-Want to pull this list yourself, or find a field this page didn't cover? [Understanding Fields](/ew_wiki/ewp/concepts/basic-fields/#finding-a-field-with-autocomplete) shows the in-game autocomplete method — `spawn_object Karve f=Ship,` lists every field the console knows about for that component.
+Want to pull this list yourself, or find a field this page didn't cover? [Understanding Fields](/ew_toolkit/ew_wiki/ewp/concepts/basic-fields/#finding-a-field-with-autocomplete) shows the in-game autocomplete method — `spawn_object Karve f=Ship,` lists every field the console knows about for that component.
 </Aside>
 
 ## Matching `Ship` by component, not by name
@@ -105,7 +105,7 @@ Want to scope a rule to one hull only? Use the real prefab id instead — `prefa
 
 ## Composing a ship class
 
-The interesting part isn't tuning one field — it's combining several, plus a [custom-data](/ew_wiki/ewp/concepts/custom-data/) flag, into something a script can recognize and react to later. This example builds a "Privateer" class: fast and agile, with a custom flag other rules can check.
+The interesting part isn't tuning one field — it's combining several, plus a [custom-data](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/) flag, into something a script can recognize and react to later. This example builds a "Privateer" class: fast and agile, with a custom flag other rules can check.
 
 <Steps>
 
@@ -125,7 +125,7 @@ The interesting part isn't tuning one field — it's combining several, plus a [
      - Container.m_name, Privateer's Hold
    ```
 
-   `shipClass` is invented for this page — like [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script) warns, it needs a name that can't collide with a real field, so it's stored as a plain `strings` value rather than reusing any `Ship.*`/`Container.*` name above.
+   `shipClass` is invented for this page — like [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script) warns, it needs a name that can't collide with a real field, so it's stored as a plain `strings` value rather than reusing any `Ship.*`/`Container.*` name above.
 
 2. **A chat command that turns the nearest new Karve into a Privateer**
 
@@ -138,7 +138,7 @@ The interesting part isn't tuning one field — it's combining several, plus a [
        triggerRules: true  # lets this spawned Karve fire its own create/etc. rules — off by default
    ```
 
-   `triggerRules: true` matters here — as [`create`/`destroy` explains](/ew_wiki/ewp/concepts/basic-triggers/#create-and-destroy), an object EWP itself spawns doesn't re-fire other rules unless this is set. Without it, step 3 below would silently never run for this Karve.
+   `triggerRules: true` matters here — as [`create`/`destroy` explains](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/#create-and-destroy), an object EWP itself spawns doesn't re-fire other rules unless this is set. Without it, step 3 below would silently never run for this Karve.
 
 3. **A second rule that reacts to the flag, not to the ship's identity**
 
@@ -151,7 +151,7 @@ The interesting part isn't tuning one field — it's combining several, plus a [
        pos: 0,0,3
    ```
 
-   [`filter:`](/ew_wiki/ewp/concepts/basic-filter/) checks the flag set in step 1, not anything about the Karve itself — so this rule only fires for a Privateer-class Karve, never a plain one. This is the actual point of the class: any number of rules elsewhere can gate on `filter: string, shipClass, Privateer` without needing to know how that ship got its stats.
+   [`filter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/) checks the flag set in step 1, not anything about the Karve itself — so this rule only fires for a Privateer-class Karve, never a plain one. This is the actual point of the class: any number of rules elsewhere can gate on `filter: string, shipClass, Privateer` without needing to know how that ship got its stats.
 
 4. **A command that reports a ship's class back in chat**
 
@@ -169,7 +169,7 @@ The interesting part isn't tuning one field — it's combining several, plus a [
      command: s This is a <string_shipClass=standard> ship.
    ```
 
-   Same poke shape as the flip script, reused for a different job. `<string_shipClass=standard>` reads the flag back — falling back to `standard` for any ship that was never given one, per [the missing-data default pattern](/ew_wiki/ewp/concepts/custom-data/#missing-data-still-needs-a-fallback). A plain Karve reports "standard"; one built with step 2's command reports "Privateer."
+   Same poke shape as the flip script, reused for a different job. `<string_shipClass=standard>` reads the flag back — falling back to `standard` for any ship that was never given one, per [the missing-data default pattern](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/#missing-data-still-needs-a-fallback). A plain Karve reports "standard"; one built with step 2's command reports "Privateer."
 
 </Steps>
 

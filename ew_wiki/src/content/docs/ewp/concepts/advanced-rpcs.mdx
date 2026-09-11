@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Aside } from '@astrojs/starlight/components';
 
-[Understanding RPC](/ew_wiki/ewp/concepts/basic-rpcs/) covered `objectRpc:`/`clientRpc:`, naming a call with `name:`, aiming it with `target: owner`/`all`, numbered parameters, and `chance:`. This page picks up from there: the one rule every `objectRpc:` call has to satisfy or it silently does nothing, a quick look at three fields you'll mostly copy straight from the mod's own docs (`packaged:`, `source:`, `target: <zdo>`), and — the real focus here — composing `overwrite:` with the timing fields (`repeat:`, `repeatInterval:`, `delay:`) into patterns that actually hold up under repeated triggering.
+[Understanding RPC](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/) covered `objectRpc:`/`clientRpc:`, naming a call with `name:`, aiming it with `target: owner`/`all`, numbered parameters, and `chance:`. This page picks up from there: the one rule every `objectRpc:` call has to satisfy or it silently does nothing, a quick look at three fields you'll mostly copy straight from the mod's own docs (`packaged:`, `source:`, `target: <zdo>`), and — the real focus here — composing `overwrite:` with the timing fields (`repeat:`, `repeatInterval:`, `delay:`) into patterns that actually hold up under repeated triggering.
 
 <Aside type="note">
 `name:` has no partial matching and no helpful error when it's wrong — copy the exact spelling from the mod's own [RPC list](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/RPCs.md), don't retype it from memory.
@@ -46,7 +46,7 @@ This is easy to get wrong the moment a rule fires directly on `Player`. `SetName
     2: string, "New Owner"
 ```
 
-The fix is the same [poke](/ew_wiki/ewp/concepts/basic-poke/) relay used everywhere else in this wiki: don't fire the call from wherever the trigger happened, fire it from the object the call is actually about. `clientRpc:` calls don't have this problem — the mod's docs say plainly that they're "not related to any object at all," so they can fire from anywhere.
+The fix is the same [poke](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) relay used everywhere else in this wiki: don't fire the call from wherever the trigger happened, fire it from the object the call is actually about. `clientRpc:` calls don't have this problem — the mod's docs say plainly that they're "not related to any object at all," so they can fire from anywhere.
 
 <Aside type="caution">
 Before reusing any `objectRpc:` call from the mod's docs on a prefab of your own choosing, check which `###` heading it's filed under and confirm your triggering object actually has that Component.
@@ -93,7 +93,7 @@ That's the whole pattern: wire it under whichever rule fires on the object the c
 
 ## Composing `overwrite:` with `repeat:`, `repeatInterval:`, and `delay:`
 
-An RPC entry supports the same timing fields `spawn:` does: `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — already covered on Understanding RPC as "behave the same as their `spawn:` counterparts." What wasn't covered is `overwrite:`, and it only becomes useful once the others are already in play:
+An RPC entry supports the same timing fields `spawn:` does: `delay:`, [`repeat:`, `repeatInterval:`, and `repeatChance:`](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/#timing-a-spawn-delay-removedelay-and-repeat) — already covered on Understanding RPC as "behave the same as their `spawn:` counterparts." What wasn't covered is `overwrite:`, and it only becomes useful once the others are already in play:
 
 **`overwrite:` (default `false`) — if true, this call replaces any existing *delayed* call with the same `name:` and `target:`, instead of stacking behind it.** That matching is specific: same name, same target — a different `name:` or a different `target:` value doesn't get overwritten, it queues separately.
 

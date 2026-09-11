@@ -40,7 +40,7 @@ Live-editing works the same on a dedicated server as it does in singleplayer —
 
 ## Set up data before scripts
 
-Get your [**data**](/ew_wiki/ewp/concepts/basic-data/) in place before your [**scripts**](/ew_wiki/ewp/concepts/start-scripting/). You don't have to — EWP won't refuse to work if you do it the other way round — but it avoids a specific problem: a script's whole job is to look up a data entry and do something with it — spawn this, tweak that. If the data entry it's looking for doesn't exist yet, the script has nothing to point to, and it'll complain (even if the data shows up two seconds later). Data just sitting there with nothing using it yet, though, is fine — it waits quietly until a script needs it.
+Get your [**data**](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) in place before your [**scripts**](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/). You don't have to — EWP won't refuse to work if you do it the other way round — but it avoids a specific problem: a script's whole job is to look up a data entry and do something with it — spawn this, tweak that. If the data entry it's looking for doesn't exist yet, the script has nothing to point to, and it'll complain (even if the data shows up two seconds later). Data just sitting there with nothing using it yet, though, is fine — it waits quietly until a script needs it.
 
 So the easy order is: **data first, then the scripts that lean on it.** And if you add new data *after* a script that needs it is already running, resave the script's `.yaml` file — EWP will look at it fresh against the data that's now there.
 

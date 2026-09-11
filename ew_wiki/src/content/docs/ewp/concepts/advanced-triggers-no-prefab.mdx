@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Aside } from '@astrojs/starlight/components';
 
-[Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say` — every one of them tied to a specific object matched by `prefab:`. This page covers three that aren't: `event`, `key`, and `globalkey`. EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) says the same thing, word for word, for all three: **"There is no prefab or position for this type, so most fields won't work."**
+[Understanding Triggers](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say` — every one of them tied to a specific object matched by `prefab:`. This page covers three that aren't: `event`, `key`, and `globalkey`. EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md) says the same thing, word for word, for all three: **"There is no prefab or position for this type, so most fields won't work."**
 
 ## What "no prefab" actually rules out
 
@@ -18,7 +18,7 @@ Every other trigger this wiki has covered fires *because of* something happening
 - **What still works cleanly:** `command:`/`commands:`, `exec:`, `objectRpc:`/`clientRpc:` aimed with an explicit `target:` (not the default `owner`, since there's no owning object), and reading/writing global state (`setkey`/`removekey`, `<save_X_Y>`).
 
 <Aside type="tip">
-If a rule under one of these three trigger types needs to *do* something to a specific object, [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) with an explicit `prefab:` on the poke entry is the way in — the trigger itself has no object to hand off, but the poke can still target one by name.
+If a rule under one of these three trigger types needs to *do* something to a specific object, [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) with an explicit `prefab:` on the poke entry is the way in — the trigger itself has no object to hand off, but the poke can still target one by name.
 </Aside>
 
 ## `event`: reacting to a named game event
@@ -67,7 +67,7 @@ Saying the event id back via `<par_0>` means the same rule announces whichever o
 
 ## `globalkey`: reacting to a world flag being set
 
-`type: globalkey` reacts to Valheim's older, simpler world-wide flag system — set or cleared with the `setkey`/`removekey` commands, and checked with `globalKeys:`/`bannedGlobalKeys:` filters or the `<globalkey_X=default>` function already used on [Advanced Filter: Condition](/ew_wiki/ewp/concepts/advanced-filter-condition/). Add `remove: true` to fire on removal instead of on set. It only fires when the flag actually *changes* — setting an already-set flag again doesn't re-trigger it.
+`type: globalkey` reacts to Valheim's older, simpler world-wide flag system — set or cleared with the `setkey`/`removekey` commands, and checked with `globalKeys:`/`bannedGlobalKeys:` filters or the `<globalkey_X=default>` function already used on [Advanced Filter: Condition](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-condition/). Add `remove: true` to fire on removal instead of on set. It only fires when the flag actually *changes* — setting an already-set flag again doesn't re-trigger it.
 
 Unlike an event id, a `globalkey` name isn't game data — it's whatever `setkey` calls it elsewhere in your own script, so `raidCooldown` below is just a name this example picked:
 
@@ -90,7 +90,7 @@ Paired with the `set` version above, this gives a complete on/off pair driven en
 
 ## `key`: reacting to an EWP key change
 
-`type: key` reacts to the same global custom-data store [`<save_X_Y>`/`<load_X>`](/ew_wiki/ewp/concepts/ewp-key/) writes to — most players call this an **EWP key**, to tell it apart from `globalkey` above. Same rules as `globalkey`: it only fires when the value actually *changes* (saving the same value again doesn't re-trigger it), and `remove: true` fires on removal (`<clear_X>`) instead of on set.
+`type: key` reacts to the same global custom-data store [`<save_X_Y>`/`<load_X>`](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/) writes to — most players call this an **EWP key**, to tell it apart from `globalkey` above. Same rules as `globalkey`: it only fires when the value actually *changes* (saving the same value again doesn't re-trigger it), and `remove: true` fires on removal (`<clear_X>`) instead of on set.
 
 ```yaml
 - prefab: Player
@@ -103,11 +103,11 @@ Paired with the `set` version above, this gives a complete on/off pair driven en
 ```
 
 <Aside type="tip">
-This is the short version — [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/) walks through setting, reading, and reacting to an EWP key together as one complete pattern.
+This is the short version — [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/) walks through setting, reading, and reacting to an EWP key together as one complete pattern.
 </Aside>
 
 <Aside type="note">
-Neither `key` nor `globalkey` is the per-object `data:` you already know from [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/). Three separate systems now share the word "data"/"key": a value attached to one object (`data:`), a value in one shared global slot (`<save_X_Y>` / `type: key`, an EWP key), and a world-wide flag (`setkey` / `type: globalkey`). None of them read each other.
+Neither `key` nor `globalkey` is the per-object `data:` you already know from [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/). Three separate systems now share the word "data"/"key": a value attached to one object (`data:`), a value in one shared global slot (`<save_X_Y>` / `type: key`, an EWP key), and a world-wide flag (`setkey` / `type: globalkey`). None of them read each other.
 </Aside>
 
 ## Case study - poking a real object from a no-prefab trigger

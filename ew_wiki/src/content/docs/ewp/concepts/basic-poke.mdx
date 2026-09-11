@@ -6,7 +6,7 @@ complexity: intermediate
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-**Poke** sends a message from one rule to another — it's how one object tells another "do something now." Every [rule](/ew_wiki/ewp/concepts/start-scripting/) so far reacted only to its own trigger (`create`, `destroy`, `say`, ...). Poke lets one rule trigger another rule directly, instead of waiting for the game to trigger it.
+**Poke** sends a message from one rule to another — it's how one object tells another "do something now." Every [rule](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/) so far reacted only to its own trigger (`create`, `destroy`, `say`, ...). Poke lets one rule trigger another rule directly, instead of waiting for the game to trigger it.
 
 ## The minimal poke
 
@@ -38,7 +38,7 @@ One rule sends a poke, another rule reacts to it:
 
 </Steps>
 
-Both rules live in the same script — see [A script can hold more than one rule](/ew_wiki/ewp/concepts/start-scripting/#a-script-can-hold-more-than-one-rule).
+Both rules live in the same script — see [A script can hold more than one rule](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#a-script-can-hold-more-than-one-rule).
 
 ## The parameter is just a name
 
@@ -50,7 +50,7 @@ The two sides have to match — a typo or a renamed parameter on one side breaks
 
 ## Narrowing who gets poked: `filter:`
 
-[`filter:`](/ew_wiki/ewp/concepts/basic-filter/) works under `poke:` the same way it does anywhere else — it doesn't set anything, it only checks a condition, and only pokes the objects that already pass:
+[`filter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/) works under `poke:` the same way it does anywhere else — it doesn't set anything, it only checks a condition, and only pokes the objects that already pass:
 
 ```yaml
 poke:
@@ -74,7 +74,7 @@ poke:
 
 A poke that doesn't work almost never throws an error — it just goes quiet. Four common causes, each shown broken next to its fix.
 
-**1. Bad indentation on the list item** — a `poke:` list follows the [same shape as `spawn:`](/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data); indenting the second field too far breaks the item:
+**1. Bad indentation on the list item** — a `poke:` list follows the [same shape as `spawn:`](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data); indenting the second field too far breaks the item:
 
 ```yaml
 # WRONG — parameter is indented past prefab, so it isn't read as part of this list item
@@ -143,9 +143,9 @@ Fix: add a `type: poke, openDoor` rule somewhere in the script.
 If a poke chain isn't working, checking that every `parameter:` name is spelled identically on both sides catches the most common case first.
 
 <Aside type="note">
-Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts. (Note `objects:` entries have their own, separately-scoped `maxDistance:` too — see [Filter: by Objects](/ew_wiki/ewp/concepts/objects-filtering/) — same field name, different job.) For the rest of poke's field set, and reusable patterns built from it — self-poking, delayed resets, filter-gated counters — see [Advanced Poke - Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/) and [Advanced Poke - Creative Systems](/ew_wiki/ewp/concepts/advanced-poke-creative-systems/).
+Poke has more fields beyond what's shown here — `delay:`, `repeat:`, `limit:`, `maxDistance:`, and others control timing, repetition, and range. This page covers the connection mechanic itself, not every field poke accepts. (Note `objects:` entries have their own, separately-scoped `maxDistance:` too — see [Filter: by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) — same field name, different job.) For the rest of poke's field set, and reusable patterns built from it — self-poking, delayed resets, filter-gated counters — see [Advanced Poke - Mechanics](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/) and [Advanced Poke - Creative Systems](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-creative-systems/).
 </Aside>
 
 <Aside type="tip">
-To message a client directly instead of poking another object, see [Understanding RPC](/ew_wiki/ewp/concepts/basic-rpcs/).
+To message a client directly instead of poking another object, see [Understanding RPC](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/).
 </Aside>

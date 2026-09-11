@@ -6,11 +6,11 @@ complexity: advanced
 
 import { Aside } from '@astrojs/starlight/components';
 
-Every value on [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/) lives on one specific object — every Boar keeps its own copy. An **EWP key** is the other half: one shared slot, not tied to any object at all, holding the same value no matter which rule reads it. The mod's own docs call this "global custom data"; most players just call it an EWP key.
+Every value on [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/) lives on one specific object — every Boar keeps its own copy. An **EWP key** is the other half: one shared slot, not tied to any object at all, holding the same value no matter which rule reads it. The mod's own docs call this "global custom data"; most players just call it an EWP key.
 
 ## An EWP key vs. a vanilla `globalkey`
 
-Valheim already has its own world-wide flag system, `globalkey` — set with `setkey`, cleared with `removekey`, reacted to with `type: globalkey` (see [Advanced Triggers - No-Prefab Triggers](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)). It's easy to assume an EWP key is just another name for the same thing. It isn't:
+Valheim already has its own world-wide flag system, `globalkey` — set with `setkey`, cleared with `removekey`, reacted to with `type: globalkey` (see [Advanced Triggers - No-Prefab Triggers](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/)). It's easy to assume an EWP key is just another name for the same thing. It isn't:
 
 | | vanilla `globalkey` | EWP key |
 |---|---|---|
@@ -22,7 +22,7 @@ Valheim already has its own world-wide flag system, `globalkey` — set with `se
 A `globalkey` can tell you *that* something happened — a flag is set or it isn't. An EWP key can tell you *how much*, *what*, or *where* — a count, a name, a saved position. Reach for `globalkey` when a plain on/off switch is really all you need; reach for an EWP key the moment you need to remember an actual value.
 
 <Aside type="note">
-These are two separate systems and don't read each other — see the [No-Prefab Triggers page](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-reacting-to-an-ewp-key-change) for how they sit next to the third lookalike, per-object `data:`.
+These are two separate systems and don't read each other — see the [No-Prefab Triggers page](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-reacting-to-an-ewp-key-change) for how they sit next to the third lookalike, per-object `data:`.
 </Aside>
 
 ## Where a saved key actually lives: `ewp_data.yaml`
@@ -30,7 +30,7 @@ These are two separate systems and don't read each other — see the [No-Prefab 
 Every `<save_X_Y>` you write doesn't just sit in memory — EWP writes it to disk in a file called `ewp_data.yaml`, inside the `expand_world` config folder next to your script files. This file is created automatically the first time any key is saved; you never hand-write it, and it isn't a script you author.
 
 <Aside type="note">
-This is a different file from `data.yaml` (covered on [Preparation](/ew_wiki/ewp/preparation/) and [Understanding Data](/ew_wiki/ewp/concepts/basic-data/)) — `data.yaml` holds the `name:`/`value:` field-edit blocks you write by hand; `ewp_data.yaml` is EWP's own save file for whatever an EWP key currently holds, written and read entirely by the mod itself.
+This is a different file from `data.yaml` (covered on [Preparation](/ew_toolkit/ew_wiki/ewp/preparation/) and [Understanding Data](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/)) — `data.yaml` holds the `name:`/`value:` field-edit blocks you write by hand; `ewp_data.yaml` is EWP's own save file for whatever an EWP key currently holds, written and read entirely by the mod itself.
 </Aside>
 
 ## Setting a key: `exec:` and `<save_X_Y>`
@@ -66,7 +66,7 @@ A wildcard `*` in `<save_*_Y>`'s key only sets keys that **already exist** — i
 
 ## Reacting to a key change: `type: key`
 
-Set and read cover storing a value; `type: key` completes the loop by reacting the instant a key's value actually *changes* — saving the same value again doesn't re-fire it. Add `remove: true` to fire on removal (`<clear_X>`) instead of on set. Because `key` is one of EWP's no-prefab trigger types, `filter:`/`objects:` don't apply to it directly, and a `poke:` under it measures distance from the world center, not from any object — the full mechanics live on [Advanced Triggers - No-Prefab Triggers](/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#what-no-prefab-actually-rules-out); this page only needs the shape:
+Set and read cover storing a value; `type: key` completes the loop by reacting the instant a key's value actually *changes* — saving the same value again doesn't re-fire it. Add `remove: true` to fire on removal (`<clear_X>`) instead of on set. Because `key` is one of EWP's no-prefab trigger types, `filter:`/`objects:` don't apply to it directly, and a `poke:` under it measures distance from the world center, not from any object — the full mechanics live on [Advanced Triggers - No-Prefab Triggers](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#what-no-prefab-actually-rules-out); this page only needs the shape:
 
 ```yaml
 - prefab: Player
@@ -127,5 +127,5 @@ This ties three trigger types to one EWP key: a real game event increments it, `
 Rule 1 never needs to know anyone is listening — it just bumps the key. Rule 2 never needs to know what caused the change — it just reacts. Rule 3 shows a key being both read and rewritten in the same function: `<load_boarsCulled=0>` supplies the current value, `<div_X_2>` halves it, `<floor_X>` rounds down since a boar count should never fetch a fraction, and the outer `<save_boarsCulled_...>` writes the result back under the same key. A big cull day still echoes a little into tomorrow instead of resetting to zero — the same nested-function shape used throughout this wiki, just three functions deep instead of two.
 
 <Aside type="tip">
-Want to see this same shape carried further — an EWP key gating what a script lets a player do next, not just tracking a count? [World Boss Progression](/ew_wiki/ewp/examples/world-progression/), [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/), and [Village Cargo Mission](/ew_wiki/ewp/examples/village-cargo/) build a whole progression system, all three reading the same shared key, out of `<save_X_Y>`/`<load_X>` combined with `<max_>`/`<sub_>`/`<ge_>`.
+Want to see this same shape carried further — an EWP key gating what a script lets a player do next, not just tracking a count? [World Boss Progression](/ew_toolkit/ew_wiki/ewp/examples/world-progression/), [Auto-upgrade Stations](/ew_toolkit/ew_wiki/ewp/examples/auto-upgrade-station/), and [Village Cargo Mission](/ew_toolkit/ew_wiki/ewp/examples/village-cargo/) build a whole progression system, all three reading the same shared key, out of `<save_X_Y>`/`<load_X>` combined with `<max_>`/`<sub_>`/`<ge_>`.
 </Aside>

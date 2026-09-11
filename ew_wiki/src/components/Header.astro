@@ -1,16 +1,33 @@
 ---
-// Override for Starlight's default Header component. Drops the theme
-// toggle, GitHub link, and language select entirely — not just restyled —
-// since ew_wiki runs as a sub-tool under the ew_toolkit hub, whose own top
-// banner already provides dark/light mode, and no GitHub login applies here.
+// Override for Starlight's default Header component. Drops Starlight's own
+// theme toggle, GitHub link, and language select entirely (not just
+// restyled) and replaces them with the hub's own shared site-nav bar — the
+// same Home / Tool / Support strip every other Tool hand-renders (see
+// ew_toolkit/src/nav.ts and ewp_validator/src/main.ts) — so arriving at
+// ew_wiki from the hub feels like switching tabs, not leaving the site.
+// Standing rule: docs/agents/hub-tool-nav.md.
 import config from 'virtual:starlight/user-config';
 
 import Search from 'virtual:starlight/components/Search';
 import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import { icon } from '../../../shared/icons';
 
 const shouldRenderSearch =
 	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
 ---
+
+<nav class="site-nav">
+	<div class="site-nav-links">
+		<a class="nav-link" href="/ew_toolkit/"><span class="nav-icon" aria-hidden="true" set:html={icon('home')} />Home</a>
+		<a class="nav-link" href="/ew_toolkit/ewp_validator/"><span class="nav-icon" aria-hidden="true" set:html={icon('file')} />EWP Validator</a>
+		<a class="nav-link active" href="/ew_toolkit/ew_wiki/"><span class="nav-icon" aria-hidden="true" set:html={icon('toolbox')} />Expand World Wiki</a>
+		<a class="nav-link" href="/ew_toolkit/support/"><span class="nav-icon" aria-hidden="true" set:html={icon('support')} />Support</a>
+	</div>
+	<div class="nav-right">
+		<a class="changelog-link" href="https://github.com/z-eall/ew_toolkit/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
+		<button id="hub-theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+	</div>
+</nav>
 
 <div class="header">
 	<div class="title-wrapper sl-flex">
@@ -38,4 +55,115 @@ const shouldRenderSearch =
 			min-width: 0;
 		}
 	}
+
+	/* Hub site-nav — copied from ew_toolkit/src/style.css (each Tool
+	   hand-renders its own copy of this bar; see docs/agents/hub-tool-nav.md)
+	   using the same --bg/--panel/--border/--text/--muted tokens this file
+	   already maps from shared/theme.css, so it matches pixel-for-pixel. */
+	.site-nav {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 1rem;
+		padding: 10px 16px;
+		background: var(--sl-color-bg-nav);
+		border-bottom: 1px solid var(--sl-color-hairline);
+		font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
+	}
+	.site-nav-links {
+		grid-column: 2;
+		display: flex;
+		justify-content: center;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+	.nav-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 13.5px;
+		font-weight: 600;
+		padding: 6px 10px;
+		border-radius: 6px;
+	}
+	.nav-icon {
+		display: inline-flex;
+		line-height: 1;
+	}
+	.nav-icon svg {
+		width: 15px;
+		height: 15px;
+		flex: none;
+	}
+	.nav-link:hover {
+		color: var(--text);
+	}
+	.nav-link.active {
+		color: var(--text);
+		background: var(--bg);
+		border: 1px solid var(--border);
+	}
+	.nav-right {
+		grid-column: 3;
+		justify-self: end;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.changelog-link {
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 12.5px;
+		font-weight: 600;
+	}
+	.changelog-link:hover {
+		color: var(--text);
+	}
+	.theme-toggle {
+		flex: none;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 6px 12px;
+		font-size: 12.5px;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.theme-toggle:hover {
+		border-color: var(--text);
+	}
 </style>
+
+<script>
+	// Bridges the hub's theme key (`ew-toolkit-theme`, read/written by every
+	// Tool's own nav — see ew_toolkit/src/nav.ts) with Starlight's own
+	// separate theme key (`starlight-theme`, set by Starlight's inline
+	// anti-flash script in <head> before this component even mounts). On
+	// load this re-applies the hub's preference so a theme choice made on
+	// the landing page or another Tool carries over; on click it writes
+	// both keys so the choice carries back out again.
+	const HUB_KEY = 'ew-toolkit-theme';
+	const STARLIGHT_KEY = 'starlight-theme';
+
+	function getHubTheme(): 'dark' | 'light' {
+		return localStorage.getItem(HUB_KEY) === 'light' ? 'light' : 'dark';
+	}
+
+	function applyTheme(theme: 'dark' | 'light') {
+		document.documentElement.setAttribute('data-theme', theme);
+		localStorage.setItem(HUB_KEY, theme);
+		localStorage.setItem(STARLIGHT_KEY, theme);
+		const btn = document.querySelector<HTMLButtonElement>('#hub-theme-toggle');
+		if (btn) btn.textContent = theme === 'dark' ? '☾ Dark' : '☀ Light';
+	}
+
+	applyTheme(getHubTheme());
+
+	document.querySelector<HTMLButtonElement>('#hub-theme-toggle')?.addEventListener('click', () => {
+		const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+		applyTheme(current === 'dark' ? 'light' : 'dark');
+	});
+</script>

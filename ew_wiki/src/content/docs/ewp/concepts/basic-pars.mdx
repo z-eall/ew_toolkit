@@ -6,7 +6,7 @@ complexity: intermediate
 
 import { Aside } from '@astrojs/starlight/components';
 
-A **par** is a piece of information a [trigger](/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) hands to the rule reacting to it — `<par_0>` is the first piece, `<par_1>` the second, and so on. `<par_X>` is itself one example of a [function](/ew_wiki/ewp/concepts/basic-functions/) — the same `<name_param>` syntax used everywhere else in EWP. A par can be almost anything: a word said in chat, a value that just changed, a key's name. When you see a `<par_X>` in a script, you're looking at the *receiving* end — you have to trace backward to find where that value actually came from.
+A **par** is a piece of information a [trigger](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#what-type-can-trigger-on) hands to the rule reacting to it — `<par_0>` is the first piece, `<par_1>` the second, and so on. `<par_X>` is itself one example of a [function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) — the same `<name_param>` syntax used everywhere else in EWP. A par can be almost anything: a word said in chat, a value that just changed, a key's name. When you see a `<par_X>` in a script, you're looking at the *receiving* end — you have to trace backward to find where that value actually came from.
 
 <Aside type="note">
 Only some triggers pass pars: `say`, `change`, `state`, `key`, `globalkey`, `event`, and `time`/`realtime`. What each par actually means depends entirely on which trigger sent it — covered case by case below.
@@ -98,7 +98,7 @@ Each trigger exposes different pars in a different order — build a quick throw
 
 ## Saving a par into `data:`
 
-A par is only available for the instant its rule fires — save it into [`data:`](/ew_wiki/ewp/concepts/basic-data/) to keep it around:
+A par is only available for the instant its rule fires — save it into [`data:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) to keep it around:
 
 ```yaml
 - prefab: woodwall
@@ -106,7 +106,7 @@ A par is only available for the instant its rule fires — save it into [`data:`
   data: float, lastDamageTaken, <sub_<par_2>_<par_1>>
 ```
 
-`<sub_X_Y>` is another [function](/ew_wiki/ewp/concepts/basic-functions/) — it just subtracts `Y` from `X`, so `<sub_<par_2>_<par_1>>` works out "health before minus health after" and stores that as the damage taken. Math functions like this get their own full treatment on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/) — for now, just know it's doing subtraction.
+`<sub_X_Y>` is another [function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) — it just subtracts `Y` from `X`, so `<sub_<par_2>_<par_1>>` works out "health before minus health after" and stores that as the damage taken. Math functions like this get their own full treatment on [Advanced Functions](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions/) — for now, just know it's doing subtraction.
 
 The same thing works through a named data entry instead of the `type, key, value` shorthand:
 
@@ -121,5 +121,5 @@ The same thing works through a named data entry instead of the `type, key, value
 ```
 
 <Aside type="note">
-Pars also apply to [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) — reading a value a poke carried along — but that's different enough from the trigger pars covered here that it isn't on this page.
+Pars also apply to [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) — reading a value a poke carried along — but that's different enough from the trigger pars covered here that it isn't on this page.
 </Aside>

@@ -4,11 +4,14 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-	// Base is '/ew_wiki/'; all content lives under docs/ewp/, so real routes
-	// land at '/ew_wiki/ewp/...' — the nested-URL decision from ticket 01
-	// (ew-wiki-real-build), leaving room for a future second mod component
-	// as a sibling top-level folder/sidebar group.
-	base: '/ew_wiki/',
+	// ew_wiki is deployed as a sub-tool under the ew_toolkit hub, which is
+	// itself a GitHub Pages project site served at '/ew_toolkit/' (not '/') —
+	// same reason as ewp_validator/vite.config.ts's base. All content lives
+	// under docs/ewp/, so real routes land at '/ew_toolkit/ew_wiki/ewp/...' —
+	// the nested-URL decision from ticket 01 (ew-wiki-real-build), leaving
+	// room for a future second mod component as a sibling top-level
+	// folder/sidebar group.
+	base: '/ew_toolkit/ew_wiki/',
 	integrations: [
 		starlight({
 			title: 'Expand World Wiki',

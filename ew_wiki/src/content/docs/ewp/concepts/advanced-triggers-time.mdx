@@ -6,7 +6,7 @@ complexity: advanced
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-[Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `time` — firing a rule on **Valheim's own in-game clock**, the one that drives day/night and the calendar day counter inside the world itself. It has nothing to do with your server's real-world wall clock — for that, see the separate [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/) trigger, same shape, different clock.
+[Understanding Triggers](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `time` — firing a rule on **Valheim's own in-game clock**, the one that drives day/night and the calendar day counter inside the world itself. It has nothing to do with your server's real-world wall clock — for that, see the separate [`type: realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/) trigger, same shape, different clock.
 
 <Aside type="note">
 Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the `type:` bullet.
@@ -14,7 +14,7 @@ Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https:/
 
 ## Works like `change`, but the "field" is the clock
 
-[`type: change`](/ew_wiki/ewp/concepts/advanced-triggers-change/) fires when a tracked value changes; `type: time` fires when the clock's value changes — same trigger-and-react shape, just watching a value nobody had to set themselves. Instead of naming a field (`type: change, health`), you name a granularity: `tick`, `minute`, `hour`, or `day`, smallest to largest. Each fires the instant Valheim's own clock rolls that unit over.
+[`type: change`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-change/) fires when a tracked value changes; `type: time` fires when the clock's value changes — same trigger-and-react shape, just watching a value nobody had to set themselves. Instead of naming a field (`type: change, health`), you name a granularity: `tick`, `minute`, `hour`, or `day`, smallest to largest. Each fires the instant Valheim's own clock rolls that unit over.
 
 `<par_X>` works the same way it does on `change`, too: `<par_0>` is the granularity word itself, and each condition value after it becomes its own par, smallest unit first.
 
@@ -33,7 +33,7 @@ Don't skip past this because it sounds like a rename of something you already kn
 - `<time_X>` — formats game time using a .NET `DateTime` format string, e.g. `<time_yyyy-MM-dd HH:mm:ss>`.
 
 <Aside type="note">
-This page's clock has its own separate reading functions from the real-world wall clock — see [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends) for `<realtime>`/`<realtime_X>`/`<realtime_X_Y>`. Nothing stops a single `command:` from reading both clocks at once, e.g. `s Day <day>, server time is <realtime_HH:mm>`.
+This page's clock has its own separate reading functions from the real-world wall clock — see [`type: realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends) for `<realtime>`/`<realtime_X>`/`<realtime_X_Y>`. Nothing stops a single `command:` from reading both clocks at once, e.g. `s Day <day>, server time is <realtime_HH:mm>`.
 </Aside>
 
 ### Case study - counting down to a fixed day
@@ -46,7 +46,7 @@ This page's clock has its own separate reading functions from the real-world wal
   command: s <max_0_<sub_30_<day>>> day(s) left in the event
 ```
 
-`<sub_30_<day>>` is `30` minus the current day — negative once day 30 passes. `<max_0_X>` (a Numeric function, [covered on Understanding Functions](/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions)) clamps that at `0` instead of letting the message go negative.
+`<sub_30_<day>>` is `30` minus the current day — negative once day 30 passes. `<max_0_X>` (a Numeric function, [covered on Understanding Functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#kinds-of-functions)) clamps that at `0` instead of letting the message go negative.
 
 ## The four granularities
 
@@ -112,7 +112,7 @@ A comma checks several values at once:
 
 ## Case study - a scheduled bonus, with a clean revert
 
-A resource bonus active every 10th in-game day, back to normal otherwise, using the `*` wildcard together with [`fallback:`](/ew_wiki/ewp/concepts/spawn-vs-swap/) so the revert rule only runs when the bonus rule didn't already match:
+A resource bonus active every 10th in-game day, back to normal otherwise, using the `*` wildcard together with [`fallback:`](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/) so the revert rule only runs when the bonus rule didn't already match:
 
 ```yaml
 - type: time, day *0   # day 10, 20, 30...
@@ -164,7 +164,7 @@ Pick the marker prefab carefully: it needs to be real (any name typed here has t
      parameter: spawnBoss
    ```
 
-   `position:` is what reaches the arena at all — see [Advanced Poke Mechanics](/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range). `filter:` is what makes it *this* banner: a poke search defaults to a 100m radius and picks whichever match is closest, so without a uniqueness tag, any `piece_banner01` within that range — including a player's own decoration — could get poked instead. Tag the arena's banner when it's placed, with WEC's `data set=` or a build-time `data:` (see [Custom Data: Not Only From a Script](/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) — the same pattern used in [World Boss Progression](/ew_wiki/ewp/examples/world-progression/#what-it-builds).
+   `position:` is what reaches the arena at all — see [Advanced Poke Mechanics](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#positionoffset--placing-effects-independent-of-range). `filter:` is what makes it *this* banner: a poke search defaults to a 100m radius and picks whichever match is closest, so without a uniqueness tag, any `piece_banner01` within that range — including a player's own decoration — could get poked instead. Tag the arena's banner when it's placed, with WEC's `data set=` or a build-time `data:` (see [Custom Data: Not Only From a Script](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/#not-only-from-a-script)) — the same pattern used in [World Boss Progression](/ew_toolkit/ew_wiki/ewp/examples/world-progression/#what-it-builds).
 
 3. **The banner answers the poke and spawns the boss**
 

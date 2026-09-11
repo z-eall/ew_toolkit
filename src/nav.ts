@@ -16,6 +16,7 @@ const base = import.meta.env.BASE_URL;
 export const navItems: NavItem[] = [
   { key: "home", label: "Home", href: base },
   { key: "ewp_validator", label: "EWP Validator", href: `${base}ewp_validator/` },
+  { key: "ew_wiki", label: "Expand World Wiki", href: `${base}ew_wiki/` },
   { key: "support", label: "Support", href: `${base}support/` },
 ];
 

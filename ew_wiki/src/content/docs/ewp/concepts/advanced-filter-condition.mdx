@@ -7,7 +7,7 @@ complexity: advanced
 import { Aside } from '@astrojs/starlight/components';
 import ConditionExplainer from '../../../../components/ConditionExplainer.astro';
 
-Every filter so far — [`filter:`/`bannedFilter:`](/ew_wiki/ewp/concepts/basic-filter/), and the plural [`filters:`/`bannedFilters:`](/ew_wiki/ewp/concepts/advanced-filter-plural/) — compares one field against a fixed literal or range written into the script. `condition:` is a different, newer tool: one free-form expression string that can compare two *dynamic* values against each other — the output of one [function](/ew_wiki/ewp/concepts/basic-functions/) against another — and combine several checks with real logical operators. It's valid whenever the expression resolves to something non-empty, non-zero, and not the literal text `false`.
+Every filter so far — [`filter:`/`bannedFilter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/), and the plural [`filters:`/`bannedFilters:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-plural/) — compares one field against a fixed literal or range written into the script. `condition:` is a different, newer tool: one free-form expression string that can compare two *dynamic* values against each other — the output of one [function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) against another — and combine several checks with real logical operators. It's valid whenever the expression resolves to something non-empty, non-zero, and not the literal text `false`.
 
 <Aside type="note">
 This page comes from EWP's own [`docs/scripting.md`](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), the "Filters" section — `condition:` is one of the newest additions there, so expect it to show up less often in older example scripts than `filter:`/`filters:`.
@@ -45,7 +45,7 @@ Parentheses override that order, e.g. `(a or b) and c` forces the `or` to resolv
 
 <ConditionExplainer />
 
-A `condition:` on a top-level rule field evaluates against the rule's own object; on an [`objects:`/`bannedObjects:`](/ew_wiki/ewp/concepts/objects-filtering/) or [`poke:`](/ew_wiki/ewp/concepts/basic-poke/) entry, it evaluates against that specific nearby or poked object instead — same scoping rule `filter:` already follows.
+A `condition:` on a top-level rule field evaluates against the rule's own object; on an [`objects:`/`bannedObjects:`](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) or [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) entry, it evaluates against that specific nearby or poked object instead — same scoping rule `filter:` already follows.
 
 ## Simple use case: only fire on a matching day
 

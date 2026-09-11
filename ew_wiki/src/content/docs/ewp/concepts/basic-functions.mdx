@@ -19,7 +19,7 @@ Every function belongs to one of a handful of groups, based on what it works on:
 - **Custom data (global)** — a save slot that isn't tied to any one object, unlike the per-object `data:` you already know: `<save_X_Y>`, `<load_X>`, `<clear_X>`. Most players call this an **EWP key**.
 - **Time** — reads or formats the in-game or real-world clock: `<day>`, `<realtime_X>`.
 
-The rest of this page teaches Basic, Text, and Numeric. Vector gets its own quick reference on [Advanced Functions](/ew_wiki/ewp/concepts/advanced-functions/), which also shows Text and Numeric functions combined creatively. Time splits by clock: game-clock functions on [type: time](/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing), real-world-clock functions on [type: realtime](/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends). Custom data (global) gets its own page, [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/).
+The rest of this page teaches Basic, Text, and Numeric. Vector gets its own quick reference on [Advanced Functions](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions/), which also shows Text and Numeric functions combined creatively. Time splits by clock: game-clock functions on [type: time](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-time/#time-functions-read-the-clock-this-trigger-reacts-to-it-changing), real-world-clock functions on [type: realtime](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/#reading-the-result-realtime-and-friends). Custom data (global) gets its own page, [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/).
 
 <Aside type="note">
 For the complete, always-current list of every function in every category, right now: the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md).
@@ -85,7 +85,7 @@ Some functions read a value that might not exist yet — add `=value` right afte
 
 ## A function can fetch, not just compute
 
-`<upper_X>` and `<add_X_Y>` compute a new value from what you hand them. Other functions fetch a value that already exists somewhere — `<biome>` and `<prefab>` above are two examples, and so are `<int_*>`, `<float_*>`, and `<key_*>`, which read a value back off an object's own data. Reading your own values back this way is its own topic — see [Custom Data: Your Own Flags](/ew_wiki/ewp/concepts/custom-data/).
+`<upper_X>` and `<add_X_Y>` compute a new value from what you hand them. Other functions fetch a value that already exists somewhere — `<biome>` and `<prefab>` above are two examples, and so are `<int_*>`, `<float_*>`, and `<key_*>`, which read a value back off an object's own data. Reading your own values back this way is its own topic — see [Custom Data: Your Own Flags](/ew_toolkit/ew_wiki/ewp/concepts/custom-data/).
 
 ## Where functions can go
 

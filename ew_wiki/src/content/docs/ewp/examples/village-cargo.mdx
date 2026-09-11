@@ -14,21 +14,21 @@ The *mechanism* is what's being taught here, not a guarantee that every field na
 </Aside>
 
 <Aside type="tip">
-**Part of a bigger system.** This page, [World Boss Progression](/ew_wiki/ewp/examples/world-progression/), and [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show a boss kill (World Boss Progression) widen which villages and how much cargo this page can deliver, at the same time it's unlocking crafting stations on Auto-upgrade Stations.
+**Part of a bigger system.** This page, [World Boss Progression](/ew_toolkit/ew_wiki/ewp/examples/world-progression/), and [Auto-upgrade Stations](/ew_toolkit/ew_wiki/ewp/examples/auto-upgrade-station/) are three real pieces of the same live server, and all three read or write the exact same [EWP key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/): `bfvworldlevel`. Each one works completely on its own — you don't need the other two to use this page. Read together, they show a boss kill (World Boss Progression) widen which villages and how much cargo this page can deliver, at the same time it's unlocking crafting stations on Auto-upgrade Stations.
 </Aside>
 
 <WorldLevelDialExplainer defaultTab="cargo" />
 
 ## A weight built from a live counter
 
-The timer runs on [`type: realtime`](/ew_wiki/ewp/concepts/advanced-triggers-realtime/) (real-world clock time, not in-game time), so it keeps climbing even with nobody online:
+The timer runs on [`type: realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/) (real-world clock time, not in-game time), so it keeps climbing even with nobody online:
 
 ```yaml
 - type: realtime, hour
   exec: <save++_cargospawnfactor>
 ```
 
-Every real-world hour, `<save++_X>` bumps a counter by 1 (see [Custom Data: EWP Key](/ew_wiki/ewp/concepts/ewp-key/)). Nothing spawns yet — this rule only counts. The spawn attempt is a separate rule watching that same counter through a `type: key` range:
+Every real-world hour, `<save++_X>` bumps a counter by 1 (see [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/)). Nothing spawns yet — this rule only counts. The spawn attempt is a separate rule watching that same counter through a `type: key` range:
 
 ```yaml
 - type: key, cargospawnfactor 4;9999
@@ -43,17 +43,17 @@ Every real-world hour, `<save++_X>` bumps a counter by 1 (see [Custom Data: EWP 
     parameter: findEmptyCargoSpawner <randomCargoLvl<load_bfvworldlevel=0>>
 ```
 
-This is the main thing worth taking away from this whole page: `weight:` doesn't have to be a fixed number. [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) only showed constants, but a weight can just as well be the result of a function, recomputed fresh every time the rule is checked — here, built from `<par_1>`, the current counter value itself (see [Understanding Pars](/ew_wiki/ewp/concepts/basic-pars/)).
+This is the main thing worth taking away from this whole page: `weight:` doesn't have to be a fixed number. [Weight and Chance](/ew_toolkit/ew_wiki/ewp/examples/basic-rng/) only showed constants, but a weight can just as well be the result of a function, recomputed fresh every time the rule is checked — here, built from `<par_1>`, the current counter value itself (see [Understanding Pars](/ew_toolkit/ew_wiki/ewp/concepts/basic-pars/)).
 
 <Aside type="caution">
 This is described as a 33% / 66% / 100% ramp as the counter climbs through 4, 5, 6 real hours, but that exact curve can't be independently re-derived from `weight:`'s documented pool math — probability depends on every other rule sharing the same weight pool at match time, which isn't fully knowable from the docs alone. Treat the specific percentages as unconfirmed; the technique itself — computing a weight from a live value instead of hardcoding it, plus the reset below — is what's solid here.
 </Aside>
 
-`exec: <save_cargospawnfactor_0>` resets the counter back to 0 the moment a shipment does go out, so the whole climb starts over — a self-resetting real-world timer, built entirely out of fields [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) already introduced.
+`exec: <save_cargospawnfactor_0>` resets the counter back to 0 the moment a shipment does go out, so the whole climb starts over — a self-resetting real-world timer, built entirely out of fields [Weight and Chance](/ew_toolkit/ew_wiki/ewp/examples/basic-rng/) already introduced.
 
 ### Where the world level comes back in
 
-The poke above reads `<randomVillageLvl<load_bfvworldlevel=0>>` and `<randomCargoLvl<load_bfvworldlevel=0>>` — two more `value:` tables, keyed by the same `bfvworldlevel` [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) reads. This is the seam joining the two systems: a low world level narrows which villages are even eligible for a delivery and shrinks how much cargo they can receive; a high one opens up the whole map and raises the ceiling. Nothing about the cargo timer above needed to know that detail — it just asked "how many villages, how much cargo" and let the shared counter answer. The full table, straight from the live script:
+The poke above reads `<randomVillageLvl<load_bfvworldlevel=0>>` and `<randomCargoLvl<load_bfvworldlevel=0>>` — two more `value:` tables, keyed by the same `bfvworldlevel` [Auto-upgrade Stations](/ew_toolkit/ew_wiki/ewp/examples/auto-upgrade-station/) reads. This is the seam joining the two systems: a low world level narrows which villages are even eligible for a delivery and shrinks how much cargo they can receive; a high one opens up the whole map and raises the ceiling. Nothing about the cargo timer above needed to know that detail — it just asked "how many villages, how much cargo" and let the shared counter answer. The full table, straight from the live script:
 
 | World level | Eligible villages | Cargo amount |
 | :-: | :-: | --- |
@@ -97,7 +97,7 @@ The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items fr
 
 ### Resetting once a delivery is collected
 
-A cargo tent flagged `villageCargoReceived` stays that way until the actual `Cargo*` item near it is gone — [`bannedObjects:`](/ew_wiki/ewp/concepts/objects-filtering/) checks for its *absence*, the mirror image of `objects:` checking for presence:
+A cargo tent flagged `villageCargoReceived` stays that way until the actual `Cargo*` item near it is gone — [`bannedObjects:`](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) checks for its *absence*, the mirror image of `objects:` checking for presence:
 
 ```yaml
 - prefab: rug_bogwitch_wolf
@@ -135,7 +135,7 @@ The live script answers a chat command with every village's delivery status at o
        parameter: printCargoInfo 15
    ```
 
-   Two separate pokes fire from one command: one reaches every cargo tent at once to refresh each village's saved status (`cargovillage<n>`, one of `1` delivered-and-available, `0` empty, or `-1` still locked at this world level — matched against the same `randomVillageLvl<load_bfvworldlevel=0>>` range [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) uses), the other [self-pokes](/ew_wiki/ewp/concepts/basic-poke/) back onto the player half a second later, once those statuses have had time to update.
+   Two separate pokes fire from one command: one reaches every cargo tent at once to refresh each village's saved status (`cargovillage<n>`, one of `1` delivered-and-available, `0` empty, or `-1` still locked at this world level — matched against the same `randomVillageLvl<load_bfvworldlevel=0>>` range [Auto-upgrade Stations](/ew_toolkit/ew_wiki/ewp/examples/auto-upgrade-station/) uses), the other [self-pokes](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) back onto the player half a second later, once those statuses have had time to update.
 
 2. **A self-closing countdown prints the result**
 
@@ -155,7 +155,7 @@ The live script answers a chat command with every village's delivery status at o
        parameter: printCargoInfo <sub_<par_1>_1>
    ```
 
-   [`objectRpc:`](/ew_wiki/ewp/concepts/basic-rpcs/) with the `Message` RPC pops the full 15-village status list on screen every second, counting `<par_1>` down by 1 each time — the exact same loop-with-terminal-case pattern [Advanced Poke - Creative Systems](/ew_wiki/ewp/concepts/advanced-poke-creative-systems/#a-self-closing-timer-carried-entirely-in-the-poke-itself) already covers in full. Nothing new to teach there — this is a second real example of that same pattern, not a different one.
+   [`objectRpc:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/) with the `Message` RPC pops the full 15-village status list on screen every second, counting `<par_1>` down by 1 each time — the exact same loop-with-terminal-case pattern [Advanced Poke - Creative Systems](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-creative-systems/#a-self-closing-timer-carried-entirely-in-the-poke-itself) already covers in full. Nothing new to teach there — this is a second real example of that same pattern, not a different one.
 
 </Steps>
 
@@ -170,5 +170,5 @@ Trimmed for this page, and left out rather than guessed at:
 </Aside>
 
 <Aside type="tip">
-**Where this connects.** [World Boss Progression](/ew_wiki/ewp/examples/world-progression/) shows `bfvworldlevel` climbing automatically from boss kills. [Auto-upgrade Stations](/ew_wiki/ewp/examples/auto-upgrade-station/) reacts to the exact same key to lock and unlock crafting stations — same counter, a completely different reaction to it.
+**Where this connects.** [World Boss Progression](/ew_toolkit/ew_wiki/ewp/examples/world-progression/) shows `bfvworldlevel` climbing automatically from boss kills. [Auto-upgrade Stations](/ew_toolkit/ew_wiki/ewp/examples/auto-upgrade-station/) reacts to the exact same key to lock and unlock crafting stations — same counter, a completely different reaction to it.
 </Aside>

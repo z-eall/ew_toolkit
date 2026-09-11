@@ -19,7 +19,7 @@ Most of what you write follows one pattern: "when X happens, do Y."
   data: strongBoar
 ```
 
-This says: whenever a Boar spawns, apply this data entry to it (see [Understanding Data](/ew_wiki/ewp/concepts/basic-data/) for how these work in general):
+This says: whenever a Boar spawns, apply this data entry to it (see [Understanding Data](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) for how these work in general):
 
 <StrongBoarData />
 
@@ -38,7 +38,7 @@ The example above used `type: create` — that's just one of several triggers `t
 - `state` — it broadcasts a state change (used for things like a door opening)
 - `say` — it, or a player, says something in chat
 
-(and others — [`poke`](/ew_wiki/ewp/concepts/basic-poke/), `change`, `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
+(and others — [`poke`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/), `change`, `time`, `realtime`, `event`, `key`, `globalkey` each do a specific job and get their own page as you go further)
 
 Some triggers take a parameter, written after a comma: `type: say, spawn` fires only when the chat message is exactly "spawn" — not on any chat message. What the parameter means depends on the trigger (`time`'s is a granularity like `day`/`hour`); `say`'s is the exact text to match.
 
@@ -47,7 +47,7 @@ Watching for more than one *type* at once (not more than one parameter) uses a d
 </Aside>
 
 <Aside type="tip">
-See [Understanding Triggers](/ew_wiki/ewp/concepts/basic-triggers/) for a closer look at these same four triggers, including a couple of ways they don't behave quite how their name suggests.
+See [Understanding Triggers](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/) for a closer look at these same four triggers, including a couple of ways they don't behave quite how their name suggests.
 </Aside>
 
 ## A rule can do more than set data
@@ -64,7 +64,7 @@ Every example so far used `data:` to change something that already exists. A rul
 Whenever a Neck is destroyed, this spawns a Coins drop where it died. `spawn:` takes a list, so one rule can spawn more than one thing.
 
 <Aside type="tip">
-See `data:` and `spawn:` used together, built up one rule at a time, in [Your First Script, Step by Step](/ew_wiki/ewp/examples/first-script/). For more of what a spawn entry can do, and its close sibling `swap:` (replaces the original object instead of adding to it), see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/).
+See `data:` and `spawn:` used together, built up one rule at a time, in [Your First Script, Step by Step](/ew_toolkit/ew_wiki/ewp/examples/first-script/). For more of what a spawn entry can do, and its close sibling `swap:` (replaces the original object instead of adding to it), see [Spawn vs. Swap](/ew_toolkit/ew_wiki/ewp/concepts/spawn-vs-swap/).
 </Aside>
 
 ## A script can hold more than one rule
@@ -81,14 +81,14 @@ Stack as many blocks as you like in the same file:
   data: strongGreydwarf
 ```
 
-EWP reads the whole file and applies whichever block matches what's happening. (`strongGreydwarf` here is just a stand-in name — you'd define it in your own `data.yaml` the same way [`strongBoar`](/ew_wiki/ewp/concepts/basic-data/) was defined.)
+EWP reads the whole file and applies whichever block matches what's happening. (`strongGreydwarf` here is just a stand-in name — you'd define it in your own `data.yaml` the same way [`strongBoar`](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) was defined.)
 
 ## Getting your script running
 
-Saving the file in the right folder is the only "install" step there is — see [Preparation](/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
+Saving the file in the right folder is the only "install" step there is — see [Preparation](/ew_toolkit/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
 
 <Aside type="tip">
-Get your [data](/ew_wiki/ewp/concepts/basic-data/) ready before your script needs it — see [Preparation](/ew_wiki/ewp/preparation/#set-up-data-before-scripts) for why.
+Get your [data](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) ready before your script needs it — see [Preparation](/ew_toolkit/ew_wiki/ewp/preparation/#set-up-data-before-scripts) for why.
 </Aside>
 
-Every example on this page matched every Boar, every Neck — no picking and choosing. Want a rule that only fires for *some* of them? See [Understanding Filter](/ew_wiki/ewp/concepts/basic-filter/).
+Every example on this page matched every Boar, every Neck — no picking and choosing. Want a rule that only fires for *some* of them? See [Understanding Filter](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/).

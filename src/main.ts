@@ -19,6 +19,12 @@ const tools: Tool[] = [
     subpath: "./ewp_validator/",
     description: "Validate Expand World Prefabs YAML files.",
   },
+  {
+    key: "ew_wiki",
+    name: "Expand World Wiki",
+    subpath: "./ew_wiki/",
+    description: "Guides for scripting with Expand World Prefabs.",
+  },
 ];
 
 interface Mention {
