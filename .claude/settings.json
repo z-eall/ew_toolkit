@@ -36,6 +36,28 @@
         ]
       }
     ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-session-start-corpus-inject.cjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-support-image-size.cjs"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
