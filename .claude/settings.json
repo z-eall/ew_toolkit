@@ -35,6 +35,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-standing-rules-sync.cjs"
+          }
+        ]
+      }
     ]
   }
 }
