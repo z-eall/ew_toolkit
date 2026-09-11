@@ -50,6 +50,10 @@ Both parse identically — this is the convention scripters actually use, not a 
 - **Split a page along its confidence or purpose seams** — core teaching content next to community-contributed/unverified patterns, or a reference table next to copy-paste recipes, are two different reading modes. Give each its own page and link between them.
 - **Playground suitability**: a schema-valid playground proves shape, not behavior. A self-contained YAML document with no cross-references to other entries is a good candidate. A chained or stateful script (a poke chain, a counter that survives across pokes) is not — a green checkmark there would say "valid shape" while the actual runtime behavior stays unverified.
 
+## Widget building
+
+Before starting a new interactive widget (a prototype ticket followed by a real Astro component build), read [docs/widget-build-notes.md](docs/widget-build-notes.md) — CSS/JS gotchas already hit at least once, not repeated here since none of them have a mechanical trigger.
+
 ## Page and section naming
 
 Name pages and headings by what the reader does or learns, not by what the thing is called internally (a specific case of "No internal bookkeeping in reader text," Content voice and depth — a filename or slug is never a page's reader-facing name). "Start Here" is banned as a label — it says nothing about what's inside; every page name should. Test: could two different pages both honestly be called "Start Here"? If yes, the name is too generic.
