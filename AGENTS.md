@@ -12,7 +12,7 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 - **Commit + push before switching** agents; **pull when opening** the other agent.
 - Update `HANDOFF.md` at the end of every session so the next agent can continue.
 - This repo runs as two worktrees: `main` (Claude Code, `ew_toolkit/`) and `cursor/work` (Cursor, `ew_toolkit-cursor/`).
-- **Standing-rule files sync immediately, not at the next handoff.** If a session edits `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, or `docs/agents/`, merge that change into the other branch before ending the session — don't wait for the normal commit-push-pull cycle. A stale copy means the other agent silently works without a rule that already exists.
+- **Standing-rule files (`AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `docs/agents/`) must match byte-for-byte between the two worktrees** — enforced by a Stop hook, not memory; see `docs/agents/hooks-vs-rules.md`.
 
 ## Cost & tooling
 
