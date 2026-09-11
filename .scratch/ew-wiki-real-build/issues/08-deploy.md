@@ -22,5 +22,5 @@ Also addressed mid-ticket: the maintainer asked that entering `ew_wiki` from the
 
 Persisted as a standing rule (both worktrees' `AGENTS.md`, UI/UX consistency mechanism 4): every Tool must hand-render the hub's site-nav bar and use the full nested `base` path it's actually deployed at, so this exact bug-class doesn't recur for a future Tool.
 
-The user asked this session to push everything and let CI deploy live — pushed after this ticket closed; see the map for the resulting commits. Live-site confirmation (the ticket's own third bullet) still depends on watching that CI run finish.
+The user asked this session to push everything and let CI deploy live — pushed after this ticket closed. CI's `Build and deploy` run finished green (build 49s, deploy 10s), and the live site at `https://z-eall.github.io/ew_toolkit/ew_wiki/` was confirmed directly: fully styled, hub nav present with "Expand World Wiki" active, theme toggle working. v1 is live.
 
