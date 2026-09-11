@@ -46,10 +46,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-session-start-corpus-inject.cjs"
-          },
-          {
-            "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-handoff-staleness-check.cjs"
           }
         ]
@@ -73,14 +69,6 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-standing-rules-sync.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-handoff-touch.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-fix-elsewhere-check.cjs"
           }
         ]
       }
