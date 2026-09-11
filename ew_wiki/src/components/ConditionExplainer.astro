@@ -4,13 +4,10 @@
 // (not id-scoped) so more than one instance can coexist, client-side
 // <script> does the evaluation, no client:load needed.
 //
-// Validated as a throwaway HTML prototype first (4 rounds on the
-// maintainer's feedback — see this ticket's Answer for the branch note).
-// Applies the 4 process rules from ticket 17's own gap (see
-// feedback_widget_prototype_to_build_gap memory): built and tested inside
-// the real page from round 1, no hardcoded heights (content here is fixed
-// length so none are needed), flex-centered dots/chips instead of
-// absolute-position hacks, spacing kept deliberate from the start.
+// Validated as a throwaway HTML prototype first, then built and tested
+// inside the real page: no hardcoded heights (content here is fixed length
+// so none are needed), flex-centered dots/chips instead of absolute-position
+// hacks, spacing kept deliberate from the start.
 //
 // Key mechanic this widget exists to make concrete: EWP's condition:
 // evaluates without parentheses in a real default order (not > and > xor >
@@ -177,12 +174,10 @@
 		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	}
 	.ce-control select {
-		/* margin:0 is load-bearing, not decorative — same stray external
-		   margin-top from outside this component that hit ticket 17's buttons
-		   and condition-panel (see that ticket's Answer) lands on this select
-		   too, since it's the 2nd child of .ce-control. Without it, the real
-		   gap between label and select was noticeably bigger than the
-		   intended 4px .ce-control gap. */
+		/* margin:0 is load-bearing, not decorative — Starlight's own doc CSS
+		   applies a stray margin-top to any 2nd child of a flex control like
+		   this one. Without it, the gap between label and select is
+		   noticeably bigger than the intended 4px .ce-control gap. */
 		margin: 0;
 		background: var(--bg);
 		border: 1px solid var(--border);

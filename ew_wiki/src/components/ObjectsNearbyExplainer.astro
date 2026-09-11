@@ -4,14 +4,13 @@
 // instance can coexist, client-side <script> does the drawing/state, no
 // client:load needed.
 //
-// Validated as a throwaway HTML prototype first (8 rounds on the maintainer's
-// feedback — see this ticket's Answer for the branch note and the final
-// prototype file). Models the real objects:/objectsLimit:/weight: mechanic
-// from this page's own "weight: — how much a match counts" example
-// (commander-boar-data.mdx): a fixed script, walked through as two
+// Validated as a throwaway HTML prototype first, several rounds against
+// maintainer feedback. Models the real objects:/objectsLimit:/weight:
+// mechanic from this page's own "weight: — how much a match counts" example
+// (objects-filtering.mdx): a fixed script, walked through as two
 // three-or-four-step scripted scenarios (Success / Fail) rather than a free
-// editable config, since round 1's raw editable fields tested as too
-// technical for this page's `intermediate` audience.
+// editable config, since raw editable fields tested as too technical for
+// this page's `intermediate` audience.
 //
 // Key mechanic this widget exists to correct a wrong mental model about:
 // objects:/objectsLimit is checked exactly ONCE, the instant the object is
@@ -96,8 +95,8 @@
 	}
 	.on-sub {
 		margin: 0;
-		/* Zone 1, round 2: was 8px, then 4px — still flagged as too much air above
-		   the tabs. */
+		/* Deliberately tight — extra padding here reads as too much air
+		   above the tabs. */
 		padding: 0 12px 2px;
 		color: var(--muted);
 		font-size: 0.9em;
@@ -225,8 +224,8 @@
 	   which rows are present. */
 	.on-cond-list {
 		list-style: none;
-		/* Zone 4, round 2: was 8px, then 4px — still flagged as too much air above
-		   the story box. */
+		/* Deliberately tight — extra margin here reads as too much air
+		   above the story box. */
 		margin: 0 0 2px;
 		padding: 0;
 		display: flex;

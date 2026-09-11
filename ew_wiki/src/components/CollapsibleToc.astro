@@ -2,8 +2,8 @@
 // Override for Starlight's default TableOfContents component (wired in
 // astro.config.mjs). Replaces the always-open "On this page" list with an
 // icon rail (☰ toggle, ↑ back-to-top) that pushes open a panel anchored to
-// the rail itself — ticket 09 (ew-wiki-real-build), Variant A from
-// .scratch/ew-wiki-real-build/prototypes/toc-sidebar-3variants-prototype.html.
+// the rail itself — chosen after comparing prototype variants that anchored
+// to the sidebar column instead (see the panel-positioning comment below).
 // Collapsed by default, state persisted via localStorage.
 const { toc } = Astro.locals.starlightRoute;
 ---
@@ -58,9 +58,8 @@ const { toc } = Astro.locals.starlightRoute;
 			/* Anchored to .ewp-toc-rail (its nearest positioned ancestor), not
 			   the surrounding sidebar column — so it always opens flush under
 			   the rail's own bottom-right corner regardless of that column's
-			   rendered width. A width-dependent anchor was what let the panel
-			   drift to an unpredictable spot in the prototype (see ticket 09's
-			   round-2 fix). */
+			   rendered width. A width-dependent anchor lets the panel drift to
+			   an unpredictable spot instead. */
 			position: absolute;
 			top: calc(100% + 0.5rem);
 			right: 0;
@@ -113,10 +112,9 @@ const { toc } = Astro.locals.starlightRoute;
 
 <script>
 	// Section-jump drives scrollIntoView() explicitly rather than relying on
-	// native <a href="#id"> anchor navigation — see ticket 09's round-2 fix
-	// (the prototype's local-file sandbox didn't reliably fire plain anchor
-	// jumps; scrollIntoView is also unaffected by any host-page routing that
-	// might intercept a hash-only navigation).
+	// native <a href="#id"> anchor navigation, since scrollIntoView is
+	// unaffected by any host-page routing that might intercept a
+	// hash-only navigation.
 	class EwpTocRail extends HTMLElement {
 		toggle = this.querySelector<HTMLButtonElement>('#ewp-toc-toggle')!;
 		top = this.querySelector<HTMLButtonElement>('#ewp-toc-top')!;

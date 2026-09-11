@@ -49,7 +49,7 @@ This is the main thing worth taking away from this whole page: `weight:` doesn't
 This is described as a 33% / 66% / 100% ramp as the counter climbs through 4, 5, 6 real hours, but that exact curve can't be independently re-derived from `weight:`'s documented pool math — probability depends on every other rule sharing the same weight pool at match time, which isn't fully knowable from the docs alone. Treat the specific percentages as unconfirmed; the technique itself — computing a weight from a live value instead of hardcoding it, plus the reset below — is what's solid here.
 </Aside>
 
-`exec: <save_cargospawnfactor_0>` resets the counter back to 0 the moment a shipment does go out, so the whole climb starts over — a self-resetting real-world timer, built entirely out of fields [Adding Randomness](/ew_wiki/ewp/examples/basic-rng/) already introduced.
+`exec: <save_cargospawnfactor_0>` resets the counter back to 0 the moment a shipment does go out, so the whole climb starts over — a self-resetting real-world timer, built entirely out of fields [Weight and Chance](/ew_wiki/ewp/examples/basic-rng/) already introduced.
 
 ### Where the world level comes back in
 

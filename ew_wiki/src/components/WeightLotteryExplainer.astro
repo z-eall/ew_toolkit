@@ -4,15 +4,14 @@
 // (never id-scoped) so more than one instance can coexist, client-side
 // <script> does the work, no client:load needed.
 //
-// Round 2 (Weight vs Chance tabs) — mechanic confirmed against the mod's
-// real source before encoding, per this ticket's own source-verify
-// instruction. Reading InfoManager.cs's Add() alongside InfoSelector.cs
+// Weight-vs-Chance tabs — mechanic confirmed against the mod's real source
+// before encoding. Reading InfoManager.cs's Add() alongside InfoSelector.cs
 // (ExpandWorldPrefabs) shows weight: and chance:-only rules are NOT the
 // same competition with different numbers — they're two different
 // selection strategies:
 //   - A rule with weight: set joins one shared pool per prefab+type;
 //     Randomize() picks at most one winner, proportional to weight, total
-//     floored at 1 (round 1's confirmed math — unchanged, still correct).
+//     floored at 1.
 //   - A rule with NO weight: (chance: alone) lands in a completely
 //     different "Separate" bucket instead. EVERY matching rule in that
 //     bucket is tried, each independently gated by its own chance: roll

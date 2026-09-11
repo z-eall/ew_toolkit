@@ -346,61 +346,67 @@ A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) 
 
 The last loop is the one that actually closes the circle: pulling honey out of a hive can turn it silent (no more honey, no more crop bonus, can't be repaired), and a fresh flower nearby has a chance to bring it back.
 
-```yaml
-- prefab: piece_beehive
-  type: change, level 0 3,4
-  weight: <mul_<par_2>_<chanceTurnSilentFactor>>
-  bannedFilter: int, isSilentBeehive, 1
-  data: isSilentBeehive
-  spawn:
-  - prefab: vfx_spawn_small
-```
+<Steps>
 
-`level` is `Beehive`'s own honey-stage counter (a real ZDO field) — it climbs as honey builds up and drops back to 0 when a player extracts it. `type: change, level 0 3,4` fires specifically when `level` changes *to* 0 *from* 3 or 4 — i.e., extracting from a hive that was nearly or fully stocked, not a small top-up.
+1. **Extracting from a nearly-full hive risks silencing it**
 
-<Aside type="caution">
-Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_wiki/ewp/concepts/basic-pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
-</Aside>
+   ```yaml
+   - prefab: piece_beehive
+     type: change, level 0 3,4
+     weight: <mul_<par_2>_<chanceTurnSilentFactor>>
+     bannedFilter: int, isSilentBeehive, 1
+     data: isSilentBeehive
+     spawn:
+     - prefab: vfx_spawn_small
+   ```
 
-With that fix, `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
+   `level` is `Beehive`'s own honey-stage counter (a real ZDO field) — it climbs as honey builds up and drops back to 0 when a player extracts it. `type: change, level 0 3,4` fires specifically when `level` changes *to* 0 *from* 3 or 4 — i.e., extracting from a hive that was nearly or fully stocked, not a small top-up.
 
-Reactivating a silenced hive works the same shape as Loop 1's flower-QueenBee roll, plus one more step to actually respawn a fresh hive:
+   <Aside type="caution">
+   Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_wiki/ewp/concepts/basic-pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
+   </Aside>
 
-```yaml
-- prefab: allGrownFlowers
-  type: create
-  weight: <chanceResetSilent>
-  objects:
-  - prefab: piece_beehive
-    filter: int, isSilentBeehive, 1
-    maxDistance: 10
-  poke:
-  - prefab: piece_beehive
-    filter: int, isSilentBeehive, 1
-    parameter: resetSilentBeehive
+   With that fix, `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
 
-- prefab: piece_beehive
-  type: poke, resetSilentBeehive
-  remove: true
-  spawn:
-  - prefab: <prefab>
-    triggerRules: true
-  - prefab: fx_skeleton_pet
-    pos: 0,0,1
-```
+2. **A fresh nearby flower has a chance to reactivate a silent hive**
 
-A fresh grown flower rolls `chanceResetSilent` (20%), and only counts if a silent hive is within 10 meters — then pokes that specific hive. The hive removes itself and spawns a brand-new copy of `<prefab>` (a [function](/ew_wiki/ewp/concepts/basic-functions/) meaning "this same object's own prefab id") in its place — a clean respawn rather than trying to un-set every silent-hive field one at a time. `triggerRules: true` matters here: without it, this spawn wouldn't itself be checked against any other rule in the script — see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/) for why a spawned object normally skips rule-triggering by default.
+   ```yaml
+   - prefab: allGrownFlowers
+     type: create
+     weight: <chanceResetSilent>
+     objects:
+     - prefab: piece_beehive
+       filter: int, isSilentBeehive, 1
+       maxDistance: 10
+     poke:
+     - prefab: piece_beehive
+       filter: int, isSilentBeehive, 1
+       parameter: resetSilentBeehive
 
-Last piece — stop a silent hive from just getting repaired back to normal:
+   - prefab: piece_beehive
+     type: poke, resetSilentBeehive
+     remove: true
+     spawn:
+     - prefab: <prefab>
+       triggerRules: true
+     - prefab: fx_skeleton_pet
+       pos: 0,0,1
+   ```
 
-```yaml
-- prefab: piece_beehive
-  type: state, repair
-  filter: int, isSilentBeehive, 1
-  data: isSilentBeehive
-```
+   A fresh grown flower rolls `chanceResetSilent` (20%), and only counts if a silent hive is within 10 meters — then pokes that specific hive. The hive removes itself and spawns a brand-new copy of `<prefab>` (a [function](/ew_wiki/ewp/concepts/basic-functions/) meaning "this same object's own prefab id") in its place — a clean respawn rather than trying to un-set every silent-hive field one at a time. `triggerRules: true` matters here: without it, this spawn wouldn't itself be checked against any other rule in the script — see [Spawn vs. Swap](/ew_wiki/ewp/concepts/spawn-vs-swap/) for why a spawned object normally skips rule-triggering by default.
 
-`state, repair` fires whenever `WearNTear`'s health changes via a repair (one of the states EWP's own docs list for `WearNTear`). Re-applying `isSilentBeehive` here doesn't cancel the repair interaction itself — it just re-stamps the silent-hive's health and stats right after, undoing whatever the repair just restored.
+3. **A silent hive can't just be repaired back to normal**
+
+   ```yaml
+   - prefab: piece_beehive
+     type: state, repair
+     filter: int, isSilentBeehive, 1
+     data: isSilentBeehive
+   ```
+
+   `state, repair` fires whenever `WearNTear`'s health changes via a repair (one of the states EWP's own docs list for `WearNTear`). Re-applying `isSilentBeehive` here doesn't cancel the repair interaction itself — it just re-stamps the silent-hive's health and stats right after, undoing whatever the repair just restored.
+
+</Steps>
 
 The `isSilentBeehive` data entry itself, applied throughout this loop:
 

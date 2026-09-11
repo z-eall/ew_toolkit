@@ -1,5 +1,5 @@
 /* Maps the hub's shared identity palette onto Starlight's own CSS
-   variables, per ticket 01 (ew-wiki-real-build)'s Variant A decision.
+   variables (the Baseline variant, chosen after comparing alternatives).
    Imports shared/theme.css instead of copying its hex values (AGENTS.md's
    shared-visual-identity rule). --bg/--panel/--border/--text already flip
    for light mode inside shared/theme.css, so a single :root mapping here
@@ -108,7 +108,7 @@
    scanning a procedural page couldn't pick out where one step ends and the
    next begins. Starlight's own accent tokens were tried first, but that's
    Starlight's default blue — it clashed against this wiki's warm dark
-   palette (the hub's #222831/#393e46/#948979/#dfd0b8 set, see the ticket 01
+   palette (the hub's #222831/#393e46/#948979/#dfd0b8 set, see the mapping
    comment above). A dedicated warm gold, kept local to this rule only (not
    added to shared/theme.css's 5-color palette, since it's page decoration,
    not brand identity), matches instead — chosen and previewed with the

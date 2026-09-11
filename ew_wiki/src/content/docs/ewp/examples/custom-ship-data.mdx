@@ -55,7 +55,7 @@ Push `Ship.m_force` or `m_damping` too far and a ship will eventually capsize �
 
 Every field below lives on a `Karve`, `Raft`, `Trailership`, `VikingShip`, or `VikingShip_Ashlands`, per [valheimtools.stream's `Ship` component page](https://valheimtools.stream/wiki/components). Grouped by what they actually control:
 
-**Sailing and steering**
+### Sailing and steering
 
 - `Ship.m_sailForceFactor` — how much the sail itself pushes the ship. Higher sails faster, but also harder to control.
 - `Ship.m_sailForceOffset` — where along the ship the sail's force is applied; changes how much the bow dips under sail.
@@ -66,7 +66,7 @@ Every field below lives on a `Karve`, `Raft`, `Trailership`, `VikingShip`, or `V
 - `Ship.m_rudderSpeed` — how fast the rudder itself swings to its target angle.
 - `Ship.m_rudderRotationMax` — the rudder's maximum swing angle, in degrees.
 
-**Physics and stability**
+### Physics and stability
 
 - `Ship.m_force` / `Ship.m_forceDistance` — the strength of, and multiplier distance for, the force the game applies to keep the ship upright and moving with the water.
 - `Ship.m_damping` / `Ship.m_dampingSideway` / `Ship.m_dampingForward` — how strongly the ship resists motion on each axis. Lower means more agile and "floaty"; higher means it fights waves and wind harder and feels more planted.
@@ -77,11 +77,11 @@ Every field below lives on a `Karve`, `Raft`, `Trailership`, `VikingShip`, or `V
 Never set a damping field to exactly `0` — reported as a way to make a ship uncontrollable, unconfirmed but not worth risking. Keep every damping value above `0`, even if very small (`0.001` and up).
 </Aside>
 
-**Wind**
+### Wind
 
 - `GlobalWind.m_multiplier` — a percentage multiplier on how much wind boosts sailing speed. As admin, the console command `env wind` (`0` = calm, `1` = storm) lets you watch a ship react to different wind strengths without waiting for real weather.
 
-**Storage, health, and cosmetics**
+### Storage, health, and cosmetics
 
 - `Container.m_width` / `Container.m_height` — the ship's built-in storage grid, same fields as any chest.
 - `Container.m_name` — the label shown when a player opens that storage.

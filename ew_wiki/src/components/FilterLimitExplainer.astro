@@ -1,18 +1,16 @@
 ---
-// A plain Astro component (no UI framework) — same pattern as
-// src/playground/MonacoPlayground.astro: Astro ships the <script> tag to
-// the client and bundles it through Vite, no client:load needed.
+// A plain Astro component (no UI framework): Astro ships the <script> tag
+// to the client and bundles it through Vite, no client:load needed.
 //
-// Validated as a throwaway HTML prototype first (see this ticket's Answer
-// for the branch note and the prototype file's location on a scratch
-// branch) after two earlier ideas didn't land with the maintainer: a raw
-// score number ("confusing, all three ways"), then a sentence-only
-// explainer. This is the third design: a plain-English checklist plus a
-// PASS/FAIL line — no raw score number shown anywhere.
+// Validated as a throwaway HTML prototype first, after two earlier ideas
+// didn't land with the maintainer: a raw score number ("confusing, all
+// three ways"), then a sentence-only explainer. This is the third design:
+// a plain-English checklist plus a PASS/FAIL line — no raw score number
+// shown anywhere.
 //
 // `seed` is the starting block shown in the textarea; multiple instances
-// on one page are supported (scoped by class, not id, like the Monaco
-// playground) though the page currently only uses one.
+// on one page are supported (scoped by class, not id) though the page
+// currently only uses one.
 import { icon } from '../../../shared/icons';
 
 interface Props {
