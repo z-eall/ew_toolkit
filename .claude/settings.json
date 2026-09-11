@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/block-windows-npm.js"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/block-windows-npm.js"
           }
         ]
       },
@@ -15,23 +15,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-source-verify.cjs"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-source-verify.cjs"
           },
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-checklist-read.cjs"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-checklist-read.cjs"
           },
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-script-field-order.cjs"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-script-field-order.cjs"
           },
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-doc-example-schema.cjs"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-doc-example-schema.cjs"
           },
           {
             "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/ew_toolkit/.claude/hooks/guard-reader-internal-bookkeeping.cjs"
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-reader-internal-bookkeeping.cjs"
           }
         ]
       }
