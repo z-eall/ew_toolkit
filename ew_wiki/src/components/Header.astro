@@ -2,168 +2,160 @@
 // Override for Starlight's default Header component. Drops Starlight's own
 // theme toggle, GitHub link, and language select entirely (not just
 // restyled) and replaces them with the hub's own shared site-nav bar — the
-// same Home / Tool / Support strip every other Tool hand-renders (see
-// ew_toolkit/src/nav.ts and ewp_validator/src/main.ts) — so arriving at
+// same Home / Tool / Support strip every Tool now renders via
+// shared/navBar.ts (previously a 3rd hand-copy here; see
+// .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md) — so arriving at
 // ew_wiki from the hub feels like switching tabs, not leaving the site.
 // Standing rule: docs/agents/hub-tool-nav.md.
-import config from 'virtual:starlight/user-config';
+import { buildNavItems, renderNavBar } from '../../../shared/navBar';
 
-import Search from 'virtual:starlight/components/Search';
-import SiteTitle from 'virtual:starlight/components/SiteTitle';
-import { icon } from '../../../shared/icons';
-
-const shouldRenderSearch =
-	config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+// This site is always served at the fixed nested path /ew_toolkit/<tool>/ -
+// see AGENTS.md's UI/UX-consistency mechanism 4 - so absolute hrefs are
+// correct here (unlike the other 2 Tools, which resolve relative to
+// wherever Vite's dev server happens to serve them from).
+function hrefFor(key: string): string {
+	if (key === 'home') return '/ew_toolkit/';
+	return `/ew_toolkit/${key}/`;
+}
+const navHtml = renderNavBar(buildNavItems('ew_wiki', hrefFor), 'hub-theme-toggle');
 ---
 
-<nav class="site-nav">
-	<div class="site-nav-links">
-		<a class="nav-link" href="/ew_toolkit/"><span class="nav-icon" aria-hidden="true" set:html={icon('home')} />Home</a>
-		<a class="nav-link" href="/ew_toolkit/ewp_validator/"><span class="nav-icon" aria-hidden="true" set:html={icon('file')} />EWP Validator</a>
-		<a class="nav-link active" href="/ew_toolkit/ew_wiki/"><span class="nav-icon" aria-hidden="true" set:html={icon('toolbox')} />Expand World Wiki</a>
-		<a class="nav-link" href="/ew_toolkit/support/"><span class="nav-icon" aria-hidden="true" set:html={icon('support')} />Support</a>
-	</div>
-	<div class="nav-right">
-		<a class="changelog-link" href="https://github.com/z-eall/ew_toolkit/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
-		<button id="hub-theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
-	</div>
-</nav>
+<Fragment set:html={navHtml} />
 
-<div class="header">
-	<div class="title-wrapper sl-flex">
-		<SiteTitle />
-	</div>
-	<div class="sl-flex print:hidden">
-		{shouldRenderSearch && <Search />}
-	</div>
-</div>
+<!--
+	Round 4 (2026-09-12): dropped the whole title/search row that used to
+	render here. Every earlier round of this ticket kept fighting to keep
+	that second row (SiteTitle + Search) alive inside Starlight's one fixed
+	header landmark alongside the shared nav bar - accurate height math for
+	it, correct edge padding for it, and every fix for one kept surfacing a
+	new symptom in the other. The maintainer's call: stop patching it,
+	remove it. The header is now just the shared nav bar - the exact same
+	single row every other Tool renders, same real height, no bespoke
+	measuring/patching left to do here at all.
 
-<style>
-	@layer starlight.core {
-		.header {
-			display: flex;
-			gap: var(--sl-nav-gap);
-			justify-content: space-between;
-			align-items: center;
-			height: 100%;
-		}
-
-		.title-wrapper {
-			overflow: clip;
-			padding: 0.25rem;
-			margin: -0.25rem;
-			min-width: 0;
-		}
-	}
-
-	/* Hub site-nav — copied from ew_toolkit/src/style.css (each Tool
-	   hand-renders its own copy of this bar; see docs/agents/hub-tool-nav.md)
-	   using the same --bg/--panel/--border/--text/--muted tokens this file
-	   already maps from shared/theme.css, so it matches pixel-for-pixel. */
-	.site-nav {
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
-		align-items: center;
-		gap: 1rem;
-		padding: 10px 16px;
-		background: var(--sl-color-bg-nav);
-		border-bottom: 1px solid var(--sl-color-hairline);
-		font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
-	}
-	.site-nav-links {
-		grid-column: 2;
-		display: flex;
-		justify-content: center;
-		gap: 6px;
-		flex-wrap: wrap;
-	}
-	.nav-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		color: var(--muted);
-		text-decoration: none;
-		font-size: 13.5px;
-		font-weight: 600;
-		padding: 6px 10px;
-		border-radius: 6px;
-	}
-	.nav-icon {
-		display: inline-flex;
-		line-height: 1;
-	}
-	.nav-icon svg {
-		width: 15px;
-		height: 15px;
-		flex: none;
-	}
-	.nav-link:hover {
-		color: var(--text);
-	}
-	.nav-link.active {
-		color: var(--text);
-		background: var(--bg);
-		border: 1px solid var(--border);
-	}
-	.nav-right {
-		grid-column: 3;
-		justify-self: end;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.changelog-link {
-		color: var(--muted);
-		text-decoration: none;
-		font-size: 12.5px;
-		font-weight: 600;
-	}
-	.changelog-link:hover {
-		color: var(--text);
-	}
-	.theme-toggle {
-		flex: none;
-		background: var(--bg);
-		border: 1px solid var(--border);
-		color: var(--text);
-		border-radius: 6px;
-		padding: 6px 12px;
-		font-size: 12.5px;
-		cursor: pointer;
-		font-family: inherit;
-	}
-	.theme-toggle:hover {
-		border-color: var(--text);
-	}
-</style>
+	Search and page-navigation move to the floating icon rail instead (see
+	CollapsibleToc.astro) - a magnifier button and the on-this-page toggle,
+	both opening a panel to their own left rather than below, so neither
+	needs any reserved layout space either. See
+	.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
+	Round 4.
+-->
 
 <script>
-	// Bridges the hub's theme key (`ew-toolkit-theme`, read/written by every
-	// Tool's own nav — see ew_toolkit/src/nav.ts) with Starlight's own
-	// separate theme key (`starlight-theme`, set by Starlight's inline
-	// anti-flash script in <head> before this component even mounts). On
-	// load this re-applies the hub's preference so a theme choice made on
-	// the landing page or another Tool carries over; on click it writes
-	// both keys so the choice carries back out again.
-	const HUB_KEY = 'ew-toolkit-theme';
+	// Theme apply/toggle logic itself now lives in shared/theme.ts (was its
+	// own copy here, see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md).
+	// The one piece genuinely local to this Tool: bridging the hub's
+	// `ew-toolkit-theme` key to Starlight's own separate `starlight-theme`
+	// key (set by Starlight's inline anti-flash script in <head> before this
+	// component even mounts) — wired via the onApply hook.
+	import { mountThemeToggle } from '../../../shared/theme';
+
 	const STARLIGHT_KEY = 'starlight-theme';
+	mountThemeToggle('hub-theme-toggle', (theme) => localStorage.setItem(STARLIGHT_KEY, theme));
 
-	function getHubTheme(): 'dark' | 'light' {
-		return localStorage.getItem(HUB_KEY) === 'light' ? 'light' : 'dark';
+	// Root cause of the reported "title crop" bug (.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md):
+	// Starlight wraps this entire component's output in its own fixed
+	// <header class="header"> landmark (position: fixed, top: 0) - our added
+	// site-nav row and Starlight's own title/search row both render inside
+	// that one landmark, stacked. But --sl-nav-height (the variable every
+	// other part of the page - sidebar, TOC, main content - uses to reserve
+	// top space so nothing renders underneath the fixed header) was still
+	// Starlight's original single-row value (4rem), never updated for the
+	// combined 2-row height once ticket 08 added the site-nav on top. The
+	// fixed header's real (taller) height didn't change what the rest of the
+	// page reserved for it, so the sidebar started too high and rendered
+	// underneath/overlapping the header - which is what made the title look
+	// "cropped": it wasn't clipped, it was genuinely covered.
+	//
+	// Fixed by measuring the landmark's real natural content height and
+	// writing it into --sl-nav-height, instead of hand-computing a
+	// magic-number constant that would silently go stale the next time
+	// either row's content or padding changes.
+	//
+	// Can't just read the landmark's own getBoundingClientRect(): Starlight's
+	// own CSS sets the landmark's height directly to `var(--sl-nav-height)`
+	// (confirmed by inspecting the live stylesheet - `.header { height:
+	// var(--sl-nav-height); ... }`), so its rendered height IS whatever this
+	// variable already was, not what its content actually needs - reading it
+	// to set the same variable is circular and converges on the stale value.
+	// Sidesteps that by temporarily forcing the landmark to size-to-content
+	// (inline `height: auto`, which wins over the stylesheet's `var(...)`
+	// rule), reading its natural scrollHeight, then restoring - a one-frame
+	// flicker-free measurement, not a rendered layout state.
+	//
+	// Observes the landmark's own children (not the landmark itself) for
+	// resize, since re-measuring in response to a resize of the landmark
+	// we're actively resizing would feed back into itself; the nav row
+	// wrapping to 2 lines on a narrow viewport is a real case this needs to
+	// catch.
+	const headerLandmark = document.querySelector('header.header');
+	if (headerLandmark) {
+		const syncNavHeight = () => {
+			const prevInlineHeight = headerLandmark.style.height;
+			headerLandmark.style.height = 'auto';
+			const natural = headerLandmark.scrollHeight;
+			headerLandmark.style.height = prevInlineHeight;
+			document.documentElement.style.setProperty('--sl-nav-height', `${natural}px`);
+		};
+		syncNavHeight();
+		const resizeObserver = new ResizeObserver(syncNavHeight);
+		for (const child of headerLandmark.children) resizeObserver.observe(child);
 	}
 
-	function applyTheme(theme: 'dark' | 'light') {
-		document.documentElement.setAttribute('data-theme', theme);
-		localStorage.setItem(HUB_KEY, theme);
-		localStorage.setItem(STARLIGHT_KEY, theme);
-		const btn = document.querySelector<HTMLButtonElement>('#hub-theme-toggle');
-		if (btn) btn.textContent = theme === 'dark' ? '☾ Dark' : '☀ Light';
+	// Reclaims the right-hand TOC column's width for content (ticket 23's
+	// "no reserved column, let the floating rail overlap instead" fix).
+	// .main-pane's "100%" is already net of the LEFT sidebar - Starlight
+	// reserves that room via padding-inline-start on an ancestor
+	// (.main-frame), not via a flex sibling's width. Subtracting
+	// --sl-sidebar-width again (copying the pattern of Starlight's own
+	// WITH-toc formula) double-counted it, so content only clawed back
+	// roughly half the space this ticket exists to reclaim. A page with a
+	// left sidebar and no TOC gets plain 100% from Starlight by default -
+	// that's the correct target here too.
+	// Applied via direct inline style (same mechanism already used above
+	// for --sl-nav-height) rather than the stylesheet - avoids relying on
+	// beating Starlight's own @layer starlight.core rule on specificity.
+	const mainPane = document.querySelector<HTMLElement>('.main-pane');
+	const rightSidebarContainer = document.querySelector<HTMLElement>('.right-sidebar-container');
+	const rightSidebar = document.querySelector<HTMLElement>('.right-sidebar');
+	if (mainPane) mainPane.style.width = '100%';
+	if (rightSidebarContainer) rightSidebarContainer.style.width = '0';
+	if (rightSidebar) {
+		// Starlight's own position: fixed / width / padding-top rules for
+		// .right-sidebar all live inside `@media (min-width: 72rem)` - built
+		// for its old always-open TOC column, which only ever showed at that
+		// width. Below 1152px none of that CSS applies at all, so without
+		// setting it here too the rail falls back to plain static
+		// positioning and gets pushed into normal document flow above the
+		// content instead of floating over it - exactly the "reserve no
+		// space, just overlap" behavior this ticket asks for, now made to
+		// hold at every width, not just desktop. (2.125rem buttons need more
+		// than 3.5rem width once real padding is added - 4.5rem clears it.)
+		rightSidebar.style.position = 'fixed';
+		rightSidebar.style.top = '0';
+		rightSidebar.style.zIndex = '10';
+		rightSidebar.style.width = '4.5rem';
+		rightSidebar.style.right = '0.75rem';
+		rightSidebar.style.overflow = 'visible';
+		rightSidebar.style.borderInlineStart = 'none';
+		rightSidebar.style.paddingTop = 'calc(var(--sl-nav-height) + 0.75rem)';
 	}
 
-	applyTheme(getHubTheme());
-
-	document.querySelector<HTMLButtonElement>('#hub-theme-toggle')?.addEventListener('click', () => {
-		const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
-		applyTheme(current === 'dark' ? 'light' : 'dark');
-	});
+	// Content was rendering hard against the right edge of its available
+	// width instead of centered - real cause, found by measuring live:
+	// Starlight's own TwoColumnContent.astro sets
+	// --sl-content-margin-inline: auto 0 on .main-pane specifically for the
+	// WITH-a-real-TOC-column case, so the content column sits snug against
+	// that column rather than centered in the wider space. That rule is
+	// still there and still applies even though this ticket removed the
+	// actual reserved TOC column - a stale side effect, not a real
+	// left/right choice being made anymore. Resets it to plain `auto`
+	// (centers in whatever space main-pane actually has) so
+	// ContentPanel.astro's own `margin-inline: var(--sl-content-margin-inline,
+	// auto)` centers for real. Confirmed via getBoundingClientRect() before
+	// and after: at 1400px wide this went from 141px of empty space on the
+	// left / 0px on the right, to roughly even on both sides.
+	if (mainPane) {
+		mainPane.style.setProperty('--sl-content-margin-inline', 'auto');
+	}
 </script>

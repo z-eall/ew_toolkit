@@ -47,6 +47,10 @@ export const ICON_PATHS = {
   // Toolbox — the fallback for a Tool with no hand-picked nav icon.
   toolbox:
     '<rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M2 13h20"/><path d="M10 13v1a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-1"/>',
+  // Open book — two pages meeting at a spine. ew_wiki's nav icon (replaces
+  // the generic toolbox fallback it used at launch, see
+  // .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md).
+  book: '<path d="M3 5c3-1.5 6-1.5 9 0v14c-3-1.5-6-1.5-9 0z"/><path d="M21 5c-3-1.5-6-1.5-9 0v14c3-1.5 6-1.5 9 0z"/>',
   // Single tick — a "this passed / this matched" affordance. Added for
   // ew_wiki's FilterLimit explainer (advanced-filter-plural.mdx).
   check: '<path d="M5 12l5 5L19 7"/>',

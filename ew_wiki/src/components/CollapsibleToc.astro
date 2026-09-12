@@ -1,26 +1,80 @@
 ---
 // Override for Starlight's default TableOfContents component (wired in
-// astro.config.mjs). Replaces the always-open "On this page" list with an
-// icon rail (☰ toggle, ↑ back-to-top) that pushes open a panel anchored to
-// the rail itself — chosen after comparing prototype variants that anchored
-// to the sidebar column instead (see the panel-positioning comment below).
-// Collapsed by default, state persisted via localStorage.
+// astro.config.mjs). Renders a floating icon rail: search (magnifier),
+// on-this-page toggle, back-to-top - each opening its own panel to its
+// LEFT rather than below (round 4 of ticket 23 - see
+// .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md).
+//
+// Search used to be Starlight's own Header row (removed round 4 - see
+// Header.astro) with a full-screen modal dialog behind it. Rather than
+// fight that dialog's CSS into a small anchored left-opening box, this
+// renders its own compact search box driven directly against Pagefind's
+// raw JS API (the same index Starlight's build already generates at
+// ew_wiki/pagefind/) - real search, not a placeholder, just a simpler UI
+// on top of it than the stock modal.
+import config from 'virtual:starlight/user-config';
+
 const { toc } = Astro.locals.starlightRoute;
+const shouldRenderSearch = config.pagefind;
 ---
 
 {
 	toc && (
 		<ewp-toc-rail class="ewp-toc-rail" data-min-h={toc.minHeadingLevel} data-max-h={toc.maxHeadingLevel}>
-			<button type="button" class="ewp-toc-btn" id="ewp-toc-toggle" title="On this page" aria-expanded="false" aria-controls="ewp-toc-panel">
-				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" /></svg>
-			</button>
+			{shouldRenderSearch && (
+				<div class="ewp-toc-btn-wrap">
+					<button
+						type="button"
+						class="ewp-toc-btn"
+						id="ewp-search-toggle"
+						title="Search"
+						aria-expanded="false"
+						aria-controls="ewp-search-panel"
+					>
+						<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+							<path
+								fill="currentColor"
+								d="M21.71 20.29 18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a.999.999 0 0 0 1.42 0 1 1 0 0 0 0-1.39ZM11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
+							/>
+						</svg>
+					</button>
+					<div class="ewp-search-panel" id="ewp-search-panel" hidden>
+						<input
+							type="text"
+							id="ewp-search-input"
+							class="ewp-search-input"
+							placeholder="Search the wiki..."
+							autocomplete="off"
+							aria-label="Search the wiki"
+						/>
+						<ul id="ewp-search-results" class="ewp-search-results" />
+						<p id="ewp-search-status" class="ewp-search-status" hidden />
+					</div>
+				</div>
+			)}
+			<div class="ewp-toc-btn-wrap">
+				<button
+					type="button"
+					class="ewp-toc-btn"
+					id="ewp-toc-toggle"
+					title="On this page"
+					aria-expanded="false"
+					aria-controls="ewp-toc-panel"
+				>
+					<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+						<path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z" />
+					</svg>
+				</button>
+				<nav class="ewp-toc-panel" id="ewp-toc-panel" aria-labelledby="ewp-toc-heading" hidden>
+					<h2 id="ewp-toc-heading">{Astro.locals.t('tableOfContents.onThisPage')}</h2>
+					<ul id="ewp-toc-list" />
+				</nav>
+			</div>
 			<button type="button" class="ewp-toc-btn" id="ewp-toc-top" title="Back to top">
-				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 5l7 7-1.41 1.41L13 8.83V19h-2V8.83l-4.59 4.58L5 12z" /></svg>
+				<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+					<path fill="currentColor" d="M12 5l7 7-1.41 1.41L13 8.83V19h-2V8.83l-4.59 4.58L5 12z" />
+				</svg>
 			</button>
-			<nav class="ewp-toc-panel" id="ewp-toc-panel" aria-labelledby="ewp-toc-heading" hidden>
-				<h2 id="ewp-toc-heading">{Astro.locals.t('tableOfContents.onThisPage')}</h2>
-				<ul id="ewp-toc-list" />
-			</nav>
 		</ewp-toc-rail>
 	)
 }
@@ -35,6 +89,13 @@ const { toc } = Astro.locals.starlightRoute;
 			align-items: flex-end;
 			width: fit-content;
 			margin-inline-start: auto;
+		}
+		.ewp-toc-btn-wrap {
+			/* Own positioned box per button (not the whole rail) - so each
+			   button's panel anchors flush to *that* button, opening to its
+			   left, regardless of how many other buttons sit above/below it
+			   in the rail. */
+			position: relative;
 		}
 		.ewp-toc-btn {
 			width: 2.125rem;
@@ -54,25 +115,45 @@ const { toc } = Astro.locals.starlightRoute;
 		.ewp-toc-btn[aria-expanded='true'] {
 			background: var(--sl-color-bg);
 		}
-		.ewp-toc-panel {
-			/* Anchored to .ewp-toc-rail (its nearest positioned ancestor), not
-			   the surrounding sidebar column — so it always opens flush under
-			   the rail's own bottom-right corner regardless of that column's
-			   rendered width. A width-dependent anchor lets the panel drift to
-			   an unpredictable spot instead. */
+
+		/* Both panels open to the LEFT of their own button, top-aligned with
+		   it - not below it (the earlier design; the maintainer asked for
+		   this to match the search box's own left-opening layout so both
+		   floating controls behave the same way). */
+		.ewp-toc-panel,
+		.ewp-search-panel {
 			position: absolute;
-			top: calc(100% + 0.5rem);
-			right: 0;
-			width: 13.5rem;
-			max-width: calc(100vw - 2rem);
+			top: 0;
+			right: calc(100% + 0.5rem);
 			background: var(--sl-color-bg-nav);
 			border: 1px solid var(--sl-color-hairline);
 			border-radius: 0.5rem;
-			padding: 0.75rem 0.875rem;
 			z-index: 30;
+			/* Every part of this floating panel - not just its list of
+			   results/links - has to "own" wheel-scrolling while the cursor
+			   is over it, or a scroll aimed at the panel silently falls
+			   through to whatever's underneath (the left sidebar or the
+			   page), which is exactly what the maintainer reported:
+			   scrolling here sometimes moved the sidebar or the content
+			   instead. overflow-y: auto makes the whole panel a real scroll
+			   container (even when its content currently fits and shows no
+			   scrollbar) so it captures the wheel event at all; without
+			   overscroll-behavior: contain a full-scrolled panel would still
+			   hand off any *further* scroll to the page behind it once it
+			   hit its own top/bottom - contain stops that handoff too. */
+			max-height: min(26rem, 70vh);
+			overflow-y: auto;
+			overscroll-behavior: contain;
 		}
-		.ewp-toc-panel[hidden] {
+		.ewp-toc-panel[hidden],
+		.ewp-search-panel[hidden] {
 			display: none;
+		}
+
+		.ewp-toc-panel {
+			width: 13.5rem;
+			max-width: calc(100vw - 2rem);
+			padding: 0.75rem 0.875rem;
 		}
 		.ewp-toc-panel h2 {
 			font-size: var(--sl-text-xs);
@@ -107,6 +188,83 @@ const { toc } = Astro.locals.starlightRoute;
 			color: var(--sl-color-text-accent);
 			font-weight: 600;
 		}
+
+		.ewp-search-panel {
+			width: 20rem;
+			max-width: calc(100vw - 2rem);
+			padding: 0.625rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+		.ewp-search-input {
+			width: 100%;
+			box-sizing: border-box;
+			background: var(--sl-color-black);
+			border: 1px solid var(--sl-color-hairline);
+			border-radius: 0.375rem;
+			color: var(--sl-color-white);
+			font: inherit;
+			font-size: var(--sl-text-sm);
+			padding: 0.4rem 0.6rem;
+		}
+		.ewp-search-input:focus {
+			outline: none;
+			border-color: var(--sl-color-text-accent);
+		}
+		.ewp-search-results {
+			/* No longer its own scroll region (max-height/overflow-y) -
+			   .ewp-search-panel above now scrolls as a whole, one scroll
+			   container for the whole box instead of a nested one just for
+			   results, which used to leave the input/status area outside
+			   any scrollable region and able to leak scroll to the page. */
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+		.ewp-search-results:not(:empty) {
+			border-top: 1px solid var(--sl-color-hairline);
+			padding-top: 0.5rem;
+		}
+		.ewp-search-results :global(li + li) {
+			margin-top: 0.5rem;
+		}
+		.ewp-search-results :global(a) {
+			display: block;
+			text-decoration: none;
+			padding: 0.3rem 0.4rem;
+			border-radius: 0.25rem;
+		}
+		.ewp-search-results :global(a:hover),
+		.ewp-search-results :global(a:focus) {
+			background: var(--sl-color-gray-6);
+		}
+		.ewp-search-results :global(.ewp-search-result-title) {
+			display: block;
+			color: var(--sl-color-white);
+			font-size: var(--sl-text-sm);
+			font-weight: 600;
+		}
+		.ewp-search-results :global(.ewp-search-result-excerpt) {
+			display: block;
+			color: var(--sl-color-gray-3);
+			font-size: var(--sl-text-xs);
+			margin-top: 0.15rem;
+			overflow-wrap: anywhere;
+		}
+		.ewp-search-results :global(mark) {
+			color: var(--sl-color-text-accent);
+			background: transparent;
+			font-weight: 600;
+		}
+		.ewp-search-status {
+			margin: 0;
+			font-size: var(--sl-text-xs);
+			color: var(--sl-color-gray-3);
+		}
+		.ewp-search-status[hidden] {
+			display: none;
+		}
 	}
 </style>
 
@@ -122,12 +280,20 @@ const { toc } = Astro.locals.starlightRoute;
 		list = this.querySelector<HTMLUListElement>('#ewp-toc-list')!;
 		storageKey = 'ewp-toc-collapsed';
 
+		searchToggle = this.querySelector<HTMLButtonElement>('#ewp-search-toggle');
+		searchPanel = this.querySelector<HTMLElement>('#ewp-search-panel');
+		searchInput = this.querySelector<HTMLInputElement>('#ewp-search-input');
+		searchResults = this.querySelector<HTMLUListElement>('#ewp-search-results');
+		searchStatus = this.querySelector<HTMLParagraphElement>('#ewp-search-status');
+
 		constructor() {
 			super();
 			this.buildList();
 			this.wireToggle();
 			this.wireBackToTop();
 			this.wireScrollSpy();
+			if (this.searchToggle) this.wireSearch();
+			this.wireOutsideClose();
 		}
 
 		buildList() {
@@ -144,24 +310,36 @@ const { toc } = Astro.locals.starlightRoute;
 				a.addEventListener('click', (e) => {
 					e.preventDefault();
 					heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					this.closeToc();
 				});
 				li.appendChild(a);
 				this.list.appendChild(li);
 			}
 		}
 
+		openToc() {
+			this.panel.hidden = false;
+			this.toggle.setAttribute('aria-expanded', 'true');
+			localStorage.setItem(this.storageKey, 'false');
+		}
+		closeToc() {
+			this.panel.hidden = true;
+			this.toggle.setAttribute('aria-expanded', 'false');
+			localStorage.setItem(this.storageKey, 'true');
+		}
+
 		wireToggle() {
-			let collapsed = localStorage.getItem(this.storageKey) !== 'false';
-			const render = () => {
-				this.panel.hidden = collapsed;
-				this.toggle.setAttribute('aria-expanded', String(!collapsed));
-			};
+			const collapsed = localStorage.getItem(this.storageKey) !== 'false';
+			if (collapsed) this.closeToc();
+			else this.openToc();
 			this.toggle.addEventListener('click', () => {
-				collapsed = !collapsed;
-				localStorage.setItem(this.storageKey, String(collapsed));
-				render();
+				if (this.panel.hidden) {
+					this.closeSearch();
+					this.openToc();
+				} else {
+					this.closeToc();
+				}
 			});
-			render();
 		}
 
 		wireBackToTop() {
@@ -189,6 +367,132 @@ const { toc } = Astro.locals.starlightRoute;
 			const maxH = parseInt(this.dataset.maxH || '3', 10);
 			const selector = `:where(${Array.from({ length: 1 + maxH - minH }, (_, i) => `h${minH + i}`).join()})[id]`;
 			for (const heading of document.querySelectorAll(`main ${selector}`)) observer.observe(heading);
+		}
+
+		// Drives Pagefind's own JS API directly (not @pagefind/default-ui,
+		// which is a full modal widget of its own) - loaded lazily on first
+		// open, not on every page load, since most visits never open search.
+		pagefind: { search: (q: string) => Promise<{ results: { id: string; data: () => Promise<any> }[] }> } | null =
+			null;
+		pagefindLoad: Promise<void> | null = null;
+
+		loadPagefind() {
+			if (!this.pagefindLoad) {
+				this.pagefindLoad = (async () => {
+					const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+					// @vite-ignore: this file only exists in the built output
+					// (ew_wiki/pagefind/pagefind.js), generated by the Pagefind
+					// build step after Vite's own build already ran - Vite can't
+					// see it at bundle time.
+					const mod = await import(/* @vite-ignore */ `${base}/pagefind/pagefind.js`);
+					await mod.init();
+					this.pagefind = mod;
+				})();
+			}
+			return this.pagefindLoad;
+		}
+
+		openSearch() {
+			if (!this.searchPanel || !this.searchToggle) return;
+			this.searchPanel.hidden = false;
+			this.searchToggle.setAttribute('aria-expanded', 'true');
+			this.searchInput?.focus();
+		}
+		closeSearch() {
+			if (!this.searchPanel || !this.searchToggle) return;
+			this.searchPanel.hidden = true;
+			this.searchToggle.setAttribute('aria-expanded', 'false');
+		}
+
+		wireSearch() {
+			const { searchToggle, searchInput, searchResults, searchStatus } = this;
+			if (!searchToggle || !searchInput || !searchResults || !searchStatus) return;
+
+			searchToggle.addEventListener('click', async () => {
+				if (this.searchPanel?.hidden === false) {
+					this.closeSearch();
+					return;
+				}
+				this.closeToc();
+				this.openSearch();
+				searchStatus.hidden = true;
+				searchStatus.hidden = false;
+				searchStatus.textContent = 'Loading search index...';
+				try {
+					await this.loadPagefind();
+					searchStatus.textContent = 'Type to search.';
+				} catch {
+					searchStatus.textContent = 'Search failed to load.';
+				}
+			});
+
+			let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+			searchInput.addEventListener('input', () => {
+				clearTimeout(debounceTimer);
+				const query = searchInput.value.trim();
+				debounceTimer = setTimeout(() => this.runSearch(query), 150);
+			});
+
+			searchInput.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') this.closeSearch();
+			});
+		}
+
+		async runSearch(query: string) {
+			const { searchResults, searchStatus } = this;
+			if (!searchResults || !searchStatus) return;
+			searchResults.innerHTML = '';
+			if (!query) {
+				searchStatus.hidden = false;
+				searchStatus.textContent = 'Type to search.';
+				return;
+			}
+			if (!this.pagefind) {
+				await this.loadPagefind();
+			}
+			if (!this.pagefind) {
+				searchStatus.hidden = false;
+				searchStatus.textContent = 'Search failed to load.';
+				return;
+			}
+			const { results } = await this.pagefind.search(query);
+			if (results.length === 0) {
+				searchStatus.hidden = false;
+				searchStatus.textContent = 'No results.';
+				return;
+			}
+			searchStatus.hidden = true;
+			const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+			for (const result of results.slice(0, 8)) {
+				const data = await result.data();
+				const li = document.createElement('li');
+				const a = document.createElement('a');
+				a.href = data.url.startsWith(base) ? data.url : base + data.url;
+				const title = document.createElement('span');
+				title.className = 'ewp-search-result-title';
+				title.textContent = data.meta?.title || data.url;
+				const excerpt = document.createElement('span');
+				excerpt.className = 'ewp-search-result-excerpt';
+				excerpt.innerHTML = data.excerpt || '';
+				a.append(title, excerpt);
+				li.appendChild(a);
+				searchResults.appendChild(li);
+			}
+		}
+
+		wireOutsideClose() {
+			document.addEventListener('click', (e) => {
+				if (!this.contains(e.target as Node)) {
+					this.closeToc();
+					this.closeSearch();
+				}
+			});
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape') {
+					this.closeToc();
+					this.closeSearch();
+				}
+			});
 		}
 	}
 	customElements.define('ewp-toc-rail', EwpTocRail);

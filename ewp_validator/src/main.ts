@@ -27,6 +27,8 @@ import { INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
 import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
 import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList, type Ingestable, type PreparedFile } from "./fileIngestion";
 import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
+import { buildNavItems, renderNavBar } from "../../shared/navBar";
+import { getStoredTheme, mountThemeToggle, type Theme as HubTheme } from "../../shared/theme";
 import { showConfirmModal } from "./confirmModal";
 import "./style.css";
 import type { ZipEntry } from "./zip";
@@ -105,33 +107,26 @@ const ICONS = Object.fromEntries(ICON_NAMES.map((key) => [key, ICON_PATHS[key]])
 
 const icon = (paths: string, extra = "") => svgIcon(paths, extra);
 
-// Theme is shared with the hub via the same localStorage key, so a choice made
-// on either page carries over. The chrome follows the earthy hub palette (CSS
-// `data-theme`); Monaco gets the matching built-in editor theme.
-type Theme = "dark" | "light";
-const THEME_KEY = "ew-toolkit-theme";
-const storedTheme = (): Theme => (localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark");
-function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem(THEME_KEY, theme);
+// Theme apply/toggle logic itself now lives in shared/theme.ts (was its own
+// copy here, see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md).
+// Monaco's own editor theme is the one piece genuinely local to this Tool,
+// wired via the onApply hook mountThemeToggle() takes below.
+function syncMonacoTheme(theme: HubTheme) {
   monaco.editor.setTheme(theme === "light" ? "vs" : "vs-dark");
-  const btn = document.querySelector<HTMLButtonElement>("#theme-toggle");
-  if (btn) btn.textContent = theme === "dark" ? "☾ Dark" : "☀ Light";
+}
+
+// Every Tool key (home/ewp_validator/ew_wiki/support) comes from
+// shared/navBar.ts's NAV_TOOLS - this file only resolves hrefs relative to
+// where the validator itself is deployed (/ew_toolkit/ewp_validator/).
+function hrefFor(key: string): string {
+  if (key === "ewp_validator") return "./";
+  if (key === "home") return "../";
+  return `../${key}/`;
 }
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="app">
-    <nav class="site-nav">
-      <div class="site-nav-links">
-        <a class="nav-link" href="../"><span class="nav-icon" aria-hidden="true">${icon(ICONS.home)}</span>Home</a>
-        <a class="nav-link active" href="./"><span class="nav-icon" aria-hidden="true">${icon(ICONS.file)}</span>EWP Validator</a>
-        <a class="nav-link" href="../support/"><span class="nav-icon" aria-hidden="true">${icon(ICONS.support)}</span>Support</a>
-      </div>
-      <div class="nav-right">
-        <a class="changelog-link" href="https://github.com/z-eall/ew_toolkit/releases" target="_blank" rel="noopener noreferrer">Changelog</a>
-        <button id="theme-toggle" class="theme-toggle" aria-label="Current theme, click to switch"></button>
-      </div>
-    </nav>
+    ${renderNavBar(buildNavItems("ewp_validator", hrefFor))}
     <div class="app-header">
       <span><b>Expand World Prefabs YAML Validator</b></span>
       <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · Schema last updated at <span title="${formatLocalTimestamp(meta.generatedAt)}">${formatShortLocalTime(meta.generatedAt)}</span></span>
@@ -226,7 +221,7 @@ configureMonacoYaml(monaco, {
 });
 
 const editor = monaco.editor.create(document.getElementById("editor")!, {
-  theme: storedTheme() === "light" ? "vs" : "vs-dark",
+  theme: getStoredTheme() === "light" ? "vs" : "vs-dark",
   automaticLayout: true,
   minimap: { enabled: false },
   fontSize: 13,
@@ -234,10 +229,7 @@ const editor = monaco.editor.create(document.getElementById("editor")!, {
 
 // Chrome + editor theme, kept in sync with the hub. Ctrl+F / Ctrl+H (Monaco's
 // built-in find & replace, incl. Replace All) work whenever the editor is focused.
-applyTheme(storedTheme());
-document.getElementById("theme-toggle")!.addEventListener("click", () => {
-  applyTheme((document.documentElement.getAttribute("data-theme") as Theme) === "dark" ? "light" : "dark");
-});
+mountThemeToggle("theme-toggle", syncMonacoTheme);
 
 const fileManager = new FileManager(editor, render);
 

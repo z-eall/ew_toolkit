@@ -32,10 +32,6 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-reader-internal-bookkeeping.cjs"
-          },
-          {
-            "type": "command",
-            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-nav-registry-addition.cjs"
           }
         ]
       }
@@ -58,6 +54,15 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-support-image-size.cjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-shared-verify-all-tools.cjs"
           }
         ]
       }

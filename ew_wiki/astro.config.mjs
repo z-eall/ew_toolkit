@@ -15,6 +15,13 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Expand World Wiki',
+			// Explicit, or Starlight silently defaults to its own bundled
+			// /favicon.svg regardless of what's dropped in public/ - this is why
+			// the hub's real icon never showed up here. Synced from the hub's one
+			// master (shared/favicon.png) by scripts/sync-favicon.mjs, run as
+			// this Tool's own `prebuild` step - see
+			// .scratch/ew_toolkit/issues/22-unify-favicon.md.
+			favicon: '/favicon.png',
 			// No `social` entry — the GitHub link is dropped from the header
 			// entirely (see Header.astro override below), so this would be
 			// unused config anyway.
@@ -30,6 +37,11 @@ export default defineConfig({
 				// Collapsible icon-rail "On this page" TOC with a back-to-top
 				// button, replacing Starlight's always-open default (ticket 09).
 				TableOfContents: './src/components/CollapsibleToc.astro',
+				// Stock Starlight swaps between the rail above and a completely
+				// separate "mobile" dropdown pill below the 1152px breakpoint —
+				// this override drops that split so the rail renders at every
+				// width instead (ticket 23 Round 2 — see PageSidebar.astro).
+				PageSidebar: './src/components/PageSidebar.astro',
 			},
 			// Everything nests one level under 'EWP' so a future second mod
 			// component is a sibling top-level group, not a rebuild of this one.

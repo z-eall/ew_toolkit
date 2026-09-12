@@ -18,10 +18,81 @@
 	--sl-color-hairline: var(--border);
 	--sl-color-hairline-light: var(--border);
 	--sl-color-hairline-shade: var(--border);
-	/* Wider center content column (Starlight default 45rem) so the "On this
-	   page" rail sits further right instead of floating in a wide empty gap
-	   — same formula Starlight uses, just fed a bigger number. */
-	--sl-content-width: 56rem;
+	/* Wider center content column (Starlight default 45rem). Widened again
+	   2026-09-12: with the right TOC column no longer reserved (ticket 23),
+	   56rem left ~70px of empty space on both sides at 1400px width. First
+	   attempt at 64rem overshot the other way - forgot ContentPanel.astro's
+	   own 24px inline padding also eats into the space main-pane has for
+	   content, so 64rem actually left only ~6.5px each side, too tight.
+	   60rem accounts for that padding and lands at ~38.5px each side at
+	   1400px - real breathing room, well short of edge-to-edge. */
+	--sl-content-width: 60rem;
+}
+
+/* Starlight's own left sidebar (.sidebar-pane, PageFrame.astro) scrolls
+   independently (overflow-y: auto) but never stops there - scroll past its
+   own top/bottom and the browser hands the rest of that scroll motion to
+   the page behind it (native "scroll chaining"). With the sidebar
+   overlapping the page's own scroll area, that reads as "I was scrolling
+   the sidebar and the page moved instead" - reported live. Same fix as
+   the floating rail panels (CollapsibleToc.astro): overscroll-behavior:
+   contain stops a maxed-out inner scroll from leaking to whatever's
+   underneath. See
+   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
+   Round 5. */
+.sidebar-pane {
+	overscroll-behavior: contain;
+}
+
+/* Starlight's own mobile "open the left sidebar" button
+   (MobileMenuToggle.astro, the white circle below the md breakpoint,
+   50rem) is fixed-positioned to sit vertically centered in the header and
+   hugging its right edge - built for Starlight's own original single-row
+   title bar, which had nothing else there. Our shared nav bar's own
+   right-hand group (changelog link + theme toggle) targets that exact
+   same corner, so below ~800px wide the two literally sit on top of each
+   other - confirmed live via elementFromPoint, the white circle was
+   rendering directly over the theme toggle's own hit area. Moved to
+   mirror our floating icon rail's own position (CollapsibleToc.astro) -
+   same vertical offset below the header - but on the opposite (left)
+   side, which is otherwise empty at every width. See
+   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
+   Round 6. */
+button.sl-menu-button {
+	top: calc(var(--sl-nav-height) + 0.75rem);
+	inset-inline-end: auto;
+	inset-inline-start: 0.75rem;
+}
+
+/* The floating rail (CollapsibleToc.astro) doesn't need a reserved layout
+   column at all — it's a ~34px icon rail the maintainer asked to *overlap*
+   the content rather than push it aside ("if you're navigating with it,
+   you're not reading the content anyway, so it doesn't matter if it
+   covers some"). Earlier attempt reserved a slim column
+   (--ewp-toc-rail-width) instead of removing the reservation outright;
+   that still left the nav bar / title math fighting over a phantom column.
+   The actual override (zeroing the reserved column, giving .main-pane back
+   its full width, sizing .right-sidebar to just the visible rail) lives in
+   Header.astro's script now, not here — plain CSS rules for this, even
+   with !important, didn't reliably beat Starlight's own TwoColumnContent
+   rule live in the browser, while a direct inline style always does. See
+   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md. */
+
+/* Starlight's own fixed header landmark (header.header, PageFrame.astro)
+   carries --sl-nav-pad-x/--sl-nav-pad-y padding meant for its original
+   title/search row (removed round 4 - see Header.astro). Our shared nav
+   bar (site-nav) is the landmark's only remaining child and already
+   carries its own internal padding (shared/theme.css's `padding: 10px
+   16px` on .site-nav, same as every other Tool), so the landmark's own
+   padding just adds an extra, unwanted inset on every side - stripped
+   entirely here rather than partially, now that there's no second row
+   left to keep it for. Unlayered, so it wins over Starlight's layered
+   rule regardless of source order - same mechanism already used
+   elsewhere in this file. See
+   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
+   Round 4. */
+header.header {
+	padding: 0;
 }
 
 /* Prev/next footer: Starlight's default is a bulky bordered card with a

@@ -22,3 +22,131 @@
   --text: #222831;
   --muted: #393e46;
 }
+
+/* The Hub's site-nav bar — single copy, replacing 3 independent ones that
+   had drifted (sticky-on-landing-only, a stray --info/--accent hover color
+   instead of --text, an extra redundant font-family on the wiki's copy).
+   See .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md. Every
+   consumer's own style.css/theme.css already @imports this file, so this
+   block alone is enough — no Tool needs its own copy of these rules. */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  /* Both pinned explicitly rather than inherited from whatever the host
+     page sets - the same class of bug caught twice live, once per
+     property:
+     - line-height (ticket 23 round 4): Starlight sets a global
+       line-height (1.75) on ew_wiki's pages that the plain
+       landing/validator pages don't have, which alone made this shared
+       bar render ~5.6px taller there than on the other 2 Tools even with
+       byte-identical padding.
+     - font-family (ticket 23 round 7): Starlight's own font stack lists
+       color-emoji fonts ("Apple Color Emoji" etc.) ahead of any plain
+       glyph for the theme-toggle's ☾/☀ characters, so the exact same
+       button rendered a colorful emoji on ew_wiki and a plain monochrome
+       symbol on the other 2 Tools - confirmed live: byte-identical
+       outerHTML on all 3 pages, genuinely the same shared code, just a
+       different font picked to draw the same character.
+     A shared component shouldn't visibly depend on which host page it's
+     dropped into for either property - pinned at the whole bar's level so
+     nothing inside it (theme-toggle, changelog link, nav links) can drift
+     the same way again without anyone adding a new override. */
+  line-height: normal;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.site-nav-links {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.nav-icon {
+  display: inline-flex;
+  line-height: 1;
+}
+
+.nav-icon svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.nav-link.active {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.nav-right {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.changelog-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.changelog-link:hover {
+  color: var(--text);
+}
+
+.theme-toggle {
+  flex: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  /* A <button> never inherits font-family from its ancestors by default -
+     that's a browser rule for ALL form controls (button/input/select/
+     textarea), not something specific to this bar. .site-nav's own pin
+     above only reaches this button on ew_wiki (Starlight resets
+     `button { font: inherit }` itself) and on the validator (which has
+     its own local `button { font-family: inherit }` reset) - confirmed
+     live: the landing page has neither reset, so this button was quietly
+     falling back to the browser's plain default font (Arial) there the
+     whole time, not the pinned stack .site-nav declares. Explicit inherit
+     here removes the dependency on each Tool happening to have its own
+     reset. */
+  font-family: inherit;
+}
+
+.theme-toggle:hover {
+  border-color: var(--text);
+}

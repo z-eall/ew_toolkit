@@ -53,6 +53,23 @@ const funText: Record<string, string> = {
 			color: var(--sl-color-white);
 		}
 	}
+	/* The floating icon rail (CollapsibleToc.astro) is meant to overlap
+	   content, not reserve space for itself - a deliberate call for body
+	   text ("if you're navigating with it, you're not reading the content
+	   anyway"). A page title is different: it's the one line a reader
+	   always looks at first, and at narrow widths the rail can sit right
+	   where the title text runs - confirmed live at 375px, the last
+	   letter of "Understanding Fields" was rendering directly under the
+	   rail's icons. Reserves just enough right-side padding on the H1
+	   itself (not the rest of the page) to wrap text around the rail
+	   instead of under it, only below the width where this is realistically
+	   reachable - a short title on a wide screen was never actually at
+	   risk. */
+	@media (max-width: 50rem) {
+		h1 {
+			padding-inline-end: 3.25rem;
+		}
+	}
 	.complexity-badges {
 		display: flex;
 		gap: 0.5rem;

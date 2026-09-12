@@ -1,0 +1,21 @@
+---
+// Override for Starlight's default PageSidebar component. Stock Starlight
+// renders TWO entirely separate right-column TOC UIs and swaps between
+// them with CSS: a "mobile" dropdown pill (MobileTableOfContents, stock,
+// never touched) below the lg breakpoint (1152px / 72rem), and our
+// CollapsibleToc icon rail (wired in as the TableOfContents override, see
+// astro.config.mjs) at/above it — both always rendered into the DOM,
+// visibility toggled via the `lg:sl-hidden` / `lg:sl-block` utility
+// classes. That's why ticket 23's icon-rail fixes never showed up for the
+// maintainer: this app's default preview width sits under 1152px, so what
+// they kept seeing was the completely separate, unmodified stock mobile
+// pill the whole time — not our rail, not touched by any of that work.
+//
+// Renders just the rail, unconditionally, at every width instead — one
+// floating-button design, not two components silently swapping under you.
+// See .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
+// Round 2.
+import TableOfContents from 'virtual:starlight/components/TableOfContents';
+---
+
+{Astro.locals.starlightRoute.toc && <TableOfContents />}
