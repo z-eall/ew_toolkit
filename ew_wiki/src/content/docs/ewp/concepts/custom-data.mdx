@@ -115,3 +115,46 @@ Same `customBoar` key throughout: `data:` writes it, `filter:` checks it, `<int_
 Everything above lives on one specific object — the Boar that got the `data:` line keeps its own `customBoar` value, separate from every other Boar. EWP also has a *global* store not tied to any object (`<save_X_Y>`, `<load_X>`, `<clear_X>`) — a different mechanism from what's on this page, covered on [Advanced Functions](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions/).
 
 The `<float_WearNTear.m_health>` form — reading a live game Component's field, rather than your own custom data — is different too, and out of scope here.
+
+## Proving a rule actually ran: `log:`
+
+Every value on this page can be checked in-game with `command:` — shout it, see it. But once a script grows past a handful of rules, that stops being practical: you can't shout every flag on every object just to confirm a rule fired. `log:` is built for exactly this — same shape as `command:`, but instead of chat, it appends a line to a text file (`BepInEx/config/expand_world/ewp_log.txt`) on the server. Functions and object substitutions work in it the same way they do in `command:`:
+
+```yaml
+- prefab: Boar
+  type: destroy
+  filter: int, customBoar, 1
+  log: A flagged Boar died — customBoar was <int_customBoar>
+```
+
+Every flagged Boar's death now leaves a line in that file, with no chat spam and nothing for players to see. Open the file after a play session and you have a record of exactly which rules actually fired, in order.
+
+<Aside type="tip">
+Done debugging and want every `log:` line across every script silenced at once, without editing any of them? EWP's own `Rule logging` config setting turns all of them off (and back on) together.
+</Aside>
+
+<Aside type="caution">
+Don't do this: reading a `log:` line as proof that everything else on that rule worked. `log:` only records that the rule reached its action phase — it fires the moment the rule is selected, before its other actions run, whether or not those actions actually succeed.
+</Aside>
+
+```yaml
+# WRONG — the log line writes every time, even on the 90% of deaths where Coins doesn't spawn
+- prefab: Boar
+  type: destroy
+  spawn:
+  - prefab: Coins
+    chance: 0.1
+  log: Boar died, dropped Coins
+```
+
+```yaml
+# CORRECT — states what was attempted, not what's assumed to have happened
+- prefab: Boar
+  type: destroy
+  spawn:
+  - prefab: Coins
+    chance: 0.1
+  log: Boar died, Coins spawn attempted (10% chance)
+```
+
+That's everything for keeping your own data on an object. Next up, the last Intermediate page: [Understanding RPC](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/) — reaching across to trigger behavior on a *different* object than the one your rule fired for.
