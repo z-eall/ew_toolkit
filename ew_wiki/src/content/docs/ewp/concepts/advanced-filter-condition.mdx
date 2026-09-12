@@ -34,6 +34,26 @@ Operators must be separated by spaces to be recognized, and are case-insensitive
 
 `=`/`!=` compare text case-insensitively (`Player = player` is true) and numbers numerically (`1 = 1.0` is true) — only `=`/`!=` themselves are valid, `==` and `<>` aren't recognized. `>`/`<`/`>=`/`<=` need both sides to be numbers; a non-numeric side quietly evaluates to `false` rather than raising an error. A side counts as valid ("truthy") unless it's empty, `0`, or the literal text `false` (any casing) — any other non-empty text counts as valid, including the literal text `true`.
 
+<Aside type="caution">
+Don't do this: `==`, muscle memory from most programming languages, isn't a recognized operator in `condition:` — only `=`.
+</Aside>
+
+```yaml
+# WRONG — == isn't a recognized operator, so this condition silently never passes
+- prefab: Boar
+  type: create
+  condition: <int_level> == 3
+  command: s A 2-star boar has appeared.
+```
+
+```yaml
+# CORRECT — a single = is EWP's own equality operator
+- prefab: Boar
+  type: create
+  condition: <int_level> = 3
+  command: s A 2-star boar has appeared.
+```
+
 Left unparenthesized, operators evaluate in this order — first to last:
 
 1. `not`

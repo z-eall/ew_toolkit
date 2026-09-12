@@ -96,3 +96,27 @@ Three things `swap:` doesn't do the way you might expect:
 - Swapping can break the object's ZDO connection (the game's own link between an object and its spawn point) — a spawn point may keep trying to respawn a creature that's technically still "alive" as the swapped-in object.
 - Spawn limits are counted against the *original* prefab, not the swapped-in one. Swapping creatures at scale can quietly push past the intended population cap for the new creature type.
 </Aside>
+
+<Aside type="caution">
+Don't do this: putting `chance:` on a `swap:` entry expecting a miss to leave the original alone — the original is removed either way.
+</Aside>
+
+```yaml
+# WRONG — assumes a 50% miss leaves the plain Boar alone; it doesn't
+- prefab: Boar
+  type: create
+  filter: int, level, 3
+  swap:
+  - prefab: Troll
+    chance: 0.5   # on the other 50%, the Boar is removed anyway, and nothing replaces it
+```
+
+```yaml
+# CORRECT — chance: on a separate rule, so a miss just skips the whole swap, original included
+- prefab: Boar
+  type: create
+  filter: int, level, 3
+  chance: 0.5
+  swap:
+  - prefab: Troll
+```

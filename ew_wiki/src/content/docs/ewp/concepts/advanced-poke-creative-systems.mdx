@@ -258,13 +258,32 @@ The most creative version combines everything above: a self-poke *loop* that cou
                                  # the same prefix-matching you've already seen with type: say, test1
      poke:
      - self: true
-       delay: 1   # a poke loop without delay: risks firing every server tick — keep it, always
+       delay: 1   # a poke loop without delay: recurses instantly instead of ticking down — keep it, always
        parameter: countdown <sub_<par_1>_1>   # <par_1> — see Mechanics — is the number this poke was sent with
    ```
 
    <Aside type="caution">
-   `delay:` is compulsory on a self-poke loop like this one — without it, the loop can hammer the server hard enough to cause real problems. This isn't documented in the mod's own docs, but treat it as a hard rule and always keep the delay regardless.
+   Don't do this: a self-poke loop with no `delay:` — it runs itself over and over with no gap at all, an infinite loop that will freeze or crash the game. Always keep the delay.
    </Aside>
+
+   ```yaml
+   # WRONG — no delay:, so each self-poke fires the next one instantly instead of waiting a tick
+   - prefab: wood_door
+     type: poke, countdown
+     poke:
+     - self: true
+       parameter: countdown <sub_<par_1>_1>
+   ```
+
+   ```yaml
+   # CORRECT — delay: 1 makes each step wait a second before the next fires
+   - prefab: wood_door
+     type: poke, countdown
+     poke:
+     - self: true
+       delay: 1
+       parameter: countdown <sub_<par_1>_1>
+   ```
 
 3. **A separate rule catches the loop's own end condition**
 

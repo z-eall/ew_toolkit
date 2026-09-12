@@ -23,14 +23,22 @@ Only some triggers pass pars: `say`, `change`, `state`, `key`, `globalkey`, `eve
 ```
 
 <Aside type="caution">
-"First" means index `0`, not `1` — the everyday habit of counting from one gives the wrong index here. There's a second thing to watch for too: when the trigger has a literal word like `test1` (not a wildcard `*`), that word fills the whole chat message's word list from the start — so `<par_0>` is `test1` itself, not the word after it. Want the word said *after* `test1`? That's `<par_1>`:
+Don't do this: expecting `<par_0>` to be the word said *after* a literal trigger word — "first" means index `0`, not `1`, and when the trigger has a literal word like `test1` (not a wildcard `*`), that word fills the whole chat message's word list from the start.
+</Aside>
 
 ```yaml
+# WRONG — expecting this to shout whatever the player said after "test1"
+- prefab: Player
+  type: say, test1
+  command: s <par_0>  # actually shouts "test1" itself
+```
+
+```yaml
+# CORRECT — the word after the literal trigger word is par_1, not par_0
 - prefab: Player
   type: say, test1
   command: s <par_1>  # shouts the first word said AFTER "test1"
 ```
-</Aside>
 
 ## Grabbing more than one
 

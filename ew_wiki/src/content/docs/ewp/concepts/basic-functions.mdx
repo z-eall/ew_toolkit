@@ -68,8 +68,25 @@ Because underscores separate parameters, an underscore that's meant to be *part 
 ```
 
 <Aside type="caution">
-This isn't specific to `<safeprefab>` — *any* parameter whose value might itself contain an underscore risks the same silent misread, not just a prefab id.
+Don't do this: `<prefab>` inside another function's parameter list splits on its own underscores — it doesn't stay one piece.
 </Aside>
+
+```yaml
+# WRONG — <prefab> resolves to piece_workbench, whose underscores get read as
+# two more parameters to upper_, so this shouts just PIECE (workbench is lost)
+- prefab: piece_workbench
+  type: create
+  command: s <upper_<prefab>>
+```
+
+```yaml
+# CORRECT — <safeprefab> swaps underscores for dashes first, so it survives as one piece
+- prefab: piece_workbench
+  type: create
+  command: s <upper_<safeprefab>>
+```
+
+This isn't specific to `<safeprefab>` — *any* parameter whose value might itself contain an underscore risks the same silent misread, not just a prefab id.
 
 ## Missing data: a default with `=`
 

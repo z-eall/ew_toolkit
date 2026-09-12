@@ -363,11 +363,11 @@ The last loop is the one that actually closes the circle: pulling honey out of a
 
    `level` is `Beehive`'s own honey-stage counter (a real ZDO field) — it climbs as honey builds up and drops back to 0 when a player extracts it. `type: change, level 0 3,4` fires specifically when `level` changes *to* 0 *from* 3 or 4 — i.e., extracting from a hive that was nearly or fully stocked, not a small top-up.
 
-   <Aside type="caution">
-   Easy typo to make: `<par2>`, with no underscore, isn't a function EWP defines at all — it just fails to resolve. [`<par_X>`](/ew_toolkit/ew_wiki/ewp/concepts/basic-pars/) (with the underscore) is the real function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. Always double-check the underscore.
+   <Aside type="note">
+   `<par2>` (no underscore) also works, as a shorthand — same result as `<par_2>`, just for indices 0 through 9 only. `<par_X>` (with the underscore) handles any index, so it's the one worth reaching for by habit.
    </Aside>
 
-   With that fix, `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
+   [`<par_X>`](/ew_toolkit/ew_wiki/ewp/concepts/basic-pars/) is the function for reading a trigger's own parameters — `<par_0>` is the changed field's name, `<par_1>` the new value, `<par_2>` the value it changed *from*. `<par_2>` is the honey level right before extraction (3 or 4), so `weight:` scales with how full the hive was — draining a fully-stocked hive risks silence more than a half-full one. Same single-rule `weight:`-as-percentage mechanism as Loop 1, just with a variable chance instead of a fixed one.
 
 2. **A fresh nearby flower has a chance to reactivate a silent hive**
 

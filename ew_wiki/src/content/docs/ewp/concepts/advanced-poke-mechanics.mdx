@@ -128,6 +128,29 @@ Same syntax, because a poke is a trigger like any other — `<par_X>` always mea
     evaluate: false   # keeps "Price: 5-2" as literal text instead
 ```
 
+<Aside type="caution">
+Don't do this: sending text that happens to contain math symbols (like a price range) without `evaluate: false` — `evaluate:` defaults to `true`, so EWP tries to compute it instead of keeping it literal.
+</Aside>
+
+```yaml
+# WRONG — evaluate: true (the default) may try to compute "5-2" as math
+- prefab: wood_door
+  type: poke, openDoor
+  poke:
+  - prefab: Player
+    parameter: message "Price: 5-2"
+```
+
+```yaml
+# CORRECT — evaluate: false keeps the text exactly as written
+- prefab: wood_door
+  type: poke, openDoor
+  poke:
+  - prefab: Player
+    parameter: message "Price: 5-2"
+    evaluate: false
+```
+
 Set `evaluate: false` any time a value you're sending might contain characters that look like math but aren't meant to be computed.
 
 ## `weight:` — picking one poke from a weighted group

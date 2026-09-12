@@ -53,6 +53,21 @@ Seven `dverger_guardstone` ward pieces are placed around the map ahead of time, 
    Notice `gd-king` with a dash, not `gd_king`'s real underscore — that's `<safeprefab>` at work, [already covered on Understanding Functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#a-prefab-ids-own-underscores-can-break-parameter-splitting). The next step builds `<progressionWard_gd-king>` by gluing `<safeprefab>` onto the end of a name — if the table used the real underscored id, the lookup would silently split into extra parameters and miss.
    </Aside>
 
+   <Aside type="caution">
+   Don't do this: pasting the real, underscored prefab id straight into a function name splits it into extra parameters instead of one lookup.
+   </Aside>
+
+   ```yaml
+   # WRONG — gd_king's own underscore gets read as a separator, so this looks up
+   # a "gd" function with an extra "king" parameter, not the "gd_king" entry above
+   exec: <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_gd_king>>>
+   ```
+
+   ```yaml
+   # CORRECT — <safeprefab> resolves to "gd-king" first, one piece, then feeds the lookup
+   exec: <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_<safeprefab>>>>
+   ```
+
 2. **One rule, seven bosses: the kill and the ratchet**
 
    ```yaml

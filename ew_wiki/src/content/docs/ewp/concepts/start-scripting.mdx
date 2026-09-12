@@ -26,8 +26,22 @@ This says: whenever a Boar spawns, apply this data entry to it (see [Understandi
 A single block like this is already a complete, working script — you don't need dozens of lines to get started.
 
 <Aside type="caution">
-Keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. `Prefab`/`Type` won't cause an error, it'll just silently not match anything.
+Don't do this: keys are case-sensitive — `prefab` and `type` have to be lowercase, exactly like that. Capitalized keys won't cause an error, they'll just silently not match anything.
 </Aside>
+
+```yaml
+# WRONG — capitalized keys are valid YAML but EWP never matches them
+- Prefab: Boar
+  Type: create
+  data: strongBoar
+```
+
+```yaml
+# CORRECT — lowercase keys
+- prefab: Boar
+  type: create
+  data: strongBoar
+```
 
 ## What `type:` can trigger on
 

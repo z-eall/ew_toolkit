@@ -126,3 +126,25 @@ Since `event`/`key`/`globalkey` have no triggering object of their own, reaching
 <Aside type="caution">
 `poke:`'s `maxDistance:` still applies here, and still defaults to 100 meters if left unset — but the mod's own docs are explicit that "global triggers don't have any object, so the distance is from the world center (0,0,0)," not from anywhere near where the flag actually changed. A `globalkey` trigger with no `maxDistance:` set only reaches workbenches within 100m of the map's exact center, almost certainly not what you want — set `maxDistance:` deliberately (or use `target:`/`position:` instead) any time a no-prefab trigger needs to poke something.
 </Aside>
+
+<Aside type="caution">
+Don't do this: leaving `maxDistance:` unset on a poke under a no-prefab trigger — it measures from the world center, not from wherever the flag actually changed.
+</Aside>
+
+```yaml
+# WRONG — no maxDistance:, so this defaults to 100m from world center (0,0,0),
+# not from wherever raidCooldown actually changed — almost never a real workbench
+- type: globalkey, raidCooldown
+  poke:
+  - prefab: piece_workbench
+    parameter: raidEnded
+```
+
+```yaml
+# CORRECT — maxDistance: set deliberately wide enough to actually reach real workbenches
+- type: globalkey, raidCooldown
+  poke:
+  - prefab: piece_workbench
+    maxDistance: 10000
+    parameter: raidEnded
+```

@@ -11,7 +11,28 @@ Sometimes `prefab:` + `type:` matches more than you want — every Boar, say, no
 ```yaml
 - prefab: Boar
   type: create
-  filter: int, level, 2;3  # only 1-star or 2-star — semicolon separates a list/range, not a comma
+  filter: int, level, 2;3  # only 1-star or 2-star — a semicolon marks a range (level 2 through 3)
+  data: strongBoar
+```
+
+<Aside type="caution">
+Don't do this: `filter:`'s value is already split as `type, key, value` — a comma there doesn't add a second number to check, it gets read as part of the value text itself. To check a range, use a semicolon (`2;3`).
+</Aside>
+
+```yaml
+# WRONG — the comma gets folded into the value as the text "2,3", which isn't a number;
+# the level check is then silently skipped, so this matches every Boar, not just 1-2 star ones
+- prefab: Boar
+  type: create
+  filter: int, level, 2,3
+  data: strongBoar
+```
+
+```yaml
+# CORRECT — semicolon marks the range
+- prefab: Boar
+  type: create
+  filter: int, level, 2;3
   data: strongBoar
 ```
 

@@ -64,12 +64,30 @@ Not sure which kind a value was saved as? Reread [Understanding Data](/ew_toolki
 
 ## Missing data still needs a fallback
 
-An object that never got the `data:` line doesn't have the value at all — reading it without a fallback is asking for something that isn't there. Use the same `=default` fallback from the [functions page](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#missing-data-a-default-with-):
+An object that never got the `data:` line doesn't have the value at all — reading it without a fallback (also called a **default**) is asking for something that isn't there. Use the same `=default` fallback from the [functions page](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/#missing-data-a-default-with-):
 
 ```yaml
 - prefab: Boar
   type: destroy
   command: s <int_customBoar=0>  # 0 if this Boar was never given a customBoar value
+```
+
+<Aside type="caution">
+Don't do this: reading a custom key with no fallback at all — it doesn't error or come back blank, it silently reads as `0` (or `""` for a string), the same as a real, deliberately-set `0` would. You can't tell "never set" apart from "set to zero" unless you add the fallback yourself.
+</Aside>
+
+```yaml
+# WRONG — no fallback; a Boar that never got customBoar set also shouts 0, same as a flagged-off one
+- prefab: Boar
+  type: destroy
+  command: s <int_customBoar>
+```
+
+```yaml
+# CORRECT — the fallback makes the "never set" case explicit, even though it happens to be the same number here
+- prefab: Boar
+  type: destroy
+  command: s <int_customBoar=0>
 ```
 
 This matters more here than for most functions, since a custom key is something *you* invented — nothing sets it for you before your own rule runs for the first time.

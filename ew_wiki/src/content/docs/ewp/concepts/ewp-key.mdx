@@ -25,6 +25,30 @@ A `globalkey` can tell you *that* something happened — a flag is set or it isn
 These are two separate systems and don't read each other — see the [No-Prefab Triggers page](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-no-prefab/#key-reacting-to-an-ewp-key-change) for how they sit next to the third lookalike, per-object `data:`.
 </Aside>
 
+<Aside type="caution">
+Don't do this: setting an EWP key with `<save_X_Y>` and expecting `<globalkey_X>` or `globalKeys:` to see it — they read Valheim's own `setkey`/`removekey` store, a completely different, unrelated slot from an EWP key.
+</Aside>
+
+```yaml
+# WRONG — raidRank was set with <save_X_Y>, an EWP key; globalKeys: only sees setkey/removekey flags
+- prefab: Player
+  type: say, ack
+  exec: <save_raidRank_3>
+
+- type: globalkey, raidRank
+  command: s Raid rank updated.
+```
+
+```yaml
+# CORRECT — read it back the same way it was set: <load_X> / type: key
+- prefab: Player
+  type: say, ack
+  exec: <save_raidRank_3>
+
+- type: key, raidRank
+  command: s Raid rank updated.
+```
+
 ## Where a saved key actually lives: `ewp_data.yaml`
 
 Every `<save_X_Y>` you write doesn't just sit in memory — EWP writes it to disk in a file called `ewp_data.yaml`, inside the `expand_world` config folder next to your script files. This file is created automatically the first time any key is saved; you never hand-write it, and it isn't a script you author.

@@ -74,8 +74,22 @@ Every field below lives on a `Karve`, `Raft`, `Trailership`, `VikingShip`, or `V
 - `Ship.m_waterLevelOffset` — how high the hull sits on the water surface at rest.
 
 <Aside type="caution">
-Never set a damping field to exactly `0` — reported as a way to make a ship uncontrollable, unconfirmed but not worth risking. Keep every damping value above `0`, even if very small (`0.001` and up).
+Don't do this: setting a damping field to exactly `0` — it makes a ship uncontrollable and prone to flipping. Keep every damping value above `0`, even if very small (`0.001` and up).
 </Aside>
+
+```yaml
+# WRONG — makes the ship uncontrollable and prone to flipping
+- name: noDragHull
+  floats:
+  - Ship.m_damping, 0
+```
+
+```yaml
+# CORRECT — any small value above 0 still removes almost all the drag
+- name: noDragHull
+  floats:
+  - Ship.m_damping, 0.001
+```
 
 ### Wind
 

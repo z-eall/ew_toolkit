@@ -72,6 +72,31 @@ There's no partial matching and no helpful error — a misspelled or unsupported
 
 One player types a word, and the whole server sees a banner — leaving `target:` at its default (`owner`) would only show it to that one player. It's worth setting `target:` explicitly on any call meant for everyone, so the next reader doesn't have to check the default.
 
+<Aside type="caution">
+Don't do this: leaving `target:` off a call meant for everyone — it silently defaults to `owner`, not `all`.
+</Aside>
+
+```yaml
+# WRONG — no error, but only the player who said "alert" ever sees this
+- prefab: Player
+  type: say, alert
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, Center
+    2: string, "Something happened!"
+```
+
+```yaml
+# CORRECT — target: all reaches every connected client
+- prefab: Player
+  type: say, alert
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, Center
+    2: string, "Something happened!"
+    target: all
+```
+
 <Aside type="note">
 `target:` also accepts a specific ZDO id, for aiming an RPC at one particular object's owner instead of `owner`/`all`. That's an Advanced-tier tool — see [Advanced RPC](/ew_toolkit/ew_wiki/ewp/concepts/advanced-rpcs/).
 </Aside>
