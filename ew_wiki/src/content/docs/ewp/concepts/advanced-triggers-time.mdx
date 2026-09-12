@@ -41,6 +41,7 @@ This page's clock has its own separate reading functions from the real-world wal
 `<day>` on its own just answers "which day is it" — the useful move is running it through a Numeric function to answer a real question, like "how many days are left." Here it counts down to a 30-day event, clamped so the message never goes negative once the event ends:
 
 ```yaml
+# Counts down to a 30-day event, clamped so it never shows a negative number
 - prefab: Player
   type: say, eventdays
   command: s <max_0_<sub_30_<day>>> day(s) left in the event

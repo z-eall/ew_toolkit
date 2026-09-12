@@ -31,6 +31,7 @@ The timer runs on [`type: realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-t
 Every real-world hour, `<save++_X>` bumps a counter by 1 (see [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/)). Nothing spawns yet — this rule only counts. The spawn attempt is a separate rule watching that same counter through a `type: key` range:
 
 ```yaml
+# Rolls a shipment once the hourly counter clears the threshold, then resets it
 - type: key, cargospawnfactor 4;9999
   weight: <sub_<ceil_<mul_<par_1>_0.33>>_1>
   exec: <save_cargospawnfactor_0>

@@ -10,7 +10,7 @@ import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## `create` and `destroy`
 
-Both fire with no parameter — just `type: create` or `type: destroy`, nothing after the comma. `create` fires the moment a matching object spawns; `destroy` fires the moment one is removed.
+Both fire with no parameter — just `type: create` or `type: destroy` on their own, nothing extra needed. `create` fires the moment a matching object spawns; `destroy` fires the moment one is removed.
 
 <Aside type="caution">
 An object that EWP itself spawns or removes — through [`spawn:`](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data) or a similar action — does **not** re-fire `create`/`destroy` by default. Those two triggers only react to the game's own natural spawns and deaths, not to EWP's own actions, unless you opt in with `triggerRules:` (see below).

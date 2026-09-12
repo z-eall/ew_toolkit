@@ -128,6 +128,7 @@ Seven `dverger_guardstone` ward pieces are placed around the map ahead of time, 
 
 ```yaml
 # expand_prefabs.yaml
+# Ratchets bfvworldlevel up on each boss kill, then clears that boss's matching ward
 - prefab: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing, SeekerQueen, Fader
   type: destroy
   exec: <save_bfvworldlevel_<max_<load_bfvworldlevel=0>_<worldLevel_<safeprefab>>>>

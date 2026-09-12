@@ -16,7 +16,11 @@ import { Aside } from '@astrojs/starlight/components';
 
 The mod's own docs state it in one line: **"objectRpc: List of RPC calls. The RPC must be related to the triggering object."** In plain terms — the object whose rule fires the `objectRpc:` has to actually own the Component that call belongs to. The RPC list is organized by Component for exactly this reason: `SetName` sits under `### Tameable`, `RPC_Heal` sits under `### Character (Humanoid + Player)`, and so on. A call from a Component the triggering object doesn't have just does nothing — no error, no warning.
 
-This is easy to get wrong the moment a rule fires directly on `Player`. `SetName` looks like a natural fit for a "rename my tamed wolf" command, but `Player` doesn't have `Tameable` — the wolf does:
+This is easy to get wrong the moment a rule fires directly on `Player`.
+
+<Aside type="caution">
+Don't do this: `SetName` looks like a natural fit for a "rename my tamed wolf" command, but `Player` doesn't have `Tameable` — the wolf does.
+</Aside>
 
 ```yaml
 # WRONG — Player doesn't have Tameable, so SetName never fires

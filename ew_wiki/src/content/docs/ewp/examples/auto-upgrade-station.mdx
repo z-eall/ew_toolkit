@@ -44,6 +44,7 @@ The whole thing hangs off a single EWP key: `bfvworldlevel`, a plain number (0 u
    `type: key, <name>` fires whenever a saved key's value actually changes — not on every read, only on a real change:
 
    ```yaml
+   # Re-checks every crafting station's lock state whenever bfvworldlevel changes
    - type: key, bfvworldlevel
      poke:
      - prefab: CraftingStation, StationExtension

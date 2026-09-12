@@ -121,6 +121,38 @@ This `weight:` is unrelated to the loot-table `weight:` used on [`spawn:` entrie
 Setting a `max` on `objectsLimit` (`min;max`) forces EWP to search every matching object rather than stopping early once the minimum is met — worth knowing if you're tuning a rule for performance on a busy server.
 </Aside>
 
+A wide `maxDistance:` carries the same cost, and it's easy to reach for on a rule that wants to count something map-wide. To check if objects are in range, every zone within that range has to be scanned.
+
+<Aside type="caution">
+Don't do this: it still works, but a `maxDistance:` this large effectively rescans the whole map, and the rule below does it on every single portal creation, not just once. That's resource-expensive enough to lag or even crash a busy server.
+</Aside>
+
+```yaml
+# WRONG — rescans up to 20000m for portal_wood on every single portal creation
+- prefab: portal_wood
+  type: create
+  objects:
+  - prefab: portal_wood
+    maxDistance: 20000
+  objectsLimit: 10
+  remove: true
+```
+
+A counter key sidesteps the scan entirely: maintain the count directly instead of re-deriving it by searching every time.
+
+```yaml
+# CORRECT — a counter key tracks the count directly, no map-wide scan needed
+- prefab: portal_wood
+  type: create
+  exec: <save++_portalCount>
+
+- prefab: portal_wood
+  type: destroy
+  exec: <save--_portalCount>
+```
+
+See [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/)'s Boar-kill counter case study for the full pattern — the same `<save++_X>` plus `type: key` combination reacts the instant a count crosses a threshold, with no scanning involved at all.
+
 ## Blocking on a nearby object: `bannedObjects:`
 
 `bannedObjects:` is the mirror image — the rule refuses to fire if these objects are found nearby. It takes the same entry fields as `objects:` (`prefab:`, `maxDistance:`, `filter:`, and so on):

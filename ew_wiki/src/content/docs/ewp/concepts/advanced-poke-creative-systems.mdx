@@ -241,6 +241,7 @@ The most creative version combines everything above: a self-poke *loop* that cou
 1. **Something starts the countdown, carrying a starting number as the poke's own parameter value**
 
    ```yaml
+   # Arms a 5-second countdown trap: ticks down, opens the door, then resets itself
    - prefab: Player
      type: say, arm trap
      command: s Trap armed. 5 seconds.

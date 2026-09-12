@@ -83,12 +83,66 @@ Stack as many blocks as you like in the same file:
 
 EWP reads the whole file and applies whichever block matches what's happening. (`strongGreydwarf` here is just a stand-in name — you'd define it in your own `data.yaml` the same way [`strongBoar`](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) was defined.)
 
+A single rule can only carry one action, though.
+
+<Aside type="caution">
+Don't do this: writing any field twice in the same block doesn't stack them — YAML silently keeps only the last one, dropping the rest with no error or warning. In this example, that's the duplicated `data:`.
+</Aside>
+
+```yaml
+# WRONG — a rule can only have one data: entry; the second silently overwrites the first
+- prefab: Boar
+  type: create
+  data: strongBoar
+  data: fastCreature
+```
+
+```yaml
+# CORRECT — two separate rules, one action each
+- prefab: Boar
+  type: create
+  data: strongBoar
+
+- prefab: Boar
+  type: create
+  data: fastCreature
+```
+
+Want both to apply to the same spawn? That's exactly the stacking pattern above — one rule per action, not one rule with two.
+
+## Add comments so future-you remembers why
+
+YAML supports comments — a `#` and anything after it on that line is ignored by EWP entirely. You'll already see short trailing comments like this throughout the wiki, explaining one field:
+
+```yaml
+- prefab: Boar
+  type: create  # fires when this prefab is spawned/created
+  data: strongBoar
+```
+
+For a rule whose overall purpose isn't obvious from its fields alone, add a one-line comment above the whole block too:
+
+```yaml
+# Doubles Boar loot for the "double loot" event weekend
+- prefab: Boar
+  type: create  # fires when this prefab is spawned/created
+  data: strongBoar
+```
+
+Future-you will thank you when you come back to this file in three months, anyone else reading your script will thank you, and it makes Ctrl+F search across a big project actually useful.
+
 ## Getting your script running
 
 Saving the file in the right folder is the only "install" step there is — see [Preparation](/ew_toolkit/ew_wiki/ewp/preparation/#getting-a-script-onto-your-server) for exactly where that folder is.
 
 <Aside type="tip">
 Get your [data](/ew_toolkit/ew_wiki/ewp/concepts/basic-data/) ready before your script needs it — see [Preparation](/ew_toolkit/ew_wiki/ewp/preparation/#set-up-data-before-scripts) for why.
+</Aside>
+
+<Aside type="tip">
+Got several rules in one file and something's misbehaving? Comment out every block except the one you're testing — add a `#` to the start of each of its lines — save, and check again. Since edits go live instantly, you can isolate the troublemaker without touching your other rules. Uncomment everything once you've found it.
+
+Most editors can do this in one keystroke instead of typing `#` on every line by hand — in Notepad++, for example, highlight the lines and hit `Ctrl+K` to comment them all at once (`Ctrl+Shift+K` to uncomment).
 </Aside>
 
 Every example on this page matched every Boar, every Neck — no picking and choosing. Want a rule that only fires for *some* of them? See [Understanding Filter](/ew_toolkit/ew_wiki/ewp/concepts/basic-filter/).

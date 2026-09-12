@@ -44,7 +44,7 @@ These examples are written to teach the pattern, not pulled from a real server's
 
 3. **`weight:` — a shared pool across sibling rules, not an independent roll**
 
-   `weight:` works completely differently from `chance:`. It doesn't compare against a fixed number — it only compares *against the other rules around it* that also set `weight:`. Two separate rules, both matching the same trigger:
+   `weight:` works completely differently from `chance:`. It doesn't compare against a fixed number — it only compares against other rules that match the same trigger (same `prefab` and `type:`) and also set `weight:`. For example:
 
    ```yaml
    - prefab: Neck

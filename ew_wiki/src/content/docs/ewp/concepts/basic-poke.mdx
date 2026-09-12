@@ -72,7 +72,11 @@ poke:
 
 ## When a poke doesn't fire
 
-A poke that doesn't work almost never throws an error — it just goes quiet. Four common causes, each shown broken next to its fix.
+A poke that doesn't work almost never throws an error — it just goes quiet.
+
+<Aside type="caution">
+Don't do this: no error, no warning — a broken poke just silently does nothing. Four common causes below, each shown broken next to its fix.
+</Aside>
 
 **1. Bad indentation on the list item** — a `poke:` list follows the [same shape as `spawn:`](/ew_toolkit/ew_wiki/ewp/concepts/start-scripting/#a-rule-can-do-more-than-set-data); indenting the second field too far breaks the item:
 
