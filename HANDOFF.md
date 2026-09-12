@@ -27,7 +27,7 @@ Nothing uncommitted as of this update — both bodies of work below landed as tw
 
 ## Next step
 
-The nav-bar/favicon/header-TOC backlog and the content-quality-pass are both committed and done. Remaining open items: `ai-workflow-audit` ticket 17 (untouched this session), and the content-quality-pass map's own fog — deciding which of the 18 bad-cop sweep findings to act on (see that map's "Not yet specified").
+The nav-bar/favicon/header-TOC backlog and the content-quality-pass are both committed and done. `ai-workflow-audit` has no open frontier (see the correction above — don't repeat the stale "ticket 17 partway" claim this file used to carry). Remaining open item: the content-quality-pass map's own fog — deciding which of the 18 bad-cop sweep findings to act on (see that map's "Not yet specified").
 
 ## Don't touch
 
