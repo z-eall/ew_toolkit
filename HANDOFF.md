@@ -1,10 +1,12 @@
 # Handoff
 
-Last updated: 2026-09-12, after committing the backlog below plus a new content-quality pass on `ew_wiki`.
+Last updated: 2026-09-12, after closing out and pushing the rest of the [Ew Wiki Content Quality Pass](.scratch/ew-wiki-content-quality-pass/map.md) map.
 
 ## Where things stand
 
-Committed today, two commits: (1) the nav-bar/favicon/header-TOC backlog (tickets 21, 22, 23 — see below for detail), (2) the [Ew Wiki Content Quality Pass](.scratch/ew-wiki-content-quality-pass/map.md) map — 3 wording fixes, new teaching content (`#comment` syntax, YAML editor tiers, a purpose-header-comment convention retrofitted onto 6 chained examples), 2 bad-cop examples plus a sweep finding 18 more candidate spots (not yet acted on — see that map's "Not yet specified"), and a new `ew_wiki/AGENTS.md` rule + `guard-script-block-header-comment.cjs` hook. Production build verified clean, 33 pages.
+Committed and pushed today, three commits total on top of origin/main (12 older ones plus this session's): (1)+(2) the nav-bar/favicon/header-TOC backlog and the content-quality-pass's first pass (3 wording fixes, new teaching content, 2 bad-cop examples, the 18-item sweep) — both already described lower in this file from the prior session; (3) **this session**: resolved the map's remaining 8 tickets (06-13), adding WRONG/CORRECT bad-cop pairs across 15 `ew_wiki` concept/example pages. Each claim was cross-checked against the mod's real C# source after an earlier prototype pass had wrongly claimed `<par2>` "fails to resolve" (it doesn't — `Functions.cs` has it as a real hardcoded shortcut); that pair was dropped instead of shipped. Also retired a planned bad-cop pair on `basic-rng.mdx` (weight-sum-under-1 isn't actually a mistake — logged as Out of scope on the map instead). Pushed to `origin/main` (`fe4e468`); GitHub Pages should pick it up automatically.
+
+**The content-quality-pass map's destination is now fully met** — all 12 of its tickets are closed. One fog item remains un-ticketed on the map itself (not a task, just noted): re-checking the original 18-item sweep report for other unverified "definition"-style claims, same class of error as the `<par2>` and comma/semicolon mistakes.
 
 Prior narrative on the backlog commit (ticket 23 round 7.5 wrap-up):
 
@@ -20,14 +22,17 @@ The `ew_wiki` interactive-widget phase (tickets 17-22 on the [Ew Wiki Real Build
 
 ## Uncommitted / in progress
 
-Nothing uncommitted as of this update — both bodies of work below landed as two separate commits (the maintainer chose "split by body of work" over one mega-commit or leaving it uncommitted). `.agents/hooks/ew_toolkit/guard-shared-verify-all-tools.cjs` and `guard-script-block-header-comment.cjs` live outside this git repo entirely (the project root isn't a git repo), so they were never part of either commit — no action needed there, just noting it so a future session doesn't go looking for them in `git log`.
+Nothing uncommitted, nothing unpushed — `git status` is clean and `main` matches `origin/main` as of this update. `.agents/hooks/ew_toolkit/guard-shared-verify-all-tools.cjs` and `guard-script-block-header-comment.cjs` still live outside this git repo entirely (the project root isn't a git repo), so they're not in `git log` — no action needed, just noting it so a future session doesn't go looking for them there.
 
 - Commit 1 (backlog): everything from resolving [ticket 21](.scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md), [ticket 22](.scratch/ew_toolkit/issues/22-unify-favicon.md), and [ticket 23](.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md) — nav bar unification, favicon dedup, header/TOC layout rework (all 6+ rounds). Includes `shared/navBar.ts`, `shared/theme.ts`, `shared/favicon.png`, `scripts/sync-favicon.mjs`, `docs/agents/hub-tool-nav.md`, `src/nav.ts`, `src/style.css`, `package.json`/`ewp_validator/package.json`/`ew_wiki/package.json`, `ewp_validator/src/main.ts`+`style.css`, `ew_wiki/astro.config.mjs`, `ew_wiki/src/components/{Header,CollapsibleToc,PageTitle,PageSidebar}.astro`, `ew_wiki/src/styles/theme.css`, `shared/theme.css`, `shared/icons.ts`, `ew_wiki/docs/widget-build-notes.md`, favicon swap, both ticket files and their maps. Note: ticket 23 and tickets 21/22 turned out to have edited the same lines in `.claude/settings.json` and root `AGENTS.md` in alternation (interleaved sessions) — not worth a risky manual line-level split, so they're one combined commit rather than three.
-- Commit 2: the [Ew Wiki Content Quality Pass](.scratch/ew-wiki-content-quality-pass/map.md) work — see "Where things stand" above.
+- Commit 2: the content-quality-pass's first pass (tickets 01-05) — see prior handoff narrative above.
+- Commit 3 (`fe4e468`, this session): content-quality-pass tickets 06-13, all 8 bad-cop tickets — see "Where things stand" above.
+
+All three pushed to `origin/main` this session (13 commits went out together, since 1 and 2 were sitting locally, committed but unpushed, from before).
 
 ## Next step
 
-The nav-bar/favicon/header-TOC backlog and the content-quality-pass are both committed and done. `ai-workflow-audit` has no open frontier (see the correction above — don't repeat the stale "ticket 17 partway" claim this file used to carry). Remaining open item: the content-quality-pass map's own fog — deciding which of the 18 bad-cop sweep findings to act on (see that map's "Not yet specified").
+The nav-bar/favicon/header-TOC backlog and the content-quality-pass map are both fully done and live. `ai-workflow-audit` has no open frontier (see the correction above — don't repeat the stale "ticket 17 partway" claim this file used to carry). No open ticket anywhere in the repo right now. The only loose thread is the content-quality-pass map's own un-ticketed fog note: whether to re-check the original 18-item sweep report for other unverified claims like the two caught this session (`<par2>`, the comma/semicolon filter wording) — worth raising with the maintainer before starting it, since it isn't chartered as a ticket yet.
 
 ## Don't touch
 
