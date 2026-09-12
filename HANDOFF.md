@@ -16,7 +16,7 @@ Ticket 23 (`ew_wiki` header/TOC layout) has gone through 7.5 rounds today — se
 
 The `ew_wiki` interactive-widget phase (tickets 17-22 on the [Ew Wiki Real Build map](.scratch/ew-wiki-real-build/map.md)) is otherwise closed. Lessons from that phase live in [ew_wiki/docs/widget-build-notes.md](ew_wiki/docs/widget-build-notes.md), read before starting any new widget.
 
-`ai-workflow-audit` (root-level map, `ai-workflow-audit/map.md`) round 2: tickets 12-16 resolved, ticket 17 (execution) partway through its own checklist — see that ticket's own Progress log for exactly what's done vs. open. Untouched this session.
+`ai-workflow-audit` (root-level map, `ai-workflow-audit/map.md`) round 2: this HANDOFF used to say ticket 17 was partway through its own checklist — checked while writing this update, and the map itself says otherwise: "ticket 17 ... is also resolved. Nothing currently fog." Correcting the stale claim rather than repeating it. No open frontier on that map as of this check.
 
 ## Uncommitted / in progress
 
