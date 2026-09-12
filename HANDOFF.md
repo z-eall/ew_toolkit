@@ -1,8 +1,22 @@
 # Handoff
 
-Last updated: 2026-09-12, after closing out and pushing the rest of the [Ew Wiki Content Quality Pass](.scratch/ew-wiki-content-quality-pass/map.md) map.
+Last updated: 2026-09-12, after fixing `ewp_validator`'s schema for EWP v1.60's new `log:` field.
 
 ## Where things stand
+
+**This session**: maintainer reported Valheim and EWP both got updates and asked for fixes. Checked EWP's real GitHub source (`JereKuusela/valheim-expand_world_prefabs`) field-by-field against `ewp_validator`'s hand-maintained schema (`ewp_validator/schema/generate.mjs` — a deliberately static schema, doesn't auto-track new EWP fields, see that file's own header comment). Didn't need to touch Valheim's own game code — EWP already absorbed the game-update changes internally (its CHANGELOG says v1.60 "Fixes for the new game update"); the validator only needs to track EWP's own script surface. Found one real gap: `log:`, a new top-level action (`PrefabData.cs:50`) that writes a line to `ewp_log.txt` instead of a chat command — was missing from the schema, so any script using it got a false "unknown field" error. Everything else new in v1.59/v1.60 (`random:` on pokes, alt-biome support on `biomes:`/`bannedBiomes:`) was already correctly handled.
+
+Fixed in two commits, pushed to `origin/main`:
+- `84825e4` — added `log: str` to the schema's Actions section, regenerated `schema.generated.json` (confirms EWP 1.60.0), slotted `log` into the root `AGENTS.md` script field-order convention (right after `command`/`commands`, maintainer's call), synced that same line to the `ew_toolkit-cursor` worktree's copy of `AGENTS.md` (left **uncommitted** there deliberately — that branch belongs to the Cursor agent, not this session, per the one-agent-at-a-time rule).
+- `4bc28f3` — caught this file itself sitting modified-but-uncommitted from the prior session (documented the tickets 06-13 push) and committed it before starting today's work.
+
+Per maintainer's explicit call, did **not** add wiki teaching content for `log:` — validator fix only for now; a `log:` teaching page is a separate future decision, not chartered anywhere yet.
+
+**Known gap this session hit**: couldn't run `ewp_validator`'s actual test suite locally — `vitest` fails to start on this Windows checkout (`Cannot find native binding` / `@rolldown/binding-wasm32-wasi`), the same class of issue as the existing "this repo's lock must be built on Linux" note. Hand-verified the `log:` schema fix instead with a direct Ajv compile+validate check. **Next session on a Windows checkout should expect the same vitest failure** — real test suite needs WSL/Linux, same as the wiki's dev server.
+
+**CI caught something local checks missed**: the push above triggered a real CI failure (run `34701323651`) — 2 tests in `rpcValidation.test.ts` failed because upstream `RPCs.md` now documents `RPC_SetVisualItem`'s 2nd param as type `hash`, not `string` (confirmed live against the doc and against `RpcInfo.cs`'s `Types` set, which treats `hash`/`string` as genuinely different — `hash` applies `GetStableHashCode()`). This is exactly the kind of EWP-update drift the maintainer flagged this session; CI's live `docs/RPCs.md` fetch (via `schema/generate.mjs`) surfaced it since the hardcoded test expectations hadn't been updated. Fixed both assertions to expect `hash`; pushed as a follow-up commit. **Still unverified locally** (same vitest breakage) — check CI on the next push to confirm green.
+
+## Prior sessions
 
 Committed and pushed today, three commits total on top of origin/main (12 older ones plus this session's): (1)+(2) the nav-bar/favicon/header-TOC backlog and the content-quality-pass's first pass (3 wording fixes, new teaching content, 2 bad-cop examples, the 18-item sweep) — both already described lower in this file from the prior session; (3) **this session**: resolved the map's remaining 8 tickets (06-13), adding WRONG/CORRECT bad-cop pairs across 15 `ew_wiki` concept/example pages. Each claim was cross-checked against the mod's real C# source after an earlier prototype pass had wrongly claimed `<par2>` "fails to resolve" (it doesn't — `Functions.cs` has it as a real hardcoded shortcut); that pair was dropped instead of shipped. Also retired a planned bad-cop pair on `basic-rng.mdx` (weight-sum-under-1 isn't actually a mistake — logged as Out of scope on the map instead). Pushed to `origin/main` (`fe4e468`); GitHub Pages should pick it up automatically.
 
@@ -32,7 +46,11 @@ All three pushed to `origin/main` this session (13 commits went out together, si
 
 ## Next step
 
-The nav-bar/favicon/header-TOC backlog and the content-quality-pass map are both fully done and live. `ai-workflow-audit` has no open frontier (see the correction above — don't repeat the stale "ticket 17 partway" claim this file used to carry). No open ticket anywhere in the repo right now. The only loose thread is the content-quality-pass map's own un-ticketed fog note: whether to re-check the original 18-item sweep report for other unverified claims like the two caught this session (`<par2>`, the comma/semicolon filter wording) — worth raising with the maintainer before starting it, since it isn't chartered as a ticket yet.
+**Check CI on the next push** (or `gh run list` now) — confirm the `rpcValidation.test.ts` fix actually turned the build green; it was pushed but not yet re-verified as of this update. If it's still red, don't assume it's the same `hash`/`string` issue — read the new log first.
+
+The nav-bar/favicon/header-TOC backlog and the content-quality-pass map are both fully done and live. `ai-workflow-audit` has no open frontier (see the correction above — don't repeat the stale "ticket 17 partway" claim this file used to carry). No open ticket anywhere in the repo right now. Two loose threads, neither chartered as a ticket yet:
+- The content-quality-pass map's own fog note: whether to re-check the original 18-item sweep report for other unverified claims like the two caught this session (`<par2>`, the comma/semicolon filter wording).
+- Whether `ewp_validator`'s hand-maintained schema (`schema/generate.mjs`) should get a periodic "diff against EWP's real field list" check, rather than waiting for a maintainer to notice drift like `log:` by chance — this session found one gap by manual field-by-field comparison; there's no standing process to catch the next one.
 
 ## Don't touch
 

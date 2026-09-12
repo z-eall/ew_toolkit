@@ -93,11 +93,15 @@ describe("checkRpcParams", () => {
   });
 
   it("reports nothing for the ticket RPC_SetVisualItem repro shape", () => {
+    // Param 2's documented type changed from `string` to `hash` upstream
+    // (RPCs.md, confirmed live 2026-09-12) — EWP's RpcInfo.cs treats them as
+    // genuinely different (hash applies GetStableHashCode(), string doesn't),
+    // so this repro now uses the correct current type.
     const issues = checkRpcParams(OBJECT_RPC_PARAMS, "RPC_SetVisualItem", {
       name: "RPC_SetVisualItem",
       target: "all",
       1: 'int, "index of the item slot"',
-      2: 'string, "name of the item"',
+      2: 'hash, "name of the item"',
       3: 'int, "variant number of the item"',
       4: 'int, "orientation of the item (0 = none, 1 = vertical, 2 = horizontal, 3 = all)"',
     });
@@ -169,7 +173,9 @@ describe("checkRpcUnrecognizedKeys", () => {
 
 describe("generated RPC tables", () => {
   it("documents RPC_SetVisualItem with four params from RPCs.md", () => {
-    expect(OBJECT_RPC_PARAMS.RPC_SetVisualItem?.map((p) => p.type)).toEqual(["int", "string", "int", "int"]);
+    // Param 2 changed from `string` to `hash` upstream — confirmed live
+    // against RPCs.md 2026-09-12 (EWP v1.60-era docs).
+    expect(OBJECT_RPC_PARAMS.RPC_SetVisualItem?.map((p) => p.type)).toEqual(["int", "hash", "int", "int"]);
   });
 
   it("does not include deliberately omitted ambiguous object RPCs", () => {
