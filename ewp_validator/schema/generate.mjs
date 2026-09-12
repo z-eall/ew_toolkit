@@ -332,6 +332,10 @@ const ewpRuleEntry = {
     removeDelay: numberOrString,
     command: str,
     commands: strArray,
+    // New in EWP v1.60 — writes a text line to ewp_log.txt instead of chat
+    // (PrefabData.cs:50, `public string? log;`; docs/scripting.md's "log:"
+    // entry). Functions/substitutions supported, so plain string.
+    log: str,
     exec: str,
     owner: numberOrString,
     attach: str,
