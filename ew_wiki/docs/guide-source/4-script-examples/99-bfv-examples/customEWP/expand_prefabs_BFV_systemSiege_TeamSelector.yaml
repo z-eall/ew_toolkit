@@ -1,0 +1,164 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Player Logging                              ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+
+- prefab: Player
+  type: state, join
+  # bannedKeys: <long_playerID>
+  exec: |
+    <save_<pid>_<long_playerID>>;
+    <save_<long_playerID>_<pname>>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Team Selector                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Player joining Team 1 - Wolf
+# ═══════════════════════════════════════════════════════════
+- prefab: vfx_spawn_large
+  type: create
+  commands:
+  - s <pname> has joined the Shadowborn Wolves!
+  # bannedKeys: <pid>/team
+  objects:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcNameOverride, Enter<br>World
+    maxDistance: 15
+  exec: |
+    <save_<pid>/team_1>
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, 2
+    2: string, Welcome, Wolf.
+  poke:
+  - prefab: Player
+    filter: long, playerID, <cid>
+    parameter: injectBfvTeamData 1
+  spawns:
+  - sfx_wolfroar, 0,0,15
+  - sfx_welcome_wolf, 0,0,15, 3
+
+# Inject BFV team data to player object
+- prefab: Player
+  type: poke, injectBfvTeamData
+  data: int, bfvTeam, <par_1>
+
+# ═══════════════════════════════════════════════════════════
+# Player joining Team 2 - Dragon
+# ═══════════════════════════════════════════════════════════
+- prefab: vfx_spawn_small
+  type: create
+  commands:
+  - s <pname> has joined the Bloodfire Dragons!
+  # bannedKeys: <pid>/team
+  objects:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcNameOverride, Enter<br>World
+    maxDistance: 15
+  exec: |
+    <save_<pid>/team_2>
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, 2
+    2: string, Welcome, Dragon.
+  poke:
+  - prefab: Player
+    filter: long, playerID, <cid>
+    parameter: injectBfvTeamData 1
+  spawns:
+  - sfx_dragonroar, 0,0,15
+  - sfx_welcome_dragon, 0,0,15, 3
+  
+# ═══════════════════════════════════════════════════════════
+# Inject team again if missing
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  types:
+  - state, action interact
+  # - state, action jump
+  keys: <pid>/team
+  bannedFilter: int, bfvTeam, <load_<pid>/team=0>
+  data: int, bfvTeam, <load_<pid>/team=0>
+
+- prefab: Player
+  types:
+  - state, action interact
+  # - state, action jump
+  keys: <pid>/teamlead
+  bannedFilter: int, bfvTeamLead, <load_<pid>/teamlead=0>
+  data: int, bfvTeamLead, <load_<pid>/teamlead=0>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin debugging                                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Admin swtiching team
+- prefab: Player
+  type: say, !team
+  admin: true
+  cancel: true
+  # commands:
+  # - s <pname> is now a <BfvTeam<load_<pid>/team=-1>>.
+  exec: <save_<pid>/team_<par_1>>
+  data: int, bfvTeam, <par_1>
+  spawn: fx_BonusYield, 0,0,1
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, <pname> is now a <BfvTeam<load_<pid>/team=-1>>.
+    3: int, 1
+
+# Admin clearing team
+- prefab: Player
+  type: say, !clearteam
+  admin: true
+  cancel: true
+  # commands:
+  # - s <pname>'s team key is cleared.
+  keys: <pid>/team
+  exec: |
+    <clear_<pid>/team>
+  data: int, bfvTeam, 0
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, <pname>'s team key is cleared.
+    3: int, 1
+
+
+# ══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════════
+# REMOVE
+
+- prefab: vfx_spawn
+  type: create
+  objects:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcNameOverride, Enter<br>World
+    maxDistance: 10
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, 2
+    2: string, Left Team
+  keys: <pid>/team
+  exec: <clear_<pid>/team>
+     
+- prefab: ItemDrop
+  type: create
+  objects:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcNameOverride, Enter<br>World
+    maxDistance: 60
+  remove: true

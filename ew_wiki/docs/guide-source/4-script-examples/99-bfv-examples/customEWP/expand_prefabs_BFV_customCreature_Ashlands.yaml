@@ -1,0 +1,73 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Ashlands                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ASHLANDS - GALMOR
+# ═══════════════════════════════════════════════════════════
+# Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, galmor_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: Asksvin
+    # maxDistance: 1
+  # swap:
+  # - prefab: Asksvin
+    # data: galmor
+    # triggerRules: true
+  # spawn:
+  # - prefab: sfx_trollfire_roar
+  # - prefab: smokebomb_explosion
+
+# Loot drop
+- prefab: Ragdoll_Asksvin
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: string, isSpawningPrefabData, galmor
+    maxDistance: 50
+  remove: true
+  removeDelay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  spawn:
+  - prefab: vfx_corpse_destruction_medium
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  - prefab: TrinketScaleStaminaDamage
+    chance: 0.4
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  - prefab: CapeAsksvin
+    chance: 0.4
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  - prefab: GemstoneRed
+    chance: 0.05
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  - prefab: GemstoneGreen
+    chance: 0.05
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+  - prefab: GemstoneBlue
+    chance: 0.05
+    delay: <add_-1_<float_Ragdoll.m_ttl=3>>
+
+# ═══════════════════════════════════════════════════════════
+# ASHLANDS - GALMOR WARD
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, galmorward_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: dverger_guardstone
+    # maxDistance: 1
+  # swap:
+  # - prefab: dverger_guardstone
+    # data: galmorward
+    # triggerRules: true

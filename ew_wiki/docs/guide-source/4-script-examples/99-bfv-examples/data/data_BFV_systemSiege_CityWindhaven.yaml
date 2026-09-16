@@ -1,0 +1,36 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value Data                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- value: bridgeState/sfx_charred_twitcher_throw, 1
+- value: bridgeState/sfx_charred_twitcher_throw_impact, 0
+
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static Data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Config - City Drawbridge
+# ═══════════════════════════════════════════════════════════
+- name: DrawbridgeDown
+  ints:
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  strings:
+  - Piece.m_name, DrawbridgeDown
+  
+- name: DrawbridgeRaised
+  ints:
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  strings:
+  - Piece.m_name, DrawbridgeRaised

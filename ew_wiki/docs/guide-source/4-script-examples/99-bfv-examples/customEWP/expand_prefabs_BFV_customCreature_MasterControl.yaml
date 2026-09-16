@@ -1,0 +1,49 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Master Spawner            ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# GENERAL - MASTER SPAWNER
+# ═══════════════════════════════════════════════════════════
+# Spawn from spawner
+# isSpawningPrefab
+# isSpawningPrefabData
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: CreatureSpawner
+    filter: int, isBfvCreatureSpawner, 1
+    maxDistance: 1
+  remove: true
+  poke:
+  - prefab: CreatureSpawner
+    filter: int, isBfvCreatureSpawner, 1
+    bannedFilter: int, hasLockedZdo, 1
+    limit: 1
+    maxDistance: 1
+    parameter: injectLockedZdo <zdo>
+  - prefab: CreatureSpawner
+    filter: int, isBfvCreatureSpawner, 1
+    limit: 1
+    maxDistance: 1
+    delay: 0.25
+    parameter: spawnBfvCustomCreature
+
+- prefab: CreatureSpawner
+  type: poke, injectLockedZdo
+  data: injectLockedZdo
+  injectData: true
+
+- prefab: CreatureSpawner
+  type: poke, spawnBfvCustomCreature
+  bannedObjects:
+  - prefab: <string_isSpawningPrefab=Bat>
+    filter: string, spawnerZDO, <string_spawnerZDO=0>
+    maxDistance: <max_30_<float_CreatureSpawner.m_triggerDistance=30>>
+  spawn:
+  - prefab: <string_isSpawningPrefab=Bat>
+    data: <string_isSpawningPrefabData>
+    triggerRules: true

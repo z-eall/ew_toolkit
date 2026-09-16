@@ -1,0 +1,32 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value Data                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Emblem = Buff, Totem = Debuff
+- value: team_wolfemblem, 1
+- value: team_wolftotem, 1
+- value: team_dragonemblem, 2
+- value: team_dragontotem, 2
+
+- value: buff_wolfemblem, Wolfcry
+- value: buff_wolftotem, WolfTotem
+- value: buff_dragonemblem, Dragoncry
+- value: buff_dragontotem, DragonTotem
+
+- value: buffRest_wolfemblem, Rested
+- value: buffRest_wolftotem, 
+- value: buffRest_dragonemblem, Rested
+- value: buffRest_dragontotem, 
+
+- value: cooldown_wolfemblem, 60
+- value: cooldown_wolftotem, 60
+- value: cooldown_dragonemblem, 60
+- value: cooldown_dragontotem, 60
+
+- value: cooldown_officerstaff, 120
+
+- value: sfxHornBuff_Wolf, sfx_vikinghorn_wolf
+- value: sfxHornBuff_Dragon, sfx_vikinghorn_dragon

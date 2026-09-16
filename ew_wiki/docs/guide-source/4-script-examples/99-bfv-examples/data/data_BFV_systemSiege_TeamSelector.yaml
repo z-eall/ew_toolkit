@@ -1,0 +1,71 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# For Team reference
+- value: BfvTeam-1, Raider
+- value: BfvTeam1, Wolf
+- value: BfvTeam2, Dragon
+
+# For Team reference - Plural
+- value: pluralBfvTeam-1, Raiders
+- value: pluralBfvTeam1, Wolves
+- value: pluralBfvTeam2, Dragons
+
+# For Team reference - Long name
+- value: longBfvTeam-1, Raider
+- value: longBfvTeam1, Shadowborn Wolves
+- value: longBfvTeam2, Bloodfire Dragons
+
+# For Team color reference
+- value: colorRaider, <#ff00ff>
+- value: colorWolf, <#6699ff>
+- value: colorDragon, <#cc0000>
+- value: colorTransparentRaider, <#ff00ff80>
+- value: colorTransparentDragon, <#cc000080>
+- value: colorTransparentWolf, <#0000ff80>
+
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Command House Teleports                         ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+- name: isCommandHouseTeam1
+  ints:
+  - isCommandHouseTeam, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  floats:
+  - Pickable.m_spawnOffset, 15000
+  strings:
+  - Pickable.m_overrideName, <colorWolf>Wolf</color> Command House<br><#ddd>[<#fff000>E<#ddd>] Enter<size=0>
+  - Pickable.m_hideWhenPicked, vfx_odin_despawn
+  
+# - valueGroup: telepoints_wolflead
+  # values:
+  # - -3997,2072,36
+  
+- name: isCommandHouseTeam2
+  ints:
+  - isCommandHouseTeam, 2
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  floats:
+  - Pickable.m_spawnOffset, 15000
+  strings:
+  - Pickable.m_overrideName, <colorDragon>Dragon</color> Command House<br><#ddd>[<#fff000>E<#ddd>] Enter<size=0>
+  - Pickable.m_hideWhenPicked, vfx_odin_despawn
+  
+# - valueGroup: telepoints_dragonlead
+  # values:
+  # - 3341,2308,34
+
+# Admin assign self team
+- name: changeAdminTeam
+  ints:
+  - bfvTeam, <par_1>
+  - bfvTeamLead, <par_1>

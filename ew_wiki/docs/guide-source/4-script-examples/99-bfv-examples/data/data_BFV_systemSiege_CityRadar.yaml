@@ -1,0 +1,116 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - ezConfig™                                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Config - City Radar
+# ═══════════════════════════════════════════════════════════
+- value: radarCooldown, 300
+- value: raidInProgressDuration, 3600
+- value: radarBlockerDuration, 1800
+
+- value: radarDistanceRiverstone, 210
+- value: radarDistanceWindhaven, 210
+- value: radarDistanceBanegard, 110
+- value: radarDistanceFrosthold, 110
+- value: radarDistanceVarghelm, 110
+- value: radarDistanceDragonfang, 110
+- value: radarDistanceStormbreaker, 110
+- value: radarDistanceSeaguard, 110
+- value: radarDistanceHaradin, 110
+- value: radarDistanceBloodstone, 110
+- value: radarDistanceSelenium, 110
+- value: radarDistanceSunward, 110
+- value: radarDistanceBrennvik, 110
+- value: radarDistanceFelgar, 110
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# For Cities' name
+- value: nameCity1, Riverstone City
+- value: nameCity2, Windhaven City
+- value: nameCity3, Banegard City
+- value: nameCity4, Frosthold
+- value: nameCity5, Varghelm Hold
+- value: nameCity6, Dragonfang Watch
+- value: nameCity7, Stormbreaker Hold
+- value: nameCity8, Seaguard Watch
+- value: nameCity9, Haradin Watch
+- value: nameCity10, Bloodstone Hold
+- value: nameCity11, Selenium Keep
+- value: nameCity12, Sunward Keep
+- value: nameCity13, Brennvik Hold
+- value: nameCity14, Felgar Hold
+
+# For Cities' shortname
+- value: shortnameCity1, Riverstone
+- value: shortnameCity2, Windhaven
+- value: shortnameCity3, Banegard
+- value: shortnameCity4, Frosthold
+- value: shortnameCity5, Varghelm
+- value: shortnameCity6, Dragonfang
+- value: shortnameCity7, Stormbreaker
+- value: shortnameCity8, Seaguard
+- value: shortnameCity9, Haradin
+- value: shortnameCity10, Bloodstone
+- value: shortnameCity11, Selenium
+- value: shortnameCity12, Sunward
+- value: shortnameCity13, Brennvik
+- value: shortnameCity14, Felgar
+
+- value: maxDistanceAllCities, <max_<max_<max_<max_<radarDistance<shortnameCity1>>_<radarDistance<shortnameCity2>>>_<max_<radarDistance<shortnameCity3>>_<radarDistance<shortnameCity4>>>>_<max_<max_<radarDistance<shortnameCity5>>_<radarDistance<shortnameCity6>>>_<max_<radarDistance<shortnameCity7>>_<radarDistance<shortnameCity8>>>>>>_<max_<max_<max_<radarDistance<shortnameCity9>>_<radarDistance<shortnameCity10>>>_<max_<radarDistance<shortnameCity11>>_<radarDistance<shortnameCity12>>>>_<max_<radarDistance<shortnameCity13>>_<radarDistance<shortnameCity14>>>>>
+
+- value: msgSiegeRelease1, 🔨 Build and Repair restored at <upper_<nameCity<int_isRadarCity=0>>>.
+- value: msgSiegeRelease2, 🔨 Build and Repair restored at <upper_<nameCity<int_isRadarCity=0>>>.
+- value: msgSiegeRelease0, Raid status has expired for <upper_<nameCity<int_isRadarCity=0>>>.
+- value: msgSiegeRelease-1, Raid status has expired for <upper_<nameCity<int_isRadarCity=0>>>.
+
+# For Crafting station valuegroup
+- valueGroup: nonSiegeStation
+  values:
+  - piece_workbench
+  - forge
+  - piece_stonecutter
+  - piece_artisanstation
+  - blackforge
+  - piece_magetable
+  - piece_cauldron
+  - piece_preptable
+  - piece_MeadCauldron
+  - piece_scribetable
+  - BetterWard_Type3
+  - BetterWard_Type4
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# - name: isRadarCity
+  # ints:
+  # - isRadarCity, <radarCity>
+  # - StaticPhysics.m_pushUp, 0
+  # - StaticPhysics.m_fall, 0
+  # - WearNTear.m_minToolTier, 999
+  # - StaticPhysics.m_checkSolids, 1
+  # - Piece.m_targetNonPlayerBuilt, 1
+  # - Piece.m_canBeRemoved, 0
+  # - Piece.m_primaryTarget, 0
+  # - Piece.m_randomTarget, 0
+  # floats:
+  # - WearNTear.m_health, -1
+  # - health, -1
+  # - DropOnDestroyed.m_spawnYOffset, 15000
+  # - Piece.m_returnResourceHeightOffset, 15000
+  # strings:
+  # - HoverText.m_text, <nameCity>

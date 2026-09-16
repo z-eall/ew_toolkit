@@ -1,0 +1,149 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Piece Create Lock                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Chokepoint Limit                                ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Restricted piece type at chokepoint
+# ═══════════════════════════════════════════════════════════
+- prefab: Piece
+  excludePrefab: chokepointWhitelist
+  type: poke, checkBuildCondition
+  weight: 1e30
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock10
+    maxDistance: 10
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock15
+    maxDistance: 15
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock20
+    maxDistance: 20
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock25
+    maxDistance: 25
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock30
+    maxDistance: 30
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock35
+    maxDistance: 35
+    weight: 999000
+  - prefab: siege_wall_1x1
+    filter: string, Piece.m_name, cubeChokepointLock40
+    maxDistance: 40
+    weight: 999000
+  objectsLimit: 1
+  remove: true
+  drops: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Not allowed at choke points.
+    4: bool, true
+
+# ═══════════════════════════════════════════════════════════
+# Restricted castle gate limit - Cities WH and RS
+# ═══════════════════════════════════════════════════════════
+- prefab: metal_gate, ashen_gate
+  type: poke, checkBuildCondition
+  weight: 1e30
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: AshlandsTreeStump2
+    filter: int, isRadarCity, 1;2
+    maxDistance: 200
+    weight: 999000
+  - prefab: metal_gate, ashen_gate
+    bannedFilters:
+    - float, WearNTear.m_health, -1
+    - int, isBfvSiegeCampPiece, 1
+    maxDistance: 200
+    weight: 1
+  objectsLimit: 999012
+  remove: true
+  drops: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, <gateCityBudgetLimit> city gates limit reached.
+    4: bool, true
+
+# ═══════════════════════════════════════════════════════════
+# Restricted castle gate limit - Garrisons
+# ═══════════════════════════════════════════════════════════
+- prefab: metal_gate, ashen_gate
+  type: poke, checkBuildCondition
+  weight: 1e30
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: AshlandsTreeStump2
+    filter: int, isRadarCity, 3;99
+    maxDistance: 200
+    weight: 999000
+  - prefab: metal_gate, ashen_gate
+    bannedFilters:
+    - float, WearNTear.m_health, -1
+    - int, isBfvSiegeCampPiece, 1
+    maxDistance: 200
+    weight: 1
+  objectsLimit: 999006
+  remove: true
+  drops: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, <gateGarrBudgetLimit> garrison gates limit reached.
+    4: bool, true
+
+# ═══════════════════════════════════════════════════════════
+# Restricted castle gate distance
+# ═══════════════════════════════════════════════════════════
+- prefab: metal_gate, ashen_gate
+  type: poke, checkBuildCondition
+  weight: 1e30
+  bannedKeys: adminmode 1
+  bannedFilters:
+  - int, isBfvSiegeCampPiece, 1
+  bannedObjects:
+  # - prefab: wood_beam_1 # Old piece used
+    # filter: string, Piece.m_name, castle_piece
+    # maxDistance: 70
+  - prefab: AshlandsTreeStump2 # New standardised piece
+    filter: int, isRadarCity, 1;99
+    maxDistance: 70
+  bannedObjectsLimit: 1
+  remove: true
+  drops: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Gate too far from a castle.
+    4: bool, true

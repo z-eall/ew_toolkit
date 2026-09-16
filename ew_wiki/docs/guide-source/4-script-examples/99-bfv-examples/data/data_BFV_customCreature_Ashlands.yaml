@@ -1,0 +1,64 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Ashlands                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ASHLANDS - GALMOR
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: galmor_spawner
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - galmor_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 60
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: galmor
+  ints:
+  - galmor, 1
+  - level, 4
+  - Humanoid.m_boss, 1
+  - MonsterAI._sleeping, 1
+  - MonsterAI.m_DespawnInDay, 1
+  floats:
+  - MonsterAI.m_alertRange, 10
+  - Tameable.m_tamingTime, 1e17
+  - Humanoid.m_health, 2400
+  - max_health, 2400
+  strings:
+  - Humanoid.m_name, "Galmor"
+  - spawnerZDO, <string_spawnerZDO=0>
+  - MonsterAI.m_alertedMessage, "<color=#71c798>Man-food, at last..."
+  - MonsterAI.m_deathMessage, "<color=#71c798>Live, for now..."
+
+# ═══════════════════════════════════════════════════════════
+# ASHLANDS - GALMOR WARD
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: galmorward_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - galmorward_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 50
+  - CreatureSpawner.m_respawnTimeMinuts, 0.5
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Ward
+- name: galmorward
+  ints:
+  - galmorward, 1
+  floats:
+  - PrivateArea.m_radius, 50
+  

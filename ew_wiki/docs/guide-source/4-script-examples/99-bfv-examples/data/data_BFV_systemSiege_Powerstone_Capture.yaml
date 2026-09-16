@@ -1,0 +1,231 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - ezConfig™                                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Config - Powerstone
+# ═══════════════════════════════════════════════════════════
+- value: healthPowerstone, 15000
+- value: comfortPowerstone, 1
+- value: hitCooldownPowerstone, 2
+- value: damageRangePowerstone, <mul_0.1_<round_<mul_10_<randf_50_200>>>>
+- value: captureCooldownPowerstone, 7200
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# For Brazier visuals
+- value: brazierPowerstoneRaider, MountainKit_brazier_purple
+- value: brazierPowerstoneWolf, MountainKit_brazier_blue
+- value: brazierPowerstoneDragon, MountainKit_brazier
+
+# For Banner visuals
+- value: bannerPowerstoneRaider, piece_banner11
+- value: bannerPowerstoneWolf, piece_banner02
+- value: bannerPowerstoneDragon, piece_banner04
+
+# For Hit Effect visuals
+- value: effectHitRaider, fx_DvergerMage_Mistile_attack
+- value: effectHitWolf, fx_iceshard_hit
+- value: effectHitPosWolf, 0,-0.25,1.5
+- value: effectHitDragon, fx_batteringram_fire
+- value: effectHitPosDragon, 0,-0.25,1.25
+- value: effectHitRotDragon, 0,-90,0
+
+# For Powerstone healthbar formula
+- value: hpBarStages, <max_0_<round_<mul_5_<div_<sub_<healthPowerstone>_<par_1>>_<healthPowerstone>>>>>
+
+# For Powerstone healthbar visuals
+- value: hpBarPowerstone5, <color<BfvTeam<par_1>>>█████<colorTransparent<BfvTeam<par_1>>>
+- value: hpBarPowerstone4, <color<BfvTeam<par_1>>>████<colorTransparent<BfvTeam<par_1>>>█
+- value: hpBarPowerstone3, <color<BfvTeam<par_1>>>███<colorTransparent<BfvTeam<par_1>>>██
+- value: hpBarPowerstone2, <color<BfvTeam<par_1>>>██<colorTransparent<BfvTeam<par_1>>>███
+- value: hpBarPowerstone1, <color<BfvTeam<par_1>>>█<colorTransparent<BfvTeam<par_1>>>████
+- value: hpBarPowerstone0, <colorTransparent<BfvTeam<par_1>>>█████
+- value: hpBarPowerstone,
+
+# For Powerstone healthbar formula
+- value: healAmountPowerstone, <mul_0.1_<round_<mul_10_<div_<healthPowerstone>_6>>>>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static Data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Wolf
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneWolf
+  ints:
+  - Piece.m_canBeRemoved, 0
+  - isBfvPowerstone, 1
+  - Piece.m_isUpgrade, 0
+  - Piece.m_comfort, <comfortPowerstone>
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noRoofWear, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - StationExtension.m_stack, 0
+  - StationExtension.m_continousConnection, 0
+  floats:
+  - isBfvPowerstoneHealth, 0
+  - WearNTear.m_health, -4
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000
+  - StationExtension.m_maxStationDistance, 0
+  strings:
+  - WearNTear.m_broken, vfx_odin_despawn
+  - Piece.m_name, Powerstone <colorWolf>Wolf</color>
+  vecs:
+  - StationExtension.m_connectionOffset, 0,0,0
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Dragon
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneDragon
+  ints:
+  - Piece.m_canBeRemoved, 0
+  - isBfvPowerstone, 2
+  - Piece.m_isUpgrade, 0
+  - Piece.m_comfort, <comfortPowerstone>
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noRoofWear, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - StationExtension.m_stack, 0
+  - StationExtension.m_continousConnection, 0
+  floats:
+  - isBfvPowerstoneHealth, 0
+  - WearNTear.m_health, -4
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000
+  - StationExtension.m_maxStationDistance, 0
+  strings:
+  - WearNTear.m_broken, vfx_odin_despawn
+  - Piece.m_name, Powerstone <colorDragon>Dragon</color>
+  vecs:
+  - StationExtension.m_connectionOffset, 0,0,0
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Raider
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneRaider
+  ints:
+  - Piece.m_canBeRemoved, 0
+  - isBfvPowerstone, -1
+  - Piece.m_isUpgrade, 0
+  - Piece.m_comfort, <comfortPowerstone>
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noRoofWear, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  - StationExtension.m_stack, 0
+  - StationExtension.m_continousConnection, 0
+  floats:
+  - isBfvPowerstoneHealth, 0
+  - WearNTear.m_health, -4
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 15000
+  - StationExtension.m_maxStationDistance, 0
+  strings:
+  - WearNTear.m_broken, vfx_odin_despawn
+  - Piece.m_name, Powerstone <colorRaider>Raider</color>
+  vecs:
+  - StationExtension.m_connectionOffset, 0,0,0
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Brazier
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneBrazier
+  ints:
+  - isBfvPowerstoneBrazier, <par_1>
+  - Destructible.m_minToolTier, 1073741823
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - Aoe.m_hitOwner, 0
+  - Aoe.m_hitParent, 0
+  - Aoe.m_hitSame, 0
+  - Aoe.m_hitFriendly, 0
+  - Aoe.m_hitEnemy, 0
+  - Aoe.m_hitCharacters, 0
+  - Aoe.m_hitProps, 0
+  - Aoe.m_hitTerrain, 0
+  - Aoe.m_ignorePVP, 0
+  - Aoe.m_launchCharacters, 0
+  - Aoe.m_canRaiseSkill, 0
+  - Aoe.m_useTriggers, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+  - Aoe.m_radius, 0
+  - Aoe.m_hitInterval, 0
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Banner
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneBanner
+  ints:
+  - isBfvPowerstoneBanner, <par_1>
+  - Destructible.m_minToolTier, 1073741823
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Sign
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneSign
+  ints:
+  - isBfvPowerstoneSign, <par_1>
+  - Destructible.m_minToolTier, 1073741823
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  floats:
+  - WearNTear.m_health, -4
+  - health, -1
+  - DropOnDestroyed.m_spawnYOffset, 15000
+  - Piece.m_returnResourceHeightOffset, 15000
+  strings:
+  - text, <hpBarPowerstone5>
+  - WearNTear.m_broken, vfx_odin_despawn
+
+# ═══════════════════════════════════════════════════════════
+# Powerstone - Heal Spawner
+# ═══════════════════════════════════════════════════════════
+- name: isBfvPowerstoneHealSpawner
+  ints:
+  - isBfvPowerstoneHealSpawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - CreatureSpawner.m_spawnInterval, 1
+  - CreatureSpawner.m_setPatrolSpawnPoint, 1
+  - CreatureSpawner.m_spawnGroupID, 0
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  floats:
+  - CreatureSpawner.m_levelupChance, 0
+  - CreatureSpawner.m_respawnTimeMinuts, 10
+  - CreatureSpawner.m_triggerDistance, 100
+  - CreatureSpawner.m_spawnGroupRadius, 0
+  - CreatureSpawner.m_spawnerWeight, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound

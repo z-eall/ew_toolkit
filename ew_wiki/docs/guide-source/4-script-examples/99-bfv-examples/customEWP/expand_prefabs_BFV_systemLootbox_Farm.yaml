@@ -1,0 +1,242 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - Farm                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T0 Farm
+# ═══════════════════════════════════════════════════════════
+# Base
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, baselootspawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: baseloot
+    rot: 0,0,0
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T1 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmlootspawner1, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: farmloot1
+    triggerRules: true
+    rot: 180,0,0
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T1 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmfoodspawner1, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_barrel
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_barrel
+    data: farmfood1
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T2 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmlootspawner2, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: farmloot2
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T2 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmfoodspawner2, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_barrel
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_barrel
+    data: farmfood2
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T3 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmlootspawner3, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: farmloot3
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T3 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmfoodspawner3, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_barrel
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_barrel
+    data: farmfood3
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T4 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Plains
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmlootspawner4, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    rot: 180,0,0
+    data: farmloot4
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T4 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Plains
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmfoodspawner4, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_barrel
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_barrel
+    data: farmfood4
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T5 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmlootspawner5, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: farmloot5
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T5 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, farmfoodspawner5, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_barrel
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_barrel
+    data: farmfood5
+    triggerRules: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox Despawn Aesthetic                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_chest_wood, piece_chest_barrel
+  type: destroy
+  filters:
+  - int, chestnumba, 1;10
+  - int, chestnumba, 99
+  filterLimit: 1
+  spawn:
+  - prefab: vfx_BugRepellent
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Debugging                                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Fallback to remove sfx
+# - prefab: sfx_secretfound
+  # type: create
+  # fallback: true
+  # objects:
+  # - prefab: Spawner_Bat
+    # maxDistance: 1
+  # remove: true
+# Duplicated in systemLootbox_City
+
+

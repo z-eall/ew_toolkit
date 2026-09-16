@@ -1,0 +1,683 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - World Lootbox - Biomes                          ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Meadows
+# ═══════════════════════════════════════════════════════════
+- name: worldloot1
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 20
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 8;20
+    chance: 1
+  - prefab: Feathers
+    stack: 6;10
+    chance: 0.5
+  - prefab: ArrowBronze
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadHealthMinor
+    stack: 1;2
+    chance: 0.5
+  - prefab: MinceMeatSauce
+    stack: 1
+    chance: 0.5
+  - prefab: SwordBronze
+    stack: 1
+    chance: 0.05
+  - prefab: ShieldBronzeBuckler
+    stack: 1
+    chance: 0.05
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Black Forest
+# ═══════════════════════════════════════════════════════════
+- name: worldloot2
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 21
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 10;25
+    chance: 1
+  - prefab: Feathers
+    stack: 6;10
+    chance: 0.5
+  - prefab: ArrowFire
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadHealthMedium
+    stack: 1;2
+    chance: 0.5
+  - prefab: TurnipStew
+    stack: 1
+    chance: 0.3
+  - prefab: ShieldBanded
+    stack: 1
+    chance: 0.05
+  - prefab: KnifeChitin
+    stack: 1
+    quality: 2
+    chance: 0.05
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Swamp
+# ═══════════════════════════════════════════════════════════
+- name: worldloot3
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 22
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 15;40
+    chance: 1
+  - prefab: Feathers
+    stack: 6;12
+    chance: 0.3
+  - prefab: ArrowIron
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadStaminaMinor
+    stack: 1;2
+    chance: 0.5
+  - prefab: MeadPoisonResist
+    stack: 1;2
+    chance: 0.15
+  - prefab: Sausages
+    stack: 1
+    chance: 0.15
+  - prefab: ShieldIronBuckler
+    stack: 1
+    chance: 0.05
+  - prefab: SpearElderbark
+    stack: 1
+    quality: 2
+    chance: 0.05
+  - prefab: HelmetDverger
+    stack: 1
+    chance: 0.02
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Mountain
+# ═══════════════════════════════════════════════════════════
+- name: worldloot4
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 23
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 20;50
+    chance: 1
+  - prefab: ArrowSilver
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadHealthMedium
+    stack: 1;2
+    chance: 0.3
+  - prefab: MeadFrostResist
+    stack: 1;2
+    chance: 0.15
+  - prefab: OnionSoup
+    stack: 1
+    chance: 0.15
+  - prefab: WolfMeatSkewer
+    stack: 1
+    chance: 0.15
+  - prefab: KnifeSilver
+    stack: 1
+    chance: 0.05
+  - prefab: BowHuntsman
+    stack: 1
+    quality: 3
+    chance: 0.05
+  - prefab: MaceSilver
+    stack: 1
+    quality: 2
+    chance: 0.03
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Plains
+# ═══════════════════════════════════════════════════════════
+- name: worldloot5
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 24
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 25;60
+    chance: 1
+  - prefab: ArrowPoison
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadStaminaMedium
+    stack: 1;2
+    chance: 0.3
+  - prefab: BarleyWine
+    stack: 1;2
+    chance: 0.15
+  - prefab: Bread
+    stack: 1
+    chance: 0.2
+  - prefab: LoxPie
+    stack: 1
+    chance: 0.2
+  - prefab: SwordSilver
+    stack: 1
+    chance: 0.05
+  - prefab: KnifeBlackMetal
+    stack: 1
+    quality: 3
+    chance: 0.05
+  - prefab: AtgeirBlackmetal
+    stack: 1
+    quality: 2
+    chance: 0.03
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Mistlands
+# ═══════════════════════════════════════════════════════════
+- name: worldloot6
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 25
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 30;85
+    chance: 1
+  - prefab: ArrowCarapace
+    stack: 10;25
+    chance: 0.5
+  - prefab: MeadHealthMajor
+    stack: 1;2
+    chance: 0.1
+  - prefab: MeadStaminaLingering
+    stack: 1;2
+    chance: 0.1
+  - prefab: MeadEitrMinor
+    stack: 1;2
+    chance: 0.1
+  - prefab: MeadHasty
+    stack: 1
+    chance: 0.15
+  - prefab: SeekerAspic
+    stack: 1
+    chance: 0.15
+  - prefab: MeatPlatter
+    stack: 1
+    chance: 0.15
+  - prefab: SpearCarapace
+    stack: 1
+    quality: 3
+    chance: 0.05
+  - prefab: CrossbowArbalest
+    stack: 1
+    quality: 2
+    chance: 0.05
+  - prefab: SwordMistwalker
+    stack: 1
+    chance: 0.03
+  - prefab: AtgeirHimminAfl
+    stack: 1
+    chance: 0.03
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Ashlands
+# ═══════════════════════════════════════════════════════════
+- name: worldloot7
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 26
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 35;110
+    chance: 1
+  - prefab: BoltCarapace
+    stack: 10;20
+    chance: 0.5
+  - prefab: MeadHealthMajor
+    stack: 1;2
+    chance: 0.15
+  - prefab: MeadEitrMinor
+    stack: 1;2
+    chance: 0.15
+  - prefab: MeadHasty
+    stack: 1
+    chance: 0.15
+  - prefab: MashedMeat
+    stack: 1
+    chance: 0.15
+  - prefab: RoastedCrustPie
+    stack: 1
+    chance: 0.15
+  - prefab: MarinatedGreens
+    stack: 1
+    chance: 0.15
+  - prefab: MaceEldner
+    stack: 1
+    quality: 2
+    chance: 0.05
+  - prefab: ShieldFlametal
+    stack: 1
+    chance: 0.05
+  - prefab: THSwordSlayer
+    stack: 1
+    chance: 0.03
+  - prefab: CrossbowRipper
+    stack: 1
+    chance: 0.05
+  - prefab: AxeBerzerkr
+    stack: 1
+    quality: 2
+    chance: 0.03
+  - prefab: CharredCogwheel
+    stack: 1
+    chance: 0.03
+  - prefab: GemstoneRed
+    stack: 1
+    chance: 0.03
+  - prefab: GemstoneBlue
+    stack: 1
+    chance: 0.03
+  - prefab: GemstoneGreen
+    stack: 1
+    chance: 0.03
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - World Lootbox - POIs                            ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Fallen City
+# ═══════════════════════════════════════════════════════════
+- name: fallencity_loot
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 27
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Treasure
+  items:
+  - prefab: Coins
+    stack: 10;50
+    chance: 1
+  - prefab: Chain
+    stack: 1
+    chance: 0.1
+  - prefab: Root
+    stack: 3;6
+    chance: 0.1
+  - prefab: MeadHealthMedium
+    stack: 1;2
+    chance: 0.1
+  - prefab: MeadStaminaMedium
+    stack: 1;2
+    chance: 0.1
+  - prefab: MeadHasty
+    stack: 1
+    chance: 0.05
+  - prefab: MeadFrostResist
+    stack: 1;2
+    chance: 0.05
+  - prefab: MeadPoisonResist
+    stack: 1;2
+    chance: 0.05
+  - prefab: MeadSwimmer
+    stack: 1
+    chance: 0.05
+  - prefab: MeadStrength
+    stack: 1
+    chance: 0.05
+  - prefab: ArrowFrost
+    stack: 15;35
+    chance: 0.1
+  - prefab: BoltBone
+    stack: 10;20
+    chance: 0.05
+  - prefab: MaceIron
+    stack: 1
+    quality: 4
+    chance: 0.05
+  - prefab: AtgeirIron
+    stack: 1
+    quality: 3
+    chance: 0.05
+  - prefab: ShieldIronBuckler
+    stack: 1
+    quality: 3
+    chance: 0.05 
+  - prefab: BowDraugrFang
+    stack: 1
+    quality: 2
+    chance: 0.05   
+  - prefab: SpearJavelinSpirit
+    stack: 1
+    quality: 1
+    chance: 0.05
+  - prefab: Blackrot
+    stack: 1;3
+    chance: 0.1
+    
+# ═══════════════════════════════════════════════════════════
+# Lootbox - Goblin Dungeons
+# ═══════════════════════════════════════════════════════════
+
+# Lootbox
+- name: loot_goblindungeon
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_targetNonPlayerBuilt, 0
+  - chestnumba, 28
+  - loot_goblindungeon, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Goblin Treasure"
+  items:
+  - prefab: MeadHealthMedium
+    stack: 1
+    chance: 0.5
+  - prefab: MeadStaminaMedium
+    stack: 1
+    chance: 0.5
+  - prefab: BoltBlackmetal
+    stack: 5;10
+    chance: 0.25
+  - prefab: ArrowFirePlains
+    stack: 25;50
+    chance: 0.25
+  - prefab: MeadBzerker
+    stack: 1
+    chance: 0.25
+  - prefab: BloodPudding
+    stack: 2;5
+    chance: 0.25
+  - prefab: WolfKebab
+    stack: 2;5
+    chance: 0.25
+  - prefab: Flax
+    stack: 20;50
+    chance: 1
+  - prefab: Barley
+    stack: 20;50
+    chance: 1
+  - prefab: BombBlob_Tar
+    stack: 1;2
+    chance: 0.15
+  - prefab: FeastPlains_Material
+    stack: 1
+    chance: 0.1
+  - prefab: TrinketSilverDamage
+    stack: 1
+    chance: 0.08
+  - prefab: TrinketSilverResist
+    stack: 1
+    chance: 0.08
+  - prefab: TrinketBlackDamageHealth
+    stack: 1
+    chance: 0.06
+  - prefab: Kit_Karve
+    stack: 1
+    chance: 0.07
+  - prefab: SchematicDrakkarTent
+    stack: 1
+    chance: 0.05
+  - prefab: SchematicAshlandsDrakkarTent
+    stack: 1
+    chance: 0.03
+  - prefab: SchematicDrakkarAnchor
+    stack: 1
+    chance: 0.03
+  - prefab: SchematicAshlandsDrakkarAnchor
+    stack: 1
+    chance: 0.03
+  - prefab: Kit_BatteringRamBM
+    stack: 1
+    chance: 0.05
+
+# ═══════════════════════════════════════════════════════════
+# Elderoot Data
+# ═══════════════════════════════════════════════════════════
+- name: elderoot
+  rotation: 0,80,0
+  ints:
+  - elderoot, 1
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static Data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Meadows
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner1
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner1, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 180
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Black Forest
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner2
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner2, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 180
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Swamp
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner3
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner3, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 180
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Mountain
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner4
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner4, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 240
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Plains
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner5
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner5, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 360
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Mistlands
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner6
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner6, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 360
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Ashlands
+# ═══════════════════════════════════════════════════════════
+- name: worldlootspawner7
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - worldlootspawner7, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 480
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# ═══════════════════════════════════════════════════════════
+# Spawner - Fallen City
+# ═══════════════════════════════════════════════════════════
+- name: fallencity_loot_spawner
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - fallencity_loot_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 240
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# ═══════════════════════════════════════════════════════════
+# Spawner - Goblin Dungeons
+# ═══════════════════════════════════════════════════════════
+- name: goblindungeon_loot_spawner
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - goblindungeon_loot_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10000
+  - CreatureSpawner.m_respawnTimeMinuts, 240
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# ═══════════════════════════════════════════════════════════
+# Spawner - Elderoot Mine - 2hr
+# ═══════════════════════════════════════════════════════════
+- name: elderoot_spawner2hr
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - elderoot_spawner2hr, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 60
+  - CreatureSpawner.m_respawnTimeMinuts, 120
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Elderoot Mine - 6hr
+# ═══════════════════════════════════════════════════════════
+- name: elderoot_spawner6hr
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - elderoot_spawner6hr, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 60
+  - CreatureSpawner.m_respawnTimeMinuts, 360
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+
+
+
+
+
+ 

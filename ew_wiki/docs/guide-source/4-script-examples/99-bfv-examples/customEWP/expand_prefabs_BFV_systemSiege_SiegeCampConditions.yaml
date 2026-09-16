@@ -1,0 +1,347 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Siege Camp Conditions                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+
+# ═══════════════════════════════════════════════════════════
+# Check siege camp conditions before spawn
+# ═══════════════════════════════════════════════════════════
+- prefab: siegecamp_wood, siegecamp_mini, siegecamp_dverger, siegecamp_stone
+  type: create
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: checkSiegeCampSpawnCondition
+
+- prefab: siegecamp_wood, siegecamp_mini, siegecamp_dverger, siegecamp_stone
+  type: poke, checkSiegeCampSpawnCondition
+  bannedKeys: adminmode 1
+  bannedObjects:
+  - prefab: goblin_trashpile
+    filter: int, isSiegeCampCenter, 1
+    maxDistance: 3
+  drops: true
+  remove: true
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,1
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Must be at a siege camp location
+    4: bool, true
+    
+- prefab: siegecamp_wood, siegecamp_mini, siegecamp_dverger, siegecamp_stone
+  type: poke, checkSiegeCampSpawnCondition
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: AshlandsTreeStump2
+    filter: int, isCapturedByTeam, <load_<pid>/team=-1>
+    maxDistance: 300
+  drops: true
+  remove: true
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,1
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Can't build near owned castle
+    4: bool, true
+       
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Siege Camp - TNT                            ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_siegestation
+  type: destroy
+  commands:
+  - s A Siege Camp has been broken!
+  filter: int, isBfvSiegeCampPiece, 1
+  # bannedKeys: adminmode 1
+  spawn:
+  - prefab: fermenter
+    data: isBfvSiegeCampTNT
+    rot: 180,0,0
+    delay: 15
+    triggerRules: true
+  - prefab: vfx_Place_charcoalkiln
+    delay: 15
+  - prefab: sfx_build_hammer_wood
+    delay: 15
+  poke:
+  - prefab: Player
+    maxDistance: 250
+    parameter: printMsgSiegeCampBroken
+
+- prefab: Player
+  type: poke, printMsgSiegeCampBroken
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, A Siege Camp has been broken!
+    3: int, 1
+    overwrite: true
+    repeat: 2
+    repeatInterval: 1
+  spawns:
+  - sfx_siegecamp_destroyed, 0,0,0, 1
+
+- prefab: fermenter
+  type: destroy
+  filter: int, isBfvSiegeCampTNT, 1
+  bannedKeys: adminmode 1
+  spawn:
+  - prefab: fx_fireball_staff_explosion
+    pos: 0,0,1
+    delay: 2
+  - prefab: vfx_troll_rock_destroyed
+    pos: 0,0,1
+    delay: 2
+  - prefab: fx_shaman_fireball_expl
+    pos: 0,0,1
+    delay: 3
+  - prefab: fx_fireskeleton_nova
+    delay: 2.5
+  - prefab: DvergerStaffFire_fire_aoe
+    delay: 5
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, 5...
+    4: bool, false
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, 4..
+    4: bool, false
+    delay: 1
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, 3..!
+    4: bool, false
+    delay: 2
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, 2..!!
+    4: bool, false
+    delay: 3
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, 1!!!
+    4: bool, false
+    delay: 4
+  poke:
+  - prefab: Piece, LocationProxy
+    filter: int, isBfvSiegeCampPiece, 1
+    delay: 5
+    maxDistance: 30
+    parameter: removeSiegeCamp
+
+- prefab: Piece, LocationProxy
+  type: poke, removeSiegeCamp
+  poke:
+  - self: true
+    delay: <randf_0_7>
+    parameter: delaySiegeCampEffect
+
+- prefab: Piece, LocationProxy
+  type: poke, delaySiegeCampEffect
+  filter: int, isBfvSiegeCampPiece, 1
+  remove: true
+  triggerRules: true
+  # spawn:
+  # - prefab: randomSiegeCampTNTEffect
+  # objectRpc:
+  # - name: RPC_CreateFragments
+    # target: all
+    
+    
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Siege Camp - Reset                          ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+# Remove Placeholder when Camp is Deployed
+- prefab: piece_siegestation
+  type: create
+  filter: int, isBfvSiegeCampPiece, 1
+  poke:
+  - prefab: stone_wall_1x1, stone_wall_2x1, stake_wall, CharredBanner2, fire_pit, Rock_4
+    maxDistance: 50
+    filter: int, isSiegeCampPiece, 1
+    parameter: RemoveCampPlaceholder
+  - prefab: goblin_trashpile
+    limit: 1
+    maxDistance: 50
+    filter: int, isSiegeCampPiece, 1
+    parameter: sinkCampPlaceholderCenter
+    
+- prefab: stone_wall_1x1, stone_wall_2x1, stake_wall, CharredBanner2, fire_pit, Rock_4
+  type: poke, RemoveCampPlaceholder
+  remove: true
+    
+- prefab: goblin_trashpile
+  type: poke, sinkCampPlaceholderCenter    
+  swap:
+  - prefab: <prefab>
+    pos: 0,0,-30
+  
+# Respawn Placeholder when a Camp is Destroyed
+  
+- prefab: LocationProxy
+  type: destroy
+  filter: int, isBfvSiegeCampPiece, 1
+  poke:
+  - prefab: goblin_trashpile
+    filter: int, isSiegeCampPiece, 1
+    limit: 1
+    maxDistance: 50
+    minHeight: 20
+    delay: 0.1
+    parameter: raiseCampPlaceholderCenter
+
+- prefab: goblin_trashpile
+  type: poke, raiseCampPlaceholderCenter
+  swap:
+  - prefab: <prefab>
+    pos: 0,0,30
+    data: float, siegeCampCooldown, <time>
+    triggerRules: true
+
+- prefab: goblin_trashpile
+  type: create
+  filter: int, isSiegeCampCenter, 1
+  bannedKeys: adminmode 1
+  delay: 5
+  spawns:
+  - vfx_Place_refinery,0,0,1
+  - fire_pit,0.048,-0.019,0.5,76.92589448321912,0,0, SiegeCampFireplace
+  - CharredBanner2,1.128,-4.116,0.28,-76.0631682376352,1.1092970380351104,15.783627428205753, SiegeCampPiece
+  - CharredBanner2,0.127,1.754,0.284,-166.0441575018357,1.0885896450939185,15.77280091226958, SiegeCampPiece
+  - CharredBanner2,-6.494,-0.676,0.529,170.32603243591845,-54.75804368725562,51.84052199850688, SiegeCampPiece
+  - CharredBanner2,1.182,1.263,0.284,25.107641364518724,1.0848583032809695,15.787779629930347, SiegeCampPiece
+  - Rock_4,0.321,-0.781,-0.375,0.6965538698630105,-0.02164864861027084,22.484919981207007, SiegeCampPiece
+  - Rock_4,1.316,0.639,-0.275,158.1381274216065,0.009280078514530141,22.549414416393528, SiegeCampPiece
+  - Rock_4,-0.08,-0.848,-0.275,-179.30344613013702,-0.02164864861027084,22.484919981207007, SiegeCampPiece
+  - Rock_4,-1.147,0.493,-0.275,-66.84006295512238,0,0, SiegeCampPiece
+  - Rock_4,-0.565,1.175,-0.275,-21.900868825474255,0,0, SiegeCampPiece
+  - Rock_4,0.943,-0.189,-0.275,79.33774355356525,0.05442958224427228,22.51902577864648, SiegeCampPiece
+  - Rock_4,0.407,0.888,-0.275,-89.41207689291444,0.04824309923170361,22.508874788394486, SiegeCampPiece
+  - stake_wall,4.865,-0.301,-0.746,-120.31796337443018,-17.122797268320515,7.893551909146852, SiegeCampPiece
+  - stake_wall,3.242,4.343,0.008,-151.81028590952948,50.56906717648204,24.832993532210477, SiegeCampPiece
+  - stake_wall,-6.73,-0.439,-0.221,84.55428401919832,50.4908021787298,24.872217079963104, SiegeCampPiece
+  - stake_wall,2.692,1.569,0.008,-16.692191461844427,50.537972347768125,24.863425043661536, SiegeCampPiece
+  - stake_wall,1.668,-4.491,-0.554,-30.304691971514604,-17.101500510768066,7.902118396469493, SiegeCampPiece
+  - stake_wall,-3.77,3.49,-0.624,116.00613897744778,-17.124058713148443,7.890363286417908, SiegeCampPiece
+  - stake_wall,-1.739,3.705,-0.746,14.665235108501978,-17.161982886545125,7.83612733033846, SiegeCampPiece
+  - stone_wall_1x1,4.303,-2.104,0.091,-8.462736051151136,-1.6701946234824416,5.412202606651829, SiegeCampPiece
+  - stone_wall_1x1,5.171,-1.289,1.399,-36.5404367088717,0.05631475202122297,5.65798700079068, SiegeCampPiece
+  - stone_wall_1x1,4.151,0.311,1.666,-115.32124472969419,0,0, SiegeCampPiece
+  - stone_wall_1x1,4.799,-0.594,1.504,-115.34315196731704,0.0513188599742589,16.906286642626824, SiegeCampPiece
+  - stone_wall_1x1,-1.899,3.959,1.504,19.66491536902898,-0.014884459797490415,16.91524576481402, SiegeCampPiece
+  - stone_wall_1x1,1.813,3.53,0.391,36.57454431732919,-1.6551963635623812,5.37068558968678, SiegeCampPiece
+  - stone_wall_1x1,-4.635,0.042,0.162,137.7917221949208,-1.5999098227752595,5.409865175705468, SiegeCampPiece
+  - stone_wall_1x1,-3.49,3.598,1.275,121.01899474451085,0.03941721157241827,16.889521636395013, SiegeCampPiece
+  - stone_wall_1x1,2.28,-3.777,1.366,-25.293705870330722,0,0, SiegeCampPiece
+  - stone_wall_1x1,-0.801,3.777,1.666,19.6972446768982,0,0, SiegeCampPiece
+  - stone_wall_1x1,-3.882,2.557,1.437,120.9224365292518,0,0, SiegeCampPiece
+  - stone_wall_1x1,1.375,-4.425,1.24,-25.2334453000567,0.0009173250672182313,16.858035785154716, SiegeCampPiece
+  - stone_wall_1x1,2.478,2.335,0.391,-98.43906044153213,-1.6342655901284717,5.40317456429134, SiegeCampPiece
+  - stone_wall_2x1,4.909,-0.861,0.666,-126.51116010316564,0,0, SiegeCampPiece
+  - stone_wall_2x1,2.715,-3.345,0.666,-36.47138226485416,0,0, SiegeCampPiece
+  - stone_wall_2x1,-2.556,3.997,0.309,8.62645655822374,-2.1721163690094505,-10.989995144952584, SiegeCampPiece
+  - stone_wall_2x1,4.611,-1.592,0.539,132.44416819742398,-2.243674534198062,-11.055583827812637, SiegeCampPiece
+  - stone_wall_2x1,-4.003,1.956,0.637,109.69692007672717,0,0, SiegeCampPiece
+  - stone_wall_2x1,3.719,0.746,0.666,-126.51116010316564,0,0, SiegeCampPiece
+  - stone_wall_2x1,-3.329,3.839,0.737,109.69692007672717,0,0, SiegeCampPiece
+  - stone_wall_2x1,0.377,-4.237,0.239,-137.60341796895887,-2.1274981292897364,-11.047040888911104, SiegeCampPiece
+  - stone_wall_2x1,-0.188,3.775,0.666,8.489724351469675,0,0, SiegeCampPiece
+  - stone_wall_2x1,1.109,-4.535,0.666,-36.47138226485416,0,0, SiegeCampPiece
+  - stone_wall_2x1,-2.166,4.069,0.666,8.489724351469675,0,0, SiegeCampPiece
+
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Siege Camp - Build Restriction              ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+# Nobuild in Camp Ruins (Placeholder)
+- prefab: Piece
+  excludePrefab: siegecamp_mini, siegecamp_wood, siegecamp_stone, siegecamp_dverger, piece_siegestation, BatteringRam, BatteringRamBM, BatteringRamBronze, Catapult, CatapultIron, CatapultSilver, fermenter, BetterWard_Type4, BetterWard_Type3
+  type: create
+  bannedFilters:
+  - int, isBfvSiegeCampPiece, 1
+  - int, pickedUp, 1
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: goblin_trashpile
+    filter: int, isSiegeCampCenter, 1
+    maxDistance: 50
+    maxHeight: 10
+  remove: true
+  drops: true
+  delay: 0.2
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Can't build this here
+    4: bool, true
+
+# Nobuild in Siege Camp
+- prefab: Piece
+  excludePrefab: piece_sharpstakes, piece_stakewall_blackwood, piece_dvergr_sharpstakes, piece_trap_troll, piece_turret, BatteringRam, BatteringRamBM, BatteringRamBronze, Catapult, CatapultIron, CatapultSilver, fire_pit, bonfire, BetterWard_Type4, BetterWard_Type3, fermenter, piece_siegestation, Karve, Raft, VikingShip, VikingShip_Ashlands, Snekke, Holk, Knarr, wolftotem, dragontotem, wolfemblem, dragonemblem, goblin_trashpile
+  type: create
+  bannedFilters:
+  - int, isBfvSiegeCampPiece, 1
+  - int, pickedUp, 1
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: piece_siegestation
+    filter: int, isBfvSiegeCampPiece, 1
+    maxDistance: 50
+  remove: true
+  drops: true
+  delay: 0.2
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Can't build this near a Siege Camp
+    4: bool, true
+    
+    
+  
+  

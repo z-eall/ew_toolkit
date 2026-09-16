@@ -1,0 +1,340 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Elderoot Mine             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - TRASHROOT
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: trashroot_spawner
+  ints:
+  - trashroot_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 6
+  - CreatureSpawner.m_respawnTimeMinuts, 0.2
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: trashroot
+  ints:
+  - trashroot, 1
+  floats:
+  - RandomSkillFactor, 1.4
+  - MonsterAI.m_alertRange, 20
+  - Humanoid.m_health, 250
+  - max_health, 250
+  strings:
+  - Humanoid.m_name, ""
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - ROOTER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: rooter_spawner
+  ints:
+  - rooter_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 6
+  - CreatureSpawner.m_respawnTimeMinuts, 0.7
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: rooter
+  ints:
+  - aggravated, 1
+  - MonsterAI.m_aggravatable, 1
+  - MonsterAI.m_passiveAggresive, 1
+  - MonsterAI.m_alert, 1
+  - rooter, 1
+  floats:
+  - MonsterAI.m_alertRange, 20
+  - Humanoid.m_health, 380
+  - Humanoid.turnSpeed, 400
+  - max_health, 380
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BLOCKER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: blocker_spawner
+  ints:
+  - blocker_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 9
+  - CreatureSpawner.m_respawnTimeMinuts, 2
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: blocker
+  ints:
+  - CharacterTimedDestruction.m_triggerOnAwake, 0
+  - aggravated, 1
+  - MonsterAI.m_aggravatable, 1
+  - MonsterAI.m_passiveAggresive, 1
+  - MonsterAI.m_alert, 1
+  - rooter, 1
+  floats:
+  - MonsterAI.m_alertRange, 20
+  - Humanoid.m_health, 650
+  - Humanoid.turnSpeed, 400
+  - max_health, 650
+  - RandomSkillFactor, 1.5
+  strings:
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - CHASER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: chaser_spawner
+  ints:
+  - chaser_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 3
+  - CreatureSpawner.m_respawnTimeMinuts, 2
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: chaser
+  ints:
+  - chaser, 1
+  floats:
+  - RandomSkillFactor, 1.3
+  - MonsterAI.m_alertRange, 20
+  - Humanoid.m_health, 80
+  - max_health, 80
+  - Humanoid.m_runSpeed, 6
+  - Humanoid.m_walkSpeed, 6
+  - Humanoid.m_speed, 6
+  strings:
+  - Humanoid.m_name, ""
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BURROWER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: burrower_spawner
+  ints:
+  - burrower_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 30
+  - CreatureSpawner.m_respawnTimeMinuts, 20
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: burrower
+  ints:
+  - burrower, 1
+  - MonsterAI.m_randomFly, 1
+  - Humanoid.m_flying, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - RandomSkillFactor, 1.7
+  - Humanoid.m_health, 300
+  - max_health, 300
+  - MonsterAI.m_jumpInterval, 2
+  - Humanoid.m_jumpForce, 3
+  - Humanoid.m_jumpForceForward, -20
+  - Humanoid.m_flyTurnSpeed, 2000
+  strings:
+  - Humanoid.m_name, "Burrower"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - PIERCER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: piercer_spawner
+  ints:
+  - piercer_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: piercer
+  ints:
+  - piercer, 1
+  - MonsterAI.m_randomFly, 1
+  floats:
+  - RandomSkillFactor, 2.4
+  - Humanoid.m_health, 1800
+  - max_health, 1800
+  - MonsterAI.m_flyAltitudeMax, 0.1
+  - MonsterAI.m_flyAltitudeMin, 0.1
+  - Humanoid.m_flySlowSpeed, 10
+  - Humanoid.m_flyFastSpeed, 10
+  - MonsterAI.m_chanceToLand, 10
+  strings:
+  - Humanoid.m_name, "Piercer"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BERGMANN
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: bergmann_spawner
+  ints:
+  - bergmann_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 25
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: bergmann
+  ints:
+  - bergmann, 1
+  - Humanoid.m_flying, 1
+  floats:
+  - RandomSkillFactor, 5
+  - Humanoid.m_health, 170
+  - max_health, 170
+  - MonsterAI.m_flyAltitudeMax, 3
+  - MonsterAI.m_flyAltitudeMin, 0.1
+  - MonsterAI.m_flyAbsMinAltitude, 1
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDuration, 2
+  - MonsterAI.m_circleTargetDistance, 5
+  - Humanoid.m_flyFastSpeed, 5
+  - Humanoid.m_flyTurnSpeed, 360
+  strings:
+  - Humanoid.m_name, "Bergmann"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - CAVEBAT
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: cavebat_spawner
+  ints:
+  - cavebat_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 30
+  - CreatureSpawner.m_respawnTimeMinuts, 30
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: cavebat
+  ints:
+  - cavebat, 1
+  floats:
+  - RandomSkillFactor, 5
+  - Humanoid.m_flyFastSpeed, 7
+  strings:
+  - Humanoid.m_name, "Cavebat"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BOSS - ELDEN KING
+# ═══════════════════════════════════════════════════════════
+# Creature
+- name: eldenking
+  ints:
+  - eldenking, 1
+  - Humanoid.m_boss, 1
+  floats:
+  - Humanoid.m_health, 20000
+  - max_health, 20000
+  - RandomSkillFactor, 4
+  strings:
+  - MonsterAI.m_alertedMessage, "<color=orange>Nature is calling... return to the source, norsemen..."
+  - MonsterAI.m_deathMessage, "<color=orange>The Elden King returned to the source..." 
+  - Humanoid.m_name, "Elden King"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# Loot drop  
+- name: loot_eldenking
+  position: 4251,-2618,4361.5
+  rotation: 90,0,0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - loot_eldenking, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Elden King's Chest"
+  items:
+  - prefab: Coins
+    stack: 200;400
+    chance: 1
+  - prefab: Hearthstone
+    chance: 0.5
+    stack: 1;3
+  - prefab: SledgeElder
+    chance: 1
+    stack: 1
+  - prefab: BombBile
+    chance: 0.5
+    stack: 5;10
+  - prefab: ArmorRootChest
+    chance: 1
+    quality: 4
+    durability: 1100
+    stack: 1
+  - prefab: MeadHealthLingering
+    chance: 0.5
+    stack: 1;3
+  - prefab: MeadStaminaLingering
+    chance: 0.5
+    stack: 1;3
+  - prefab: TrinketIronStamina
+    chance: 0.2
+    stack: 1
+  - prefab: TrinketBronzeStamina
+    chance: 0.2
+    stack: 1
+
+# For NPC dialogue - OFF
+- name: elderSpawner_off
+  ints:
+  - elderSpawner, 1
+  - elderSpawner_off, 1
+  strings:
+  - KGnpcModelOverride, AncientSeed
+  - KGnpcDialogue, eldersummon_off
+
+# For NPC dialogue - ON
+- name: elderSpawner_on
+  ints:
+  - elderSpawner, 1
+  - elderSpawner_on, 1
+  floats:
+  - stamp, <time>
+  strings:
+  - KGnpcNameOverride, <size=0>Eldenflame</size>
+  - KGnpcModelOverride, EvilHeart_Forest
+  - KGnpcDialogue, eldersummon
+  

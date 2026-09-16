@@ -1,0 +1,166 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Vanilla Control           ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# GENERAL - ABOMINATION
+# ═══════════════════════════════════════════════════════════
+# Loot drop
+# Level 2 = 4 Roots
+# Level 3 = 8 Roots
+# Level 4 = 12 Roots
+- prefab: Abomination
+  type: destroy
+  filters:
+  - int, level, 2
+  - int, level, 3
+  - int, level, 4
+  filterLimit: 1
+  spawn:
+  - prefab: Root
+    data: int, stack, <mul_4_<sub_<int_level=1>_1>>
+    delay: 8 # Abom ragdoll has 8s ttl
+    
+# ═══════════════════════════════════════════════════════════
+# GENERAL - CREATURE - ABYSSAL DREAD
+# ═══════════════════════════════════════════════════════════
+
+- prefab: Serpent
+  type: create
+  weight: 0.05
+  bannedObjects:
+  - prefab: Serpent
+    maxDistance: 1
+  swap:
+  - prefab: Serpent
+    data: abyssalserpent
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - ASHLANDS REDUCTION
+# ═══════════════════════════════════════════════════════════
+# Disabled due to EWS implemented
+# - prefab: Charred_Melee, Charred_Archer, Volture, Charred_Twitcher, Morgen, Morgen_NonSleeping
+  # type: create
+  # poke:
+  # - self: true
+    # parameter: ashlandsReduction
+
+# - prefab: Charred_Melee, Charred_Archer, Volture, Charred_Twitcher, Morgen, Morgen_NonSleeping
+  # type: poke, ashlandsReduction
+  # weight: 0.25
+  # biomes: AshLands
+  # remove: true
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - YAGLUTH
+# ═══════════════════════════════════════════════════════════
+# Print message upon Yagluth spawn
+- prefab: GoblinKing
+  type: create
+  commands:
+  - s YAGLUTH HAS BEEN SUMMONED!
+  - broadcast center YAGLUTH HAS BEEN SUMMONED!
+
+# Print message upon Yagluth death
+- prefab: GoblinKing
+  type: destroy
+  commands:
+  - s YAGLUTH HAS BEEN SLAIN!
+  - broadcast center YAGLUTH HAS BEEN SLAIN!
+  - wait 2000;broadcast center YAGLUTH HAS BEEN SLAIN!
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - SEEKER QUEEN
+# ═══════════════════════════════════════════════════════════
+# Print message upon Queen death
+- prefab: SeekerQueen
+  type: destroy
+  commands:
+  - s THE QUEEN HAS BEEN SLAIN!
+  - wait 3000;broadcast center THE QUEEN HAS BEEN SLAIN!
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - FADER
+# ═══════════════════════════════════════════════════════════
+# Print message upon Fader spawn
+- prefab: Fader
+  type: create
+  commands:
+  - s THE EMERALD FLAME HAS BEEN SUMMONED IN ASHENGARD!
+
+# Print message upon Fader death
+- prefab: Fader
+  type: destroy
+  commands:
+  - s THE EMERALD FLAME HAS BEEN SLAIN!
+  - wait 5000;broadcast center <color=#82e8a4>FADER HAS BEEN SLAIN!
+  - wait 8000;broadcast center <color=#82e8a4>Now his head must be brought to Odin's Altar...
+  - wait 11000;broadcast center <color=#82e8a4>And bring forth the reign in Valhalla!
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - General - Boss Loot Control                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# GENERAL - BOSS LOOT CONTROL - RAGDOLL
+# ═══════════════════════════════════════════════════════════
+# Remove Ragdoll upon create by its own TTL
+- prefab: eikthyr_ragdoll, gdking_Ragdoll, GoblinKing_ragdoll, fx_Fader_Ragdoll
+  type: create
+  remove: true
+  removeDelay: <add_-1_<float_Ragdoll.m_ttl=5>>
+  spawn:
+  - prefab: <effect_<safeprefab>>
+    delay: <add_-1_<float_Ragdoll.m_ttl=5>>
+  - prefab: <trophy_<safeprefab>>
+    delay: <add_-1_<float_Ragdoll.m_ttl=5>>
+  poke:
+  - prefab: Player
+    maxDistance: <rangeBossDropPerPlayer>
+    delay: <add_-1_<float_Ragdoll.m_ttl=5>>
+    parameter: bossDropPerPlayer <safeprefab>
+
+# Boss drop per player
+- prefab: Player
+  type: poke, bossDropPerPlayer
+  spawn:
+  - prefab: <bossDrop_<par_1>>
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Treasure dropped!
+    4: bool, true
+
+# ═══════════════════════════════════════════════════════════
+# GENERAL - BOSS LOOT CONTROL - CHARACTER DROP
+# ═══════════════════════════════════════════════════════════
+# Change CharacterDrop offset upon create
+- prefab: Bonemass, Dragon, SeekerQueen
+  type: create
+  poke:
+  - self: true
+    parameter: changeBossDropOffset
+
+- prefab: Bonemass, Dragon, SeekerQueen
+  type: poke, changeBossDropOffset
+  data: isCharacterDropY1500
+
+# Boss drop per player
+- prefab: Bonemass, Dragon, SeekerQueen
+  type: destroy
+  spawn:
+  - prefab: <trophy_<safeprefab>>
+  poke:
+  - prefab: Player
+    maxDistance: <rangeBossDropPerPlayer>
+    parameter: bossDropPerPlayer <prefab>

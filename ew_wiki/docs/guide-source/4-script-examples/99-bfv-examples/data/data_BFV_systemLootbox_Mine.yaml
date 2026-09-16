@@ -1,0 +1,166 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - Mine                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T1 Mine
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- name: mineloot1
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 13
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: SurtlingCore
+    stack: 5;10
+    chance: 1
+  - prefab: Carrot
+    chance: 0.5
+    stack: 8;16
+  - prefab: DeerHide
+    chance: 0.3
+    stack: 5;10
+  - prefab: DeerMeat
+    chance: 0.3
+    stack: 5;10
+  - prefab: Flint
+    chance: 1
+    stack: 8;14
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T2 Mine
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- name: mineloot2
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 14
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: SurtlingCore
+    stack: 8;16
+    chance: 1
+  - prefab: Obsidian
+    chance: 1
+    stack: 10;20
+  - prefab: SilverOre
+    chance: 1
+    stack: 8;16
+  - prefab: Turnip
+    chance: 0.5
+    stack: 8;16
+  - prefab: Onion
+    chance: 0.5
+    stack: 5;10
+  - prefab: WolfMeat
+    chance: 0.3
+    stack: 5;10
+  - prefab: WolfPelt
+    chance: 0.3
+    stack: 5;10
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T3 Mine
+# ═══════════════════════════════════════════════════════════
+# Plains
+- name: mineloot3
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 15
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: SurtlingCore
+    stack: 10;16
+    chance: 1
+  - prefab: BlackMetalScrap
+    chance: 1
+    stack: 16;32
+  - prefab: SilverOre
+    chance: 0.5
+    stack: 6;12
+  - prefab: Onion
+    chance: 0.5
+    stack: 8;16
+  - prefab: LoxMeat
+    chance: 0.3
+    stack: 4;8
+  - prefab: LoxPelt
+    chance: 0.3
+    stack: 4;8
+  - prefab: Barley
+    chance: 0.3
+    stack: 8;16
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static Data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Black Forest
+# ═══════════════════════════════════════════════════════════
+- name: minelootspawner1
+  ints:
+  - minelootspawner1, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Mountain
+# ═══════════════════════════════════════════════════════════
+- name: minelootspawner2
+  ints:
+  - minelootspawner2, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Plains
+# ═══════════════════════════════════════════════════════════
+- name: minelootspawner3
+  ints:
+  - minelootspawner3, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+
+
+
+
+ 

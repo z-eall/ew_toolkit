@@ -1,0 +1,206 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Progression - Realtime schedule                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Add real day count upon 
+# ═══════════════════════════════════════════════════════════
+- type: realtime, hour 22
+  exec: <save++_bfvrealday>
+
+# - type: realtime, minute 0
+  # commands:
+  # - s Season Time = <realtime_HH:mm_1> day <par_3>
+
+- type: key, bfvrealday 2,5,9,14,19,22
+  commands:
+  - s <upper_<msgUnlockBossDay<par_1>>>
+
+# - type: key, bfvrealday 7,14,21
+  # exec: <save_truceday_1>
+
+# - type: key, bfvrealday 1;6,8;13,15;20
+  # exec: <save_truceday_0>
+
+- type: key, bfvrealday
+  poke:
+  - prefab: LocationProxy
+    filters:
+    # - int, location, -316818231 # Skip Eikthyr
+    - int, location, 1828406738
+    - int, location, -146537656
+    - int, location, 1225607547
+    - int, location, -221799126
+    - int, location, -201398907
+    filterLimit: 1
+    maxDistance: 20000
+    parameter: findBossAltar
+  - prefab: dungeon_queen_door
+    filter: int, isBossDoor, 1
+    maxDistance: 20000
+    parameter: findBossDoor
+
+# ═══════════════════════════════════════════════════════════
+# FOR ALTARS
+# ═══════════════════════════════════════════════════════════
+- prefab: LocationProxy
+  type: poke, findBossAltar
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: checkRealDayLock <calculateRealDayLock>
+
+- prefab: LocationProxy
+  type: poke, checkRealDayLock true
+  data: unlockBossAltar
+  # commands:
+  # - s THE SUMMON OF <upper_<nameBoss_<int_location=0>>> IS NOW UNLOCKED!
+
+- prefab: LocationProxy
+  type: poke, checkRealDayLock false
+  data: lockBossAltar
+  # commands:
+  # - s <upper_<nameBoss_<int_location=0>>> CAN'T BE SUMMONED NOW!
+
+# ═══════════════════════════════════════════════════════════
+# FOR DOORS
+# ═══════════════════════════════════════════════════════════
+- prefab: dungeon_queen_door
+  type: poke, findBossDoor
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: checkRealDayLock <ge_<load_bfvrealday=1>_<realDayLock_<nameBoss_<prefab>>>>
+
+- prefab: dungeon_queen_door
+  type: poke, checkRealDayLock true
+  data: unlockBossDoor
+  # commands:
+  # - s THE SUMMON OF <upper_<nameBoss_<int_location=0>>> IS NOW UNLOCKED!
+
+- prefab: dungeon_queen_door
+  type: poke, checkRealDayLock false
+  data: lockBossDoor
+
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Siege/Raid Window                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- type: realtime, minute * 15;23,0;3
+  exec: |
+    <save_raidwindow_1>
+
+- type: realtime, minute * 4;14
+  exec: |
+    <save_raidwindow_0>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Daily Restart Notification                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+
+- type: realtime, minute 50 7
+  commands:
+  - s Server daily restart in 10 minutes.
+  - s Please move to a safe location and log out manually to avoid any potential rollback or loss of progress.
+  - s You may log back in few minutes after the restart.
+
+- type: realtime, minute 55 7
+  commands:
+  - s Server daily restart in 5 minutes.
+  - s Please move to a safe location and log out manually to avoid any potential rollback or loss of progress.
+  - s You may log back in few minutes after the restart.
+
+- type: realtime, minute 57 7
+  commands:
+  - s Server daily restart in 3 minutes.
+  - s Please move to a safe location and log out manually to avoid any potential rollback or loss of progress.
+  - s You may log back in few minutes after the restart.
+
+- type: realtime, minute 59 7
+  commands:
+  - s Server daily restart in 1 minute.
+  - s Please move to a safe location and log out manually to avoid any potential rollback or loss of progress.
+  - s You may log back in few minutes after the restart.
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - In-game Day/Night Cycle                         ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- type: time, minute 24;59 20
+  bannedGlobalKeys: nighttime
+  commands:
+  - removekey daytime
+  - setkey nighttime
+
+- type: time, minute 36;59 03
+  bannedGlobalKeys: daytime
+  commands:
+  - removekey nighttime
+  - setkey daytime
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin Debug                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Eikthyr: -316818231
+# Elder: 1828406738
+# Bonemass: -146537656
+# Moder: 1225607547
+# Yagluth: -221799126
+# Queen: dungeon_queen_door (change key)
+# Fader: -201398907
+
+- prefab: Player
+  type: say, !realday
+  # commands:
+  # - s Server day count is adjusted to <par_1>.
+  admin: true
+  cancel: true
+  exec: <save_bfvrealday_<par_1>>
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, Server day count is adjusted to <load_bfvrealday=0>.
+    3: int, 1
+
+- prefab: Player
+  type: say, !serverutc
+  # commands:
+  # - s Server UTC is adjusted to <par_1>.
+  admin: true
+  cancel: true
+  exec: <save_serverutc_<par_1>>
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, Server UTC is adjusted to <load_serverutc=0>.
+    3: int, 1
+
+# Player command
+- prefab: Player
+  type: say, !time
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, <msgPlayerCheckTime>
+    3: int, 1
+    repeat: 3
+    repeatInterval: 1
+    overwrite: true

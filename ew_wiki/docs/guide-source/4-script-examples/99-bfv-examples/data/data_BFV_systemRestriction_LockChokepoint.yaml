@@ -1,0 +1,117 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Restriction - Lock Player                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+
+- value: chokepointBudgetLimit, 100
+- value: gateCityBudgetLimit, 12
+- value: gateGarrBudgetLimit, 6
+
+# ═══════════════════════════════════════════════════════════
+# VALUEGROUP - CHOKEPOINT
+# ═══════════════════════════════════════════════════════════
+- valueGroup: chokepointWhitelist
+  values:
+  - metal_gate
+  - ashen_gate
+  - wood_door
+  - wood_gate
+  - wood_pole_log
+  - wood_pole_log_4
+  - wood_wall_log
+  - wood_wall_log_4x0.5
+  - wood_log_26
+  - wood_log_45
+  - woodiron_pole
+  - woodiron_beam
+  - woodiron_beam_26
+  - woodiron_beam_45
+  - wood_floor_1x1
+  - wood_floor
+  - wood_stair
+  - wood_stepladder
+  - wood_wall_quarter
+  - wood_wall_half
+  - woodwall
+  - wood_wall_roof
+  - wood_wall_roof_upsidedown
+  - wood_wall_roof_top
+  - wood_wall_roof_45
+  - wood_wall_roof_45_upsidedown
+  - wood_wall_roof_top_45
+  - wood_roof
+  - wood_roof_top
+  - wood_roof_ocorner
+  - wood_roof_icorner
+  - wood_roof_45
+  - wood_roof_top_45
+  - wood_roof_ocorner_45
+  - wood_roof_icorner_45
+  - wood_pole
+  - wood_pole2
+  - wood_beam_1
+  - wood_beam
+  - wood_beam_26
+  - wood_beam_45
+  - wood_dragon1
+  - darkwood_roof
+  - darkwood_roof_top
+  - darkwood_roof_ocorner
+  - darkwood_roof_icorner
+  - darkwood_roof_45
+  - darkwood_roof_top_45
+  - darkwood_roof_ocorner_45
+  - darkwood_roof_icorner_45
+  - darkwood_pole
+  - darkwood_pole4
+  - darkwood_beam
+  - darkwood_beam_26
+  - darkwood_beam_45
+  - darkwood_beam4x4
+  - darkwood_decowall
+  - darkwood_arch
+  - darkwood_raven
+  - darkwood_wolf
+  - wood_fence
+  - piece_stakewall_blackwood
+  - ashwood_wall_2x2
+  - ashwood_halfwall_1x2
+  - ashwood_quarterwall_1x1
+  - ashwood_wall_arch
+  - ashwood_decowall_2x2
+  - ashwood_decowall_tree
+  - ashwood_decowall_divider
+  - ashwood_floor_2x2
+  - ashwood_floor_1x1
+  - ashwood_deco_floor
+  - ashwood_arch_big
+  - ashwood_beam_1m
+  - ashwood_beam_2m
+  - ashwood_pole_1m
+  - ashwood_pole_2m
+  - ashwood_wall_beam_26
+  - ashwood_wall_cross_26
+  - ashwood_wall_beam_45
+  - ashwood_wall_cross_45
+  - ashwood_wall_roof_26
+  - ashwood_wall_roof_26_upsidedown
+  - ashwood_wall_roof_45
+  - ashwood_wall_roof_45_upsidedown
+  - ashwood_stair
+  - goblin_woodwall_2m
+  - siege_wall_1x1
+#  - iron_floor_1x1_v2
+#  - iron_floor_2x2
+#  - iron_wall_1x1
+#  - iron_wall_2x2
+#  - stone_wall_1x1
+#  - stone_wall_2x1
+#  - stone_wall_4x2
+#  - stone_pillar
+#  - stone_arch
+#  - stone_floor_2x2
+#  - stone_stair
+

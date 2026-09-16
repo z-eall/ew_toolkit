@@ -1,0 +1,196 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Vanilla Control           ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ezConfig™
+# ═══════════════════════════════════════════════════════════
+- value: rangeBossDropPerPlayer, 30
+
+# ═══════════════════════════════════════════════════════════
+# Value data
+# ═══════════════════════════════════════════════════════════
+# Boss Trophies
+- value: trophy_eikthyr-ragdoll, TrophyEikthyr
+- value: trophy_gdking-Ragdoll, TrophyTheElder
+- value: trophy_Bonemass, TrophyBonemass
+- value: trophy_Dragon, TrophyDragonQueen
+- value: trophy_GoblinKing-ragdoll, TrophyGoblinKing
+- value: trophy_SeekerQueen, TrophySeekerQueen
+- value: trophy_fx-Fader-Ragdoll, TrophyFader
+
+# Boss drops
+- value: bossDrop_eikthyr-ragdoll, HardAntler
+- value: bossDrop_gdking-Ragdoll, CryptKey
+- value: bossDrop_Bonemass, Wishbone
+- value: bossDrop_Dragon, DragonTear
+- value: bossDrop_GoblinKing-ragdoll, YagluthDrop
+- value: bossDrop_SeekerQueen, QueenDrop
+- value: bossDrop_fx-Fader-Ragdoll, FaderDrop
+
+# Effects poof for ragdolls
+- value: effect_eikthyr-ragdoll, vfx_corpse_destruction_large
+- value: effect_gdking-Ragdoll, vfx_corpse_destruction_large
+- value: effect_GoblinKing-ragdoll, vfx_corpse_destruction_large
+- value: effect_fx-Fader-Ragdoll, fx_Fader_CorpseExplosion
+
+# Character Drop offset at Y 1500 
+- name: isCharacterDropY1500
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# Master Spawner Data
+# ═══════════════════════════════════════════════════════════
+
+- name: injectLockedZdo
+  ints:
+  - hasLockedZdo, 1
+  strings:
+  - spawnerZDO, <par_1>
+
+# ═══════════════════════════════════════════════════════════
+# Banegard Dvergers
+# ═══════════════════════════════════════════════════════════
+# Tamed Dverger
+- name: BG_DvergerTamed
+  ints:
+  - BG_DvergerTamed, 1
+  - aggravated, 0
+  - Humanoid.m_tamed, 1
+  - MonsterAI.m_aggravatable, 0
+  - MonsterAI.m_attackPlayerObjects, 0
+  floats:
+  - Humanoid.m_health, 1e17
+  - max_health, 1e17
+  - NpcTalk.m_maxRange, 0
+  - Humanoid.m_runSpeed, 2
+  - Humanoid.m_walkSpeed, 2
+  strings:
+  - Humanoid.m_name, "Banegard Dverger"
+  
+# Hostile Dverger - Rogue
+- name: BG_DvergerHostileRogue
+  ints:
+  - BG_DvergerHostileRogue, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - aggravated, 1
+  - level, 2
+  - Humanoid.m_tamed, 0
+  - MonsterAI.m_aggravatable, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  floats:
+  - Humanoid.m_health, 800
+  - max_health, 800
+  - NpcTalk.m_maxRange, 0
+  - Humanoid.m_runSpeed, 3
+  - Humanoid.m_walkSpeed, 3
+  strings:
+  - Humanoid.m_name, "Banegard Dverger"
+  
+# Hostile Dverger - Mage
+- name: BG_DvergerHostileMage
+  ints:
+  - BG_DvergerHostileMage, 1
+  - aggravated, 1
+  - Humanoid.m_tamed, 0
+  - MonsterAI.m_aggravatable, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  floats:
+  - Humanoid.m_health, 600
+  - max_health, 600
+  - NpcTalk.m_maxRange, 0
+  strings:
+  - Humanoid.m_name, "Banegard Dverger"
+  
+# Hostile Dverger - Ironbeard Boss
+- name: BG_DvergerHostileBoss
+  ints:
+  - BG_DvergerHostileBoss, 1
+  - aggravated, 1
+  - Humanoid.m_tamed, 0
+  - Humanoid.m_boss, 1
+  - MonsterAI.m_aggravatable, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_attackPlayerObjects, 0
+  floats:
+  - Humanoid.m_health, 4800
+  - max_health, 4500
+  - NpcTalk.m_maxRange, 0
+  - RandomSkillFactor, 1.3
+  strings:
+  - Humanoid.m_name, "Ironbeard"
+  - MonsterAI.m_deathMessage, "<color=orange>Ironbeard is dead, and the shield of Banegard has vanished." 
+  hashes:
+  - HelmetItem, DvergerHairMale
+  
+# ═══════════════════════════════════════════════════════════
+# Felgar Hold
+# ═══════════════════════════════════════════════════════════
+## Felgar Surtling
+
+# Spawner
+- name: surtlingfelgar_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - surtlingfelgar_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 100
+  - CreatureSpawner.m_respawnTimeMinuts, 1
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# Creature
+- name: surtling_felgar
+  ints:
+  - surtling_felgar, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 4
+  - Humanoid.m_flying, 1
+  - MonsterAI.m_circulateWhileChargingFlying, 1
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 100
+  - MonsterAI.m_alertRange, 100
+  floats:
+  - Humanoid.m_flySlowSpeed, 5
+  - Humanoid.m_flyFastSpeed, 5
+  - Humanoid.m_flyTurnSpeed, 300
+  - RandomSkillFactor, 1.8
+  strings:
+  - Humanoid.m_name, "Firewraith"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# Abyssal Dread (Serpent)
+# ═══════════════════════════════════════════════════════════
+
+# Creature
+- name: abyssalserpent
+  ints:
+  - abyssalserpent, 1
+  - MonsterAI.m_avoidLand, 0
+  - MonsterAI.m_randomFly, 1 
+  - MonsterAI.m_attackPlayerObjects, 1
+  - MonsterAI.m_huntplayer, 1
+  floats:
+  - RandomSkillFactor, 4.5
+  - Humanoid.m_flyFastSpeed, 12
+  - Humanoid.m_flySlowSpeed, 12
+  - MonsterAI.m_chanceToLand, 70
+  - Humanoid.m_flyTurnSpeed, 200
+  - MonsterAI.m_minAttackInterval, 0.1
+  - Humanoid.m_swimSpeed, 24
+  - Humanoid.m_swimDepth, -0.1
+  - Humanoid.m_swimTurnSpeed, 120
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 150
+  - MonsterAI.m_flyAltitudeMin, 2
+  - MonsterAI.m_flyAltitudeMax, 2
+  - Humanoid.m_health, 2500
+  - max_health, 2500
+  strings:
+  - Humanoid.m_name, "Abyssal Dread"

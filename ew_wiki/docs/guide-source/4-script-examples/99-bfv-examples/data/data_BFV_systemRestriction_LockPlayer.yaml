@@ -1,0 +1,58 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Restriction - Lock Player                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Value data
+# ═══════════════════════════════════════════════════════════
+- value: factionWardTeam0, 
+- value: factionWardTeam1, BetterWard_Type4
+- value: factionWardTeam2, BetterWard_Type3
+
+# ═══════════════════════════════════════════════════════════
+# Restricted weapons
+# ═══════════════════════════════════════════════════════════
+# VALUEGROUP - BLOOD WEAPONS
+- valueGroup: blood_right
+  values:
+  - SwordNiedhoggBlood
+  - THSwordSlayerBlood
+  - SpearSplitner_Blood
+  - AxeBerzerkrBlood
+  - MaceEldnerBlood
+
+- valueGroup: blood_left
+  values:
+  - CrossbowRipperBlood
+  - BowAshlandsBlood
+
+# VALUEGROUP - PICKAXES
+- valueGroup: pickaxes
+  values:
+  - PickaxeAntler
+  - PickaxeBronze
+  - PickaxeIron
+  - PickaxeBlackMetal
+
+# VALUEGROUP - SLEDGES
+- valueGroup: sledges
+  values:
+  - SledgeStagbreaker
+  - SledgeIron
+  - SledgeElder
+  - SledgeDemolisher
+  - SledgeAnchor
+  - SledgeWood
+
+# VALUEGROUP - ATGEIR
+- valueGroup: atgeirs
+  values:
+  - AtgeirBronze
+  - AtgeirIron
+  - AtgeirBlackmetal
+  - AtgeirHimminAfl
+  - AtgeirGolden
+  - AtgeirAncient

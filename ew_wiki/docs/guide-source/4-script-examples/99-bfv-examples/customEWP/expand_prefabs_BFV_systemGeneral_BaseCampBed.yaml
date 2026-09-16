@@ -1,0 +1,169 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Base Camp Bed                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Admin set bed index
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text 1;999
+  admin: true
+  filter: int, isBaseCampBedSignAdmin, 1
+  poke:
+  - prefab: wood_floor_1x1, sign
+    filters:
+    - int, isBaseCampBedSpawner, 1
+    - int, isBaseCampBedSignPlayer, 1
+    filterLimit: 1
+    maxDistance: 0.5
+    parameter: assignBaseCampBedIndex <par_1>
+
+- prefab: wood_floor_1x1, sign
+  type: poke, assignBaseCampBedIndex
+  data: int, isBaseCampBedIndex, <par_1>
+  spawn:
+  - prefab: vfx_blocked
+  - prefab: sfx_build_hammer_default
+
+# ═══════════════════════════════════════════════════════════
+# Admin reset bed
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text 0
+  admin: true
+  filter: int, isBaseCampBedSignAdmin, 1
+  poke:
+  - prefab: wood_floor_1x1, sign, ashwood_bed_half, piece_chest_private
+    filters:
+    - int, isBaseCampBedIndex, <par_2>
+    maxDistance: 3
+    parameter: resetBaseCampBed
+  - prefab: wood_floor_1x1, sign
+    filters:
+    - int, isBaseCampBedIndex, <par_2>
+    maxDistance: 0.5
+    delay: 0.1
+    parameter: assignBaseCampBedIndex <par_1>
+
+- prefab: wood_floor_1x1, sign
+  type: poke, resetBaseCampBed
+  data: string, bedOwnerCID, 0
+
+- prefab: sign
+  type: poke, resetBaseCampBed
+  filter: int, isBaseCampBedSignPlayer, 1
+  data: string, text, <defaultBaseCampSignText>
+
+- prefab: ashwood_bed_half, piece_chest_private
+  type: poke, resetBaseCampBed
+  remove: true
+
+# ═══════════════════════════════════════════════════════════
+# Player claim bed - if bed without index
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text
+  weight: 1e30
+  filters:
+  - int, isBaseCampBedSignPlayer, 1
+  - int, isBaseCampBedIndex, 0
+  data: string, text, <defaultBaseCampSignText>
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<y>-1
+    3: string, This bed has no index.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# Player claim bed - if bed claimed
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text
+  weight: 1e30
+  filters:
+  - int, isBaseCampBedSignPlayer, 1
+  bannedFilters:
+  - string, bedOwnerCID, 0
+  data: string, text, <rest_2>
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<y>-1
+    3: string, This bed is claimed.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# Player claim bed - if bed existed
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text
+  weight: 1e30
+  filters:
+  - int, isBaseCampBedSignPlayer, 1
+  - string, bedOwnerCID, 0
+  objects:
+  - prefab: ashwood_bed_half
+    filter: long, owner, <cid>    
+  data: string, text, <defaultBaseCampSignText>
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<y>-1
+    3: string, You already claimed a bed.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# Player claim bed - spawn bed with chest
+# ═══════════════════════════════════════════════════════════
+- prefab: Sign
+  type: change, text
+  fallback: true
+  filters:
+  - int, isBaseCampBedSignPlayer, 1
+  - int, isBaseCampBedIndex, 1;999
+  - string, bedOwnerCID, 0
+  data: string, bedOwnerCID, <cid>
+  poke:
+  - prefab: wood_floor_1x1
+    filters:
+    - int, isBaseCampBedSpawner, 1
+    - int, isBaseCampBedIndex, <int_isBaseCampBedIndex=0>
+    maxDistance: 0.5
+    parameter: findSameIndexBedSpawner <cid> <pname>
+
+- prefab: wood_floor_1x1
+  type: poke, findSameIndexBedSpawner
+  data: string, bedOwnerCID, <cid>
+  spawn:
+  - prefab: ashwood_bed_half
+    data: isBaseCampBed
+    pos: 0,-0.8,0
+    rot: 180,0,0
+  - prefab: piece_chest_private
+    data: isBaseCampBedChest
+    pos: 0,-2,0
+    rot: 180,0,0
+  - prefab: sfx_build_hammer_wood
+  - prefab: vfx_Place_chest
+    pos: 0,-0.8,0
+  - prefab: vfx_Place_chest
+    pos: 0,-2,0

@@ -1,0 +1,592 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - PVE - Frosthold                                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Frosthold Sealstone Sentry                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_pot2
+  type: change, InUse 0
+  filter: int, isFrostholdSentryChest, 1
+  poke:
+  - self: true
+    parameter: checkSentryChestCooldown <ge_<sub_<time>_<float_sentryCooldown=0>>_<sealstoneSentryCooldown>>
+
+# ═══════════════════════════════════════════════════════════
+# If cooldown check false
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot2
+  type: poke, checkSentryChestCooldown false
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1.5
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, Cooling down in <ceil_<sub_<sealstoneSentryCooldown>_<sub_<time>_<float_sentryCooldown=0>>>> sec.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# If cooldown check true
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot2
+  type: poke, checkSentryChestCooldown true
+  poke:
+  - self: true
+    parameter: checkSentryChestContent <ge_<item_<sealstoneSentryCostItem>>_<sealstoneSentryCostAmount>>
+
+# ═══════════════════════════════════════════════════════════
+# If cost check false
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot2
+  type: poke, checkSentryChestContent false
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1.5
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, Needs <sealstoneSentryCostAmount> energy.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# If cost check true
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot2
+  type: poke, checkSentryChestContent true
+  data: float, sentryCooldown, <time>
+  removeItems: removeSealstoneSentryCost
+  injectData: true
+  spawn:
+  - prefab: fx_guardstone_permitted_add
+    pos: 0,0,-1.5
+  - prefab: fx_Potion_frostresist
+    rot: 0,0,180
+  poke:
+  - prefab: Piece_grausten_pillarbeam_small
+    filter: int, isFrostholdSentryCannon, 1
+    limit: 1
+    maxDistance: 10
+    delay: 1.5
+    parameter: shootSentryLaser
+  - prefab: piece_shieldgenerator
+    filter: int, isFrostholdShieldGenerator, 1
+    limit: 1
+    maxDistance: 200
+    parameter: increaseFrostholdPortalEnergy
+
+# ═══════════════════════════════════════════════════════════
+# Shooting the laser
+# ═══════════════════════════════════════════════════════════
+- prefab: Piece_grausten_pillarbeam_small
+  type: poke, shootSentryLaser
+  triggerRules: true
+  spawn:
+  - prefab: fx_leviathanLava_leave
+    data: float, TimedDestruction.m_timeout, 6.5
+    pos: 1,0,-7.5
+    rot: 0,180,0
+  - prefab: sfx_bogwitch_greet
+    data: float, ZSFX.m_minVol, 1
+    repeat: 5
+    repeatInterval: 1
+  - prefab: sfx_charred_mage_spawn_staff
+    data: float, ZSFX.m_minVol, 1
+    repeat: 5
+    repeatInterval: 1
+  - prefab: sfx_dverger_fireball_rain_start
+    data: float, ZSFX.m_minVol, 1
+    repeat: 5
+    repeatInterval: 1
+  - prefab: fx_DvergerMage_Support_hit
+    pos: -2,0,0
+    rot: 0,0,90
+  - prefab: fx_lightningweapon_hit
+    pos: -2,0,0
+    rot: 0,90,0
+    repeat: 1
+    repeatInterval: 1
+  - prefab: fx_lightningweapon_hit
+    pos: -2,<randi_-1_2>,<randi_-1_2>
+    repeat: 3
+    repeatInterval: 0.5
+    delay: 2
+  - prefab: fx_lightningweapon_hit
+    pos: -2,<randi_-2_3>,<randi_-2_3>
+    rot: 0,90,90
+    repeat: 9
+    repeatInterval: 0.15
+    delay: 4
+  - prefab: vfx_archerytarget_bullseye_double
+    pos: -2,0,0
+    repeat: 1
+    repeatInterval: 1
+  - prefab: vfx_archerytarget_bullseye_double
+    pos: -2,0,0
+    repeat: 3
+    repeatInterval: 1
+    delay: 2
+  - prefab: vfx_archerytarget_bullseye_quint
+    pos: -2,0,0
+    repeat: 1
+    repeatInterval: 1
+    delay: 2.5
+  - prefab: vfx_archerytarget_bullseye_double
+    pos: -2,0,0
+    repeat: 5
+    repeatInterval: 0.2
+    delay: 4
+  - prefab: vfx_archerytarget_bullseye_quint
+    pos: -2,0,0
+    repeat: 9
+    repeatInterval: 0.15
+    delay: 4
+  - prefab: sfx_dverger_ice_aoe_start
+    data: float, ZSFX.m_minVol, 1
+    delay: 4.5
+    repeat: 3
+    repeatInterval: 0
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -4,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -15,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -30,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -45,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -60,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -75,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -90,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -105,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: vfx_MeadSwimmer
+    data: vec, scale, 5,5,5
+    pos: -120,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.75
+    delay: 6
+  - prefab: fx_shieldgenerator_attack
+    data: float, ZSFX.m_minVol, 1
+    pos: 2,0,-3
+    rot: 0,180,0
+    repeat: 1
+    repeatInterval: 0.15
+    delay: 6
+  - prefab: fx_Potion_frostresist
+    data: scale, 5,5,5
+    pos: -4,0,0
+    rot: 0,0,90
+    repeat: 3
+    repeatInterval: 0.1
+    delay: 6
+  # - prefab: vfx_LightFoot
+    # data: vec, scale, 1,27.5,0.5
+    # pos: -65,0,0
+    # rot: 0,90,0
+    # repeat: 7
+    # repeatInterval: 0
+    # delay: 5.9
+  # - prefab: vfx_LightFoot
+    # data: vec, scale, 1,27.5,0.5
+    # pos: -65,0,0
+    # rot: 0,90,0
+    # repeat: 7
+    # repeatInterval: 0
+    # delay: 6.9
+  - prefab: vfx_GoblinShield
+    data: isFrostholdSealstoneLaser
+    pos: -65,0,0
+    repeat: 2
+    repeatInterval: 0.125
+    delay: 6
+
+# Remove the laser
+- prefab: vfx_GoblinShield, vfx_MeadSwimmer, demister_ball
+  type: create
+  filters:
+  - int, isFrostholdSealstoneLaser, 1
+  - vec, scale, 5,5,5
+  filterLimit: 1
+  remove: true
+  removeDelay: 4
+
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Frosthold Shield Generator                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_shieldgenerator
+  type: poke, increaseFrostholdPortalEnergy
+  bannedKeys: frostholdtpblocker
+  data: float, frostholdPortalEnergy, <add_1_<float_frostholdPortalEnergy=0>>
+  triggerRules: true
+
+- prefab: piece_shieldgenerator
+  type: change, frostholdPortalEnergy 3;999
+  bannedKeys: frostholdtpblocker
+  poke:
+  - prefab: piece_pot2
+    filter: int, isFrostholdSentryChest, 1
+    maxDistance: 200
+    delay: 3
+    parameter: spawnFrostholdPortalChest
+  - self: true
+    delay: <sealstoneSentryResetTime>
+    parameter: resetFrostholdPortalEnergy
+
+- prefab: piece_pot2
+  type: poke, spawnFrostholdPortalChest
+  spawn:
+  - prefab: piece_pot3_red
+    data: isFrostholdPortalChest
+    pos: 0,0,-0.5
+    rot: 180,0,0
+
+- prefab: piece_shieldgenerator
+  type: poke, resetFrostholdPortalEnergy
+  data: float, frostholdPortalEnergy, 0
+  poke:
+  - prefab: piece_pot3_red
+    filter: int, isFrostholdPortalChest, 1
+    maxDistance: 200
+    parameter: removeFrostholdPortalChest
+
+- prefab: piece_pot3_red
+  type: poke, removeFrostholdPortalChest
+  remove: true
+  spawn:
+  - prefab: fx_DvergerMage_MistileSpawn
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Frosthold Sealstone Portal                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_pot3_red
+  type: change, InUse 0
+  filter: int, isFrostholdPortalChest, 1
+  poke:
+  - self: true
+    parameter: checkPortalChestCooldown <ge_<sub_<time>_<float_sentryCooldown=0>>_<sealstoneSentryCooldown>>
+
+# ═══════════════════════════════════════════════════════════
+# If cooldown check false
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot3_red
+  type: poke, checkPortalChestCooldown false
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1.5
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, Cooling down in <ceil_<sub_<sealstoneSentryCooldown>_<sub_<time>_<float_sentryCooldown=0>>>> sec.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# If cooldown check true
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot3_red
+  type: poke, checkPortalChestCooldown true
+  poke:
+  - self: true
+    parameter: checkPortalChestContent <ge_<item_<sealstonePortalCostItem>>_<sealstonePortalCostAmount>>
+
+# ═══════════════════════════════════════════════════════════
+# If cost check false
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot3_red
+  type: poke, checkPortalChestContent false
+  spawn:
+  - prefab: fx_guardstone_permitted_removed
+    pos: 0,0,-1.5
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <pos>
+    3: string, Needs <sealstonePortalCostAmount> trophy.
+    4: bool, false
+
+# ═══════════════════════════════════════════════════════════
+# If cost check true
+# ═══════════════════════════════════════════════════════════
+- prefab: piece_pot3_red
+  type: poke, checkPortalChestContent true
+  data: float, sentryCooldown, <time>
+  removeItems: removeSealstonePortalCost
+  injectData: true
+  spawn:
+  - prefab: fx_guardstone_permitted_add
+    pos: 0,0,-1.5
+  - prefab: fx_Potion_frostresist
+    rot: 0,0,180
+  poke:
+  - prefab: Player
+    filter: long, playerID, <cid>
+    maxDistance: 20
+    parameter: teleportFrostholdPlayer
+
+# ═══════════════════════════════════════════════════════════
+# 
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: poke, teleportFrostholdPlayer
+  objectRpc:
+  - name: RPC_TeleportTo
+    1: vec, <add_<randi_-2_3>_-286>,<add_<randi_-2_3>_-172>,141
+    2: quat, <a>
+    3: bool, true
+    delay: 1
+  - name: Message
+    1: enum_message, 2
+    2: string, A mystical force pulled you in..
+    3: int, 1
+    repeat: 2
+    repeatInterval: 2
+    delay: 5
+    overwrite: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin Debug                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Admin Command
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: say, !fhstage
+  admin: true
+  cancel: true
+  poke:
+  - self: true
+    parameter: setFrostholdStage <par_1>
+
+# ═══════════════════════════════════════════════════════════
+# Set Frosthold Stage 1
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: poke, setFrostholdStage 1
+  fallback: true
+  exec: |
+    <clear_frostholdtpblocker>
+  poke:
+  - prefab: dverger_demister_broken
+    filters:
+    - int, isFrostseerSpawner, 1
+    - int, isFrostlordSpawner, 1
+    filterLimit: 1
+    parameter: respawnFrostholdBoss
+  - prefab: piece_shieldgenerator
+    filter: int, isFrostholdShieldGenerator, 1
+    parameter: resetFrostholdShield
+  - prefab: Spawner_Bat
+    filters:
+    - string, isSpawningPrefab, StoneGolem
+    - string, isSpawningPrefab, Ghost
+    filterLimit: 1
+    maxDistance: 300
+    parameter: resetFrostholdRevenants
+
+# Reset Frosthold Revenants Spawn
+- prefab: Spawner_Bat
+  type: poke, resetFrostholdRevenants
+  data: string, CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  injectData: false
+
+# Reset Frosthold Shield
+- prefab: piece_shieldgenerator
+  type: poke, resetFrostholdShield
+  data: isFrostholdShieldGeneratorON
+
+# Respawn Frostseer
+- prefab: dverger_demister_broken
+  type: poke, respawnFrostholdBoss
+  filter: int, isFrostseerSpawner, 1
+  spawn:
+  - prefab: Wraith
+    data: frostseerskadir
+    pos: 0,0,3
+    triggerRules: true
+
+# Respawn Frostlord
+- prefab: dverger_demister_broken
+  type: poke, respawnFrostholdBoss
+  filter: int, isFrostlordSpawner, 1
+  spawn:
+  - prefab: Charred_Melee_Dyrnwyn
+    data: frostlordglacir
+    pos: 0,0,-3
+    triggerRules: true
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: respawnEverfrost
+
+# Respawn Everfrost
+- prefab: dverger_demister_broken
+  type: poke, respawnEverfrost
+  spawns:
+  - rock3_ice_frac,-0.5,5.075,-9.514,-81.26973837123957,15.394336528936492,-10.810078472567561,isFrostholdPowerstoneBlocker
+  - caverock_ice_pillar_wall,15.876,-6.404,-5.871,90.00000000000001,0,-112.48505186345663,isFrostholdEverfrostIce_Hall
+  - caverock_ice_pillar_wall,15.688,1.238,-8.926,90.00000000000004,0,-22.492822540278766,isFrostholdEverfrostIce_Hall
+  - caverock_ice_pillar_wall,16.157,6.559,-5.612,90.00000000000001,0,123.8264355455147,isFrostholdEverfrostIce_Hall
+  - caverock_ice_pillar_wall,37.401,6.11,-19.3,0,0,0,isFrostholdEverfrostIce_Side
+  - caverock_ice_pillar_wall,42.181,-4.56,-16.859,90.68754110460907,0,90.00000000000004,isFrostholdEverfrostIce_Front
+  - caverock_ice_pillar_wall,38.372,-5.324,-18.901,0,0,0,isFrostholdEverfrostIce_Side
+  - piece_bed02,37.601,7.11,-15.11,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,39.901,7.11,-18.55,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,39.901,7.11,-15.11,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.301,7.11,-15.11,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.301,7.11,-18.55,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,37.601,7.11,-18.55,180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,37.201,5.11,-14.61,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,34.901,5.11,-18.05,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,34.901,5.11,-14.61,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,39.501,5.11,-14.61,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,39.501,5.11,-18.05,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,37.201,5.11,-18.05,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,38.072,-4.324,-14.211,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,40.372,-4.324,-17.651,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,40.372,-4.324,-14.211,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.771,-4.324,-14.211,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.771,-4.324,-17.651,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,38.072,-4.324,-17.651,-180,90,0,isFrostholdEverfrostBed
+  - piece_bed02,43.681,-1.26,-18.109,-90,90,0,isFrostholdEverfrostBed
+  - piece_bed02,38.171,-6.324,-14.211,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.872,-6.324,-17.651,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,35.872,-6.324,-14.211,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,40.472,-6.324,-14.211,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,40.681,1.13,-16.059,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.681,-2.31,-18.359,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.681,1.13,-18.359,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.681,1.13,-13.759,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.681,-2.31,-13.759,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.681,-2.31,-16.059,180,0,89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,38.171,-6.324,-17.651,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,43.681,1.63,-16.659,180,0,-89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,43.681,-1.81,-14.359,180,0,-89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,43.681,1.63,-14.359,180,0,-89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,43.681,1.63,-18.959,180,0,-89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,40.472,-6.324,-17.651,0,90,0,isFrostholdEverfrostBed
+  - piece_bed02,43.681,-1.81,-18.959,180,0,-89.99999999999999,isFrostholdEverfrostBed
+  - piece_bed02,43.681,-1.81,-16.659,180,0,-89.99999999999999,isFrostholdEverfrostBed
+
+# ═══════════════════════════════════════════════════════════
+# Set Frosthold Stage 2
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: poke, setFrostholdStage 2
+  fallback: true
+  poke:
+  - prefab: Wraith,Charred_Melee_Dyrnwyn,caverock_ice_pillar_wall,piece_bed02,rock3_ice_frac
+    filters:
+    - int, frostseerskadir, 1
+    - int, frostlordglacir, 1
+    - int, isFrostholdEverfrostIce, 1
+    - int, isFrostholdEverfrostBed, 1
+    - int, isFrostholdPowerstoneBlocker, 1
+    filterLimit: 1
+    parameter: removeFrostholdBoss
+  - prefab: piece_shieldgenerator
+    filter: int, isFrostholdShieldGenerator, 1
+    delay: 0.1
+    parameter: removeFrostholdShield
+  - prefab: Spawner_Bat
+    filters:
+    - string, isSpawningPrefab, StoneGolem
+    - string, isSpawningPrefab, Ghost
+    filterLimit: 1
+    maxDistance: 300
+    parameter: stopFrostholdRevenants
+
+# Stop Frosthold Revenants Spawn
+- prefab: Spawner_Bat
+  type: poke, stopFrostholdRevenants
+  data: string, CreatureSpawner.m_creaturePrefab, sfx_bat_idle
+  injectData: false
+
+# Remove Frosthold Shield
+- prefab: piece_shieldgenerator
+  type: poke, removeFrostholdShield
+  data: isFrostholdShieldGeneratorOFF
+
+# Remove Frosthold Boss
+- prefab: Wraith,Charred_Melee_Dyrnwyn,piece_bed02
+  type: poke, removeFrostholdBoss
+  remove: true
+
+# Remove Frosthold Boss with delay
+- prefab: caverock_ice_pillar_wall,rock3_ice_frac
+  type: poke, removeFrostholdBoss
+  remove: true
+  removeDelay: <randf_0_2>
+  spawn:
+  - prefab: caverock_ice_wall_destruction
+    delay: <randf_0_2>

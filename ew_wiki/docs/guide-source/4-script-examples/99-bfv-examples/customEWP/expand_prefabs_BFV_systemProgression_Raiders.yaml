@@ -1,0 +1,344 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV System Progression - Raiders                ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+
+# ═══════════════════════════════════════════════════════════
+# Ashlands
+# ═══════════════════════════════════════════════════════════
+# Remove loot drops while neutral
+
+# Felgar
+
+- prefab: SurtlingCore, Coal, CharredBone
+  type: create
+  objects:
+  - prefab: wood_pole
+    filter: string, Piece.m_name, PieceFelgar
+    maxDistance: 80
+  - prefab: MountainKit_brazier_purple
+    maxDistance: 80
+  remove: true
+  
+# Brennvik
+  
+- prefab: CharredBone
+  type: create
+  objects:
+  - prefab: wood_pole
+    filter: string, Piece.m_name, PieceBrennvik
+    maxDistance: 80
+  - prefab: MountainKit_brazier_purple
+    maxDistance: 80
+  remove: true
+# ═══════════════════════════════════════════════════════════
+# Banegard City Capture Event
+# ═══════════════════════════════════════════════════════════
+#
+# Apply key - buglord
+- prefab: vfx_shieldgenerator_refuel
+  type: create
+  objects:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, buglord
+    maxDistance: 10
+  exec: <save_<pid>/buglord_1>
+  
+## Event Start
+# 4 Player limit
+- prefab: Player
+  type: say, UNLEASH THE BROOD!
+  keys: <pid>/buglord 1
+  objects:
+  - prefab: wood_pole
+    filter: string, Piece.m_name, PieceBGNeutral
+    maxDistance: 15
+    weight: 20
+  - prefab: Player
+    maxDistance: 15
+    weight: 1
+  objectsLimit: 24
+  commands:
+  - s <pname> HAS SUMMONED THE BROOD! THE BUG ARMY IS BEING UNLEASHED ON BANEGARD CITY!
+  spawns:
+  - sfx_fader_death_explosion, 0,0,10, 6
+  - sfx_gjall_alerted, 0,0,10, 2
+  - sfx_gjall_alerted, 10,0,10, 5
+  - sfx_gjall_alerted, -10,20,10, 7
+  - sfx_gjall_alerted, 0,0,10, 9
+  - sfx_gjall_alerted, 7,-7,10, 10
+  - sfx_gjall_alerted, 0,0,10, 12
+  - sfx_gjall_alerted, 0,0,10, 15
+  - sfx_gjall_alerted, 0,0,10, 19
+  - sfx_gjall_alerted, 0,0,10, 24
+  - sfx_gjall_alerted, 0,0,10, 28
+  - sfx_gjall_alerted, 0,0,10, 34
+  - sfx_gjall_alerted, 0,0,10, 38
+  - vfx_mistlands_mist, 10,10,24
+  - vfx_mistlands_mist, 40,5,24
+  - vfx_mistlands_mist, 50,-8,22
+  - vfx_mistlands_mist, -20,0,24
+  - vfx_mistlands_mist, -30,10,24
+  - vfx_prespawn_fader, 0,0,-4, true
+  - sfx_unstablerock_explosion, 0,0,10, 13
+  - sfx_unstablerock_explosion, 0,0,10, 14
+  - sfx_unstablerock_explosion, 0,0,10, 15
+  poke:
+  - prefab: wood_pole
+    filter: string, Piece.m_name, PieceBGNeutral
+    maxDistance: 20
+    parameter: removeBGNeutral
+    
+- prefab: wood_pole
+  type: poke, removeBGNeutral
+  remove: true
+  
+- prefab: vfx_prespawn_fader
+  type: create
+  objects:
+  - prefab: BossStone_TheQueen
+    maxDistance: 50
+  poke:
+  - prefab: Player
+    maxDistance: 100
+    parameter: prntBugInvasion
+  triggerRules: true
+  
+- prefab: Player
+  type: poke, prntBugInvasion
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, The brood army has heard the summoning...
+    3: int, 1
+    delay: 1
+  - name: Message
+    1: enum_message, 2
+    2: string, There's a harsh scent in the air...
+    3: int, 1
+    delay: 4
+  - name: Message
+    1: enum_message, 2
+    2: string, The Dverger Shield has perished!<br>Banegard City is under attack!
+    3: int, 1
+    delay: 8
+  - name: Message
+    1: enum_message, 2
+    2: string, The Dverger Shield has perished!<br>Banegard City is under attack!
+    3: int, 1
+    delay: 10
+    
+- prefab: vfx_prespawn_fader
+  type: create
+  objects:
+  - prefab: BossStone_TheQueen
+    maxDistance: 50    
+  poke:
+  - prefab: wood_pole
+    filter: string, Piece.m_name, PieceBugInvasion
+    delay: 14
+    parameter: triggerBugInvasion
+
+- prefab: wood_pole
+  type: poke, triggerBugInvasion
+  spawn:
+  - prefab: Gjall
+    pos: 15,20,10
+    data: int, level, 2
+  - prefab: Gjall
+    pos: 13,-35,10
+    data: int, level, 2
+  - prefab: Gjall
+    pos: 4,0,10
+  - prefab: Seeker
+    pos: 0,-12,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 0,10,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 8,5,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 20,5,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 20,10,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 85,5,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 85,-8,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 85,8,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 87,12,10
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 95,-15,5
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 98,10,5
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 30,15,6
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: -30,-10,6
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 0,30,6
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 5,-10,6
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 15,30,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 20,-40,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 40,-45,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 58,48,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 58,10,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 68,-12,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: Seeker
+    pos: 10,-20,8
+    data: int, Humanoid.m_flying, 1
+  - prefab: SeekerBrute
+    pos: 100,8,-20
+  - prefab: SeekerBrute
+    pos: 105,-10,-20
+  - prefab: SeekerBrute
+    pos: 103,4,-20
+  - prefab: SeekerBrute
+    pos: 102,-3,-20
+    data: int, level, 2
+  - prefab: Seeker
+    pos: 97,8,-20
+    data: int, level, 3
+  - prefab: Seeker
+    pos: 95,4,-20
+    data: int, level, 3
+    
+    
+# Aggroed Dvergers
+
+- prefab: wood_pole
+  type: poke, triggerBugInvasion
+  delay: 2
+  poke:
+  - prefab: Dverger, DvergerMageSupport, DvergerMageIce
+    maxDistance: 100
+    filter: int, BG_DvergerTamed, 1
+    parameter: SwapDvergerBG
+    
+- prefab: Dverger
+  type: poke, SwapDvergerBG
+  swap:
+  - prefab: Dverger
+    data: BG_DvergerHostileRogue
+  spawns:
+  - fx_crystal_destruction
+        
+- prefab: DvergerMageSupport
+  type: poke, SwapDvergerBG
+  swap:
+  - prefab: DvergerMageSupport
+    data: BG_DvergerHostileMage
+  spawns:
+  - fx_crystal_destruction
+    
+- prefab: DvergerMageIce
+  type: poke, SwapDvergerBG
+  swap:
+  - prefab: DvergerMageIce
+    data: BG_DvergerHostileMage
+  spawns:
+  - fx_crystal_destruction
+    
+# Dverger Boss Spawn
+
+- prefab: wood_pole
+  type: poke, triggerBugInvasion
+  poke:
+  - prefab: blackmarble_stair
+    filter: string, Piece.m_name, BGThroneStair
+    maxDistance: 50
+    parameter: spawnBGBoss
+    
+- prefab: blackmarble_stair
+  type: poke, spawnBGBoss
+  spawns:
+  - DvergerMageFire, BG_DvergerHostileBoss
+  poke:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, banegard_lord
+    maxDistance: 50
+    parameter: removeBGLord
+    
+- prefab: DvergerMageFire
+  type: state, action *
+  filter: string, Humanoid.m_name, Ironbeard
+  spawn:
+  - prefab: Mistile
+    chance: 0.2
+    data: int, aggravated, 1
+
+# Remove Boss NPC
+
+- prefab: MarketPlaceNPC
+  type: poke, removeBGLord
+  remove: true
+  poke:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, banegard_pet
+    maxDistance: 50
+    parameter: removeBGPet
+    
+- prefab: MarketPlaceNPC
+  type: poke, removeBGPet
+  remove: true
+  
+# Boss Defeated
+
+- prefab: DvergerMageFire
+  type: destroy
+  filter: string, Humanoid.m_name, Ironbeard
+  delay: 2
+  commands:
+  - s THE LORD OF BANEGARD HAS BEEN DEFEATED! BANEGARD IS FREE!
+  poke:
+  - prefab: blackmarble_floor_large, dverger_guardstone, vfx_mistlands_mist
+    maxDistance: 90
+    parameter: removeBGRoom
+  spawns:
+  - fx_shieldgenerator_attack, 0,0,20
+  - fx_shieldgenerator_attack, 0,0,-10
+    
+- prefab: blackmarble_floor_large, dverger_guardstone, vfx_mistlands_mist
+  type: poke, removeBGRoom
+  delay: 5
+  remove: true
+  spawns:
+  - fx_crystal_destruction
+  - vfx_Place_cauldron
+    
+
+
+    
+    
+  

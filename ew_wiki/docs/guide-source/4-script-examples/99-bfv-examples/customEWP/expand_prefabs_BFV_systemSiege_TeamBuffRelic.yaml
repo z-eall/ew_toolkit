@@ -1,0 +1,129 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Team Buff Relic                                 ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# When Player entered zone of team buff relic
+- prefab: Player
+  type: state, resetcloth
+  keys: <pid>/team
+  objects:
+  - prefab: wolfemblem
+    maxHeight: 30
+  - prefab: dragonemblem
+    maxHeight: 30
+  - prefab: wolftotem
+    maxHeight: 30
+  - prefab: dragontotem
+    maxHeight: 30
+  objectsLimit: 1
+  poke:
+  - prefab: wolfemblem, dragonemblem, wolftotem, dragontotem
+    maxHeight: 30
+    parameter: findTeamBuffRelic <load_<pid>/team=-1> <zdo> <pid> # playerTeam, playerZDO, playerPID
+
+# Buff / Debuff to Team 1 - Wolf
+- prefab: wolfemblem, dragontotem
+  type: poke, findTeamBuffRelic 1
+  poke:
+  - target: <par_2>
+    parameter: checkPlayerRelicCooldown <ge_<floor_<sub_<time>_<load_<par_3>/<buff_<prefab>>cooldown=0>>>_<cooldown_<prefab>>> <buff_<prefab>> <buffRest_<prefab>> # checkCooldown, statusEffect, restedSE
+
+# Buff / Debuff to Team 2 - Dragon
+- prefab: wolftotem, dragonemblem
+  type: poke, findTeamBuffRelic 2
+  poke:
+  - target: <par_2>
+    parameter: checkPlayerRelicCooldown <ge_<floor_<sub_<time>_<load_<par_3>/<buff_<prefab>>cooldown=0>>>_<cooldown_<prefab>>> <buff_<prefab>> <buffRest_<prefab>> # checkCooldown, statusEffect, restedSE
+
+# If cooldown passed, apply buff / debuff
+- prefab: Player
+  type: poke, checkPlayerRelicCooldown true
+  exec: |
+    <save_<pid>/<par_2>cooldown_<time>>
+  objectRpc:
+  - name: RPC_Damage
+    1: hit, status=<par_2>
+  - name: RPC_Damage
+    1: hit, status=<par_3>
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Relic Build Restriction                         ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Range restriction
+- prefab: wolftotem, dragontotem, wolfemblem, dragonemblem
+  type: create
+  bannedKeys: adminmode 1
+  objects:
+  - prefab: <prefab>
+    maxDistance: 110
+  remove: true
+  drops: true
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, 2
+    2: string, A mystical force from the same relic in this area stops you.
+
+# Team restriction
+- prefab: wolftotem, dragontotem, wolfemblem, dragonemblem
+  type: create
+  bannedKeys: adminmode 1
+  poke:
+  - self: true
+    parameter: checkBuildOwnerTeam <eq_<team_<prefab>>_<load_<pid>/team>>
+
+# If Builder team mismatch
+- prefab: wolftotem, dragontotem, wolfemblem, dragonemblem
+  type: poke, checkBuildOwnerTeam false
+  remove: true
+  drops: true
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, 2
+    2: string, This mystical relic belongs to <color<BfvTeam<team_<prefab>>>><BfvTeam<team_<prefab>>></color>.
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Viking Horn                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# TEAM HORN BUFF
+# ═══════════════════════════════════════════════════════════
+
+- prefab: Player
+  type: state, action emote_drink
+  # command: s <sfxHornBuff_<BfvTeam<load_<pid>/team=-1>>> #debug
+  filters:
+  - hash, RightItem, TankardHorn
+  spawn:
+  - prefab: vfx_WishbonePing
+  - prefab: <sfxHornBuff_<BfvTeam<load_<pid>/team=-1>>>
+  - prefab: vfx_troll_attack_hit
+    pos: 0,0,1
+    delay: 1
+  poke:
+  - prefab: Player
+    self: true
+    maxDistance: 50
+    parameter: applyHornRested <load_<pid>/team=-1>
+    
+- prefab: Player
+  type: poke, applyHornRested
+  keys: <pid>/team <par_1>
+  objectRpc:
+  - name: RPC_AddStatusEffect
+    1: hash, Rested
+    2: bool, true
+    3: int, 1
+    4: float, 1
+
+  

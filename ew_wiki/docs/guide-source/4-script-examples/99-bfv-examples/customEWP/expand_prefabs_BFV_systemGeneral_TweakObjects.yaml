@@ -1,0 +1,190 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Objects                                   ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# MASTER POKE
+- prefab: Catapult, CatapultSilver, CatapultIron, Cart, Karve, Raft, VikingShip, Knarr, Holk, VikingShip_Ashlands, BatteringRam, BatteringRamBronze, BatteringRamBM, piece_beehive
+  type: create
+  poke:
+  - self: true
+    delay: 0.1
+    parameter: tweakObjects
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Siege Engines                             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: Catapult, CatapultSilver, CatapultIron, BatteringRam, BatteringRamBronze, BatteringRamBM
+  type: poke, tweakObjects
+  weight: 1e30
+  objects:
+  - prefab: AshlandsTreeStump2
+    filter: int, isRadarCity, 1;2
+    bannedFilter: int, isCapturedByTeam, <load_<pid>/team=0>
+    maxDistance: 110
+  - prefab: AshlandsTreeStump2
+    filter: int, isRadarCity, 3;99
+    bannedFilter: int, isCapturedByTeam, <load_<pid>/team=0>
+    maxDistance: 110
+  objectsLimit: 1
+  remove: true
+  drops: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Can't build near enemy castle.
+    4: bool, true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Catapult                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK CATAPULT
+- prefab: Catapult
+  type: poke, tweakObjects
+  fallback: true
+  data: catadata
+
+# TWEAK CATAPULT SILVER
+- prefab: CatapultSilver
+  type: poke, tweakObjects
+  fallback: true
+  data: catasilverdata
+
+# TWEAK CATAPULT IRON
+- prefab: CatapultIron
+  type: poke, tweakObjects
+  fallback: true
+  data: catairondata
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Cart                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK CART
+- prefab: Cart
+  type: poke, tweakObjects
+  data: float, Vagon.m_playerExtraPullMass, 10
+  injectData: false
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Ship                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK SHIP
+- prefab: Karve, Raft, VikingShip, Knarr
+  type: poke, tweakObjects
+  data: float, Ship.m_sailForceFactor, 0.05
+  injectData: false
+
+# TWEAK BIG SHIP
+- prefab: Holk, VikingShip_Ashlands
+  type: poke, tweakObjects
+  data: bigshipdata
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Balista                                   ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK BALISTA
+- prefab: piece_turret
+  type: poke, tweakObjects
+  data: turretdata
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Battering Ram                             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK BATTERING RAM
+- prefab: BatteringRam, BatteringRamBronze, BatteringRamBM
+  type: poke, tweakObjects
+  fallback: true
+  bannedFilter: int, Smelter.m_maxOre, 50
+  data: ramdata
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Beehive                                   ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK BEEHIVE
+- prefab: piece_beehive
+  type: poke, tweakObjects
+  data: beehive
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Dverger Ward                              ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK DVERGER WARD
+- prefab: dverger_guardstone
+  type: state, flash
+  bannedFilter: float, Piece.m_returnResourceHeightOffset, 15000
+  objects:
+  - prefab: BossStone_Fader
+    maxDistance: 20
+  data: float, Piece.m_returnResourceHeightOffset, 15000
+  injectData: false
+  
+- prefab: SurtlingCore, GreydwarfEye, FineWood
+  type: create
+  filter: int, pickedUp, 0
+  objects:
+  - prefab: BossStone_Fader
+    maxDistance: 20
+  remove: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Door                                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK AUTOCLOSE DOOR (30s)
+- prefab: Door
+  type: change, state 1,-1
+  filter: int, autoDoor, 1
+  poke:
+  - self: true
+    delay: 30
+    parameter: closeAutoDoor
+
+- prefab: Door
+  type: poke, closeAutoDoor
+  data: int, state, 0
+  injectData: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Tweak Private Chest                             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+# TWEAK PRIVATE CHEST
+# Disabled due to new base camp bed system
+# - prefab: xpiece_chest_private
+  # type: create
+  # remove: true
+  # data: privatechest
+  # injectData: false

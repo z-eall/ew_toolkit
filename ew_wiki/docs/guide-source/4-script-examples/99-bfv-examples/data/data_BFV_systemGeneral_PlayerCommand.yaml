@@ -1,0 +1,96 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Player Command                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Value data
+# ═══════════════════════════════════════════════════════════
+- value: siegetrue, <#00ff00>✅</color>
+- value: siegefalse, <#cc0000>❎</color>
+- value: raidwindow1, <#00ff00>✅</color>
+- value: raidwindow0, <#cc0000>❎</color>
+
+- value: msgPlayerHelp, 
+    <size=35>
+    <br>Chat commands:</b><#ddd><size=28>
+    <br><#ff00ff>'!sos'</color>:</b> Alert online <#00ff00>admin</color> to come to you for help.
+    <br><#ff00ff>'!ward'</color>:</b> Permit yourself to your <#fff000>faction ward</color>.
+    <br><#ff00ff>'!time'</color>:</b> Check current <#00ff00>server time</color>.
+    <br><#00ffff>/g</color> - Speak in <#fff000>faction</color> chat.
+    <br><#00ffff>/p</color> - Speak in <#00ff00>group</color> chat.
+    <br><#00ffff>/invite <#fff000><name></color></color> - Invite a player to your <#00ff00>group/party</color>.
+    <br><#00ffff>/leave</color> - <#00ff00>Leave</color> your current group.
+    <br><#00ffff>/resetspawn</color> - To <#00ff00>reset</color> your spawn point.
+    <br>Press <#00ffff>J</color> - To open <#00ff00>NPC quest log</color>.
+    <br>Shift + <#00ffff>Mouse 3</color> - To use <#fff000>faction ping</color> on your map.
+
+# ═══════════════════════════════════════════════════════════
+# Value data - Officer Scout
+# ═══════════════════════════════════════════════════════════
+- value: minimumDefenders, 8
+- value: baseForceDifference, 3
+- value: capForceFactor, 4
+
+- value: msgCaptureBlockerCity1_true, <br><#00ff00><shortnameCity1></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity1=0>>>_60>></color> min
+- value: msgCaptureBlockerCity2_true, <br><#00ff00><shortnameCity2></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity2=0>>>_60>></color> min
+- value: msgCaptureBlockerCity3_true, <br><#00ff00><shortnameCity3></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity3=0>>>_60>></color> min
+- value: msgCaptureBlockerCity4_true, <br><#00ff00><shortnameCity4></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity4=0>>>_60>></color> min
+- value: msgCaptureBlockerCity5_true, <br><#00ff00><shortnameCity5></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity5=0>>>_60>></color> min
+- value: msgCaptureBlockerCity6_true, <br><#00ff00><shortnameCity6></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity6=0>>>_60>></color> min
+- value: msgCaptureBlockerCity7_true, <br><#00ff00><shortnameCity7></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity7=0>>>_60>></color> min
+- value: msgCaptureBlockerCity8_true, <br><#00ff00><shortnameCity8></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity8=0>>>_60>></color> min
+- value: msgCaptureBlockerCity9_true, <br><#00ff00><shortnameCity9></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity9=0>>>_60>></color> min
+- value: msgCaptureBlockerCity10_true, <br><#00ff00><shortnameCity10></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity10=0>>>_60>></color> min
+- value: msgCaptureBlockerCity11_true, <br><#00ff00><shortnameCity11></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity11=0>>>_60>></color> min
+- value: msgCaptureBlockerCity12_true, <br><#00ff00><shortnameCity12></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity12=0>>>_60>></color> min
+- value: msgCaptureBlockerCity13_true, <br><#00ff00><shortnameCity13></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity13=0>>>_60>></color> min
+- value: msgCaptureBlockerCity14_true, <br><#00ff00><shortnameCity14></color>:</b> <#fff000><ceil_<div_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity14=0>>>_60>></color> min
+
+- value: msgCaptureBlockerCity1_false,
+- value: msgCaptureBlockerCity2_false,
+- value: msgCaptureBlockerCity3_false,
+- value: msgCaptureBlockerCity4_false,
+- value: msgCaptureBlockerCity5_false,
+- value: msgCaptureBlockerCity6_false,
+- value: msgCaptureBlockerCity7_false,
+- value: msgCaptureBlockerCity8_false,
+- value: msgCaptureBlockerCity9_false,
+- value: msgCaptureBlockerCity10_false,
+- value: msgCaptureBlockerCity11_false,
+- value: msgCaptureBlockerCity12_false,
+- value: msgCaptureBlockerCity13_false,
+- value: msgCaptureBlockerCity14_false,
+
+- value: msgMaxAttackingPlayers_true, <#00ff00><min_<load_<BfvTeam<par_3>>onlineplayer=0>_<add_<add_<load_<BfvTeam<sub_3_<par_3>>>onlineplayer=0>_<baseForceDifference>>_<min_<capForceFactor>_<max_0_<add_<floor_<div_<sub_<load_<BfvTeam<sub_3_<par_3>>>onlineplayer=0>_12>_4>>_1>>>>></color> Players
+- value: msgMaxAttackingPlayers_false, <#cc0000>❎</color>
+
+- value: msgOfficerScout_trucetrue, 
+    <size=35><#ddd>It's <#fff000>Ceasefire</color> day.
+
+- value: msgOfficerScout_trucefalse, 
+    <size=25><#ddd>
+    <br><color<BfvTeam<par_3>>>Officer <par_1></color> scouted:</b>
+    <br>Current online <color<BfvTeam<sub_3_<par_3>>>><BfvTeam<sub_3_<par_3>>></color>:</b> <load_<BfvTeam<sub_3_<par_3>>>onlineplayer=0> Players
+    <br>Current online <color<BfvTeam<par_3>>><BfvTeam<par_3>></color>:</b> <load_<BfvTeam<par_3>>onlineplayer=0> Players
+    <br> Raid Window:</b> <raidwindow<load_raidwindow=0>>
+    <br> Min Defending <color<BfvTeam<sub_3_<par_3>>>><BfvTeam<sub_3_<par_3>>></color>:</b> <siege<ge_<load_<BfvTeam<sub_3_<par_3>>>onlineplayer=0>_<minimumDefenders>>> <minimumDefenders> Players
+    <br> Max Attacking <color<BfvTeam<par_3>>><BfvTeam<par_3>></color>:</b> <msgMaxAttackingPlayers_<ge_<load_<BfvTeam<sub_3_<par_3>>>onlineplayer=0>_<minimumDefenders>>>
+    <br>
+    <msgCaptureBlockerCity1_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity1=0>>>_0>>
+    <msgCaptureBlockerCity2_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity2=0>>>_0>>
+    <msgCaptureBlockerCity3_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity3=0>>>_0>>
+    <msgCaptureBlockerCity4_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity4=0>>>_0>>
+    <msgCaptureBlockerCity5_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity5=0>>>_0>>
+    <msgCaptureBlockerCity6_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity6=0>>>_0>>
+    <msgCaptureBlockerCity7_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity7=0>>>_0>>
+    <msgCaptureBlockerCity8_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity8=0>>>_0>>
+    <msgCaptureBlockerCity9_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity9=0>>>_0>>
+    <msgCaptureBlockerCity10_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity10=0>>>_0>>
+    <msgCaptureBlockerCity11_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity11=0>>>_0>>
+    <msgCaptureBlockerCity12_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity12=0>>>_0>>
+    <msgCaptureBlockerCity13_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity13=0>>>_0>>
+    <msgCaptureBlockerCity14_<gt_<sub_<captureCooldownPowerstone>_<sub_<time>_<load_captureblockercity14=0>>>_0>>
+    <br><size=300><#ffffff00>.

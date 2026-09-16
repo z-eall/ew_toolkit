@@ -1,0 +1,67 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Base Camp Bed                               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Value data
+# ═══════════════════════════════════════════════════════════
+- value: defaultBaseCampSignText, "<#ddd>Input your <#fff000>name<#ddd>,<br>to claim a <#00ffff>bed<#ddd>."
+
+# ═══════════════════════════════════════════════════════════
+# Static data - Base camp bed
+# ═══════════════════════════════════════════════════════════
+- name: isBaseCampBed
+  ints:
+  - isBaseCampBed, 1
+  - isBaseCampBedIndex, <int_isBaseCampBedIndex=0>
+  - Piece.m_targetNonPlayerBuilt, 0
+  - Piece.m_comfort, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 1500
+  - Bed.m_monsterCheckRadius, 0
+  strings:
+  - ownerName, <#fff000><rest_2></color>
+  longs:
+  - owner, <par_1>
+
+# ═══════════════════════════════════════════════════════════
+# Static data - Base camp private chest 
+# ═══════════════════════════════════════════════════════════
+- name: isBaseCampBedChest
+  ints:
+  - isBaseCampBedChest, 1
+  - isBaseCampBedIndex, <int_isBaseCampBedIndex=0>
+  - Container.m_width, 6
+  - Container.m_height, 3
+  - Piece.m_comfort, 1
+  - Piece.m_canBeRemoved, 0
+  - Piece.m_primaryTarget, 0
+  - Piece.m_randomTarget, 0
+  - WearNTear.m_noSupportWear, 0
+  - WearNTear.m_burnable, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  - Piece.m_returnResourceHeightOffset, 1500
+  strings:
+  - Container.m_name, <#fff000><rest_2><#ddd>'s $piece_chestprivate</color></color>
+  longs:
+  - creator, <par_1>
+  items: []
+
+# ═══════════════════════════════════════════════════════════
+# Blueprint data
+# ═══════════════════════════════════════════════════════════
+# data set=int,isBaseCampBedSignAdmin,1
+# data set=int,isBaseCampBedSignPlayer,1
+# data set=int,isBaseCampBedSpawner,1

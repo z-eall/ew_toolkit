@@ -1,0 +1,559 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Fallen City               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - RESTLESS WARRIOR
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: restlesswarrior_spawner
+  ints:
+  - restlesswarrior_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 6
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: restlesswarrior
+  ints:
+  - level, 2
+  - restlesswarrior, 1
+  floats:
+  - RandomSkillFactor, 1.5
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_circleTargetDuration, 2
+  - MonsterAI.m_circleTargetInterval, 4
+  - Humanoid.m_runSpeed, 7
+  strings:
+  - Humanoid.m_name, "Restless Warrior"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - ChestItem, ArmorIronChest
+  - LegItem, ArmorIronLegs
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - RESTLESS CAPTAIN
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: restlesscaptain_spawner
+  ints:
+  - restlesscaptain_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 30
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: restlesscaptain
+  ints:
+  - level, 3
+  - restlesscaptain, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - RandomSkillFactor, 2
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_circleTargetDuration, 2
+  - MonsterAI.m_circleTargetInterval, 4
+  - Humanoid.m_runSpeed, 8
+  - Humanoid.m_acceleration, 20
+  - Humanoid.m_health, 190
+  - max_health, 190
+  - Humanoid.m_runTurnSpeed, 1800
+  strings:
+  - Humanoid.m_name, "Restless Captain"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - ChestItem, ArmorIronChest
+  - LegItem, ArmorIronLegs
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - FORLORN CITIZEN
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: forlorn_spawner
+  ints:
+  - forlorn_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 10
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: forlorn
+  ints:
+  - forlorn, 1
+  - MonsterAI.m_circulateWhileCharging, 0
+  - MonsterAI.m_flee, 0
+  floats:
+  - RandomSkillFactor, 0.3
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_fleeRange, 1
+  - Humanoid.m_runSpeed, 2
+  - Humanoid.m_walkSpeed, 2
+  - Humanoid.m_health, 30
+  - max_health, 30
+  strings:
+  - Humanoid.m_name, "Forlorn Citizen"
+  - spawnerZDO, <string_spawnerZDO=0>
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - CATHEDRAL GUARD
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: cathguard_spawner
+  ints:
+  - cathguard_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: cathguard
+  ints:
+  - cathguard, 1
+  floats:
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_circleTargetDuration, 2
+  - MonsterAI.m_circleTargetInterval, 8
+  - MonsterAI.m_jumpInterval, 4
+  - Humanoid.m_jumpForce, 1
+  - Humanoid.m_jumpForceForward, 15
+  - Humanoid.m_runTurnSpeed, 1800
+  - Humanoid.m_runSpeed, 2
+  - Humanoid.m_walkSpeed, 2
+  - Humanoid.m_health, 310
+  - max_health, 310
+  strings:
+  - Humanoid.m_name, "Cathedral Guard"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - CATHEDRAL SAINT
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: cathsaint_spawner
+  ints:
+  - cathsaint_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 180
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: cathsaint
+  ints:
+  - cathsaint, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_DespawnInDay, 1
+  - level, 3
+  floats:
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_circleTargetDuration, 1
+  - MonsterAI.m_circleTargetInterval, 9
+  - MonsterAI.m_jumpInterval, 2
+  - Humanoid.m_jumpForce, 1
+  - Humanoid.m_jumpForceForward, 15
+  - Humanoid.m_runTurnSpeed, 1200
+  - Humanoid.m_runSpeed, 2
+  - Humanoid.m_walkSpeed, 2
+  - Humanoid.m_health, 820
+  - max_health, 820
+  strings:
+  - Humanoid.m_name, "Cathedral Saint"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - RESTLESS ARCHER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: restlessarcher_spawner
+  ints:
+  - restlessarcher_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 30
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: restlessarcher
+  ints:
+  - restlessarcher, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - MonsterAI.m_circleTargetDistance, 12
+  - MonsterAI.m_circleTargetDuration, 0.7
+  - MonsterAI.m_circleTargetInterval, 2
+  - MonsterAI.m_jumpInterval, 2
+  - Humanoid.m_jumpForce, 1
+  - Humanoid.m_jumpForceForward, 15
+  - Humanoid.m_runTurnSpeed, 1200
+  - Humanoid.m_runSpeed, 8
+  - Humanoid.m_health, 130
+  - max_health, 130
+  strings:
+  - Humanoid.m_name, "Restless Archer"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - FALLEN PRIEST
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: fallenpriest_spawner
+  ints:
+  - HasFieldsCreatureSpawner, 1
+  - fallenpriest_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 30
+  - CreatureSpawner.m_respawnTimeMinuts, 180
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: fallenpriest
+  ints:
+  - MonsterAI_DespawnInDay, 1
+  - fallenpriest, 1
+  - level, 2
+  floats:
+  - MonsterAI.m_minAttackInterval, 5
+  - MonsterAI.m_circleTargetDistance, 6
+  - MonsterAI.m_circleTargetDuration, 2
+  - MonsterAI.m_circleTargetInterval, 3
+  - MonsterAI.m_jumpInterval, 3
+  - Humanoid.m_jumpForce, 2
+  - Humanoid.m_jumpForceForward, -23
+  - Humanoid.m_runTurnSpeed, 1200
+  - Humanoid.m_health, 750
+  - max_health, 750
+  - RandomSkillFactor, 0.9
+  strings:
+  - Humanoid.m_name, "Fallen Priest"
+  - spawnerZDO, <string_spawnerZDO=0>
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - TOXICON
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: toxicon_spawner
+  ints:
+  - toxicon_spawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 40
+  - CreatureSpawner.m_respawnTimeMinuts, 120
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: toxicon
+  ints:
+  - MonsterAI_DespawnInDay, 1
+  - toxicon, 1
+  - level, 4
+  floats:
+  - MonsterAI.m_jumpInterval, 3
+  - Humanoid.m_jumpForce, 13
+  - Humanoid.m_jumpForceForward, 4
+  - Humanoid.m_runTurnSpeed, 400
+  - Humanoid.m_flyTurnSpeed, 400
+  - RandomSkillFactor, 1.4
+  strings:
+  - Humanoid.m_name, "Toxicon"
+  - spawnerZDO, <string_spawnerZDO=0>
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,15000
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - BOSS - VALDRAKA
+# ═══════════════════════════════════════════════════════════
+# Creature
+- name: valdraka
+  ints:
+  - valdraka, 1
+  - Humanoid.m_boss, 1
+  - MonsterAI_DespawnInDay, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_circulateWhileCharging, 1
+  floats:
+  - Humanoid.m_health, 9000
+  - max_health, 9000
+  - MonsterAI.m_jumpInterval, 3
+  - MonsterAI.m_circleTargetInterval, 20
+  - MonsterAI.m_circleTargetDuration, 6
+  - MonsterAI.m_alertRange, 40
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 50
+  - MonsterAI.m_flyAltitudeMin, 4
+  - Humanoid.m_jumpForce, 13
+  - Humanoid.m_jumpForceForward, 4
+  - Humanoid.m_runTurnSpeed, 400
+  - Humanoid.m_flyTurnSpeed, 2000
+  - Humanoid.m_flyFastSpeed, 16
+  - Humanoid.m_flySlowSpeed, 12
+  - Humanoid.m_airControl, 800
+  - RandomSkillFactor, 0.9
+  strings:
+  - MonsterAI.m_alertedMessage, "<color=orange>Foolish humans, my wrath against your kin still burns!"
+  - MonsterAI.m_deathMessage, "<color=orange>Ashengard... shall never fall..." 
+  - Humanoid.m_name, "Valdraka"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# Loot drop
+- name: loot_valdraka
+  position: 196,3646,83
+  rotation: 90,0,0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - loot_valdraka, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Valkyrie's Treasure"
+  items:
+  - prefab: Coins
+    stack: 300;600
+    chance: 1
+  - prefab: TrophyFallenValkyrie
+    chance: 1
+  - prefab: MaceEldnerLightning
+    chance: 0.25
+    quality: 3
+  - prefab: SwordNiedhoggLightning
+    chance: 0.25
+    quality: 3
+  - prefab: SpearSplitner_Nature
+    chance: 0.25
+    quality: 3
+  - prefab: ArmorTunic3
+    chance: 0.3
+    quality: 20
+  - prefab: ArmorTunic9
+    chance: 0.3
+    quality: 20
+  - prefab: ArmorMageChest_Ashlands
+    chance: 0.25
+    quality: 4
+  - prefab: THSwordSlayerLightning
+    chance: 0.04
+    quality: 2
+  - prefab: THSwordSlayerNature
+    chance: 0.04
+    quality: 2
+  
+- name: isBellValdraka
+  ints:
+  - ItemStand.m_canBeRemoved, 1
+  strings:
+  - item, Bell
+  - Piece.m_name, bell_val
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - BOSS - CROWNBEAST BJORN
+# ═══════════════════════════════════════════════════════════
+# Creature
+- name: crownbeast
+  ints:
+  - crownbeast, 1
+  - Humanoid.m_boss, 1
+  - MonsterAI_DespawnInDay, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_fleeIfHurtWhenTargetCantBeReached, 1
+  - Humanoid.m_aiSkipTarget, 1
+  - MonsterAI.m_afraidOfFire, 1
+  floats:
+  - MonsterAI.m_jumpInterval, 3
+  - MonsterAI.m_circleTargetInterval, 7
+  - MonsterAI.m_circleTargetDuration, 3
+  - MonsterAI.m_circleTargetDistance, 14
+  - MonsterAI.m_alertRange, 50
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 50
+  - MonsterAI.m_maxChaseDistance, 0
+  - Humanoid.m_runTurnSpeed, 400
+  - Humanoid.m_health, 2100 
+  - max_health, 2100
+  - RandomSkillFactor, 1.4
+  strings:
+  - MonsterAI.m_alertedMessage, "<color=orange>The king's warden heeds the call..."
+  - MonsterAI.m_deathMessage, "<color=orange>Rest in peace, big bear." 
+  - Humanoid.m_name, "Crownbeast Bjorn"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# Loot drop
+- name: loot_bjorn
+  position: 187,3867,55
+  rotation: 0,0,0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - loot_bjorn, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Bjorn's Treasure"
+  items:
+  - prefab: Coins
+    stack: 100;250
+    chance: 1
+  - prefab: TrophyBjornUndead
+    chance: 1
+  - prefab: Hearthstone
+    chance: 0.25
+    stack: 1;3
+  - prefab: FistBjornUndeadClaw
+    chance: 0.25
+  - prefab: TrinketBlackDamageHealth
+    chance: 0.25
+  - prefab: TrinketBlackStamina
+    chance: 0.25
+
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - BOSS - MORGOTHAR
+# ═══════════════════════════════════════════════════════════
+# Creature
+- name: morgothar
+  ints:
+  - morgothar, 1
+  - level, 4
+  - Humanoid.m_boss, 1
+  - MonsterAI.m_circulateWhileCharging, 1
+  - Humanoid.m_aiSkipTarget, 0
+  floats:
+  - MonsterAI.m_jumpInterval, 2
+  - MonsterAI.m_circleTargetInterval, 40
+  - MonsterAI.m_circleTargetDuration, 3
+  - MonsterAI.m_circleTargetDistance, 5
+  - MonsterAI.m_alertRange, 100
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 100
+  - MonsterAI.m_randomMoveInterval, 90
+  - Humanoid.m_runTurnSpeed, 600
+  - Humanoid.m_health, 8000
+  - Humanoid.m_jumpForce, 22
+  - Humanoid.m_jumpForceForward, -10
+  - Humanoid.m_turnSpeed, 600
+  - max_health, 8000
+  - RandomSkillFactor, 1.6
+  strings:
+  - MonsterAI.m_alertedMessage, "<color=orange>At last... Kneel before the Emerald Flame!"
+  - MonsterAI.m_deathMessage, "<color=orange>At your service, dragon king..." 
+  - Humanoid.m_name, "Morgothar"
+  - spawnerZDO, <string_spawnerZDO=0>
+
+# Loot drop 
+- name: loot_morgothar
+  position: 161,3646,62
+  rotation: 90,0,0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - loot_morgothar, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Morgothar's Treasure"
+  items:
+  - prefab: Coins
+    stack: 500;1000
+    chance: 1
+  - prefab: Hearthstone
+    chance: 1
+    stack: 2;4
+  - prefab: ShieldMorgen1
+    chance: 1
+    stack: 1
+  - prefab: AxeMorgen
+    chance: 1
+    stack: 1
+  - prefab: FierySvinstew
+    chance: 0.5
+    stack: 4;8
+  - prefab: PiquantPie
+    chance: 0.5
+    stack: 4;8
+  - prefab: MeadHealthLingering
+    chance: 0.5
+    stack: 3;6
+  - prefab: MeadEitrLingering
+    chance: 0.5
+    stack: 3;6
+  - prefab: SpearJavelinSpirit
+    chance: 0.25
+    stack: 1
+  - prefab: CapeAsh
+    chance: 0.25
+    stack: 1
+  - prefab: GemstoneRed
+    chance: 0.05
+    stack: 1
+  - prefab: GemstoneBlue
+    chance: 0.05
+    stack: 1
+  - prefab: GemstoneGreen
+    chance: 0.05
+    stack: 1
+  - prefab: TrinketFlametalStaminaHealth
+    chance: 0.05
+    stack: 1
+  - prefab: TrinketFlametalEitr
+    chance: 0.05
+    stack: 1
+
+# For NPC dialogue - OFF
+- name: morgotharSpawner_off
+  ints:
+  - morgotharSpawner, 1
+  - morgotharSpawner_off, 1
+  floats:
+  - stamp, <time>
+  strings:
+  - KGnpcModelOverride, GraveStone_Broken_World
+  - KGnpcDialogue, soulforge_off
+
+# For NPC dialogue - ON
+- name: morgotharSpawner_on
+  ints:
+  - morgotharSpawner, 1
+  - morgotharSpawner_on, 1
+  strings:
+  - KGnpcNameOverride, <size=0>Binding of Soulforge</size>
+  - KGnpcModelOverride, GraveStone_Elite_CharredTwitcherNest
+  - KGnpcDialogue, soulforge

@@ -1,0 +1,241 @@
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Team Lead Setup                             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Assigning leaders
+# ═══════════════════════════════════════════════════════════
+# !assignlead teamID <self>
+# !assignlead 1 = assign the player standing in front of you to become a lead of Wolf
+# !assignlead 2 self = assign yourself to become lead of Dragon
+- prefab: Player
+  type: say, !assignlead
+  admin: true
+  cancel: true
+  poke:
+  - prefab: Player
+    limit: 1
+    maxDistance: 5
+    offset: 0,2,0
+    parameter: assignTeamLead <par_1> front # teamID, indicator
+  - self: true
+    parameter: assignTeamLead <par_1> <par_2> # teamID, assignSelf
+
+# ═══════════════════════════════════════════════════════════
+# Becoming leaders
+# ═══════════════════════════════════════════════════════════
+# Admin
+- prefab: Player
+  type: poke, assignTeamLead 1,2 self
+  admin: true
+  exec: |
+    <save_<pid>/team_<par_1>>;
+    <save_<pid>/teamlead_<par_1>>
+  data: changeAdminTeam
+  injectData: true
+  # commands:
+  # - s 💎 <pname> has joined the leadership of the <longBfvTeam<par_1>>.
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, 💎 <pname>, You joined the leadership of the <longBfvTeam<par_1>>.
+    3: int, 1
+    repeat: 2
+    repeatInterval: 1
+    overwrite: true
+
+# Non-admin
+- prefab: Player
+  type: poke, assignTeamLead 1,2 front
+  admin: false
+  exec: |
+    <save_<pid>/teamlead_<par_1>>
+  data: int, bfvTeamLead, <par_1>
+  commands:
+  - s 💎 <pname> has joined the leadership of the <longBfvTeam<par_1>>.
+
+# ═══════════════════════════════════════════════════════════
+# Resigning leaders
+# ═══════════════════════════════════════════════════════════
+# Admin
+- prefab: Player
+  type: poke, assignTeamLead 0 self
+  admin: true
+  exec: |
+    <clear_<pid>/teamlead>
+  data: int, bfvTeamLead, 0
+  # commands:
+  # - s ✖️ <pname> is no longer in the leadership of the <longBfvTeam<par_1>>.
+  objectRpc:
+  - name: Message
+    1: enum_message, 2
+    2: string, 💎 <pname>, You no longer in the leadership of the <longBfvTeam<load_<pid>/teamlead=-1>>.
+    3: int, 1
+    repeat: 2
+    repeatInterval: 1
+    overwrite: true
+
+# Non-admin
+- prefab: Player
+  type: poke, assignTeamLead 0 front
+  admin: false
+  exec: |
+    <clear_<pid>/teamlead>
+  data: int, bfvTeamLead, 0
+  commands:
+  - s ✖️ <pname> is no longer in the leadership of the <longBfvTeam<load_<pid>/teamlead=-1>>.
+  
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Team Lead Functions                         ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Team Lead Staffs - Wolf
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: state, action swing_sledge
+  filters:
+  - hash, RightItem, StaffWolf
+  keys: <pid>/teamlead 1
+  poke:
+  - self: true
+    parameter: checkWolfStaffCooldown <ge_<floor_<sub_<time>_<load_<pid>/staffcooldown=0>>>_<cooldown_officerstaff>> # radarCD
+
+- prefab: Player
+  type: poke, checkWolfStaffCooldown false
+  weight: 1e30
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Staff cooling down for <ceil_<sub_<cooldown_officerstaff>_<sub_<time>_<load_<pid>/staffcooldown=0>>>> sec
+    4: bool, true
+
+- prefab: Player
+  type: poke, checkWolfStaffCooldown true
+  fallback: true
+  exec: |
+    <save_<pid>/staffcooldown_<time>>
+  spawn:
+  - prefab: fx_fenring_frost
+    delay: 2
+    rot: -50,-90,0
+  - prefab: sfx_wolfroar
+  - prefab: vfx_troll_log_hitground
+    delay: 2
+  - prefab: sfx_troll_rock_destroyed
+    delay: 2
+  - prefab: vfx_offering
+    delay: 1
+  poke:
+  - prefab: Player
+    self: true
+    filter: int, bfvTeam, <int_bfvTeam=1>
+    maxDistance: 50
+    parameter: buffSameTeamPlayerWolf
+
+- prefab: Player
+  type: poke, buffSameTeamPlayerWolf
+  spawn:
+  - prefab: fx_DvergerMage_MistileSpawn
+    pos: 0,0,1
+  objectRpc:
+  - name: RPC_Damage
+    1: hit, status=WolfStaff
+
+# ═══════════════════════════════════════════════════════════
+# Team Lead Staffs - Dragon
+# ═══════════════════════════════════════════════════════════
+- prefab: Player
+  type: state, action swing_sledge
+  filters:
+  - hash, RightItem, StaffDragon
+  keys: <pid>/teamlead 2
+  poke:
+  - self: true
+    parameter: checkDragonStaffCooldown <ge_<floor_<sub_<time>_<load_<pid>/staffcooldown=0>>>_<cooldown_officerstaff>> # radarCD
+
+- prefab: Player
+  type: poke, checkDragonStaffCooldown false
+  weight: 1e30
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Staff cooling down for <ceil_<sub_<cooldown_officerstaff>_<sub_<time>_<load_<pid>/staffcooldown=0>>>> sec
+    4: bool, true
+
+- prefab: Player
+  type: poke, checkDragonStaffCooldown true
+  fallback: true
+  exec: |
+    <save_<pid>/staffcooldown_<time>>
+  spawn:
+  - prefab: fx_fenring_flames
+    delay: 2
+    rot: -50,-90,0
+  - prefab: sfx_dragonroar
+  - prefab: vfx_troll_log_hitground
+    delay: 2
+  - prefab: sfx_troll_rock_destroyed
+    delay: 2
+  - prefab: vfx_offering
+    delay: 1
+  poke:
+  - prefab: Player
+    self: true
+    filter: int, bfvTeam, <int_bfvTeam=2>
+    maxDistance: 50
+    parameter: buffSameTeamPlayerDragon
+
+- prefab: Player
+  type: poke, buffSameTeamPlayerDragon
+  spawn:
+  - prefab: fx_DvergerMage_MistileSpawn
+    pos: 0,0,1
+  objectRpc:
+  - name: RPC_Damage
+    1: hit, status=DragonStaff
+
+# ═══════════════════════════════════════════════════════════
+# Command House
+# ═══════════════════════════════════════════════════════════
+- prefab: Pickable_Mushroom, Pickable_Mushroom_blue
+  type: change, picked 1
+  filters: 
+  - int, isCommandHouseTeam, 1;2
+  remove: true
+  spawn:
+  - prefab: <prefab>
+    data: isCommandHouseTeam<int_isCommandHouseTeam=1>
+  poke:
+  - prefab: Player
+    limit: 1
+    maxDistance: 5
+    parameter: TeleportPlayerRedLead <pos_0,1,-2.5> <int_isCommandHouseTeam=0>
+
+- prefab: Player
+  type: poke, TeleportPlayerRedLead
+  keys: <pid>/teamlead <par_2>
+  objectRpc:
+  - name: RPC_TeleportTo
+    1: vec, <par_1>,<par_2>,<par_3>
+    2: quat, <a>
+    3: bool, true
+
+# - prefab: Mushroom
+  # type: create
+  # objects:
+  # - prefab: darkwood_gate
+    # filter: string, Door.m_name, "Command House"
+    # maxDistance: 10
+  # remove: true

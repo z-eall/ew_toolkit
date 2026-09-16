@@ -1,0 +1,205 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Fallen City               ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# FALLEN CITY - RESTLESS WARRIOR
+# ═══════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - ICEBLOOD REVENANT
+# ═══════════════════════════════════════════════════════════
+# Loot drop
+- prefab: Ghost
+  type: destroy
+  filter: string, Humanoid.m_name, "Iceblood Revenant" 
+  # spawn:
+  # - prefab: Blackrot
+    # data: int, stack, 1
+    # chance: 0.15
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - SEALSTONE GUARDIAN 1
+# ═══════════════════════════════════════════════════════════
+# Loot drop
+- prefab: StoneGolem
+  type: destroy
+  filter: string, Humanoid.m_name, "Sealstone Guardian I" 
+  spawn:
+  - prefab: SentryEnergy
+    data: int, stack, 1;3
+    chance: 0.8
+  - prefab: TrophySGuardian
+    data: int, stack, 1;2
+    chance: 0.2
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - SEALSTONE GUARDIAN 2
+# ═══════════════════════════════════════════════════════════
+# Loot drop
+- prefab: StoneGolem
+  type: destroy
+  filter: string, Humanoid.m_name, "Sealstone Guardian II" 
+  spawn:
+  - prefab: SentryEnergy
+    data: int, stack, 1;3
+    chance: 0.8
+  - prefab: TrophySGuardian
+    data: int, stack, 1;2
+    chance: 0.2
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - SEALSTONE GUARDIAN 3
+# ═══════════════════════════════════════════════════════════
+# Loot drop
+- prefab: StoneGolem
+  type: destroy
+  filter: string, Humanoid.m_name, "Sealstone Guardian III" 
+  spawn:
+  - prefab: SentryEnergy
+    data: int, stack, 1;3
+    chance: 0.8
+  - prefab: TrophySGuardian
+    data: int, stack, 1;2
+    chance: 0.2
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - FROSTSEER SKADIR
+# ═══════════════════════════════════════════════════════════
+# Minions
+- prefab: sfx_wraith_idle, sfx_wraith_alerted
+  type: create
+  objects:
+  - prefab: dverger_demister_broken
+    filter: int, isFrostseerSpawner, 1
+    maxDistance: 5
+  poke:
+  - prefab: Piece_grausten_pillarbeam_medium
+    filter: int, isFrostseerBlobSpawner, 1
+    limit: 4
+    maxDistance: 20
+    parameter: cooldownFrostseerBlobSpawner
+
+- prefab: Piece_grausten_pillarbeam_medium
+  type: poke, cooldownFrostseerBlobSpawner
+  filter: float, cooldownFrostseerBlobSpawner, 0;<time>-20
+  data: float, cooldownFrostseerBlobSpawner, <time>
+  bannedObjects:
+  - prefab: BlobFrost
+  bannedObjectsLimit: 8
+  spawn:
+  - prefab: BlobFrost
+    data: cryoooze
+    pos: 0,-0.7,-3
+
+# Loot drop
+- prefab: Wraith
+  type: destroy
+  filter: string, Humanoid.m_name, "Frostseer Skadir"
+  commands:
+  - s The Frostseer has fallen.
+  - s His eternal ritual is broken. The Everfrost can no longer endure.
+  # spawn:
+  # - prefab: Blackrot
+    # data: int, stack, 1
+    # chance: 0.15
+  poke:
+  - prefab: caverock_ice_pillar_wall,piece_bed02
+    filters:
+    - int, isFrostholdEverfrostIce, 1
+    - int, isFrostholdEverfrostBed, 1
+    filterLimit: 1
+    parameter: removeFrostholdBoss
+  - prefab: piece_shieldgenerator
+    filter: int, isFrostholdShieldGenerator, 1
+    parameter: removeFrostholdShield
+
+# ═══════════════════════════════════════════════════════════
+# FROSTHOLD - BOSS - FROSTLORD GLACIR
+# ═══════════════════════════════════════════════════════════
+# Minions
+- prefab: vfx_player_hit
+  type: create
+  objects:
+  - prefab: dverger_demister_broken
+    filter: int, isFrostlordSpawner, 1
+    maxDistance: 20
+    maxHeight: 10
+  poke:
+  - prefab: dverger_demister_broken
+    filter: int, isFrostlordSpawner, 1
+    maxDistance: 20
+    parameter: cooldownFrostlordMirrage <upper_<pname>> MIRRAGE
+
+- prefab: dverger_demister_broken
+  type: poke, cooldownFrostlordMirrage
+  filter: float, cooldownFrostlordMirrage, 0;<time>-20
+  data: float, cooldownFrostlordMirrage, <time>
+  objects:
+  - prefab: Charred_Melee_Dyrnwyn
+    filter: int, frostlordglacir, 1
+    maxDistance: 25
+  bannedObjects:
+  - prefab: Charred_Melee_Dyrnwyn
+    filter: int, vikingmirrage, 1
+  bannedObjectsLimit: 3
+  spawn:
+  - prefab: Charred_Melee_Dyrnwyn
+    data: vikingmirrage
+    pos: 0,0,-4
+    triggerRules: true
+  poke:
+  - prefab: Charred_Melee_Dyrnwyn
+    filter: int, frostlordglacir, 1
+    limit: 1
+    maxDistance: 20
+    parameter: buffFrostlord
+
+- prefab: Charred_Melee_Dyrnwyn
+  type: create
+  filter: int, vikingmirrage, 1
+  remove: true
+  removeDelay: 60
+  spawn:
+  - prefab: fx_charred_death
+  objectRpc:
+  - name: RPC_Damage
+    1: hit, status=GoblinShaman_shield
+    delay: 0.1
+
+- prefab: Charred_Melee_Dyrnwyn
+  type: poke, buffFrostlord
+  objectRpc:
+  - name: RPC_Damage
+    1: hit, status=GoblinShaman_shield
+    delay: 0.1
+
+# Loot drop
+- prefab: Charred_Melee_Dyrnwyn
+  type: destroy
+  filter: string, Humanoid.m_name, "Frostlord Glacir"
+  commands:
+  - s The Frostlord has fallen.
+  - s His eternal prison fades with the Everfrost, and Frosthold is free once more.
+  exec: |
+    <save_frostholdtpblocker_1>
+  # spawn:
+  # - prefab: Blackrot
+    # data: int, stack, 1
+    # chance: 0.15
+  poke:
+  - prefab: rock3_ice_frac
+    filters:
+    - int, isFrostholdPowerstoneBlocker, 1
+    filterLimit: 1
+    parameter: removeFrostholdBoss
+  - prefab: Spawner_Bat
+    filters:
+    - string, isSpawningPrefab, StoneGolem
+    - string, isSpawningPrefab, Ghost
+    filterLimit: 1
+    maxDistance: 300
+    parameter: stopFrostholdRevenants

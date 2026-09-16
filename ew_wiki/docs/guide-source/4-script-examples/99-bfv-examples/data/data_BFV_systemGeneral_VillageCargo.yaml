@@ -1,0 +1,98 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Value data - Village Cargo                      ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- value: cargoResetRange, 100
+
+# ═══════════════════════════════════════════════════════════
+# Random Cargo # based on world level
+# ═══════════════════════════════════════════════════════════
+- value: randomCargoLvl0, 0
+- value: randomCargoLvl1, <randi_1_5>
+- value: randomCargoLvl2, <randi_1_7>
+- value: randomCargoLvl3, <randi_1_9>
+- value: randomCargoLvl4, <randi_1_9>
+- value: randomCargoLvl5, <randi_1_12>
+- value: randomCargoLvl6, <randi_1_12>
+- value: randomCargoLvl7, <randi_1_12>
+- value: randomCargoLvl8, <randi_1_12>
+
+# ═══════════════════════════════════════════════════════════
+# Random of Village # based on world level
+# ═══════════════════════════════════════════════════════════
+- value: randomVillageLvl0, 0
+- value: randomVillageLvl1, 4
+- value: randomVillageLvl2, 7
+- value: randomVillageLvl3, 10
+- value: randomVillageLvl4, 12
+- value: randomVillageLvl5, 14
+- value: randomVillageLvl6, 14
+- value: randomVillageLvl7, 14
+- value: randomVillageLvl8, 14
+
+# ═══════════════════════════════════════════════════════════
+# Name of Cargo Destination
+# ═══════════════════════════════════════════════════════════
+- value: nameCargoDestination0, 0
+- value: nameCargoDestination1, Dragonfang
+- value: nameCargoDestination2, Varghelm
+- value: nameCargoDestination3, Haradin
+- value: nameCargoDestination4, Seaguard
+- value: nameCargoDestination5, Stormbreaker
+- value: nameCargoDestination6, Bloodstone
+- value: nameCargoDestination7, Windhaven
+- value: nameCargoDestination8, Riverstone
+- value: nameCargoDestination9, Sunward
+- value: nameCargoDestination10, Selenium
+- value: nameCargoDestination11, Banegard
+
+# ═══════════════════════════════════════════════════════════
+# Name of Villages
+# ═══════════════════════════════════════════════════════════
+- value: nameVillage1, Eldervik
+- value: nameVillage2, Denbark
+- value: nameVillage3, Rokentop
+- value: nameVillage4, Timberfall
+- value: nameVillage5, Duskmire
+- value: nameVillage6, Konbrad
+- value: nameVillage7, Rootmere
+- value: nameVillage8, Evergrove
+- value: nameVillage9, Albinar
+- value: nameVillage10, Skeldore
+- value: nameVillage11, Craghaven
+- value: nameVillage12, Gullrock
+- value: nameVillage13, Erikstead
+- value: nameVillage14, Leifstead
+- value: nameVillage15, Sorrowfen
+
+
+# ═══════════════════════════════════════════════════════════
+# Cargo Info Message
+# ═══════════════════════════════════════════════════════════
+- value: cargoInfoRange, 30
+
+- value: cargoInfo1, <#00ff00>✅</color>
+- value: cargoInfo0, <#cc0000>❎</color>
+- value: cargoInfo-1, <#00ffff>🔒</color>
+
+- value: msgCargoInfo, 
+    <br><br><br><br>
+    <align=left><size=45>
+    <br>Cargo availability:</b><#ddd><size=35>
+    <br><cargoInfo<load_cargovillage1=-1>> Eldervik
+    <br><cargoInfo<load_cargovillage2=-1>> Denbark
+    <br><cargoInfo<load_cargovillage3=-1>> Rokentop
+    <br><cargoInfo<load_cargovillage4=-1>> Timberfall
+    <br><cargoInfo<load_cargovillage5=-1>> Duskmire
+    <br><cargoInfo<load_cargovillage6=-1>> Konbrad
+    <br><cargoInfo<load_cargovillage7=-1>> Rootmere
+    <br><cargoInfo<load_cargovillage8=-1>> Evergrove
+    <br><cargoInfo<load_cargovillage9=-1>> Albinar
+    <br><cargoInfo<load_cargovillage10=-1>> Skeldore
+    <br><cargoInfo<load_cargovillage11=-1>> Craghaven
+    <br><cargoInfo<load_cargovillage12=-1>> Gullrock
+    <br><cargoInfo<load_cargovillage13=-1>> Erikstead
+    <br><cargoInfo<load_cargovillage14=-1>> Leifstead

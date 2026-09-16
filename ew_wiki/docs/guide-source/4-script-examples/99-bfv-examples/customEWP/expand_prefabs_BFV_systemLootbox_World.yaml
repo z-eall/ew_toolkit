@@ -1,0 +1,256 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - World Biomes                          ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Meadows
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner1, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot1
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Black Forest
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner2, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot2
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Swamp
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner3, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot3
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Mountain
+# ═══════════════════════════════════════════════════════════
+# Frostner Lvl8 Debugging
+- prefab: Player
+  type: say, !frostner
+  admin: true
+  cancel: true
+  spawn: vfx_spawn_small, 0,0,1
+  poke:
+  - prefab: Container
+    maxDistance: 20000
+    parameter: findContainer
+
+- prefab: Container
+  type: poke, findContainer
+  poke:
+  - self: true
+    parameter: findFrostner <item_MaceSilver>
+
+- prefab: Container
+  type: poke, findFrostner 1;999
+  exec: <save_frostner<zdo>_<pos>>
+
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner4, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot4
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Plains
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner5, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot5
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Mistlands
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner6, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot6
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Ashlands
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, worldlootspawner7, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: worldloot7
+    triggerRules: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - World POIs                            ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Fallen City
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, fallencity_loot_spawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: fallencity_loot
+    triggerRules: true
+    
+# ═══════════════════════════════════════════════════════════
+# Spawner - Goblin Dungeons
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, goblindungeon_loot_spawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: loot_goblindungeon
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Elderoot Mine
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Blob
+    filters:
+    - int, elderoot_spawner2hr, 1
+    - int, elderoot_spawner6hr, 1
+    filterLimit: 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: elderoot02
+    maxDistance: 1
+  swap:
+  - prefab: elderoot02
+    data: elderoot
+    triggerRules: true
+  spawn:
+  - prefab: vfx_poisonarrow_hit
+
+# ═══════════════════════════════════════════════════════════
+# Custom drop from Elderoot
+# ═══════════════════════════════════════════════════════════
+- prefab: elderoot02
+  type: destroy
+  objects:
+  - prefab: Player
+    maxDistance: 15
+  spawn:
+  - prefab: RootElder2
+  - prefab: vfx_poisonarrow_hit
+  - prefab: sfx_eldenking_summon
+    delay: 2
+    chance: 0.05
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox Despawn Aesthetic                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_chest_wood
+  type: destroy
+  filters:
+  # - string, Container.m_name, Treasure # Excessive filter
+  - int, chestnumba, 20;28
+  spawn:
+  - prefab: vfx_BugRepellent
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Debugging                                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Fallback to remove sfx
+# - prefab: sfx_secretfound
+  # type: create
+  # fallback: true
+  # objects:
+  # - prefab: Spawner_Bat
+    # maxDistance: 1
+  # remove: true
+# Duplicated in systemLootbox_City

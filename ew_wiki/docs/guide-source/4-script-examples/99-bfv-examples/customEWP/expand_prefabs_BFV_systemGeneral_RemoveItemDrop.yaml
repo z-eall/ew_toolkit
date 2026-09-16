@@ -1,0 +1,22 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Remove ItemDrops                                ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ItemDrop Remove
+- prefab: ItemDrop, GoblinShaman_Hildir_nochest
+  type: create
+  bannedFilter: int, pickedUp, 1 # 2nd layer failsafe, player thrown item = pickedUp, 1
+  minY: 10000 # This sets a range starts from 10000y
+  # maxY: 20000 # This sets a range ends at 20000y
+  remove: true
+  
+- prefab: GoblinTotem
+  type: create
+  drops: true
+  objects:
+  - prefab: vfx_corpse_destruction_medium
+    maxDistance: 10
+  remove: true

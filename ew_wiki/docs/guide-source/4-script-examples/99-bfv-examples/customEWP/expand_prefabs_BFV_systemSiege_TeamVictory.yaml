@@ -1,0 +1,64 @@
+## VICTORY
+  
+# WOLF
+- prefab: BossStone_Fader
+  type: state, item *
+  poke:
+  - prefab: Player
+    maxDistance: 5
+    parameter: win
+    
+- prefab: Player
+  type: poke, win
+  keys: <pid>/team 1
+  spawns:
+  - vfx_Firework_Rocket_Blue
+  - vfx_Firework_Rocket_Blue, 0,20,0
+  - vfx_Firework_Rocket_Blue, 0,-20,0
+  - vfx_Firework_Rocket_Blue, 20,0,0
+  - vfx_Firework_Rocket_Blue, -20,0,0
+  - vfx_Firework_Rocket_Blue, 5,5,-50
+  - vfx_Firework_Rocket_Blue, -5,-5,-80
+  - sfx_fader_fissure
+  - vfx_FireWork_SurtlingCore
+  - vfx_FireWork_SurtlingCore, 0,30,0
+  - vfx_FireWork_SurtlingCore, 40,0,0
+  - vfx_FireWork_SurtlingCore, -40,0,0
+  - vfx_FireWork_SurtlingCore, 0,-40,0
+  - vfx_FireWork_SurtlingCore, 70,30,0
+  - vfx_FireWork_SurtlingCore, -80,-35,0
+  - vfx_FireWork_SurtlingCore, 30,100,0
+  - vfx_FireWork_SurtlingCore, -34,-100,0
+  - vfx_offering, 0,0,7
+  commands:
+  - s <pname> HANGED FADER'S TROPHY AT ODIN'S ALTAR!
+  - s THE SHADOWBORN WOLVES WIN THE BATTLE FOR VALHALLA!
+  - broadcast center ;wait 2000;broadcast center <color=#93ff91>FADER'S TROPHY IS HANGED AT ODIN'S ALTAR!;wait 1500;broadcast center <color=#93ff91>FADER'S TROPHY IS HANGED AT ODIN'S ALTAR!;wait 2000;broadcast center <color=#0da6ff><size=65>🐺 SHADOWBORN WOLVES 🐺<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#0da6ff><size=65>🐺 SHADOWBORN WOLVES 🐺<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#0da6ff><size=65>🐺 SHADOWBORN WOLVES 🐺<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#0da6ff><size=65>🐺 SHADOWBORN WOLVES 🐺<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 5000;broadcast center <color=#fbffde><size=45>🔥 ETERNAL GLORY TO THE VICTORS! 🔥;wait 9000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 2000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 2000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 6000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=#5eff94>Rayuzanda<br><color=white>Hilli<br>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br><color=#5eff94>Hilli<br><color=white>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br><color=#5eff94>DoctorSmaug<color=white><br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br>DoctorSmaug<br><color=#5eff94>Z e a l l;wait 8000;broadcast center <size=50>See you on the next season!<br>SKOL! 🍺;wait 2000;broadcast center <size=50>See you on the next season!<br>SKOL! 🍺
+
+# DRAGON
+- prefab: Player
+  type: poke, win
+  keys: <pid>/team 2
+  spawns:
+  - vfx_Firework_Rocket_Red
+  - vfx_Firework_Rocket_Red, 0,20,0
+  - vfx_Firework_Rocket_Red, 0,-20,0
+  - vfx_Firework_Rocket_Red, 20,0,0
+  - vfx_Firework_Rocket_Red, -20,0,0
+  - vfx_Firework_Rocket_Red, 5,5,-50
+  - vfx_Firework_Rocket_Red, -5,-5,-80
+  - sfx_fader_fissure
+  - vfx_FireWork_SurtlingCore
+  - vfx_FireWork_SurtlingCore, 0,30,0
+  - vfx_FireWork_SurtlingCore, 40,0,0
+  - vfx_FireWork_SurtlingCore, -40,0,0
+  - vfx_FireWork_SurtlingCore, 0,-40,0
+  - vfx_FireWork_SurtlingCore, 70,30,0
+  - vfx_FireWork_SurtlingCore, -80,-35,0
+  - vfx_FireWork_SurtlingCore, 30,100,0
+  - vfx_FireWork_SurtlingCore, -34,-100,0
+  - vfx_offering, 0,0,7
+  commands:
+  - s <pname> HANGED FADER'S TROPHY AT ODIN'S ALTAR!
+  - s THE BLOODFIRE DRAGONS WIN THE BATTLE FOR VALHALLA!
+  - broadcast center ;wait 2000;broadcast center <color=#93ff91>FADER'S TROPHY IS HANGED AT ODIN'S ALTAR!;wait 1500;broadcast center <color=#93ff91>FADER'S TROPHY IS HANGED AT ODIN'S ALTAR!;wait 2000;broadcast center <color=#ff290d><size=65>🐉 BLOODFIRE DRAGONS 🐉<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#ff290d><size=65>🐉 BLOODFIRE DRAGONS 🐉<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#ff290d><size=65>🐉 BLOODFIRE DRAGONS 🐉<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 1500;broadcast center <color=#ff290d><size=65>🐉 BLOODFIRE DRAGONS 🐉<br><br><color=#fbffde><size=50>HAVE WON<br>THE BATTLE FOR VALHALLA!;wait 5000;broadcast center <color=#fbffde><size=45>🔥 ETERNAL GLORY TO THE VICTORS! 🔥;wait 9000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 2000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 2000;broadcast center Thank you for playing on the server!<br>We hope you had a great time.<br>The battle shall begin again, very soon...;wait 6000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=#5eff94>Rayuzanda<br><color=white>Hilli<br>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br><color=#5eff94>Hilli<br><color=white>DoctorSmaug<br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br><color=#5eff94>DoctorSmaug<color=white><br>Z e a l l;wait 2000;broadcast center <size=52>⚔️ BATTLE FOR VALHALLA ⚔️<br><br><size=42>Created by ArenaWorld Team<br><color=white>Rayuzanda<br>Hilli<br>DoctorSmaug<br><color=#5eff94>Z e a l l;wait 8000;broadcast center <size=50>See you on the next season!<br>SKOL! 🍺;wait 2000;broadcast center <size=50>See you on the next season!<br>SKOL! 🍺

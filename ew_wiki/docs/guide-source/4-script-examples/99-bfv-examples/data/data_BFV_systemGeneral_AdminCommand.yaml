@@ -1,0 +1,17 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Admin Command                                   ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Value data
+# ═══════════════════════════════════════════════════════════
+- value: msgSignLock0, unlocked 🔓
+- value: msgSignLock1, locked 🔒
+
+- value: msg1AdminMode0, Admin mode OFF. Restrictions restored.
+- value: msg1AdminMode1, Admin mode ON. Restrictions temporarily released.
+- value: msg2AdminMode0, <#ddd>Restriction <#cc0000>restored</color>, <#fff000><pname></color>.
+- value: msg2AdminMode1, <#ddd>Restriction <#00ff00>released</color>.<br>Happy building, <#fff000><pname></color>.

@@ -1,0 +1,287 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Elderoot Mine             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - TRASHROOT
+# ═══════════════════════════════════════════════════════════
+# Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, trashroot_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: TentaRoot
+    # maxDistance: 1
+  # swap:
+  # - prefab: TentaRoot
+    # data: trashroot
+    # triggerRules: true
+  # spawn:
+  # - prefab: fx_gdking_rootspawn
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - ROOTER
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, rooter_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: staff_greenroots_tentaroot
+    # maxDistance: 1
+  # swap:
+  # - prefab: staff_greenroots_tentaroot
+    # data: rooter
+    # triggerRules: true
+  # spawn:
+  # - prefab: fx_gdking_rootspawn
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BLOCKER
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, blocker_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: staff_greenroots_tentaroot
+    # maxDistance: 1
+  # swap:
+  # - prefab: staff_greenroots_tentaroot
+    # data: blocker
+    # triggerRules: true
+  # spawn:
+  # - prefab: fx_gdking_rootspawn
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - CHASER
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, chaser_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: TentaRoot
+    # maxDistance: 1
+  # swap:
+  # - prefab: TentaRoot
+    # data: chaser
+    # triggerRules: true
+  # spawn:
+  # - prefab: fx_gdking_rootspawn
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BURROWER
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_BlobTar
+    # filter: int, burrower_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: Seeker
+    # maxDistance: 1
+  # swap:
+  # - prefab: Seeker
+    # data: burrower
+    # triggerRules: true
+  # spawn:
+  # - prefab: vfx_vines_destroyed
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - PIERCER
+# ═══════════════════════════════════════════════════════════
+# Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Hatchling
+    # filter: int, piercer_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: SeekerBrute
+    # maxDistance: 1
+  # swap:
+  # - prefab: SeekerBrute
+    # data: piercer
+    # triggerRules: true
+  # spawn:
+  # - prefab: vfx_vines_destroyed
+
+# Loot drop
+- prefab: SeekerBrute
+  type: destroy
+  filter: string, Humanoid.m_name, "Piercer" 
+  spawn:
+  - prefab: Softtissue
+    data: int, stack, 8;16
+    chance: 1
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BERGMANN
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Bat
+    # filter: int, bergmann_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: Ghost
+    # maxDistance: 1
+  # swap:
+  # - prefab: Ghost
+    # data: bergmann
+    # triggerRules: true
+  # spawn:
+  # - prefab: vfx_lootspawn
+
+# Loot drop
+- prefab: Ghost
+  type: destroy
+  filter: string, Humanoid.m_name, "Bergmann" 
+  spawn:
+  - prefab: IronOre
+    chance: 0.5
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - CAVEBAT
+# ═══════════════════════════════════════════════════════════
+# # Spawn from spawner
+# - prefab: sfx_secretfound
+  # type: create
+  # objects:
+  # - prefab: Spawner_Ulv
+    # filter: int, cavebat_spawner, 1
+    # maxDistance: 1
+  # bannedObjects:
+  # - prefab: Bat
+    # maxDistance: 1
+  # swap:
+  # - prefab: Bat
+    # data: cavebat
+    # triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# ELDEROOT MINE - BOSS - ELDEN KING
+# ═══════════════════════════════════════════════════════════
+# Bring RootElder2 to POI, then
+# Spawn from interacting with MarketPlaceNPC
+- prefab: fx_leviathan_leave
+  type: create
+  objects:
+  # - prefab: wood_pole # Old objects
+    # filter: string, Piece.m_name, elderspawner
+    # maxDistance: 50
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, eldersummon
+    maxDistance: 20
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, eldersummon_off
+    maxDistance: 20
+  objectsLimit: 1
+  poke:
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, eldersummon_off
+    maxDistance: 20
+    delay: 0.1
+    parameter: checkCooldownEldenKing
+  - prefab: MarketPlaceNPC
+    filter: string, KGnpcDialogue, eldersummon
+    maxDistance: 20
+    parameter: spawnEldenKing
+
+# Print error if cooldown not passed
+- prefab: MarketPlaceNPC
+  type: poke, checkCooldownEldenKing
+  fallback: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 2
+    2: vec, <pos>
+    3: string, Can't summon yet.
+    4: bool, true
+
+# Reset NPC if cooldown passed
+- prefab: MarketPlaceNPC
+  type: poke, checkCooldownEldenKing
+  weight: 1e30
+  filter: float, stamp, 0;<sub_<time>_5400>
+  data: elderSpawner_on
+  spawn:
+  - prefab: vfx_HealthUpgrade
+    pos: 0,0,1
+
+# Spawn Elden King
+- prefab: MarketPlaceNPC
+  type: poke, spawnEldenKing
+  commands:
+  - s THE ELDEN KING IS BEING SUMMONED FROM THE DEPTHS OF THE WORLD!
+  data: elderSpawner_off
+  spawns:
+  - fx_greenroots_projectile_hit, 2,20,3
+  - fx_Abomination_arise, 2,20,2
+  - gd_king, eldenking, 2,20,-3, 11
+  - sfx_gdking_scream, 5,20,0, 11
+  - sfx_gdking_death, -5,20,0, 11
+  - sfx_gdking_death, 0,20,0, 11
+  - fx_Abomination_arise, 2,20,2, 11
+  - fx_Abomination_arise, 4,18,0, 11
+  - fx_Abomination_arise, -2,17,0, 11
+  - fx_Abomination_arise, 4,17,2, 11
+  - fx_greenroots_projectile_hit, 2,20,3, 11
+  - fx_greenroots_projectile_hit, 8,20,5, 11
+  - fx_greenroots_projectile_hit, -8,20,5, 11
+
+# Loot drop
+- prefab: gd_king
+  type: destroy
+  commands:
+  - s ELDEN KING IS SLAIN! HIS TREASURE DROPS BEFORE HIS CORPSE...
+  filter: string, Humanoid.m_name, "Elden King"
+  spawn:
+  - prefab: fx_GP_Stone
+    delay: 4
+  - prefab: vfx_HearthAddFuel
+    delay: 4
+  - prefab: piece_chest
+    data: loot_eldenking
+    delay: 4
+    triggerRules: true
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 2
+    2: vec, <pos>
+    3: string, Treasure Dropped!
+    4: bool, true
+    delay: 4
+
+# Loot drop removal aesthetic
+- prefab: piece_chest
+  type: destroy
+  filter: string, Container.m_name, "Elden King's Chest"
+  spawn:
+  - prefab: fx_GP_Stone
+  - prefab: vfx_HearthAddFuel

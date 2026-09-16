@@ -1,0 +1,18 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Final Team Victory                              ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# ODIN'S GATE
+# ═══════════════════════════════════════════════════════════
+- name: odingate
+  ints:
+  - isOdinGate, 1
+  floats:
+  - Piece.m_returnResourceHeightOffset, 15000
+  strings:
+  - Door.m_name, Only the <#fff000>Dragonslayer</color> Shall Pass
+  - Door.m_keyItem, TrophyFader

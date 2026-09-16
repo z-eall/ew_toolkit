@@ -1,0 +1,31 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Base Camp Respawn                           ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# When player respawn, find team base camp and TP
+# Required delay due to invincible window during respawn
+- prefab: Player
+  type: state, respawn
+  poke:
+  - self: true
+    delay: 1.5
+    parameter: checkCampRespawn <load_<pid>/team=-1>
+
+- prefab: Player
+  type: poke, checkCampRespawn 1,2
+  objects:
+  - prefab: piece_throne01
+    filter: string, Piece.m_name, StartPiece
+    maxDistance: 10
+  objectRpc:
+  - name: RPC_TeleportTo
+    1: vec, <camp<BfvTeam<par_1>>>
+    2: quat, 0
+    3: bool, true
+  - name: Message
+    1: enum_message, 2
+    2: string, <#ddd><#fff000>Teleport<#ddd> to <color<BfvTeam<par_1>>><BfvTeam<par_1>> Base Camp<#ddd>.
+    3: int, 1

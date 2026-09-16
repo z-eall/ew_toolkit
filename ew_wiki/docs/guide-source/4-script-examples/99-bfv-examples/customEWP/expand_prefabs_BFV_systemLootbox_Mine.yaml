@@ -1,0 +1,91 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - Mine                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T1 Mine
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, minelootspawner1, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: mineloot1
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T2 Mine
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, minelootspawner2, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: mineloot2
+    triggerRules: true
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Lootbox - T3 Mine
+# ═══════════════════════════════════════════════════════════
+- prefab: sfx_secretfound
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, minelootspawner3, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: piece_chest_wood
+    maxDistance: 1
+  swap:
+  - prefab: piece_chest_wood
+    data: mineloot3
+    triggerRules: true
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox Despawn Aesthetic                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+- prefab: piece_chest_wood
+  type: destroy
+  filter: int, chestnumba, 13;15
+  spawn:
+  - prefab: vfx_BugRepellent
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Debugging                                       ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# Fallback to remove sfx
+# - prefab: sfx_secretfound
+  # type: create
+  # fallback: true
+  # objects:
+  # - prefab: Spawner_Bat
+    # maxDistance: 1
+  # remove: true
+# Duplicated in systemLootbox_City
+
+

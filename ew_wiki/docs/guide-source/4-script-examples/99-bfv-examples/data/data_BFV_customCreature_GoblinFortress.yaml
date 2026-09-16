@@ -1,0 +1,698 @@
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - BFV Custom Creature - Goblin Fortress           ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - WRATHFUL SOUL
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: wrathful_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - wrathful_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 12
+  - CreatureSpawner.m_respawnTimeMinuts, 1
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: wrathful
+  ints:
+  - wrathful, 1
+  - aggravated, 1
+  floats:
+  - MonsterAI.m_jumpInterval, 5
+  - MonsterAI.m_circleTargetInterval, 2
+  - MonsterAI.m_circleTargetDistance, 2
+  - MonsterAI.m_circleTargetDuration, 2
+  - CharacterTimedDestruction.m_timeoutMin, 80
+  - CharacterTimedDestruction.m_timeoutMax, 80
+  - Humanoid.m_health, 80
+  - max_health, 80
+  - RandomSkillFactor, 1.2
+  strings:
+  - Humanoid.m_name, "Wrathful Soul"
+  - spawnerZDO, <string_spawnerZDO=0>
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - SOULBINDER
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: soulbinder_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - soulbinder_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 12
+  - CreatureSpawner.m_respawnTimeMinuts, 1
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: soulbinder
+  ints:
+  - soulbinder, 1
+  - aggravated, 1
+  - level, 4
+  - Humanoid.m_boss, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_attackPlayerObjects, 0
+  - MonsterAI.m_DespawnInDay, 1
+  floats:
+  - MonsterAI.m_jumpInterval, 1.5
+  - Humanoid.m_jumpForceForward, -30
+  - Humanoid.m_jumpForce, 2
+  - Humanoid.m_runSpeed, 7
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 4
+  - MonsterAI.m_circleTargetDuration, 2
+  - Humanoid.m_regenAllHPTime, 380
+  - Humanoid.m_health, 4600
+  - max_health, 4600
+  - RandomSkillFactor, 1.1
+  strings:
+  - Humanoid.m_name, "Zul'gar the Soulbinder"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, StaffRedTroll
+  - LeftItem, ShieldMorgen1
+  vecs:
+  - CharacterDrop.m_spawnOffset, 0,0,1500
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - (NODE #1) MINE BOSS - PITKEEPER 
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: pitkeeper_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - pitkeeper_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 12
+  - CreatureSpawner.m_respawnTimeMinuts, 1
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: pitkeeper
+  ints:
+  - pitkeeper, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 6
+  - Humanoid.m_boss, 1
+  - Humanoid.m_staggerWhenBlocked, 0
+  - MonsterAI.m_DespawnInDay, 1
+  floats:
+  - MonsterAI.m_jumpInterval, 1.3
+  - Humanoid.m_jumpForceForward, 25
+  - Humanoid.m_jumpForce, 4
+  - MonsterAI.m_viewRange, 2
+  - MonsterAI.m_minAttackInterval, 0.1
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 4
+  - MonsterAI.m_circleTargetDuration, 2
+  - Humanoid.m_health, 2800
+  - max_health, 2800
+  - RandomSkillFactor, 1
+  strings:
+  - Humanoid.m_name, "The Pitkeeper"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, GoblinBrute_ExecutionerCap
+  - ShoulderItem, GoblinBrute_Backbones
+  - LeftItem, GoblinBrute_Taunt
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - (NODE #2) BOSS - GATE GUARDIAN
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: gateguard_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - gateguard_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 12
+  - CreatureSpawner.m_respawnTimeMinuts, 1
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: gateguard
+  ints:
+  - gateguard, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 6
+  - Humanoid.m_boss, 1
+  - Humanoid.m_staggerWhenBlocked, 1
+  - MonsterAI.m_DespawnInDay, 1
+  - MonsterAI.m_serpentMovement, 1
+  floats:
+  - MonsterAI.m_jumpInterval, 1.3
+  - Humanoid.m_jumpForceForward, 25
+  - Humanoid.m_jumpForce, 4
+  - MonsterAI.m_viewRange, 20
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_serpentTurnRadius, 1
+  - Humanoid.m_runSpeed, 6
+  - Humanoid.m_runTurnSpeed, 750
+  - MonsterAI.m_minAttackInterval, 0.1
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 8
+  - MonsterAI.m_circleTargetDuration, 2
+  - Humanoid.m_health, 1250
+  - Humanoid.m_regenAllHPTime, 70
+  - Humanoid.m_staggerDamageFactor, -0
+  - max_health, 1250
+  - RandomSkillFactor, 1.9
+  strings:
+  - Humanoid.m_name, "Gate Keeper"
+  - MonsterAI.m_deathMessage, "<color=orange>The gate keeper dies, and his key unlocks the side passage!" 
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, HelmetDragon
+  - ShoulderItem, GoblinShaman_Headdress_antlers
+  - LeftItem, ShieldBoneTower
+  - RightItem, GoblinArmband
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - TRIBAL FIGHTER
+# ═══════════════════════════════════════════════════════════
+# Spawner - Regular
+- name: tribalfighter_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalfighter_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 15
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# Spawner - Special
+- name: tribalfighter_spawner2
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalfighter_spawner2, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 35
+  - CreatureSpawner.m_respawnTimeMinuts, 5320
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Creature
+- name: tribalfighter
+  ints:
+  - tribalfighter, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 2
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - Humanoid.m_runSpeed, 6
+  - MonsterAI.m_minAttackInterval, 0.4
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 1
+  - MonsterAI.m_circleTargetDuration, 1
+  - Humanoid.m_staggerDamageFactor, -0
+  - RandomSkillFactor, 1.15
+  - Humanoid.m_health, 130
+  - max_health, 130
+  strings:
+  - Humanoid.m_name, "Tribal Fighter"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, TrophyGoblinShaman
+  - ShoulderItem, GoblinShaman_Headdress_feathers
+
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - BLOODHEIR
+# ═══════════════════════════════════════════════════════════
+# Spawner
+- name: bloodheir_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - bloodheir_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 15
+  - CreatureSpawner.m_respawnTimeMinuts, 60
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# Creature
+- name: bloodheir
+  ints:
+  - bloodheir, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 4
+  - Humanoid.m_staggerWhenBlocked, 1
+  - MonsterAI.m_DespawnInDay, 1
+  floats:
+  - Humanoid.m_runSpeed, 6
+  - MonsterAI.m_minAttackInterval, 0.2
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 6
+  - MonsterAI.m_circleTargetDuration, 1
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 50
+  - Humanoid.m_staggerDamageFactor, -0
+  - Humanoid.m_regenAllHPTime, 12
+  - RandomSkillFactor, 0.95
+  strings:
+  - Humanoid.m_name, "Bloodheir"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, TrophyGreydwarfShaman
+  - ShoulderItem, GoblinShaman_Headdress_antlers
+  - LeftItem, Ruby
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - TRIBAL WARDEN
+# ═══════════════════════════════════════════════════════════
+# Spawner - Regular
+- name: tribalwarden_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalwarden_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 15
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Spawner - Special
+- name: tribalwarden_spawner2
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalwarden_spawner2, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 35
+  - CreatureSpawner.m_respawnTimeMinuts, 5320
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# Creature
+- name: tribalwarden
+  ints:
+  - tribalwarden, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 2
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - Humanoid.m_runSpeed, 3.5
+  - MonsterAI.m_minAttackInterval, 1.6
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 1
+  - MonsterAI.m_circleTargetDuration, 1
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 50
+  - Humanoid.m_health, 480
+  - max_health, 480
+  - RandomSkillFactor, 1.2
+  strings:
+  - Humanoid.m_name, "Tribal Warden"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, HelmetFlametal
+  - ShoulderItem, GoblinShoulders 
+  - LeftItem, ShieldIronBuckler
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - TRIBAL SKIRMISHER
+# ═══════════════════════════════════════════════════════════
+# Spawner - Regular
+- name: tribalskirmisher_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalskirmisher_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 25
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# Spawner - Special
+- name: tribalskirmisher_spawner2
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalskirmisher_spawner2, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 45
+  - CreatureSpawner.m_respawnTimeMinuts, 5320
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+  
+# Creature
+- name: tribalskirmisher
+  ints:
+  - tribalskirmisher, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 2
+  - Humanoid.m_staggerWhenBlocked, 0
+  floats:
+  - Humanoid.m_runSpeed, 2
+  - MonsterAI.m_minAttackInterval, 0.2
+  - MonsterAI.m_circleTargetInterval, 4
+  - MonsterAI.m_circleTargetDistance, 7
+  - MonsterAI.m_circleTargetDuration, 0.5
+  - MonsterAI.m_viewAngle, 270
+  - MonsterAI.m_viewRange, 30
+  - Humanoid.m_regenAllHPTime, 16
+  - RandomSkillFactor, 1.15
+  strings:
+  - Humanoid.m_name, "Tribal Skirmisher"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, TrophyGoblinShaman
+  - ShoulderItem, GoblinShaman_Headdress_antlers
+  - LeftItem, GoblinArmband
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - TRIBAL SAGE
+# ═══════════════════════════════════════════════════════════
+# Spawner - Regular
+- name: tribalsage_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalsage_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 35
+  - CreatureSpawner.m_respawnTimeMinuts, 60
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+ 
+# Creature
+- name: tribalsage
+  ints:
+  - tribalsage, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 3
+  - Humanoid.m_staggerWhenBlocked, 1
+  floats:
+  - Humanoid.m_runSpeed, 1
+  - MonsterAI.m_minAttackInterval, 0.1
+  - MonsterAI.m_circleTargetDuration, 1
+  - MonsterAI.m_viewAngle, 360
+  - MonsterAI.m_viewRange, 100
+  - MonsterAI.m_alertRange, 200
+  - MonsterAI.m_hearRange, 200
+  - Humanoid.m_staggerDamageFactor, -0
+  - Humanoid.m_regenAllHPTime, 120
+  - Humanoid.m_health, 360
+  - max_health, 360
+  - RandomSkillFactor, 1.15
+  strings:
+  - Humanoid.m_name, "Tribal Sage"
+  - spawnerZDO, <string_spawnerZDO=0>
+  
+# ═══════════════════════════════════════════════════════════
+# GOBLIN FORTRESS - TRIBAL SAVAGE
+# ═══════════════════════════════════════════════════════════
+# Spawner - Regular
+- name: tribalsavage_spawner
+  ints:
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  - tribalsavage_spawner, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 20
+  - CreatureSpawner.m_respawnTimeMinuts, 40
+  - CreatureSpawner.m_maxGroupSpawned, 1
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+ 
+# Creature
+- name: tribalsavage
+  ints:
+  - tribalsavage, 1
+  - MonsterAI.m_attackPlayerObjects, 0
+  - level, 2
+  - Humanoid.m_staggerWhenBlocked, 1
+  floats:
+  - Humanoid.m_runSpeed, 14
+  - MonsterAI.m_minAttackInterval, 0.1
+  - Humanoid.m_jumpForce, 4
+  - Humanoid.m_jumpForceForward, 25
+  - MonsterAI.m_jumpInterval, 6
+  - MonsterAI.m_runTurnSpeed, 400
+  - MonsterAI.m_viewRange, 2
+  - Humanoid.m_staggerDamageFactor, -0
+  - Humanoid.m_regenAllHPTime, 120
+  - Humanoid.m_health, 820
+  - max_health, 820
+  - RandomSkillFactor, 1.1
+  strings:
+  - Humanoid.m_name, "Tribal Savage"
+  - spawnerZDO, <string_spawnerZDO=0>
+  hashes:
+  - HelmetItem, GoblinBrute_ExecutionerCap
+  - ShoulderItem, GoblinBrute_ShoulderGuard
+  - LeftItem, StoneRock
+  
+# ═══════════════════════════════════════════════════════════   
+# HILMAR OUTPOST QUEST
+# ═══════════════════════════════════════════════════════════
+
+# NPC HILMAR
+- name: npcHilmar
+  ints:
+  - -2036683917, 0
+  - -1934405174, 0
+  - KGmarketNPC, 0
+  - 505038479, 0
+  - KGcraftingAnimation, 0
+  floats:
+  - KGtextSize, 0.8
+  - KGperiodicAnimationTime, 0
+  - KGtextHeight, -1
+  - KGperiodicSoundTime, 0
+  - KGnpcScale, 1.08
+  - $anim_speed, 1
+  strings:
+  - 'KGbeardColor, #ebe8e1'
+  - KGrightItem, Torch
+  - KGperiodicAnimation,
+  - KGnpcNameOverride, Hilmar
+  - KGnpcProfile, default
+  - KGnpcModelOverride, Player
+  - KGbeardItem, 4
+  - KGnpcDialogue, hilmar_outpost
+  - KGchestItem, ArmorPaddedCuirass
+  - KGLeftItemBack, BattleaxeBlackmetal
+  - 'KGskinColor, #e3d7b8'
+  - KGlegsItem, ArmorPaddedGreaves
+  longs:
+  - xray_created, 639148276721479410
+  vecs:
+  - vel, 0,0,0
+  
+# NPC LEROS
+  
+- name: npcLeros
+  ints:
+  - -2036683917, 0
+  - -1934405174, 0
+  - KGmarketNPC, 0
+  - 505038479, 0
+  - KGcraftingAnimation, 0
+  floats:
+  - KGtextSize, 0
+  - KGperiodicAnimationTime, 60
+  - KGtextHeight, 0
+  - KGperiodicSoundTime, 0
+  - KGnpcScale, 1.08
+  - $anim_speed, 1
+  strings:
+  - KGhelmetItem, HelmetAshlandsMediumHood
+  - 'KGbeardColor, #dee0c8'
+  - KGrightItem, BowFineWood
+  - KGperiodicAnimation,
+  - -574662034, ""
+  - KGnpcNameOverride, Leros
+  - -170808826, ""
+  - KGnpcProfile, ambushnpc
+  - KGnpcModelOverride, Player
+  - KGbeardItem, 7
+  - KGnpcDialogue, hilmar_leros
+  - KGchestItem, ArmorLeatherChest
+  - 'KGskinColor, #80726e'
+  - KGLeftItemBack, AxeBronze
+  - KGlegsItem, ArmorLeatherLegs
+  longs:
+  - xray_created, 639148286919276662
+  vecs:
+  - vel, 0,0,0
+  
+# NPC HORIK
+- name: npcHorik
+  ints:
+  - -2036683917, 0
+  - -1934405174, 0
+  - KGmarketNPC, 0
+  - 505038479, 0
+  - KGcraftingAnimation, 0
+  floats:
+  - $forward_speed, 1.5
+  - KGtextSize, 0
+  - KGperiodicAnimationTime, 60
+  - KGtextHeight, 0
+  - KGperiodicSoundTime, 0
+  - KGnpcScale, 1
+  - $anim_speed, 1
+  strings:
+  - KGhelmetItem, HelmetHat1
+  - 'KGbeardColor, #e6c9be'
+  - KGrightItem, SwordIron
+  - KGperiodicAnimation, emote_challenge
+  - -574662034, ""
+  - KGnpcNameOverride, Horik
+  - -170808826, ""
+  - KGnpcProfile, ambushnpc
+  - KGleftItem, ShieldIronBuckler
+  - KGnpcModelOverride, Player
+  - KGbeardItem, 11
+  - KGnpcDialogue, hilmar_horik
+  - KGchestItem, ArmorIronChest
+  - 'KGskinColor, #ada693'
+  - KGlegsItem, ArmorIronLegs
+  longs:
+  - xray_created, 639148282068688667
+  vecs:
+  - vel, 0,0,0
+  
+# ═══════════════════════════════════════════════════════════
+# THE DENMAUL - BOSS - SOULBINDER
+# ═══════════════════════════════════════════════════════════
+
+# For NPC dialogue - OFF
+- name: SoulbinderSpawner_off
+  ints:
+  - SoulbinderSpawner, 1
+  - SoulbinderSpawner_off, 1
+  floats:
+  - stamp, <time>
+  strings:
+  - KGnpcModelOverride, MountainKit_brazier_purple
+  - KGnpcDialogue, denmaul_bossfire_off
+
+# For NPC dialogue - ON
+- name: SoulbinderSpawner_on
+  ints:
+  - SoulbinderSpawner, 1
+  - SoulbinderSpawner_on, 1
+  strings:
+  - KGnpcNameOverride, <size=0>Flame of Offering</size>
+  - KGnpcModelOverride, piece_brazierfloor01
+  - KGnpcDialogue, denmaul_bossfire
+  
+# Loot drop 
+- name: loot_soulbinder
+  position: 556,835,59.2
+  rotation: 90,0,0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - loot_soulbinder, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, "Soulbinder's Treasure"
+  items:
+  - prefab: Coins
+    stack: 400;800
+    chance: 1
+  - prefab: StaffShield
+    stack: 1
+    chance: 0.65
+  - prefab: KnifeEitr
+    stack: 1
+    chance: 1
+  - prefab: MeadEitrMinor
+    stack: 3;10
+    chance: 1
+  - prefab: MistfishStew
+    stack: 5
+    chance: 1
+  - prefab: MeadHealthMajor
+    stack: 2;10
+    chance: 0.5
+  - prefab: MeadStaminaLingering
+    stack: 2;10
+    chance: 0.5
+  - prefab: BoltBlackmetal
+    stack: 50
+    chance: 0.3
+  - prefab: TrinketCarapaceEitr
+    stack: 1
+    chance: 0.3
+  - prefab: BombBlob_Tar
+    stack: 10;20
+    chance: 0.3
+  - prefab: PickaxeBlackMetal
+    stack: 1
+    quality: 4
+    chance: 0.2
+  - prefab: MeadBugRepellent
+    stack: 10
+    chance: 0.2
+    
+# ═══════════════════════════════════════════════════════════
+# GOBLIN TRENCHES DUNGEON
+# ═══════════════════════════════════════════════════════════
+#
+# TRENCH GATE
+- name: isTrenchWheel
+  ints:
+  - isTrenchWheel, 1
+  - StaticPhysics.m_pushUp, 0
+  - StaticPhysics.m_fall, 0
+  floats:
+  - Pickable.m_spawnOffset, 15000
+  strings:
+  - Pickable.m_overrideName, <#ddd>The Trenchwheel<br><#ddd>[<#fff000>E<#ddd>] Turn<size=0>
+  - Pickable.m_hideWhenPicked, vfx_odin_despawn
+
+- name: TrenchPieceDown
+  ints:
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  strings:
+  - Piece.m_name, GoblinTrenchGateDown
+  
+- name: TrenchPieceRaised
+  ints:
+  - Piece.m_canBeRemoved, 0
+  floats:
+  - WearNTear.m_health, -1
+  - health, -1
+  strings:
+  - Piece.m_name, GoblinTrenchGateRaised
+    
+# ═══════════════════════════════════════════════════════════
+# MISC
+# ═══════════════════════════════════════════════════════════
+
+- name: xbow_korbash
+  ints:
+  - quality, 3
+  floats:
+  - durability, 2000
+  
+- name: gate_raised
+  floats:
+  - WearNTear.m_health, -1

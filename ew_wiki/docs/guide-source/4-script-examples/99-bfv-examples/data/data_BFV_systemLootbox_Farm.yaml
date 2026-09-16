@@ -1,0 +1,554 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - Farm                                  ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T0 Farm
+# ═══════════════════════════════════════════════════════════
+# Base
+- name: baseloot
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 99
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: Torch
+    stack: 1
+    chance: 1
+  - prefab: Raspberry
+    stack: 1
+    chance: 0.1
+  - prefab: Mushroom
+    stack: 1
+    chance: 0.1
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T1 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- name: farmloot1
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 1
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: LeatherScraps
+    stack: 12;24
+    chance: 1
+  - prefab: DeerHide
+    chance: 1
+    stack: 10;20
+  - prefab: Wood
+    chance: 0.75
+    stack: 10;30
+  - prefab: Blueberries
+    chance: 0.5
+    stack: 9;18
+  - prefab: Feathers
+    chance: 0.3
+    stack: 8;16
+  - prefab: QueenBee
+    chance: 0.5
+    stack: 1;3
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T1 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- name: farmfood1
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 2
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Food
+  items:
+  - prefab: RawMeat
+    stack: 8;16
+    chance: 1
+  - prefab: DeerMeat
+    chance: 1
+    stack: 10;20
+  - prefab: Carrot
+    chance: 1
+    stack: 16;32
+  - prefab: FishRaw
+    chance: 0.75
+    stack: 6;12
+  - prefab: Honey
+    chance: 1
+    stack: 24;48
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T2 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- name: farmloot2
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 3
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: LeatherScraps
+    stack: 12;24
+    chance: 1
+  - prefab: DeerHide
+    chance: 1
+    stack: 14;24
+  - prefab: Wood
+    chance: 0.75
+    stack: 10;30
+  - prefab: Blueberries
+    chance: 0.5
+    stack: 9;18
+  - prefab: Feathers
+    chance: 0.3
+    stack: 8;16
+  - prefab: QueenBee
+    chance: 0.5
+    stack: 1;3
+  - prefab: Chitin
+    chance: 0.3
+    stack: 10;20
+  - prefab: Thistle
+    chance: 0.3
+    stack: 8;16
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T2 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- name: farmfood2
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 4
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Food
+  items:
+  - prefab: DeerMeat
+    chance: 1
+    stack: 10;20
+  - prefab: Carrot
+    chance: 1
+    stack: 10;20
+  - prefab: Turnip
+    chance: 1
+    stack: 12;24
+  - prefab: Entrails
+    chance: 1
+    stack: 10;20
+  - prefab: FishRaw
+    chance: 0.75
+    stack: 6;12
+  - prefab: Honey
+    chance: 1
+    stack: 24;48
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T3 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- name: farmloot3
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 5
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: WolfPelt
+    stack: 12;24
+    chance: 1
+  - prefab: DeerHide
+    chance: 1
+    stack: 14;24
+  - prefab: Wood
+    chance: 0.75
+    stack: 10;30
+  - prefab: WolfHairBundle
+    chance: 0.3
+    stack: 6;12
+  - prefab: Feathers
+    chance: 0.5
+    stack: 10;20
+  - prefab: Bloodbag
+    chance: 0.5
+    stack: 10;20
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T3 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- name: farmfood3
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 6
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Food
+  items:
+  - prefab: WolfMeat
+    stack: 12;24
+    chance: 1
+  - prefab: DeerMeat
+    chance: 1
+    stack: 10;20
+  - prefab: Onion
+    chance: 1
+    stack: 12;24
+  - prefab: Turnip
+    chance: 1
+    stack: 12;24
+  - prefab: Honey
+    chance: 1
+    stack: 35;60
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T4 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Plains
+- name: farmloot4
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 7
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: WolfPelt
+    stack: 8;16
+    chance: 1
+  - prefab: LoxPelt
+    chance: 1
+    stack: 12;24
+  - prefab: Wood
+    chance: 0.75
+    stack: 10;30
+  - prefab: Flax
+    chance: 0.8
+    stack: 20;40
+  - prefab: Feathers
+    chance: 0.5
+    stack: 10;20
+  - prefab: Tar
+    chance: 0.5
+    stack: 10;20
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T4 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Plains
+- name: farmfood4
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 8
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Food
+  items:
+  - prefab: WolfMeat
+    stack: 6;12
+    chance: 1
+  - prefab: LoxMeat
+    chance: 1
+    stack: 12;24
+  - prefab: Onion
+    chance: 1
+    stack: 12;24
+  - prefab: Barley
+    chance: 0.8
+    stack: 20;40
+  - prefab: Entrails
+    chance: 0.5
+    stack: 6;12
+  - prefab: Cloudberry
+    chance: 0.5
+    stack: 8;16
+  - prefab: Honey
+    chance: 1
+    stack: 40;70
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T5 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- name: farmloot5
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 9
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Resources
+  items:
+  - prefab: ScaleHide
+    stack: 12;24
+    chance: 0.75
+  - prefab: Carapace
+    chance: 0.5
+    stack: 10;20
+  - prefab: YggdrasilWood
+    chance: 0.75
+    stack: 20;40
+  - prefab: BlackMarble
+    chance: 0.5
+    stack: 10;30
+  - prefab: GiantBloodSack
+    chance: 0.3
+    stack: 6;12
+  - prefab: JuteRed
+    chance: 0.3
+    stack: 6;12
+  - prefab: JuteBlue
+    chance: 0.3
+    stack: 6;12
+  - prefab: Softtissue
+    chance: 0.3
+    stack: 2;6
+
+# ═══════════════════════════════════════════════════════════
+# Lootbox - T5 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- name: farmfood5
+  rotation: 0
+  ints:
+  - Container.m_autoDestroyEmpty, 1
+  - Piece.m_canBeRemoved, 0
+  - chestnumba, 10
+  floats:
+  - health, -1
+  - WearNTear.m_health, -1
+  strings:
+  - Container.m_name, Food
+  items:
+  - prefab: HareMeat
+    stack: 10;20
+    chance: 1
+  - prefab: MushroomJotunPuffs
+    chance: 1
+    stack: 10;20
+  - prefab: MushroomMagecap
+    chance: 1
+    stack: 10;20
+  - prefab: ChickenMeat
+    chance: 0.75
+    stack: 10;20
+  - prefab: BugMeat
+    chance: 0.5
+    stack: 10;20
+
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Static Data                                     ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - T0 Farm
+# ═══════════════════════════════════════════════════════════
+# Base
+- name: baselootspawner
+  ints:
+  - baselootspawner, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 10
+  - CreatureSpawner.m_respawnTimeMinuts, 0.2
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T1 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- name: farmlootspawner1
+  ints:
+  - farmlootspawner1, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T1 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Black Forest
+- name: farmfoodspawner1
+  ints:
+  - farmfoodspawner1, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T2 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- name: farmlootspawner2
+  ints:
+  - farmlootspawner2, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T2 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Swamp
+- name: farmfoodspawner2
+  ints:
+  - farmfoodspawner2, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T3 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- name: farmlootspawner3
+  ints:
+  - farmlootspawner3, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T3 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mountain
+- name: farmfoodspawner3
+  ints:
+  - farmfoodspawner3, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T4 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Plains
+- name: farmlootspawner4
+  ints:
+  - farmlootspawner4, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T4 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Plains
+- name: farmfoodspawner4
+  ints:
+  - farmfoodspawner4, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T5 Farm - Loot
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- name: farmlootspawner5
+  ints:
+  - farmlootspawner5, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - T5 Farm - Food
+# ═══════════════════════════════════════════════════════════
+# Mistlands
+- name: farmfoodspawner5
+  ints:
+  - farmfoodspawner5, 1
+  - CreatureSpawner.m_spawnInPlayerBase, 1
+  floats:
+  - CreatureSpawner.m_triggerDistance, 80
+  - CreatureSpawner.m_respawnTimeMinuts, 15
+  strings:
+  - CreatureSpawner.m_creaturePrefab, sfx_secretfound
+
+
+
+
+ 

@@ -1,0 +1,58 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Lootbox - Wood Logs                             ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Spawner - Wood Logs - Birch
+# ═══════════════════════════════════════════════════════════
+- prefab: fx_sw_produce
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, birchspawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: Birch_log_half
+    maxDistance: 5
+  swap:
+  - prefab: Birch_log_half
+    rot: 0,90,0
+    pos: 0,0,1
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Wood Logs - Pine
+# ═══════════════════════════════════════════════════════════
+- prefab: fx_sw_produce
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, pinespawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: PineTree_log_half
+    maxDistance: 5
+  swap:
+  - prefab: PineTree_log_half
+    rot: 0,90,0
+    pos: 0,0,1
+
+# ═══════════════════════════════════════════════════════════
+# Spawner - Wood Logs - Swamp Tree
+# ═══════════════════════════════════════════════════════════
+- prefab: fx_sw_produce
+  type: create
+  objects:
+  - prefab: Spawner_Bat
+    filter: int, swampspawner, 1
+    maxDistance: 1
+  bannedObjects:
+  - prefab: SwampTree1_log
+    maxDistance: 5
+  swap:
+  - prefab: SwampTree1_log
+    rot: 0,0,0
+    pos: 0,0,1
+

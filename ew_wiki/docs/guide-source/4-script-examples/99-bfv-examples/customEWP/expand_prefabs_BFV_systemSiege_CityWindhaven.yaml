@@ -1,0 +1,134 @@
+#
+# ╔═══════════════════════════════════════════════════════════╗
+# ║                                                           ║
+# ║ Section - Windhaven Drawbridge                            ║
+# ║                                                           ║
+# ╚═══════════════════════════════════════════════════════════╝
+#
+# ═══════════════════════════════════════════════════════════
+# Admin override control
+# ═══════════════════════════════════════════════════════════
+# Changing gate state
+- prefab: Player
+  type: say, !drawbridge 1,0
+  admin: true
+  cancel: true
+  poke:
+  - prefab: wood_wall_log_4x0.5
+    maxDistance: 5
+    filter: string, Piece.m_name, DrawbridgeCenter
+    parameter: changeDrawbridgeState <par_1>
+
+# ═══════════════════════════════════════════════════════════
+# NPC trigger
+# ═══════════════════════════════════════════════════════════
+# Check if owned castle mismtach Player team
+- prefab: sfx_charred_twitcher_throw, sfx_charred_twitcher_throw_impact
+  type: create
+  weight: 1e30
+  objects:
+  - prefab: MarketPlaceNPC
+    filters:
+    - string, KGnpcDialogue, wh_bridge
+    - string, KGnpcDialogue, wh_bridge_up
+    filterLimit: 1
+    maxDistance: 10
+  bannedObjects:
+  - prefab: AshlandsTreeStump2
+    filter: int, isCapturedByTeam, <load_<pid>/team=-1>
+    maxDistance: 200
+  clientRpc:
+  - name: RPC_DamageText
+    packaged: true
+    target: all
+    1: enum_damagetext, 7
+    2: vec, <x>,<z>,<add_1_<y>>
+    3: string, Your faction doesn't own this place
+    4: bool, true
+
+# Changing gate state
+- prefab: sfx_charred_twitcher_throw, sfx_charred_twitcher_throw_impact
+  type: create
+  fallback: true
+  objects:
+  - prefab: MarketPlaceNPC
+    filters:
+    - string, KGnpcDialogue, wh_bridge
+    - string, KGnpcDialogue, wh_bridge_up
+    filterLimit: 1
+    maxDistance: 10
+  poke:
+  - prefab: wood_wall_log_4x0.5
+    limit: 1
+    filter: string, Piece.m_name, DrawbridgeCenter
+    parameter: changeDrawbridgeState <bridgeState/<prefab>>
+
+- prefab: wood_wall_log_4x0.5
+  type: poke, changeDrawbridgeState
+  data: int, drawbridgeState, <par_1>
+  triggerRules: true
+
+# When gate state 1 = open
+- prefab: wood_wall_log_4x0.5
+  type: change, drawbridgeState 1
+  # commands:
+  # - s open
+  filter: string, Piece.m_name, DrawbridgeCenter
+  spawns:
+  - vfx_Place_Karve,0,0,0,90,0,0
+  - vfx_Place_Karve,0,0,7,90,0,0
+  - sfx_catapult_legs_down
+  - wood_floor_large,0,1.3,7.354,-90,0,-33.693306870777505,DrawbridgeRaised
+  - wood_floor_large,0,8.62,4.322,-90.00000000000001,0,-11.195517452811288,DrawbridgeRaised
+  - wood_floor_large,0,4.811,5.478,-90.00000000000004,0,-22.492822540278766,DrawbridgeRaised
+  - wood_wall_log_4x0.5,-2,1.345,7.591,-90,0,-33.693306870777505,DrawbridgeRaised
+  - wood_wall_log_4x0.5,2,1.439,7.562,-90,0,-33.693306870777505,DrawbridgeRaised
+  - wood_wall_log_4x0.5,-2,8.756,4.521,-90.00000000000001,0,-11.195517452811288,DrawbridgeRaised
+  - wood_wall_log_4x0.5,2,8.85,4.493,-90.00000000000001,0,-11.195517452811288,DrawbridgeRaised
+  - wood_wall_log_4x0.5,-2,4.899,5.691,-90.00000000000004,0,-22.492822540278766,DrawbridgeRaised
+  - wood_wall_log_4x0.5,2,4.993,5.662,-90.00000000000004,0,-22.492822540278766,DrawbridgeRaised
+  - wood_wall_log_4x0.5,0,6.651,4.445,0,0,0,DrawbridgeRaised
+  - wood_wall_log_4x0.5,-2,4.85,3.291,-90,0,33.693306870777505,DrawbridgeRaised
+  - wood_wall_log_4x0.5,2,4.85,3.291,-90,0,33.693306870777505,DrawbridgeRaised
+  - wood_wall_log_4x0.5,0,3.326,2.222,180,0,0,DrawbridgeRaised
+  - wood_wall_log_4x0.5,-2,1.523,1.069,-90,0,33.693306870777505,DrawbridgeRaised
+  - wood_wall_log_4x0.5,2,1.524,1.069,-90,0,33.693306870777505,DrawbridgeRaised
+  triggerRules: true
+  poke:
+  - prefab: wood_floor_large, wood_wall_log_4x0.5
+    filter: string, Piece.m_name, DrawbridgeDown
+    maxDistance: 10
+    parameter: removeDrawbridge
+
+# When gate state 0 = close
+- prefab: wood_wall_log_4x0.5
+  type: change, drawbridgeState 0
+  # commands:
+  # - s close
+  filter: string, Piece.m_name, DrawbridgeCenter
+  spawns:
+  - vfx_Place_Karve,0,0,0,90,0,0
+  - vfx_Place_Karve,0,0,7,90,0,0
+  - sfx_catapult_legs_down
+  - wood_floor_large,0,1.325,-1.482,-90.00000000000001,0,-67.51494813654338,DrawbridgeDown
+  - wood_floor_large,0,0.17,2.327,-90,0,-78.76110261458727,DrawbridgeDown
+  - wood_floor_large,0,-0.22,6.289,-90,0,-90,DrawbridgeDown
+  - wood_wall_log_4x0.5,-2,1.566,-1.484,-90.00000000000001,0,-67.51494813654338,DrawbridgeDown
+  - wood_wall_log_4x0.5,2,1.595,-1.578,-90.00000000000001,0,-67.51494813654338,DrawbridgeDown
+  - wood_wall_log_4x0.5,-2,0.396,2.372,-90,0,-78.76110261458727,DrawbridgeDown
+  - wood_wall_log_4x0.5,2,0.425,2.278,-90,0,-78.76110261458727,DrawbridgeDown
+  - wood_wall_log_4x0.5,-2,0.001,6.383,-90,0,-90,DrawbridgeDown
+  - wood_wall_log_4x0.5,2,0.03,6.289,-90,0,-90,DrawbridgeDown
+  triggerRules: true
+  poke:
+  - prefab: wood_floor_large, wood_wall_log_4x0.5
+    filter: string, Piece.m_name, DrawbridgeRaised
+    maxDistance: 10
+    parameter: removeDrawbridge
+
+# Remove down/raised gate
+- prefab: wood_floor_large, wood_wall_log_4x0.5
+  type: poke, removeDrawbridge
+  remove: true
+  
+
