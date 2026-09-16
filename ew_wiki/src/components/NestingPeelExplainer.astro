@@ -285,7 +285,14 @@
 		() => '<code>&lt;max_0_X&gt;</code> clamps a negative budget up to 0, so the reader never sees a negative "characters left." Fully resolved.',
 	];
 
-	for (const widget of document.querySelectorAll<HTMLElement>('.np-widget')) {
+	// Wrapped in a function that re-runs on every `astro:page-load` (fires on
+	// first load and after every Starlight client-side transition alike) —
+	// see Header.astro's fix for the same root cause: a plain top-level
+	// script only runs once, so this widget would render inert (no
+	// listeners) if a reader leaves this page and returns to it via
+	// client-side nav.
+	function setupWidgets() {
+		for (const widget of document.querySelectorAll<HTMLElement>('.np-widget')) {
 		const nameSel = widget.querySelector<HTMLSelectElement>('[data-ctl="name"]')!;
 		const exprEl = widget.querySelector<HTMLElement>('[data-expr]')!;
 		const narrationEl = widget.querySelector<HTMLElement>('[data-narration]')!;
@@ -325,5 +332,9 @@
 		});
 
 		render();
+		}
 	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
 </script>

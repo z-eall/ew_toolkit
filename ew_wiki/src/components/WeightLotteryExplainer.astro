@@ -296,7 +296,14 @@
 
 	const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-	for (const widget of document.querySelectorAll<HTMLElement>('.wl-widget')) {
+	// Wrapped in a function that re-runs on every `astro:page-load` (fires on
+	// first load and after every Starlight client-side transition alike) —
+	// see Header.astro's fix for the same root cause: a plain top-level
+	// script only runs once, so this widget would render inert (no
+	// listeners) if a reader leaves this page and returns to it via
+	// client-side nav.
+	function setupWidgets() {
+		for (const widget of document.querySelectorAll<HTMLElement>('.wl-widget')) {
 		const subEl = widget.querySelector<HTMLElement>('[data-sub]')!;
 		const scriptEl = widget.querySelector<HTMLElement>('[data-script]')!;
 		const tallyEl = widget.querySelector<HTMLElement>('[data-tally]')!;
@@ -458,5 +465,9 @@
 		resetBtn.addEventListener('click', reset);
 
 		setMode('weight');
+		}
 	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
 </script>

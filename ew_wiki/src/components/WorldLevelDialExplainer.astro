@@ -368,7 +368,14 @@ const { defaultTab = 'progression' } = Astro.props;
 		return 'Above the highest tier any real boss kill can save — shown for completeness only.';
 	}
 
-	for (const widget of document.querySelectorAll<HTMLElement>('.wld-widget')) {
+	// Wrapped in a function that re-runs on every `astro:page-load` (fires on
+	// first load and after every Starlight client-side transition alike) —
+	// see Header.astro's fix for the same root cause: a plain top-level
+	// script only runs once, so this widget would render inert (no
+	// listeners) if a reader leaves this page and returns to it via
+	// client-side nav.
+	function setupWidgets() {
+		for (const widget of document.querySelectorAll<HTMLElement>('.wld-widget')) {
 		const subEl = widget.querySelector<HTMLElement>('[data-sub]')!;
 		const slider = widget.querySelector<HTMLInputElement>('.wld-slider')!;
 		const readout = widget.querySelector<HTMLElement>('[data-readout]')!;
@@ -399,5 +406,9 @@ const { defaultTab = 'progression' } = Astro.props;
 		slider.addEventListener('input', render);
 
 		render();
+		}
 	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
 </script>

@@ -557,7 +557,14 @@
 		return dot.level === 3 ? 2 : dot.level === 2 ? 1 : 0;
 	}
 
-	for (const widget of document.querySelectorAll<HTMLElement>('.on-widget')) {
+	// Wrapped in a function that re-runs on every `astro:page-load` (fires on
+	// first load and after every Starlight client-side transition alike) —
+	// see Header.astro's fix for the same root cause: a plain top-level
+	// script only runs once, so a widget on a page a reader leaves and
+	// returns to via client-side nav would otherwise render inert (no
+	// listeners on the freshly-inserted markup).
+	function setupWidgets() {
+		for (const widget of document.querySelectorAll<HTMLElement>('.on-widget')) {
 		const radar = widget.querySelector<SVGSVGElement>('svg.on-radar')!;
 		const condList = widget.querySelector<HTMLUListElement>('[data-cond-list]')!;
 		const storyLine = widget.querySelector<HTMLElement>('[data-story-line]')!;
@@ -796,5 +803,9 @@
 
 		measureMaxHeights();
 		render();
+		}
 	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
 </script>
