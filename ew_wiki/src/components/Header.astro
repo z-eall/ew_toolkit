@@ -50,112 +50,139 @@ const navHtml = renderNavBar(buildNavItems('ew_wiki', hrefFor), 'hub-theme-toggl
 	// component even mounts) — wired via the onApply hook.
 	import { mountThemeToggle } from '../../../shared/theme';
 
+	// Root cause of "the toggle stops working after the first page" (found
+	// live, 2026-09-16): Starlight ships with client-side page transitions
+	// (astro:transitions) on by default, which swap the <body> content for
+	// same-site navigation instead of a full reload. This whole module
+	// script's top-level code — including mountThemeToggle's
+	// addEventListener call — only runs once, on the very first real page
+	// load; a transition swap inserts a brand-new nav bar (this component's
+	// <Fragment set:html={navHtml}>) with a fresh #hub-theme-toggle button,
+	// but never re-runs this script, so that new button has no click
+	// listener at all and every fix/measurement below goes stale too.
+	// Astro's documented fix: re-run setup on `astro:page-load`, which fires
+	// on the first load AND after every subsequent transition alike — so
+	// everything that was directly at this script's top level moves inside
+	// one function, run once immediately and again on every future
+	// navigation via that event.
 	const STARLIGHT_KEY = 'starlight-theme';
-	mountThemeToggle('hub-theme-toggle', (theme) => localStorage.setItem(STARLIGHT_KEY, theme));
+	let activeResizeObserver: ResizeObserver | null = null;
 
-	// Root cause of the reported "title crop" bug (.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md):
-	// Starlight wraps this entire component's output in its own fixed
-	// <header class="header"> landmark (position: fixed, top: 0) - our added
-	// site-nav row and Starlight's own title/search row both render inside
-	// that one landmark, stacked. But --sl-nav-height (the variable every
-	// other part of the page - sidebar, TOC, main content - uses to reserve
-	// top space so nothing renders underneath the fixed header) was still
-	// Starlight's original single-row value (4rem), never updated for the
-	// combined 2-row height once ticket 08 added the site-nav on top. The
-	// fixed header's real (taller) height didn't change what the rest of the
-	// page reserved for it, so the sidebar started too high and rendered
-	// underneath/overlapping the header - which is what made the title look
-	// "cropped": it wasn't clipped, it was genuinely covered.
-	//
-	// Fixed by measuring the landmark's real natural content height and
-	// writing it into --sl-nav-height, instead of hand-computing a
-	// magic-number constant that would silently go stale the next time
-	// either row's content or padding changes.
-	//
-	// Can't just read the landmark's own getBoundingClientRect(): Starlight's
-	// own CSS sets the landmark's height directly to `var(--sl-nav-height)`
-	// (confirmed by inspecting the live stylesheet - `.header { height:
-	// var(--sl-nav-height); ... }`), so its rendered height IS whatever this
-	// variable already was, not what its content actually needs - reading it
-	// to set the same variable is circular and converges on the stale value.
-	// Sidesteps that by temporarily forcing the landmark to size-to-content
-	// (inline `height: auto`, which wins over the stylesheet's `var(...)`
-	// rule), reading its natural scrollHeight, then restoring - a one-frame
-	// flicker-free measurement, not a rendered layout state.
-	//
-	// Observes the landmark's own children (not the landmark itself) for
-	// resize, since re-measuring in response to a resize of the landmark
-	// we're actively resizing would feed back into itself; the nav row
-	// wrapping to 2 lines on a narrow viewport is a real case this needs to
-	// catch.
-	const headerLandmark = document.querySelector('header.header');
-	if (headerLandmark) {
-		const syncNavHeight = () => {
-			const prevInlineHeight = headerLandmark.style.height;
-			headerLandmark.style.height = 'auto';
-			const natural = headerLandmark.scrollHeight;
-			headerLandmark.style.height = prevInlineHeight;
-			document.documentElement.style.setProperty('--sl-nav-height', `${natural}px`);
-		};
-		syncNavHeight();
-		const resizeObserver = new ResizeObserver(syncNavHeight);
-		for (const child of headerLandmark.children) resizeObserver.observe(child);
+	function setupPage() {
+		mountThemeToggle('hub-theme-toggle', (theme) => localStorage.setItem(STARLIGHT_KEY, theme));
+
+		// Root cause of the reported "title crop" bug (.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md):
+		// Starlight wraps this entire component's output in its own fixed
+		// <header class="header"> landmark (position: fixed, top: 0) - our added
+		// site-nav row and Starlight's own title/search row both render inside
+		// that one landmark, stacked. But --sl-nav-height (the variable every
+		// other part of the page - sidebar, TOC, main content - uses to reserve
+		// top space so nothing renders underneath the fixed header) was still
+		// Starlight's original single-row value (4rem), never updated for the
+		// combined 2-row height once ticket 08 added the site-nav on top. The
+		// fixed header's real (taller) height didn't change what the rest of the
+		// page reserved for it, so the sidebar started too high and rendered
+		// underneath/overlapping the header - which is what made the title look
+		// "cropped": it wasn't clipped, it was genuinely covered.
+		//
+		// Fixed by measuring the landmark's real natural content height and
+		// writing it into --sl-nav-height, instead of hand-computing a
+		// magic-number constant that would silently go stale the next time
+		// either row's content or padding changes.
+		//
+		// Can't just read the landmark's own getBoundingClientRect(): Starlight's
+		// own CSS sets the landmark's height directly to `var(--sl-nav-height)`
+		// (confirmed by inspecting the live stylesheet - `.header { height:
+		// var(--sl-nav-height); ... }`), so its rendered height IS whatever this
+		// variable already was, not what its content actually needs - reading it
+		// to set the same variable is circular and converges on the stale value.
+		// Sidesteps that by temporarily forcing the landmark to size-to-content
+		// (inline `height: auto`, which wins over the stylesheet's `var(...)`
+		// rule), reading its natural scrollHeight, then restoring - a one-frame
+		// flicker-free measurement, not a rendered layout state.
+		//
+		// Observes the landmark's own children (not the landmark itself) for
+		// resize, since re-measuring in response to a resize of the landmark
+		// we're actively resizing would feed back into itself; the nav row
+		// wrapping to 2 lines on a narrow viewport is a real case this needs to
+		// catch.
+		const headerLandmark = document.querySelector('header.header');
+		if (headerLandmark) {
+			const syncNavHeight = () => {
+				const prevInlineHeight = headerLandmark.style.height;
+				headerLandmark.style.height = 'auto';
+				const natural = headerLandmark.scrollHeight;
+				headerLandmark.style.height = prevInlineHeight;
+				document.documentElement.style.setProperty('--sl-nav-height', `${natural}px`);
+			};
+			syncNavHeight();
+			// Disconnect the previous page's observer before creating a new one —
+			// setupPage() now runs again on every transition (see the
+			// astro:page-load note above), and the old observer's target
+			// elements are gone from the DOM after a transition swap anyway.
+			activeResizeObserver?.disconnect();
+			activeResizeObserver = new ResizeObserver(syncNavHeight);
+			for (const child of headerLandmark.children) activeResizeObserver.observe(child);
+		}
+
+		// Reclaims the right-hand TOC column's width for content (ticket 23's
+		// "no reserved column, let the floating rail overlap instead" fix).
+		// .main-pane's "100%" is already net of the LEFT sidebar - Starlight
+		// reserves that room via padding-inline-start on an ancestor
+		// (.main-frame), not via a flex sibling's width. Subtracting
+		// --sl-sidebar-width again (copying the pattern of Starlight's own
+		// WITH-toc formula) double-counted it, so content only clawed back
+		// roughly half the space this ticket exists to reclaim. A page with a
+		// left sidebar and no TOC gets plain 100% from Starlight by default -
+		// that's the correct target here too.
+		// Applied via direct inline style (same mechanism already used above
+		// for --sl-nav-height) rather than the stylesheet - avoids relying on
+		// beating Starlight's own @layer starlight.core rule on specificity.
+		const mainPane = document.querySelector<HTMLElement>('.main-pane');
+		const rightSidebarContainer = document.querySelector<HTMLElement>('.right-sidebar-container');
+		const rightSidebar = document.querySelector<HTMLElement>('.right-sidebar');
+		if (mainPane) mainPane.style.width = '100%';
+		if (rightSidebarContainer) rightSidebarContainer.style.width = '0';
+		if (rightSidebar) {
+			// Starlight's own position: fixed / width / padding-top rules for
+			// .right-sidebar all live inside `@media (min-width: 72rem)` - built
+			// for its old always-open TOC column, which only ever showed at that
+			// width. Below 1152px none of that CSS applies at all, so without
+			// setting it here too the rail falls back to plain static
+			// positioning and gets pushed into normal document flow above the
+			// content instead of floating over it - exactly the "reserve no
+			// space, just overlap" behavior this ticket asks for, now made to
+			// hold at every width, not just desktop. (2.125rem buttons need more
+			// than 3.5rem width once real padding is added - 4.5rem clears it.)
+			rightSidebar.style.position = 'fixed';
+			rightSidebar.style.top = '0';
+			rightSidebar.style.zIndex = '10';
+			rightSidebar.style.width = '4.5rem';
+			rightSidebar.style.right = '0.75rem';
+			rightSidebar.style.overflow = 'visible';
+			rightSidebar.style.borderInlineStart = 'none';
+			rightSidebar.style.paddingTop = 'calc(var(--sl-nav-height) + 0.75rem)';
+		}
+
+		// Content was rendering hard against the right edge of its available
+		// width instead of centered - real cause, found by measuring live:
+		// Starlight's own TwoColumnContent.astro sets
+		// --sl-content-margin-inline: auto 0 on .main-pane specifically for the
+		// WITH-a-real-TOC-column case, so the content column sits snug against
+		// that column rather than centered in the wider space. That rule is
+		// still there and still applies even though this ticket removed the
+		// actual reserved TOC column - a stale side effect, not a real
+		// left/right choice being made anymore. Resets it to plain `auto`
+		// (centers in whatever space main-pane actually has) so
+		// ContentPanel.astro's own `margin-inline: var(--sl-content-margin-inline,
+		// auto)` centers for real. Confirmed via getBoundingClientRect() before
+		// and after: at 1400px wide this went from 141px of empty space on the
+		// left / 0px on the right, to roughly even on both sides.
+		if (mainPane) {
+			mainPane.style.setProperty('--sl-content-margin-inline', 'auto');
+		}
 	}
 
-	// Reclaims the right-hand TOC column's width for content (ticket 23's
-	// "no reserved column, let the floating rail overlap instead" fix).
-	// .main-pane's "100%" is already net of the LEFT sidebar - Starlight
-	// reserves that room via padding-inline-start on an ancestor
-	// (.main-frame), not via a flex sibling's width. Subtracting
-	// --sl-sidebar-width again (copying the pattern of Starlight's own
-	// WITH-toc formula) double-counted it, so content only clawed back
-	// roughly half the space this ticket exists to reclaim. A page with a
-	// left sidebar and no TOC gets plain 100% from Starlight by default -
-	// that's the correct target here too.
-	// Applied via direct inline style (same mechanism already used above
-	// for --sl-nav-height) rather than the stylesheet - avoids relying on
-	// beating Starlight's own @layer starlight.core rule on specificity.
-	const mainPane = document.querySelector<HTMLElement>('.main-pane');
-	const rightSidebarContainer = document.querySelector<HTMLElement>('.right-sidebar-container');
-	const rightSidebar = document.querySelector<HTMLElement>('.right-sidebar');
-	if (mainPane) mainPane.style.width = '100%';
-	if (rightSidebarContainer) rightSidebarContainer.style.width = '0';
-	if (rightSidebar) {
-		// Starlight's own position: fixed / width / padding-top rules for
-		// .right-sidebar all live inside `@media (min-width: 72rem)` - built
-		// for its old always-open TOC column, which only ever showed at that
-		// width. Below 1152px none of that CSS applies at all, so without
-		// setting it here too the rail falls back to plain static
-		// positioning and gets pushed into normal document flow above the
-		// content instead of floating over it - exactly the "reserve no
-		// space, just overlap" behavior this ticket asks for, now made to
-		// hold at every width, not just desktop. (2.125rem buttons need more
-		// than 3.5rem width once real padding is added - 4.5rem clears it.)
-		rightSidebar.style.position = 'fixed';
-		rightSidebar.style.top = '0';
-		rightSidebar.style.zIndex = '10';
-		rightSidebar.style.width = '4.5rem';
-		rightSidebar.style.right = '0.75rem';
-		rightSidebar.style.overflow = 'visible';
-		rightSidebar.style.borderInlineStart = 'none';
-		rightSidebar.style.paddingTop = 'calc(var(--sl-nav-height) + 0.75rem)';
-	}
-
-	// Content was rendering hard against the right edge of its available
-	// width instead of centered - real cause, found by measuring live:
-	// Starlight's own TwoColumnContent.astro sets
-	// --sl-content-margin-inline: auto 0 on .main-pane specifically for the
-	// WITH-a-real-TOC-column case, so the content column sits snug against
-	// that column rather than centered in the wider space. That rule is
-	// still there and still applies even though this ticket removed the
-	// actual reserved TOC column - a stale side effect, not a real
-	// left/right choice being made anymore. Resets it to plain `auto`
-	// (centers in whatever space main-pane actually has) so
-	// ContentPanel.astro's own `margin-inline: var(--sl-content-margin-inline,
-	// auto)` centers for real. Confirmed via getBoundingClientRect() before
-	// and after: at 1400px wide this went from 141px of empty space on the
-	// left / 0px on the right, to roughly even on both sides.
-	if (mainPane) {
-		mainPane.style.setProperty('--sl-content-margin-inline', 'auto');
-	}
+	setupPage();
+	document.addEventListener('astro:page-load', setupPage);
 </script>
