@@ -1,0 +1,96 @@
+# Unreleased
+
+Raw commit log since the last release tag, auto-appended by `guard-changelog-unreleased-log.cjs` on every commit. Not reader-facing prose — a human/Claude curates this into the real release notes (What's New/Changed/Bug Fixes, see .scratch/changelog-automation/issues/07-whats-new-changed-bugfixes-format.md) at actual cut-release time, then this file resets to empty for the next cycle.
+
+## Unreleased
+
+- ec3b801 Cap the upload-gate confirm box and date release tags locally.
+- 9e830b9 Correct release notes for the upload-gate modal cap and drop the tag prototype.
+- 6cda95e Fix confirm-box CSS so the hub build can deploy the upload-gate cap.
+- e7798b6 Ship the always-boxed confirm list so long filename gates stay on screen.
+- 55e7a22 Record the confirm-list ship commit on the overflow map.
+- 35fdc38 Round 4: font-family reset, confirm-modal spacing, RPC unrecognized-key diagnosis
+- bd4d52c Resolve validator-round4 tickets 04, 06, 07: duplicate name detection, template-function typo detection, poke stray/typo matching
+- a285a2c Merge branch 'round4/reference-validation'
+- ff3326a Resolve validator-round5: value-entry, RichText, prefix-fuzzy, malformed-reference, and default-value false negatives
+- 0ff48d7 Split hub-wide vs validator standing rules and glossary into CLAUDE.md/CONTEXT.md
+- f6c6e13 Make AGENTS.md the shared cross-agent source, slim CLAUDE.md to an import
+- 292aa29 Sync docs/agents/domain.md and triage-labels.md with cursor/work's tailored copies
+- 9407896 Add standing-rule-file sync-immediately rule to the dual-agent workflow
+- e8a02f6 Split main.ts's focus-sync and file-ingestion logic into tested modules
+- 5dddb9c Restore the anti-duplication contract: detectors go back to pure predicates
+- de960be Chart the re-review's 4 findings into tickets; resolve ticket 08
+- c56d377 Resolve ticket 09: sharpen the detector/catalog boundary
+- d4f0d9c Resolve ticket 03: extract ingest()'s policy checks as pure predicates
+- 980d741 Close sidebar-file-order ticket 01 without building
+- ab97794 Add ew_wiki Tool (tickets 01-03) and wiki-tool-prototype tracker
+- ef5787d Rework ew_wiki Core Vocabulary content and rebuild the Home page
+- d155dd5 Resolve ticket 05: house-style component conventions + AGENTS.md dedupe
+- 15b36b6 Add beginner Examples section; extend script.mdx and data.mdx
+- 3a45984 Add Adding Randomness example page; shared snippet + AGENTS.md rules
+- 86bcadb Use Valheim's star terminology instead of "leveled"; note header alignment gap
+- d0ab87c Restructure sidebar by tier, add Poke guide, add fun complexity tags
+- 5fb618b Add Understanding Filter/Functions pages, rework Custom Data and RPCs
+- 33ff2db Add Advanced/Extended Reading wiki sections, sweep for fluff and broken mechanics
+- 6cfe358 Fix repeatInterval: default, verified against EWP source
+- fd763c4 Add hooks infra: rule-file guard, wiki source-verify (generic, config-driven), dev-server verify
+- 1a09d17 Rework type: time wiki page; add script-writing checklist + guard hook
+- 00f7a75 Add script field-order rule+hook; rework time/realtime case studies
+- 00def82 Rework Advanced Filter into plural/condition pages, add FilterLimit explainer widget, sweep URL renames
+- 1a2c955 Rework Extended Reading, fix injectData/triggerRules docs, add doc-example schema hook
+- ba7dc6c Build ObjectsNearbyExplainer widget, resolve wayfinder ticket 17
+- 2787eba Point ticket 17 at its prototype capture branch
+- fc2c4e1 Build ConditionExplainer widget, resolve wayfinder ticket 18
+- a246b57 Strip internal-bookkeeping asides from reader pages, add a guard hook
+- 4572a9a Close ticket 18: log follow-up round on the map
+- 4e36cfb Fix a 5th internal-bookkeeping leak, claim ticket 19
+- 7a03a97 Build TriggerChangeExplainer widget, resolve wayfinder ticket 19
+- 28f1352 Claim wayfinder ticket 20 (nesting-peel widget)
+- 2213dd7 Build NestingPeelExplainer widget, resolve wayfinder ticket 20
+- 930d518 Fix NestingPeelExplainer button alignment, drop arrows/step label
+- e0e3127 Log ticket 20 follow-up rounds on the ticket and map
+- ef8acd8 Restore real name in unresolved <len_X>, shorten only past 20 chars
+- 5f55706 Close ticket 20, add HANDOFF.md for the next widget-phase session
+- beda003 Claim ticket 21 (basic-rng lottery widget)
+- 3e9027f Build lottery widget for basic-rng.mdx (ticket 21)
+- 2076c61 Close ticket 21, hand off to ticket 22 (world-level dial)
+- 92a2084 Lottery widget follow-up: Weight vs Chance tabs (ticket 21 round 2)
+- 8253ea7 Log ticket 21 round 2 (Weight vs Chance tabs) on the ticket and map
+- 6b61b23 Claim ticket 22 (World-level dial widget)
+- 6a73356 World-level dial widget (ticket 22): one shared dial, 3 tabs
+- 7466a5a Close ticket 22 (World-level dial widget) and log it on the map
+- 0f8ef7e World-level dial: 3-column result tables, drop feast section
+- 19b7f58 Log ticket 22 round 2 (3-column tables, drop feast section) on the ticket and map
+- ac734b9 World-level dial: fix Cargo tab column widths, reserve box size
+- f934d99 Log ticket 22 round 3 (Cargo tab fix, static box) on the ticket, map, and HANDOFF
+- a8eb0d5 Rename guide-source subfolders to beginner/intermediate/advanced-guide
+- 2fd7108 Merge Maths Guide patterns into Advanced Functions, drop Long numbers
+- 233d0da Credit the 6 v1 guide sources plus 2 advanced-guide sources in sources.md
+- e05a748 Scrap the Try-It Monaco playground, never wired into any real page
+- bcbb94b Add collapsible icon-rail TOC and strip the header (ticket 09)
+- 6671694 Housekeeping sweep: wall of text, broken links, and stale/leaky dev comments
+- 7bbefdc Register and deploy ew_wiki: fix its nested base path and give it the hub's shared nav (ticket 08)
+- 9e30230 Add hub-tool site-nav/deploy-path standing rule to AGENTS.md
+- d0f24ab Confirm ticket 08's live-deploy check: CI green, site verified live
+- d3be128 Consolidate duplicated hook scripts into shared .agents/hooks/ew_toolkit/
+- d0c5941 Hook-enforce standing-rule file sync between worktrees
+- d37d7f3 Shrink HANDOFF.md to session-state; hook-enforce it's touched
+- 6d8f172 Wire image-size warning hook and SessionStart corpus injection
+- 2db0fa7 Add creation-time hook on new Tool nav registration
+- 07fb498 Add Cursor-side handoff staleness backstop
+- 0e0a834 Add fix-time "does this exist elsewhere?" forced question
+- a198729 Retire 3 project-scoped hooks now covered by global equivalents
+- d10a249 Unify hub nav bar and favicon; rework ew_wiki header/TOC layout
+- 63ec610 Add ew_wiki content-quality pass: wording fixes, new teaching, bad-cop examples
+- 03547e4 Fix stale HANDOFF.md claim about ai-workflow-audit ticket 17
+- 434697d Fix duplicate instance of the same stale ai-workflow-audit claim
+- fe4e468 Resolve ew_wiki content-quality-pass tickets 06-13: bad-cop examples
+- 4bc28f3 Catch up HANDOFF.md with last session's push
+- 84825e4 Add EWP v1.60's log: field to validator schema and field-order rule
+- 20b5aaa Fix CI: RPC_SetVisualItem param 2 is hash, not string
+- 3d2b536 Teach log: on custom-data.mdx, EWP v1.60's new logging field
+- 0e56b3a Close Player Identity & Object Ownership map: 2 pages built, signed off, live
+- a076ac5 Close Ew Wiki Content Quality Pass map; fix stale colon-titles sitewide
+- 9be605e Standardize release-notes format; enforce it with a real hook
+- 82dfad1 Catch up backlog: resolved research tickets, standing-rule additions
+- 9ba5235 Add BFV example scripts as raw reference material

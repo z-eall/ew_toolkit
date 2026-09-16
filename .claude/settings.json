@@ -11,6 +11,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-changelog-release-format.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-changelog-cut-release-reminder.cjs"
           }
         ]
       },
@@ -74,6 +78,15 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-support-image-size.cjs"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-changelog-unreleased-log.cjs"
           }
         ]
       },

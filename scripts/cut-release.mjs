@@ -7,6 +7,9 @@
 //
 // Usage: node scripts/cut-release.mjs <notes-file>
 import { execFileSync, execSync } from "node:child_process";
+import { existsSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 const notesFile = process.argv[2];
 if (!notesFile) {
@@ -45,3 +48,23 @@ execFileSync("gh", ["release", "create", tag, "--title", tag, "--notes-file", no
 });
 
 console.log(`Done: https://github.com/z-eall/ew_toolkit/releases/tag/${tag}`);
+
+// Reset CHANGELOG-unreleased.md (see .scratch/changelog-automation/issues/
+// 08-unreleased-log-and-push-reminder.md) now that its contents shipped in
+// a real release — otherwise the next cycle's raw log would start out
+// duplicating everything this release already covers.
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const unreleasedPath = join(repoRoot, "CHANGELOG-unreleased.md");
+if (existsSync(unreleasedPath)) {
+  writeFileSync(
+    unreleasedPath,
+    "# Unreleased\n\n" +
+      "Raw commit log since the last release tag, auto-appended by `guard-changelog-unreleased-log.cjs` on every commit. " +
+      "Not reader-facing prose — a human/Claude curates this into the real release notes " +
+      "(What's New/Changed/Bug Fixes, see .scratch/changelog-automation/issues/07-whats-new-changed-bugfixes-format.md) " +
+      "at actual cut-release time, then this file resets to empty for the next cycle.\n\n" +
+      "## Unreleased\n\n",
+    "utf8"
+  );
+  console.log(`Reset ${unreleasedPath} for the next cycle.`);
+}
