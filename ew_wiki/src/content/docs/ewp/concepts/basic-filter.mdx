@@ -16,12 +16,11 @@ Sometimes `prefab:` + `type:` matches more than you want — every Boar, say, no
 ```
 
 <Aside type="caution">
-Don't do this: `filter:`'s value is already split as `type, key, value` — a comma there doesn't add a second number to check, it gets read as part of the value text itself. To check a range, use a semicolon (`2;3`).
+Don't do this: a comma doesn't write "2 or 3" — the range separator is a semicolon (`2;3`). The extra comma isn't an error either; it gets read as a separate setting that does nothing here, so "or 3" just quietly disappears.
 </Aside>
 
 ```yaml
-# WRONG — the comma gets folded into the value as the text "2,3", which isn't a number;
-# the level check is then silently skipped, so this matches every Boar, not just 1-2 star ones
+# WRONG — the comma doesn't add a second number to check; only level 2 gets checked, not "2 or 3"
 - prefab: Boar
   type: create
   filter: int, level, 2,3
@@ -50,5 +49,5 @@ Same three pieces as a field edit (see [Understanding Fields](/ew_toolkit/ew_wik
 </Aside>
 
 <Aside type="tip">
-`filter:`/`bannedFilter:` also work inside a nearby-object check, not just on the object itself — see [Filter: by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/).
+`filter:`/`bannedFilter:` also work inside a nearby-object check, not just on the object itself — see [Filter - by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/).
 </Aside>

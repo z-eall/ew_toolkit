@@ -35,7 +35,7 @@ The whole thing hangs off a single EWP key: `bfvworldlevel`, a plain number (0 u
      exec: <save_bfvworldlevel_<max_0_<par_1>>>
    ```
 
-   `admin: true` restricts this to admins; `cancel: true` stops the chat message itself from showing (it's a command, not something meant to be read as regular chat). `<max_0_<par_1>>` clamps whatever number the admin typed to never go below 0 — `<par_1>` is the number itself, `0;999` in the trigger just tells EWP which range of chat words to match. `exec:` runs the `<save_*>` function purely for its side effect, same as [Custom Data: EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/) covers.
+   `admin: true` restricts this to admins; `cancel: true` stops the chat message itself from showing (it's a command, not something meant to be read as regular chat). `<max_0_<par_1>>` clamps whatever number the admin typed to never go below 0 — `<par_1>` is the number itself, `0;999` in the trigger just tells EWP which range of chat words to match. `exec:` runs the `<save_*>` function purely for its side effect, same as [Custom Data - EWP Key](/ew_toolkit/ew_wiki/ewp/concepts/ewp-key/) covers.
 
    The same key can also climb on its own, one tier per boss kill — see [World Boss Progression](/ew_toolkit/ew_wiki/ewp/examples/world-progression/) for that half of the system.
 
@@ -63,7 +63,7 @@ The whole thing hangs off a single EWP key: `bfvworldlevel`, a plain number (0 u
        parameter: findSealedVillageStation
    ```
 
-   `prefab: CraftingStation, StationExtension` doesn't name one specific object — those are Component names, and [`prefab:` accepts a component as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component. So this one rule reaches every crafting station and every station extension on the whole map in one poke, no matter what they're each individually called. `filters:`/`filterLimit: 1` (see [Advanced Filter: Plurals](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-plural/)) then narrows that flood down to just the ones already flagged as unsealed or sealed, so this rule can re-check every station's lock state the instant the world level changes — without knowing any of their names in advance.
+   `prefab: CraftingStation, StationExtension` doesn't name one specific object — those are Component names, and [`prefab:` accepts a component as a value group](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/scripting.md), matching *every* object that has that Component. So this one rule reaches every crafting station and every station extension on the whole map in one poke, no matter what they're each individually called. `filters:`/`filterLimit: 1` (see [Advanced Filter - Plurals](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-plural/)) then narrows that flood down to just the ones already flagged as unsealed or sealed, so this rule can re-check every station's lock state the instant the world level changes — without knowing any of their names in advance.
 
 </Steps>
 

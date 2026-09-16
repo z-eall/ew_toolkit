@@ -5,6 +5,7 @@ complexity: intermediate
 ---
 
 import { Aside } from '@astrojs/starlight/components';
+import RichTextTagsNote from '../../../../components/snippets/richtext-tags-note.mdx';
 
 An **RPC call** ("remote procedure call") sends data straight to a client — usually to make something happen on the player's own screen, like a message popup or a healing number. The game fires these calls itself, all the time: eat food and a heal number floats up, die and your death visuals play. That's not what this page is about.
 
@@ -115,6 +116,22 @@ Some RPC calls need arguments — the RPC list says how many, and what each one 
 ```
 
 Some calls need more than two: `ChatMessage`, for instance, takes a `userinfo`-typed parameter identifying the sender, on top of a position and a message. Other calls need none at all — just `name:` and nothing else. That level of detail is out of scope here — the point for now is just that the numbered fields always work the same way, however many a given call needs.
+
+### Coloring and formatting a message: RichText tags
+
+`ShowMessage`'s text can carry a bit of formatting — useful for making an alert stand out:
+
+```yaml
+- prefab: Player
+  type: say, alert
+  clientRpc:
+  - name: ShowMessage
+    1: enum_message, Center
+    2: string, "<color=#FF0000>Warning!</color> Something happened!"
+    target: all
+```
+
+<RichTextTagsNote />
 
 ## `chance:`
 

@@ -295,7 +295,7 @@ This one's a single rule chain, no poke needed — `objects:` alone does the "is
     parameter: turnBetterYield
 ```
 
-A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter: by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
+A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter - by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
 
 ```yaml
 - prefab: allGrownCrops
@@ -429,6 +429,10 @@ The `isSilentBeehive` data entry itself, applied throughout this loop:
 ```
 
 Every field here is real and checked: `Beehive.m_maxHoney`, `Beehive.m_secPerUnit`, `Beehive.m_maxCover`, `Beehive.m_name`, `Beehive.m_happyText`, and `Beehive.m_freespaceText` are all documented `Beehive` component fields; `Piece.m_canBeRemoved` is a real `Piece` field; `WearNTear.m_health` is the component's configured max health, while the bare `health` field (no component prefix) is the object's own *current* health value on its ZDO — setting both together means a freshly silenced hive spawns already at 50 out of a 100 max, rather than full health.
+
+<Aside type="tip">
+This is another use of the same RichText tags shown for RPC messages in [Understanding RPC](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/#coloring-and-formatting-a-message-richtext-tags) — here, inside a `strings:` field (`Beehive.m_name`) instead of an RPC's message text. Same tags, any string field.
+</Aside>
 
 ## The full script, in load order
 
