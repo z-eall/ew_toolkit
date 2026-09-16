@@ -16,14 +16,18 @@ Reaching the destination means: the user marks a batch of pushed changes as rele
 - Deploy pipeline this plugs into: [build-deploy.yml](../../.github/workflows/build-deploy.yml) — pushes to `main` build+deploy on every push and nightly on schedule. This map does NOT change that trigger; the changelog trigger is a separate, curated signal (see ticket 01/02) layered on top, not "every deploy."
 - Origin: user asked (2026-08-18) for a workflow to auto-generate a summarized changelog whenever validator fixes ship, wanting the design decisions peeled one layer at a time for review.
 - Locked during destination-naming (2026-08-18): scope = toolkit-wide; trigger = curated release points (not every push, not fully manual); content = AI-summarized from commits/diff; surface = GitHub Releases only (not an in-site page or in-app panel).
+- **Release-notes format, going forward (2026-09-16, see [ticket 07](issues/07-whats-new-changed-bugfixes-format.md)):** every Tool's section uses **What's New: / What's Changed: / Bug Fixes:** — no per-diagnosis-category headers anymore. Real page titles only (never a file name); brand is **EW Wiki**. Mechanically enforced at cut-release time by `guard-changelog-release-format.cjs` (wired in both worktrees), not just written guidance.
 
 ## Decisions so far
 
+- [The going-forward release-notes format](issues/07-whats-new-changed-bugfixes-format.md) — every Tool's section now uses the same **What's New: / What's Changed: / Bug Fixes:** structure (only the buckets with real content), pages referenced by their real display title (never a file name), brand written as **EW Wiki**. Supersedes ticket 03/05's diagnosis-category headers and the part of ticket 06 that kept them for the Validator. Enforced by a real hook, `guard-changelog-release-format.cjs`, wired into both worktrees — not just written guidance.
 - [Research: feasible AI-summarization mechanisms for changelog automation](issues/01-summarization-mechanism-research.md) — the $0 GitHub-native options (`--generate-notes`, release-drafter) only produce categorized PR-title lists, not true prose summaries; genuine summarization requires either a manual local Claude Code step ($0) or a paid Anthropic API call in CI (~$0.005–$0.03/release, breaks the $0 preference without sign-off).
 - [Should the hub link to the changelog, and where?](issues/04-site-side-link.md) — Yes, as a plain "Changelog" link (no symbol) beside the theme toggle in the sticky top nav's right slot — visible on every page without scrolling, but kept secondary to the Home/Tools/Support nav items.
 - [Decide the release trigger + automation mechanism](issues/02-trigger-and-mechanism.md) — Fully local, $0: a human decides to cut a release and runs a local script; Claude Code drafts notes from `git log`/diff since the last tag; tags are the cutter's **local** calendar date (`vYYYY-MM-DD`, `-2`/`-3` suffix on same-day collisions); the script pushes the tag and runs `gh release create --notes-file`. No CI involvement, `build-deploy.yml` untouched.
-- [What should a generated release-notes entry look like?](issues/03-release-notes-format.md) — Sections grouped by the validator's own diagnostic-category vocabulary, not a generic Fixed/Added/Changed split or flat list — reads instantly to users of the Problems-panel filters. Five-name list and “do not rewrite published notes” later revised in ticket 05.
-- [Retroactive reformat and release 3](issues/05-retroactive-reformat-and-release-3.md) — leave `v2026-08-18` / `v2026-08-18-2` as-is; next notes use **Site first**, then the six live FILTER names (including **YAML problem**).
+- [What should a generated release-notes entry look like?](issues/03-release-notes-format.md) — Sections grouped by the validator's own diagnostic-category vocabulary, not a generic Fixed/Added/Changed split or flat list — reads instantly to users of the Problems-panel filters. Five-name list and “do not rewrite published notes” later revised in ticket 05; the category-header approach itself later superseded by [ticket 07](issues/07-whats-new-changed-bugfixes-format.md).
+- [Retroactive reformat and release 3](issues/05-retroactive-reformat-and-release-3.md) — leave `v2026-08-18` / `v2026-08-18-2` as-is; next notes use **Site first**, then the six live FILTER names (including **YAML problem**). Superseded by [ticket 07](issues/07-whats-new-changed-bugfixes-format.md).
+
+- [How should a future Tool's changes be attributed within a toolkit-wide release?](issues/06-tool-2-attribution-in-releases.md) — Per-Tool sections: a release spanning more than one Tool gets a top-level heading per Tool. A single-Tool release skips the extra heading. (The "each grouped by its own scheme" half was superseded same-day by ticket 07 — every Tool now uses the same three-bucket structure.)
 
 ## Implementation (2026-08-18)
 
@@ -31,7 +35,6 @@ All four tickets' decisions are implemented, not just recorded: the "Changelog" 
 
 ## Not yet specified
 
-- **How a future Tool #2's changes get attributed within a toolkit-wide release** — single combined stream vs. per-Tool sections. Genuinely needs a second Tool to exist before this is answerable concretely; revisit when Tool #2 is chosen (see Hub map's own "out of scope").
 - **Whether GitHub Releases turns out to be sufficient discoverability** — the user explicitly chose GitHub Releases over an in-site page this round; if that proves too buried for end users later, resurfacing a site-side page/link is a candidate revision, not pre-built now.
 
 ## Out of scope

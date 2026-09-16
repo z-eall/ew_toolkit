@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/block-windows-npm.js"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-changelog-release-format.cjs"
           }
         ]
       },
@@ -36,6 +40,18 @@
           {
             "type": "command",
             "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-script-block-header-comment.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-new-wiki-page-draft.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-page-title-colon-vs-dash.cjs"
+          },
+          {
+            "type": "command",
+            "command": "node C:/Users/Ultimate/Claude/.agents/hooks/ew_toolkit/guard-pid-ownership-ledger.cjs"
           }
         ]
       }
