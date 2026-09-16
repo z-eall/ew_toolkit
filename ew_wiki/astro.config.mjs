@@ -115,12 +115,22 @@ export default defineConfig({
 								'ewp/concepts/ewp-key',
 								'ewp/concepts/advanced-rpcs',
 								'ewp/concepts/advanced-filter-condition',
+								// Player identity/object-ownership split into its own map,
+								// "Player Identity & Object Ownership" (.scratch/ew-wiki-player-identity/
+								// map.md, see its ticket 1 for the page-shape decision). This page is
+								// the short Advanced-tier half; the deep-dive half ("Object Ownership")
+								// lives in Extended Reading, not here.
+								'ewp/concepts/advanced-functions-player-identity',
 							],
 						},
 						// Extended Reading: full, proven real-world scripts built entirely
 						// from fields/functions already taught above — nothing here is
 						// required to learn EWP fully. For a reader who wants complete
-						// worked systems, not new syntax.
+						// worked systems, not new syntax. "Object Ownership" is the one
+						// exception to "worked script" — a deliberate "level 4," deeper
+						// than Advanced but not required to write advanced scripts (see
+						// .scratch/ew-wiki-player-identity/map.md's ticket 1) — placed
+						// last, per that map's own page-shape decision.
 						{
 							label: 'Extended Reading',
 							items: [
@@ -129,6 +139,7 @@ export default defineConfig({
 								'ewp/examples/world-progression',
 								'ewp/examples/auto-upgrade-station',
 								'ewp/examples/village-cargo',
+								'ewp/extended-reading/object-ownership',
 							],
 						},
 						// Reference/Troubleshooting removed for now (2026-09-07) — placeholder

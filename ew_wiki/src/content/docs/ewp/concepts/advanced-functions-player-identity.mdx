@@ -1,0 +1,83 @@
+---
+title: "Advanced Functions - Player Identity"
+description: "What pid, cid, pname, platform, and pvisible actually return, and how pid and cid differ."
+complexity: advanced
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+EWP scripting can ask "which player currently owns this object?" — and once you have that player, a small family of functions tells you more about them: their account, their character, their display name, and a couple of niche details. This page walks through all five, with `pid` and `cid` getting the deepest treatment since they're the two this guide builds on going forward.
+
+## `pid` and `cid` — the two this guide focuses on
+
+```yaml
+- prefab: Container
+  type: change, InUse
+  command: s <pname> (<pid>) now controls this container
+```
+
+- **`pid`** is the current owner's Steam account id. It stays the same forever for that person, no matter which in-game character they're playing. If nobody currently owns the object but a local player exists, `pid` falls back to the literal text `"Server"` — not a real id, just a placeholder string.
+- **`cid`** is the current owner's *character's* own id — different for each character, even if the same person made three characters on the same Steam account. Unlike `pid`'s `"Server"` quirk, `cid`'s local-player fallback is always a real number.
+
+Pick `pid` when you care about the account (e.g. "has this Steam account already used this reward today?"). Pick `cid` when you care about the character (e.g. "does this specific character remember visiting here before?"). Both read off the same thing: whichever player currently network-owns the object's ZDO — the game's own internal record of "who's in charge of this thing right now." [Object Ownership](/ew_toolkit/ew_wiki/ewp/extended-reading/object-ownership/) is the guide that explains when and why that ownership actually moves.
+
+## `pname` — the one you'll reach for constantly
+
+`pname` is the current owner's display name. It's just as commonly used as `pid`/`cid` — arguably more, since almost every player-facing message needs to name someone:
+
+```yaml
+- prefab: Player
+  type: say, welcome
+  command: s Welcome to the server, <pname>!
+```
+
+<Aside type="tip">
+If a message needs color or styling, `pname` and any other text value can use Valheim's own RichText tags — see [Understanding RPC](/ew_toolkit/ew_wiki/ewp/concepts/basic-rpcs/#coloring-and-formatting-a-message-richtext-tags) for the full list and an example.
+</Aside>
+
+### Multi-word names and `<par_X>`
+
+A character's name can have a space in it ("Iron Fist," say). Passing `<pname>` through a [poke's `parameter:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) and reading it back with `<par_X>` looks fine until a name has more than one word.
+
+<Aside type="caution">
+Don't do this: reading a poke-carried player name back with `<par_X>` instead of `<rest_X>`.
+</Aside>
+
+```yaml
+# WRONG — <par_2> only catches the name's first word
+- prefab: SomeSpawner
+  type: change, claimed
+  poke:
+  - prefab: SomeBedPiece
+    parameter: setOwner <cid> <pname>   # <pname> could be "Iron Fist" — two words
+
+- prefab: SomeBedPiece
+  type: poke, setOwner
+  data: string, ownerName, <par_2>   # only saves "Iron"
+```
+
+```yaml
+# CORRECT — <rest_X> keeps the whole name no matter its length
+- prefab: SomeSpawner
+  type: change, claimed
+  poke:
+  - prefab: SomeBedPiece
+    parameter: setOwner <cid> <pname>
+
+- prefab: SomeBedPiece
+  type: poke, setOwner
+  data: string, ownerName, <rest_2>
+```
+
+`<par_2>` grabs only "Iron," the first word. `<rest_2>` grabs "Iron Fist" whole, and would still work even for a three- or four-word name.
+
+## Two more, briefly
+
+| Function | What it tells you |
+|---|---|
+| `platform` | Which platform backend `pid` came from (Steamworks vs. others). Only useful for telling `pid`s from different platforms apart — most servers never need it. |
+| `pvisible` | Whether the player has public map-position visibility turned on — a privacy setting, unrelated to ownership. |
+
+## Where this goes next
+
+`pid`/`cid` only tell you who owns an object *right now* — not who placed it, and not why ownership landed on that particular player. [Object Ownership](/ew_toolkit/ew_wiki/ewp/extended-reading/object-ownership/) picks up exactly there: the two real ways an object's owner changes, a verified table covering the game's own components one by one, the persistent fields that survive ownership changes entirely, and the `<pid>`/`<cid>`-as-key-namespace trick real scripts use to remember things per player.

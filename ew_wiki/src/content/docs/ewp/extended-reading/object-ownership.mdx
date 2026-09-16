@@ -1,0 +1,341 @@
+---
+title: "Object Ownership"
+description: "The two real ways an object's owner changes, and a real paste-in script for every checked object, grouped by component."
+complexity: advanced
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+[Advanced Functions - Player Identity](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions-player-identity/) covered what `pid` and `cid` return. This page covers how to make use of that: `pid`/`cid` **report whoever currently owns** an object's ZDO right now.
+
+<Aside type="note">
+"Ownership" means the game's own internal record of who's in charge of an object.
+</Aside>
+
+## There are two ways ownership can change:
+
+<Steps>
+
+1. **The Zone Host — the ongoing fallback.**
+
+   The game constantly checks: **does this object have an owner?** If not, it finds the current Zone Host and makes them the owner. This keeps happening for as long as the object exists, for every object in the active zones.
+
+   **There's one exception:** player-built pieces. If you build a piece, the game gives you — the builder — **immediate ownership** (this is really the *Claiming Player* rule below, just triggered by building instead of an interaction), even if someone else is already the Zone Host. That ownership stays yours until you leave the zone — only then does it fall back to the rule above.
+
+   <Aside type="caution">
+   "Zone Host" doesn't mean "the server." It means whoever's currently active in that particular [active zone](https://valheim.fandom.com/wiki/Zones).
+   </Aside>
+
+2. **The Claiming Player — a bonus rule some objects have.**
+
+   Some objects go further and can *"intercept"* the Zone Host rule: interacting with them a certain way **hands ownership straight to whoever just did it** — and this can happen over and over, every time someone does it. Opening a chest, writing on a sign — each one claims the object for the player doing it, right then. You'll find a working example for each of these further down this page.
+
+</Steps>
+
+## Every object grouped by component
+
+| | | | | | | | |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| [Container](#container) | [Sign](#sign) | [ItemStand / ArmorStand](#itemstand--armorstand) | [ItemDrop](#itemdrop) | [Personal FX](#personal-fx) | [Projectile](#projectile) | [Trap](#trap) | [TerrainModifier](#terrainmodifier) |
+| [Sadle](#sadle) | [Vagon](#vagon) | [Ship](#ship) | [Turret](#turret) | [CookingStation](#cookingstation) | [Fish](#fish) | [Gibber](#gibber) | |
+
+### Container
+
+*See every prefab with this component on [Components/Container](https://valheimtools.stream/wiki/components/Container).*
+
+Opening a chest transfers ownership to whoever opened it, immediately, before anything else happens. The chest's UI actually opening for the new owner triggers a state change on `InUse`, so it's a reliable moment to read ownership from.
+
+<Aside type="note">
+Ownership only changes the moment you open the chest. After that, it stays with you — so targeting `InUse`, whether it just opened or closed, still reports the same, current owner either way.
+</Aside>
+
+```yaml
+- prefab: Container
+  type: change, InUse
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="tip">
+Taking or storing something afterward is a later moment, but it works the same way:
+
+```yaml
+- prefab: Container
+  type: change, items
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+</Aside>
+
+### Sign
+
+*See every prefab with this component on [Components/Sign](https://valheimtools.stream/wiki/components/Sign).*
+
+Writing and confirming a sign's text hands ownership to whoever wrote it:
+
+```yaml
+- prefab: Sign
+  type: change, text
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### ItemStand / ArmorStand
+
+*See every prefab with this component on [Components/ItemStand](https://valheimtools.stream/wiki/components/ItemStand) or [Components/ArmorStand](https://valheimtools.stream/wiki/components/ArmorStand).*
+
+Mounting an item onto an empty stand transfers ownership to whoever mounted it — both stands work the same way:
+
+```yaml
+- prefab: ItemStand
+  type: change, item
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="tip">
+ArmorStand instead gives each slot its own field, built as `<slot number>_item` — slot 0 is `0_item`, slot 1 is `1_item`, and so on:
+
+```yaml
+- prefab: ArmorStand
+  type: change, 0_item
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+</Aside>
+
+### ItemDrop
+
+*See every prefab with this component on [Components/ItemDrop](https://valheimtools.stream/wiki/components/ItemDrop).*
+
+Anything lying on the ground you can walk up to and pick up — a resource a creature dropped, ore knocked loose from a rock, a weapon someone threw away — carries this component.
+
+Tossing an item out of your own inventory hands you ownership of the item that appears.
+That makes it a useful targeting trigger, but it needs a small filter to tell it apart: `int, pickedUp, 1`.
+
+```yaml
+# A tossed item, thrown out of somebody's inventory
+- prefab: ItemDrop
+  type: create
+  filter: int, pickedUp, 1
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+```yaml
+# Raw loot straight from a creature or a destructible object — never sat in an inventory
+- prefab: ItemDrop # e.g. Guck, Resin — anything the world drops directly
+  type: create
+  filter: int, pickedUp, 0
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+  # This ownership falls back to the Zone Host rule.
+```
+
+### Personal FX
+
+*"FX" isn't a component — it's just how the game names its `vfx_`/`sfx_`/`fx_` assets. Search any of those prefixes on [the Prefabs list](https://valheimtools.stream/wiki/prefabs) to see the whole group.*
+
+Which player ends up owning one of these depends entirely on what makes it appear.
+
+**A weapon's own hit spark** belongs to whoever swung it and connected — not whoever got hit. Every weapon has its own hit-spark prefab:
+
+```yaml
+- prefab: sfx_axe_hit, fx_jotunbane_hit
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="caution">
+**The exception — repeating effects (DoT FX):** burning, poison, and the like don't stay fixed to one owner. They keep picking up whoever they're currently affecting.
+
+```yaml
+- prefab: vfx_Burning
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+</Aside>
+
+**Anything else that happens on your own body** belongs to you — whether you caused it yourself, like jumping or eating, or something else did, like getting hit, blocking, or landing a killing blow:
+
+```yaml
+- prefab: vfx_player_hit, vfx_perfectblock, fx_crit, fx_Eat, sfx_jump
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+**Lighting fireworks at a fireplace** — an ordinary fireplace stays with whoever's already active in the zone, even after toggling it or adding fuel. Lighting fireworks is the one exception: that effect belongs to whoever set it off.
+
+```yaml
+- prefab: vfx_Firework_*, vfx_FireWork_*
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+**Sacrificing at a boss altar** — how you offer it decides who gets the effect.
+
+- **One-Step Sacrifice:** `Eikthyr`, `The Elder`, `Bonemass` — use the item straight from your hotbar. The effect belongs to whoever did that.
+- **Two-Step Offering:** `Moder`, `Yagluth`, `Fader` — place the items down first, then interact to confirm. The effect belongs to the Zone Host.
+
+```yaml
+- prefab: vfx_offering, sfx_offering
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Projectile
+
+*See every prefab with this component on [Components/Projectile](https://valheimtools.stream/wiki/components/Projectile).*
+
+A projectile fired by a player — an arrow, a thrown spear — is created directly by whoever fired it, the same way a weapon's own hit spark is:
+
+```yaml
+- prefab: Projectile
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="tip">
+Anything it spawns along the way belongs to that same player too:
+
+- **FX of projectile:** `vfx_arrowhit`
+- **Spawn from projectile:** `Blob`
+</Aside>
+
+<Aside type="caution">
+**Monster-fired:** follows the ordinary Zone Host rule instead — e.g. `Greydwarf_throw_projectile` belongs to whoever's currently simulating that monster.
+</Aside>
+
+### Trap
+
+*See every prefab with this component on [Components/Trap](https://valheimtools.stream/wiki/components/Trap).*
+
+Stepping on a trap (springing it) changes its `state`, which immediately transfers ownership to you:
+
+```yaml
+- prefab: Trap
+  type: change, state 2 # Specifically springing only
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="tip">
+Springing a trap also spawns its `fx_trap_arm` effect (despite the name of "arm"). It's a single spawn, owned by whoever the trap was just assigned to, so targeting its creation reads the same player (owner) — a second way to catch the same moment:
+
+```yaml
+- prefab: fx_trap_arm
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+</Aside>
+
+### TerrainModifier
+
+*See every prefab with this component on [Components/TerrainModifier](https://valheimtools.stream/wiki/components/TerrainModifier).*
+
+Digging, raising, flattening, or painting the ground each secretly places a small invisible object to remember that edit — the same way placing a building piece does:
+
+```yaml
+- prefab: TerrainModifier
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Sadle
+
+*See every prefab with this component on [Components/Sadle](https://valheimtools.stream/wiki/components/Sadle).*
+
+Taking the reins of a tamed, saddled creature hands ownership to the rider, through a field called `user`:
+
+```yaml
+- prefab: Sadle # or Tameable
+  type: change, user
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+<Aside type="caution">
+Don't do this: We suspect `Sadle` is a typo baked into the game's own code, the component is spelled `Sadle`, so targeting the correctly-spelled with `- prefab: Saddle` will not work.
+</Aside>
+
+<Aside type="tip">
+Calling `Tameable` instead of `Sadle` works the same way.
+</Aside>
+
+### Vagon
+
+*See every prefab with this component on [Components/Vagon](https://valheimtools.stream/wiki/components/Vagon).*
+
+Same shape as Sadle — grabbing the handles of a cart, or becoming the pusher or driver of a siege weapon, hands ownership to whoever grabbed it:
+
+```yaml
+- prefab: Vagon
+  type: change, attachJoint
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Ship
+
+*See every prefab with this component on [Components/Ship](https://valheimtools.stream/wiki/components/Ship).*
+
+**A special scenario:** a ship transfers its ownership to the first player physically aboard — no steering or driving required — and they keep ownership as long as they stay aboard. The moment they leave while somebody else is still on the ship, ownership passes to that remaining passenger.
+
+Given this scenario, the script needs to work a little differently — an "on-demand" check instead of a direct trigger:
+
+```yaml
+- prefab: Player
+  type: say, !checkship
+  poke:
+  - prefab: Ship
+    limit: 1 # So you poke the nearest 1 ship
+    parameter: reportOwner
+
+- prefab: Ship
+  type: poke, reportOwner
+  spawn:
+  - prefab: vfx_spawn_small # For you to easily identify which ship received the poke
+    pos: 0,0,2
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Turret
+
+*See every prefab with this component on [Components/Turret](https://valheimtools.stream/wiki/components/Turret).*
+
+Feeding a trophy into a turret to set its target list hands ownership to whoever fed it:
+
+```yaml
+- prefab: Turret
+  type: change, targets
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### CookingStation
+
+*See every prefab with this component on [Components/CookingStation](https://valheimtools.stream/wiki/components/CookingStation).*
+
+Same shape as Turret — placing a raw food item on an empty slot hands ownership to whoever placed it. Each slot's status field can be targeted:
+
+```yaml
+- prefab: CookingStation
+  types:
+  - change, slotstatus0
+  - change, slotstatus1
+  - change, slotstatus2
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Fish
+
+*See every prefab with this component on [Components/Fish](https://valheimtools.stream/wiki/components/Fish).*
+
+Hooking a fish while fishing hands ownership to whoever hooked it:
+
+```yaml
+- prefab: Fish
+  type: change, hooked 1
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Gibber
+
+*See every prefab with this component on [Components/Gibber](https://valheimtools.stream/wiki/components/Gibber).*
+
+A few seconds after a rock or creature finishes breaking into pieces, the game hands ownership to whoever's nearby client noticed it's still unclaimed — right as it deletes the piece in that same instant:
+
+```yaml
+- prefab: Gibber
+  type: destroy
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
