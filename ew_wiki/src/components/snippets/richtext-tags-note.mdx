@@ -1,0 +1,11 @@
+import { Aside } from '@astrojs/starlight/components';
+
+This is Valheim's own text formatting, not an EWP function — tags like `<color=#RRGGBB>...</color>`, `<br>`, and `<size=N>...</size>` (Unity's TextMeshPro) drop straight into any string value, and the game's own text engine renders them.
+
+<Aside type="tip">
+[Unity's TextMeshPro Rich Text manual](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.2/manual/RichTextSupportedTags.html) has the complete tag list, each one explained.
+</Aside>
+
+<Aside type="note">
+A typo'd tag (`<colour=...>` for example) doesn't error — it just prints as literal text or fails to format, the same way a bad HTML tag would.
+</Aside>

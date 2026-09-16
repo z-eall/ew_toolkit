@@ -27,6 +27,10 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 
 State an external or domain fact — a file path, how a tool behaves, install steps — only when it's already confirmed in the repo, cited from a source, or confirmed by the maintainer this session. When a needed fact isn't established yet, ask or get permission to check a source first — never assert it and move on.
 
+## Wiki teaches, validator catches
+
+`ew_wiki` teaches EWP/WEC concepts with worked examples; `ewp_validator` catches and explains real mistakes live, at the point of error. Don't duplicate the validator's job as static wiki content (a "why isn't my script working" troubleshooting section) — the validator already does this for anything schema-checkable. `ew_wiki`'s own mechanism for silent, non-schema-checkable mistakes is its WRONG/CORRECT bad-cop pattern (see `ew_wiki/AGENTS.md`), added directly on the page where the mistake happens, not centralized in a separate section ([ticket 25](.scratch/ew-wiki-real-build/issues/25-troubleshooting-section-decision.md)).
+
 ## Script field order
 
 When we write an EWP script together, fields go in this order (skip any that don't apply — don't pad):

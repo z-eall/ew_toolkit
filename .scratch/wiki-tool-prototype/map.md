@@ -35,7 +35,11 @@ This map resolves the "Choosing or building Tool #2" item the [EW Toolkit Hub ma
 
 ## Not yet specified
 
-- **Larger-scale IA validation** — even the expanded prototype (ticket 05) only tests one representative page per section, not the real content catalog. Whether Starlight holds up cleanly across a real multi-mod wiki (dozens+ of pages) is still only inferred from research plus a small sample, not proven at full scale. Revisit if early real build-out surfaces friction the research didn't predict.
+(none — see Resolved below)
+
+## Resolved (continued)
+
+- **Larger-scale IA validation, answered by real evidence rather than a new validation pass (2026-09-14, `/wayfinder` review)** — this fog note's own condition ("revisit if early real build-out surfaces friction the research didn't predict") fired hard: the real build ([Ew Wiki Real Build](../ew-wiki-real-build/map.md)) hit real friction, most concentrated in [ticket 23](../ew-wiki-real-build/issues/23-header-toc-layout-rework.md)'s 7.5 rounds of live layout bugs. Deliberately **not** turning this into a fresh synthetic validation ticket — real production friction is stronger evidence than another small-sample test would be, and it already produced a durable artifact: [ew_wiki/docs/widget-build-notes.md](../../ew_wiki/docs/widget-build-notes.md), the lessons record read before starting any new widget. Verdict, from the real evidence: Starlight held up structurally (33 pages, clean builds throughout) — the friction was all in hand-rolled page chrome (`Header.astro`/`CollapsibleToc.astro` overrides) interacting with Starlight's own layout system, not in Starlight's content/IA model itself. The scale question this fog note asked is answered; no further action needed.
 
 ## Resolved
 

@@ -62,6 +62,8 @@ Name pages and headings by what the reader does or learns, not by what the thing
 - Good: "Understanding Fields", "Start Writing a Script", root nav: "Home".
 - Bad: "Start Here", "Overview", "Anatomy of X" (clinical, not conversational).
 
+**Category - Subtopic titles use a dash, not a colon** (e.g. `Advanced Poke - Mechanics`, `Advanced Triggers - type: change`) — the site's majority pattern; a few older colon-titled pages are the actual inconsistency (ticket 34). A hook (`guard-page-title-colon-vs-dash.cjs`) asks before a new page's title ships with a colon split, so this rarely needs remembering by hand.
+
 ## Comment the first occurrence
 
 The first time a YAML example uses a field, key, or value whose meaning isn't obvious from the word itself, add a trailing `#` comment explaining it inline. Later examples reusing the same key don't need it repeated.
@@ -71,6 +73,8 @@ A script block with more than one linked rule (a poke chain, a swap-and-reverse,
 ## Say when a list isn't the whole list
 
 When naming a few members of a larger set (value kinds, keys, types), say so explicitly ("...and others", "(not a complete list)") rather than presenting 3-4 examples as if that were all of them.
+
+When a complete list already exists upstream — Jere's own `docs/functions.md`/`docs/scripting.md` — link to it as the definitive reference instead of building or generating a duplicate on the wiki. A copy needs its own drift-prevention mechanism to stay in sync with EWP; a link never goes stale ([ticket 24](.scratch/ew-wiki-real-build/issues/24-reference-section-decision.md)).
 
 ## Complexity badge per page
 
@@ -82,13 +86,16 @@ The hub-wide "Confirm, don't guess" rule ([../AGENTS.md](../AGENTS.md)) applies 
 
 If a fact can't be verified this session (source unreachable, ambiguous, genuinely undocumented), it does not get written as if true — leave it out, or mark it explicitly unverified (e.g. an `<Aside type="caution">` naming exactly what's unconfirmed) rather than smoothing it over.
 
+**Every YAML example in a doc gets run through the real validator before it ships — not just consulted as a reference.** A `PreToolUse` hook (`guard-doc-example-schema.cjs`) already does this automatically on every Edit/Write, using `ewp_validator/dist/cli.mjs`. If that hook ever says the CLI isn't built, stop and run `npm run build:cli` in `ewp_validator/` first — proceeding anyway means the example ships completely unchecked (this exact gap shipped a duplicate top-level YAML key into two pages unnoticed, 2026-09-14, because the hook silently no-op'd instead of saying so — it no longer does).
+
 Check sources in this order:
 
 1. **`ewp_validator/src/schema.generated.json`** and its `*.test.ts` fixtures — already in this repo, generated from EWP's real schema, and the fastest ground truth for valid keys/values/types.
 2. The mod's own source, when the schema doesn't settle it: [expand_world_prefabs](https://github.com/JereKuusela/valheim-expand_world_prefabs) (EWP) and [world_edit_commands](https://github.com/JereKuusela/valheim-world_edit_commands) (WEC) — both pre-approved, listed in `docs/sources.md`. WEC commands it doesn't register itself (e.g. `search_component`) live in its dependency, [ServerDevcommands](https://github.com/JereKuusela/valheim-dev) — check there before assuming a command doesn't exist.
 3. **Any Component or field name** (`TeleportWorld`, `activationRange`, `m_allowAllItems`, etc.) — none of the sources above document Valheim's own game components field-by-field. Check [valheimtools.stream/wiki/components](https://valheimtools.stream/wiki/components) (per-component field dumps). Never write a Component/field name from memory or a source guide's say-so alone — this exact mistake shipped `activationDistance` (invented) instead of the real `activationRange` on `TeleportWorld`.
-4. **Any prefab ID used in an example** (`Boar`, `wood_door`, a spawn/swap/trophy target, etc.) — same rule applies to prefab names as to fields: never write one from memory. Check the [Jotunn prefab list](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html) (exhaustive) or a single page on [valheim.wiki](https://valheim.wiki/) (quick single-lookup, lists each creature/item's real `Internal ID`). This exact mistake shipped `RareTrophy` and `BossBoar` — neither is a real prefab.
-5. [docs/sources.md](docs/sources.md) for everything else (community write-ups, hosting/install facts) — every source listed there is pre-approved, no signoff needed to consult it. A source not yet listed needs signoff first (hub-wide rule, see [../AGENTS.md](../AGENTS.md)); once approved, add it to `docs/sources.md` so the next guide doesn't re-ask.
+4. **Any object-ownership/`pid`/`cid` change claim** ("who owns this," "claims itself to," "carries the zone host's `<pid>`") — check [EWP_pid_ownership_code_findings.md](docs/guide-source/3-advanced-guide/EWP_pid_ownership_code_findings.md) first, the code-proof ledger built for exactly this. If the component isn't listed there yet, sweep it fresh using the ledger's own Tier A/B/C proof test ([spec-pid-ownership-mechanic.md](../../.scratch/ew-wiki-player-identity/spec-pid-ownership-mechanic.md) §3) before writing the claim — a field merely *looking* related to an ownership change is not proof it is one. Add the row, sweep-completeness entry included, before the page ships.
+5. **Any prefab ID used in an example** (`Boar`, `wood_door`, a spawn/swap/trophy target, etc.) — same rule applies to prefab names as to fields: never write one from memory. Check the [Jotunn prefab list](https://valheim-modding.github.io/Jotunn/data/prefabs/prefab-list.html) (exhaustive) or a single page on [valheim.wiki](https://valheim.wiki/) (quick single-lookup, lists each creature/item's real `Internal ID`). This exact mistake shipped `RareTrophy` and `BossBoar` — neither is a real prefab.
+6. [docs/sources.md](docs/sources.md) for everything else (community write-ups, hosting/install facts) — every source listed there is pre-approved, no signoff needed to consult it. A source not yet listed needs signoff first (hub-wide rule, see [../AGENTS.md](../AGENTS.md)); once approved, add it to `docs/sources.md` so the next guide doesn't re-ask.
 
 Tag each claim by its source's tier, per `docs/sources.md`'s own labels (official / community) — this tagging stays in `docs/sources.md`, it does not get written into the page. A true fact with no single citable source doesn't get dropped, and doesn't get stated as if it were sourced — file it under that document's "Community-observed, no single source" section, and, only if the fact itself is genuinely uncertain, flag that uncertainty on the page with an `<Aside>` (see the confidence-not-source rule above). A fact that's simply true but casually sourced (a forum post, a Discord message) does not need a page-level flag at all once it's checked against a real source — most facts on this wiki land here.
 
