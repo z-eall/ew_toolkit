@@ -9,3 +9,14 @@ dist/
 # just drift stale in git history (ticket 12).
 ewp_validator/src/schema.generated.json
 ewp_validator/src/rpcParams.generated.ts
+
+# Private, kept on disk only — candid planning/session notes and personal-path
+# hook config, made private per .scratch/ew_toolkit/issues/25-trim-public-internal-content.md.
+# Stays on this machine and in the personal backup (agent-config-backup), just
+# stops being pushed to this public repo. Past history before this commit is
+# unaffected (accepted tradeoff, see ticket 25's Answer).
+.scratch/
+HANDOFF.md
+.claude/settings.json
+ew_wiki/.claude/settings.json
+ew_wiki/docs/guide-source/
