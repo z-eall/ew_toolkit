@@ -22,7 +22,9 @@ incident. Now:
   `/ew_toolkit/<tool>/` path in `ew_wiki`).
 - **The CSS** (`.site-nav`, `.nav-link`, `.theme-toggle`, …) lives in
   `shared/theme.css`, already `@import`ed by every Tool's own
-  `style.css`/`theme.css`. No Tool needs its own copy.
+  `style.css`/`theme.css`. No Tool needs its own copy. On narrow screens the
+  bar collapses to one short row with a hamburger drawer holding the Tool
+  links; a new Tool inherits it and checks it at 375px, never rebuilds it.
 - **The theme toggle** (`ew-toolkit-theme` localStorage key, apply/mount
   logic) lives in `shared/theme.ts`. A consumer with extra theme-dependent
   work (Monaco's editor theme, Starlight's separate `starlight-theme` key)
@@ -35,6 +37,18 @@ incident. Now:
 2. In the new Tool's own entry file, call `renderNavBar(buildNavItems(<key>, hrefFor))`
    and `mountThemeToggle()` — see `ewp_validator/src/main.ts` (plain Vite) or
    `ew_wiki/src/components/Header.astro` (Astro, via `set:html`) for the two
-   existing shapes.
-3. Nothing else to touch — no other file's nav block needs updating, because
+   existing shapes. `guard-hand-rolled-navbar.cjs` asks before letting a
+   hand-written `site-nav`/`nav-link`/`theme-toggle` block land without one
+   of these calls nearby — a real backstop, not just this reminder.
+3. Set the new Tool's own build config `base` to the full nested path it's
+   actually served at (`/ew_toolkit/<tool>/`), not just its bare name — a
+   bare-name base breaks every asset and internal link once nested under the
+   hub (see `ew_wiki`'s ticket 08 incident: wrong `base` plus 166 stale
+   absolute links, only caught when the *combined* hub was finally built).
+4. Build the combined hub (`npm run build:hub`), not just the new Tool
+   standalone, and do this early and more than once while the Tool is still
+   taking shape — not only at final registration. Every earlier check on
+   `ew_wiki` alone passed while it was still broken once nested; only a
+   combined build catches a wrong `base` or a stale absolute link.
+5. Nothing else to touch — no other file's nav block needs updating, because
    there isn't another one.
