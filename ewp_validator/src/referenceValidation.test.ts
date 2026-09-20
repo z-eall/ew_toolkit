@@ -6,7 +6,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  data: nonexistent\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", kind: "data-reference" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", id: "data-reference" });
     expect(problems[0].message).toContain("nonexistent");
   });
 
@@ -32,7 +32,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
     const files = [{ id: "a", text: "- name: never_used\n  ints:\n  - level, 1\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "data-reference" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", id: "data-reference" });
     expect(problems[0].message).toContain("never_used");
   });
 
@@ -72,7 +72,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  filter: fireMineDispenserCheck\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", kind: "data-reference" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "error", id: "data-reference" });
     expect(problems[0].message).toContain("fireMineDispenserCheck");
   });
 
@@ -86,7 +86,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
       },
     ];
     const problems = runReferenceValidation(files);
-    const refErrors = problems.filter((p) => p.kind === "data-reference" && p.severity === "error");
+    const refErrors = problems.filter((p) => p.id === "data-reference" && p.severity === "error");
     expect(refErrors).toHaveLength(1);
     expect(refErrors[0].message).toContain("fireMineStopperCheck");
     expect(refErrors.some((p) => p.message.includes("knownFilter"))).toBe(false);
@@ -113,7 +113,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
       },
     ];
     const problems = runReferenceValidation(files);
-    expect(problems.some((p) => p.kind === "data-reference" && p.message.includes("missing_spawn_data"))).toBe(true);
+    expect(problems.some((p) => p.id === "data-reference" && p.message.includes("missing_spawn_data"))).toBe(true);
   });
 
   it("does not flag a data: <function> value at all — it reads object data we can't inspect", () => {
@@ -155,8 +155,8 @@ describe("data.yaml reference validation (ticket 06)", () => {
       },
     ];
     const problems = runReferenceValidation(files);
-    expect(problems.some((p) => p.kind === "data-reference")).toBe(false);
-    expect(problems.some((p) => p.kind === "legacy-object-data" && p.message.includes("filter:"))).toBe(true);
+    expect(problems.some((p) => p.id === "data-reference")).toBe(false);
+    expect(problems.some((p) => p.id === "legacy-object-data" && p.message.includes("filter:"))).toBe(true);
   });
 
   it("does not flag the legacy data: shorthand as unused/undefined once it resolves, under poke/objects alike", () => {
@@ -173,9 +173,9 @@ describe("data.yaml reference validation (ticket 06)", () => {
       },
     ];
     const problems = runReferenceValidation(files);
-    const unused = problems.filter((p) => p.kind === "data-reference" && p.severity === "info");
+    const unused = problems.filter((p) => p.id === "data-reference" && p.severity === "info");
     expect(unused).toEqual([]);
-    const legacy = problems.filter((p) => p.kind === "legacy-object-data");
+    const legacy = problems.filter((p) => p.id === "legacy-object-data");
     expect(legacy).toHaveLength(1); // only the poke-nested `data: isWardForsaken`, not the top-level bannedFilter/data or the nested `filter:`
   });
 
@@ -189,8 +189,8 @@ describe("data.yaml reference validation (ticket 06)", () => {
       },
     ];
     const problems = runReferenceValidation(files);
-    expect(problems.filter((p) => p.kind === "data-reference")).toEqual([]);
-    expect(problems.some((p) => p.kind === "legacy-object-data" && p.message.includes("bannedObjects:"))).toBe(true);
+    expect(problems.filter((p) => p.id === "data-reference")).toEqual([]);
+    expect(problems.some((p) => p.id === "legacy-object-data" && p.message.includes("bannedObjects:"))).toBe(true);
   });
 
   describe("data: next to a filter field (ticket 26)", () => {
@@ -204,10 +204,10 @@ describe("data.yaml reference validation (ticket 06)", () => {
         },
       ];
       const problems = runReferenceValidation(files).filter(
-        (p) => p.kind === "ignored-data-with-filter" || p.kind === "legacy-object-data",
+        (p) => p.id === "ignored-data-with-filter" || p.id === "legacy-object-data",
       );
       expect(problems).toHaveLength(1);
-      expect(problems[0]).toMatchObject({ kind: "ignored-data-with-filter", severity: "warning" });
+      expect(problems[0]).toMatchObject({ id: "ignored-data-with-filter", severity: "warning" });
       expect(problems[0].message).toContain("Remove `data:`, or list both names in `filters:` (plural).");
       expect(problems[0].message).not.toMatch(/EWP|C#|ignored by/i);
     });
@@ -222,16 +222,16 @@ describe("data.yaml reference validation (ticket 06)", () => {
         },
       ];
       const problems = runReferenceValidation(files).filter(
-        (p) => p.kind === "ignored-data-with-filter" || p.kind === "legacy-object-data",
+        (p) => p.id === "ignored-data-with-filter" || p.id === "legacy-object-data",
       );
       expect(problems).toHaveLength(1);
-      expect(problems[0].kind).toBe("ignored-data-with-filter");
+      expect(problems[0].id).toBe("ignored-data-with-filter");
       expect(problems[0].message).toContain("Remove `data:`");
     });
 
     it("still gives the rename advice when data: stands alone", () => {
       const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  objects:\n  - prefab: Chest\n    data: some_name\n" }];
-      const kinds = runReferenceValidation(files).map((p) => p.kind);
+      const kinds = runReferenceValidation(files).map((p) => p.id);
       expect(kinds).toContain("legacy-object-data");
       expect(kinds).not.toContain("ignored-data-with-filter");
     });
@@ -240,14 +240,14 @@ describe("data.yaml reference validation (ticket 06)", () => {
       const files = [
         { id: "a", text: "- prefab: X\n  type: create\n  objects:\n  - prefab: Chest\n    data: a\n    bannedFilters:\n    - b\n" },
       ];
-      expect(runReferenceValidation(files).some((p) => p.kind === "ignored-data-with-filter")).toBe(true);
+      expect(runReferenceValidation(files).some((p) => p.id === "ignored-data-with-filter")).toBe(true);
     });
   });
 
   describe("filter and filters together (ticket 26)", () => {
     it("warns once, neutrally, when filter: and filters: are both set at the top level", () => {
       const files = [{ id: "a", text: "- prefab: Coins\n  type: create\n  filter: a\n  filters:\n  - b\n" }];
-      const both = runReferenceValidation(files).filter((p) => p.kind === "filter-both-forms");
+      const both = runReferenceValidation(files).filter((p) => p.id === "filter-both-forms");
       expect(both).toHaveLength(1);
       expect(both[0].severity).toBe("warning");
       expect(both[0].message).toBe("Overlapping fields: `filter:` and `filters:` are both written here. Check which one you want to keep.");
@@ -257,9 +257,9 @@ describe("data.yaml reference validation (ticket 06)", () => {
       const nested = [
         { id: "a", text: "- prefab: X\n  type: create\n  poke:\n  - prefab: Chest\n    bannedFilter: a\n    bannedFilters:\n    - b\n" },
       ];
-      expect(runReferenceValidation(nested).filter((p) => p.kind === "filter-both-forms")).toHaveLength(1);
+      expect(runReferenceValidation(nested).filter((p) => p.id === "filter-both-forms")).toHaveLength(1);
       const lone = [{ id: "a", text: "- prefab: X\n  type: create\n  filters:\n  - b\n" }];
-      expect(runReferenceValidation(lone).some((p) => p.kind === "filter-both-forms")).toBe(false);
+      expect(runReferenceValidation(lone).some((p) => p.id === "filter-both-forms")).toBe(false);
     });
   });
 
@@ -300,7 +300,7 @@ describe("data.yaml reference validation (ticket 06)", () => {
     const dupes = problems.filter((p) => p.message.includes("defined 2 times"));
     expect(dupes).toHaveLength(2);
     for (const p of dupes) {
-      expect(p).toMatchObject({ fileId: "a", severity: "warning", kind: "data-reference" });
+      expect(p).toMatchObject({ fileId: "a", severity: "warning", id: "data-reference" });
       expect(p.message).toContain("someTemplate");
     }
   });
@@ -329,7 +329,7 @@ describe("custom saved key lint (ticket 06)", () => {
     const files = [{ id: "a", text: "- prefab: Beehive\n  type: create\n  keys: myFlag 1\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "custom-key" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", id: "custom-key" });
     expect(problems[0].message).toContain("myFlag");
     expect(problems[0].message).toContain("ewp_data.yaml");
     expect(problems[0].message).toContain("Verify in expand_prefabs*/ewp_data.yaml");
@@ -339,7 +339,7 @@ describe("custom saved key lint (ticket 06)", () => {
     const files = [{ id: "a", text: "- prefab: Beehive\n  type: create\n  command: <save_orphanFlag_1>\n" }];
     const problems = runReferenceValidation(files);
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ severity: "info", kind: "custom-key" });
+    expect(problems[0]).toMatchObject({ severity: "info", id: "custom-key" });
     expect(problems[0].message).toContain("orphanFlag");
   });
 
@@ -354,7 +354,7 @@ describe("custom saved key lint (ticket 06)", () => {
   it("reads a key from type: key,<name>'s trigger parameter", () => {
     const files = [{ id: "a", text: "- type: key, unwrittenFlag\n" }];
     const problems = runReferenceValidation(files);
-    expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("unwrittenFlag"))).toBe(true);
+    expect(problems.some((p) => p.id === "custom-key" && p.message.includes("unwrittenFlag"))).toBe(true);
   });
 
   it("reads a key from <load_X> and <clear_X> templates", () => {
@@ -389,7 +389,7 @@ describe("custom saved key lint (ticket 06)", () => {
 
     const unresolved = [{ id: "a", text: "- type: key, adminmoderecovery 30;99999\n" }];
     const problems = runReferenceValidation(unresolved);
-    expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("'adminmoderecovery'"))).toBe(true);
+    expect(problems.some((p) => p.id === "custom-key" && p.message.includes("'adminmoderecovery'"))).toBe(true);
     expect(problems.some((p) => p.message.includes("30;99999"))).toBe(false);
   });
 
@@ -412,7 +412,7 @@ describe("custom saved key lint (ticket 06)", () => {
       { id: "b", text: "- prefab: Player\n  type: poke\n  exec: |\n    <save_<pid>_1>\n" },
     ];
     const problems = runReferenceValidation(files);
-    expect(problems.some((p) => p.kind === "custom-key" && p.message.includes("'someFlag'"))).toBe(true);
+    expect(problems.some((p) => p.id === "custom-key" && p.message.includes("'someFlag'"))).toBe(true);
   });
 
   it("does not flag save/load/clear keys built entirely from passed params — nothing concrete to check", () => {
@@ -469,7 +469,7 @@ describe("custom saved key lint (ticket 06)", () => {
     // One per live read: <load_truceday> and bannedKeys: truceday.
     expect(problems).toHaveLength(2);
     for (const p of problems) {
-      expect(p).toMatchObject({ severity: "info", kind: "custom-key" });
+      expect(p).toMatchObject({ severity: "info", id: "custom-key" });
       expect(p.message).toContain("is read");
       expect(p.message).toContain("commented out");
       // Not the generic "there is no write anywhere" wording.
@@ -489,7 +489,7 @@ describe("custom saved key lint (ticket 06)", () => {
     ];
     const problems = runReferenceValidation(files).filter((p) => p.message.includes("beacon"));
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ severity: "info", kind: "custom-key" });
+    expect(problems[0]).toMatchObject({ severity: "info", id: "custom-key" });
     expect(problems[0].message).toContain("is written");
     expect(problems[0].message).toContain("commented out");
     expect(problems[0].message).not.toContain("never read");
@@ -581,7 +581,7 @@ describe("custom saved key lint (ticket 06)", () => {
     const problems = runReferenceValidation(files);
     // only the "defined but unused" data-reference hint, no custom-key noise
     expect(problems).toHaveLength(1);
-    expect(problems[0].kind).toBe("data-reference");
+    expect(problems[0].id).toBe("data-reference");
   });
 
   // Round 2 rework, source-verified against EWP's actual DataStorage.cs/
@@ -615,7 +615,7 @@ describe("custom saved key lint (ticket 06)", () => {
       const problems = runReferenceValidation(wrongKey);
       // Both the write (real key "foo") and the read (nonexistent key
       // "foo_bar") are orphaned from each other's perspective.
-      expect(problems.filter((p) => p.kind === "custom-key")).toHaveLength(2);
+      expect(problems.filter((p) => p.id === "custom-key")).toHaveLength(2);
     });
 
     it("matches a saved key case-insensitively, per EWP's ToLowerInvariant() storage layer", () => {
@@ -645,16 +645,16 @@ describe("string-template function name typo detection (ticket 06)", () => {
   it("flags an unrecognized function head as a warning and suggests the likely intended name", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <strink_isSpawningPrefabData>\n" }];
     const problems = runReferenceValidation(files);
-    const flagged = problems.filter((p) => p.kind === "template-function");
+    const flagged = problems.filter((p) => p.id === "template-function");
     expect(flagged).toHaveLength(1);
-    expect(flagged[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "template-function" });
+    expect(flagged[0]).toMatchObject({ fileId: "a", severity: "warning", id: "template-function" });
     expect(flagged[0].message).toContain("strink");
     expect(flagged[0].message).toContain("string");
   });
 
   it("does not flag a recognized argument-taking function", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <string_isSpawningPrefabData>\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("does not flag a recognized no-argument function, bare or with an argument suffix", () => {
@@ -664,12 +664,12 @@ describe("string-template function name typo detection (ticket 06)", () => {
         text: "- prefab: Bonemass\n  type: create\n  command: <par> <par_1> <pid> <none>\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("reports a case-only mismatch distinctly, since EWP function dispatch is case-sensitive", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <String_x>\n" }];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain("case-sensitive");
     expect(problems[0].message).toContain("string");
@@ -684,7 +684,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- value: myCustomGroup, someValue\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
 
     const viaValueGroup = [
       {
@@ -694,7 +694,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- valueGroup: otherGroup\n  values:\n  - a\n  - b\n",
       },
     ];
-    expect(runReferenceValidation(viaValueGroup).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(viaValueGroup).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("does not flag a value/valueGroup entry name that contains an underscore (round 5 ticket 03)", () => {
@@ -710,28 +710,28 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- prefab: Bonemass\n  type: create\n  command: <level_multiplier>\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("does not flag EWP's hardcoded default value groups (wearntear/humanoid/creature/structure)", () => {
     const files = [
       { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <humanoid> <structure>\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("does not flag a template written inside a YAML comment", () => {
     const files = [{ id: "a", text: "# command: <strink_foo>\n- prefab: Bonemass\n  type: create\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("skips a head built entirely from a nested dynamic group, and gives no suggestion when the typo is too far from any known name", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <<par_1>_foo>\n" }];
     // Only the recognizable inner <par_1> group exists; the outer head is purely dynamic.
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
 
     const noSuggestion = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <zzzzzzzzzzzz>\n" }];
-    const problems = runReferenceValidation(noSuggestion).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(noSuggestion).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
     expect(problems[0].message).not.toContain("probably a typo of");
   });
@@ -751,7 +751,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "            <br><size=15>*Day count increases at 21:00 UTC.\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
 
     const moreShapes = [
       {
@@ -761,7 +761,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "  command: <b>bold</b> <u>underline</u> <#f00> <#ff0000ff> <color=red> <align=center>\n",
       },
     ];
-    expect(runReferenceValidation(moreShapes).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(moreShapes).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("still flags an EWP typo shaped like a RichText attribute tag (<load=foo>)", () => {
@@ -769,7 +769,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
     // silently swallowed by the RichText attribute-tag allow-list — `load`
     // isn't one of the fixed TMP attribute-tag names, so this still flags.
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <load=foo>\n" }];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
   });
 
@@ -787,7 +787,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- value: requiredWorldLevel_blackforge_ext1, 5\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("resolves a multi-layer nested value-group reference when every layer's family is declared, but still flags an undeclared inner layer on its own", () => {
@@ -804,7 +804,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- value: nameBoss_0, Eikthyr\n",
       },
     ];
-    expect(runReferenceValidation(withBothDeclared).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(withBothDeclared).filter((p) => p.id === "template-function")).toEqual([]);
 
     const nameBossUndeclared = [
       {
@@ -814,7 +814,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- value: realDayLock_Eikthyr, 1\n",
       },
     ];
-    const problems = runReferenceValidation(nameBossUndeclared).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(nameBossUndeclared).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain("nameBoss");
   });
@@ -828,7 +828,7 @@ describe("string-template function name typo detection (ticket 06)", () => {
           "- value: requiredWorldLevel_blackforge, 5\n",
       },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
   });
 });
@@ -843,12 +843,12 @@ describe("default-value '=' suffix on no-arg function names (round 5 ticket 10)"
           "  data: bytes, TCData, <par2=H4sIAAAAAAAACu3YsQ2AMBADwA8TsBGrweaIMgrNSxRGuuviyu8yo6q2Wl37SwgAAADwtdYnxJif5yGYg2pK6R0bVFdK8b/sZbC2lOopexhkldL+o3MeYXUAAACg6wb32BzyoicAAA==>\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("still recognizes par2 bare and par_2, unaffected by the default-value fix", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <par2> <par_2>\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("tolerates a default-value suffix on any no-arg name, not just the par family", () => {
@@ -858,12 +858,12 @@ describe("default-value '=' suffix on no-arg function names (round 5 ticket 10)"
         text: "- prefab: Bonemass\n  type: create\n  command: <prefab=fallback> <pid=fallback> <day=fallback>\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("still recognizes an arg-taking par_X outside the 0-9 no-arg range, with a default", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <par_47=fallback>\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "template-function")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
   it("does not let a nested group's own literal '=' be mistaken for the outer bracket's default separator", () => {
@@ -871,13 +871,13 @@ describe("default-value '=' suffix on no-arg function names (round 5 ticket 10)"
     // `pid_X` is a genuine dead end regardless of the nested group's own
     // '=' usage; this must stay flagged as unrecognized.
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <pid_<load_x=default>>\n" }];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
   });
 
   it("still flags a genuine typo carrying a default-value suffix", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <prefeb=fallback>\n" }];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "template-function");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
     expect(problems[0].message).toContain("prefeb");
   });
@@ -891,9 +891,9 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
     const files = [
       { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount__<int_bossKills=0>>\n" },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "malformed-reference");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "malformed-reference");
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", kind: "malformed-reference" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", id: "malformed-reference" });
     expect(problems[0].message).toContain("Doubled");
   });
 
@@ -901,12 +901,12 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
     const files = [
       { id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount_<int_bossKills=0>>\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "malformed-reference")).toEqual([]);
   });
 
   it("does not flag a legitimate literal double-underscore key with no adjacent nesting", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <save_my__key_1>\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "malformed-reference")).toEqual([]);
   });
 
   it("flags a '<' that never closes with a matching '>'", () => {
@@ -916,14 +916,14 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
         text: "- prefab: Bonemass\n  type: create\n  command: <save_bossKillCount_<int_bossKills=0>\n",
       },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "malformed-reference");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "malformed-reference");
     expect(problems.length).toBeGreaterThanOrEqual(1);
     expect(problems.some((p) => p.message.includes("never closes"))).toBe(true);
   });
 
   it("does not flag a lone '<' in freeform comparison text with no plausible reference shape", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: Day < 5 remaining\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "malformed-reference")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "malformed-reference")).toEqual([]);
   });
 });
 
@@ -938,9 +938,9 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
           "- prefab: Player\n  type: poke, helloWorld\n",
       },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "poke-parameter");
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", kind: "poke-parameter" });
+    expect(problems[0]).toMatchObject({ fileId: "a", severity: "info", id: "poke-parameter" });
     expect(problems[0].message).toContain("helloWorld2");
   });
 
@@ -954,7 +954,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
           "- prefab: Player\n  type: poke, helloWord\n",
       },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "poke-parameter");
     const typoWarning = problems.find((p) => p.severity === "warning");
     expect(typoWarning).toBeDefined();
     expect(typoWarning!.message).toContain("helloWord");
@@ -968,7 +968,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
       { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: readyFlag\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, readyFlag\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 
   it("uses pars: (comma-split) instead of parameter: when both are set on the same poke item", () => {
@@ -981,7 +981,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
           "- prefab: Player\n  type: poke, realName\n",
       },
     ];
-    const problems = runReferenceValidation(files).filter((p) => p.kind === "poke-parameter");
+    const problems = runReferenceValidation(files).filter((p) => p.id === "poke-parameter");
     // 'ignoredName' is never actually sent at runtime, so it must not be
     // treated as a live declaration matched against 'realName' — nor flagged
     // as its own stray declaration, since it was never a real declaration.
@@ -993,7 +993,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
       { id: "a", text: "- prefab: Player\n  type: create\n  pokeParameter: legacyFlag\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, legacyFlag\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 
   it("reads a poke trigger from a types: list entry, not just a scalar type:", () => {
@@ -1005,7 +1005,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
           "- prefab: Player\n  types:\n  - say, hi\n  - poke, viaTypesList\n",
       },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 
   it("matches case-insensitively and through a <...> dynamic segment as a wildcard", () => {
@@ -1013,7 +1013,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
       { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: CaptureCity<par_1>\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, captureCity1\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 
   it("does not flag a purely-dynamic poke parameter or trigger — nothing concrete to check", () => {
@@ -1021,7 +1021,7 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
       { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: <par_1>\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, <par_1>\n" },
     ];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 
   it("does not offer a typo suggestion when the trigger token is dynamic or no close match exists", () => {
@@ -1029,20 +1029,20 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
       { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: realName\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, <par_1>notrealname\n" },
     ];
-    const dynamicProblems = runReferenceValidation(dynamic).filter((p) => p.kind === "poke-parameter");
+    const dynamicProblems = runReferenceValidation(dynamic).filter((p) => p.id === "poke-parameter");
     expect(dynamicProblems.some((p) => p.severity === "warning")).toBe(false);
 
     const farOff = [
       { id: "a", text: "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: realName\n" },
       { id: "b", text: "- prefab: Player\n  type: poke, somethingCompletelyDifferent\n" },
     ];
-    const farProblems = runReferenceValidation(farOff).filter((p) => p.kind === "poke-parameter");
+    const farProblems = runReferenceValidation(farOff).filter((p) => p.id === "poke-parameter");
     expect(farProblems.some((p) => p.severity === "warning")).toBe(false);
   });
 
   it("does not flag a non-poke type: trigger, or treat a poke: entry under a non-poke rule as a false match", () => {
     const files = [{ id: "a", text: "- prefab: Player\n  type: state, action swing_sledge\n" }];
-    expect(runReferenceValidation(files).filter((p) => p.kind === "poke-parameter")).toEqual([]);
+    expect(runReferenceValidation(files).filter((p) => p.id === "poke-parameter")).toEqual([]);
   });
 });
 

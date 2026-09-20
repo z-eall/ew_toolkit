@@ -22,20 +22,14 @@ import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
 import { collectRuleEntryDataReferences } from "./dataFieldValidation";
 import { practiceMessages } from "./practiceRecommendations";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
+import { kindFields, type DiagnosisId } from "./diagnosisKinds";
 
 export interface FileProblem {
   fileId: string;
   severity: Severity;
   message: string;
-  kind:
-    | "data-reference"
-    | "custom-key"
-    | "legacy-object-data"
-    | "ignored-data-with-filter"
-    | "filter-both-forms"
-    | "template-function"
-    | "poke-parameter"
-    | "malformed-reference";
+  id: DiagnosisId;
+  branch: string;
   range: [start: number, end: number];
 }
 
@@ -854,8 +848,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const { range } of malformedKeys) {
       problems.push({
         fileId: file.id,
-        severity: "warning",
-        kind: "malformed-reference",
+        ...kindFields("malformed-reference"),
         message:
           "Doubled '_' right before a nested '<...>' parameter. EWP's key/value split only " +
           "consumes one underscore — the extra one is saved as a leading '_' baked into the " +
@@ -887,8 +880,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const { range } of functionScan.unbalanced) {
       problems.push({
         fileId: file.id,
-        severity: "warning",
-        kind: "malformed-reference",
+        ...kindFields("malformed-reference"),
         message:
           "This '<' never closes with a matching '>'. EWP leaves it — and everything after it " +
           "in the same string — as literal, unresolved text.",
@@ -936,8 +928,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       for (const { arrKey, range } of legacyNotices) {
         problems.push({
           fileId: file.id,
-          severity: "info",
-          kind: "legacy-object-data",
+          ...kindFields("legacy-object-data"),
           message: practiceMessages.legacyDataAlias(arrKey),
           range,
         });
@@ -946,8 +937,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       for (const { arrKey, range, redundant, written, plural } of ignoredData) {
         problems.push({
           fileId: file.id,
-          severity: "warning",
-          kind: "ignored-data-with-filter",
+          ...kindFields("ignored-data-with-filter"),
           message: practiceMessages.dataIgnored(arrKey, written, plural, redundant),
           range,
         });
@@ -955,8 +945,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       for (const { singular, plural, section, range } of bothForms) {
         problems.push({
           fileId: file.id,
-          severity: "warning",
-          kind: "filter-both-forms",
+          ...kindFields("filter-both-forms"),
           message: practiceMessages.filterBothForms(singular, plural, section ?? null),
           range,
         });
@@ -1008,8 +997,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     if (!definitions.has(name) && !suppressUndefinedError) {
       problems.push({
         fileId: occ.fileId,
-        severity: "error",
-        kind: "data-reference",
+        ...kindFields("data-reference"),
         message: `Undefined data entry reference '${name}'. Add a \`name: ${name}\` entry, or correct the invalid entry.`,
         range: occ.range,
       });
@@ -1021,8 +1009,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "info",
-        kind: "data-reference",
+        ...kindFields("data-reference", "info"),
         message: `Data entry '${name}' is not used in the loaded files. A file outside this batch can still use it.`,
         range: occ.range,
       });
@@ -1042,8 +1029,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "warning",
-        kind: "data-reference",
+        ...kindFields("data-reference", "warning"),
         message:
           `Data entry name '${name}' is defined ${occs.length} times in the loaded batch. EWP keeps only ` +
           `the last one loaded and logs a "Duplicate data entry" warning at runtime — the others are silently ` +
@@ -1066,8 +1052,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "info",
-        kind: "custom-key",
+        ...kindFields("custom-key"),
         message,
         range: occ.range,
       });
@@ -1079,8 +1064,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     for (const occ of occs) {
       problems.push({
         fileId: occ.fileId,
-        severity: "info",
-        kind: "custom-key",
+        ...kindFields("custom-key"),
         message,
         range: occ.range,
       });
@@ -1138,8 +1122,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     if (recognized) continue;
     problems.push({
       fileId,
-      severity: "warning",
-      kind: "template-function",
+      ...kindFields("template-function"),
       message: templateFunctionMessage(head, suggestFunctionName(head)),
       range,
     });
@@ -1154,8 +1137,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     if (pokeTriggers.some((t) => pokeNameCompatible(token, t.token))) continue;
     problems.push({
       fileId: occ.fileId,
-      severity: "info",
-      kind: "poke-parameter",
+      ...kindFields("poke-parameter"),
       message:
         `Poke parameter '${token}' has no matching \`type: poke, ${token}\` trigger anywhere in the loaded ` +
         `files. This still works if a rule outside this batch (or another mod) listens for it — otherwise it's dead.`,
@@ -1190,8 +1172,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     if (!best || tie || bestDist === 0 || bestDist > 2) continue;
     problems.push({
       fileId: occ.fileId,
-      severity: "warning",
-      kind: "poke-parameter",
+      ...kindFields("poke-parameter", "warning"),
       message:
         `\`type: poke, ${token}\` has no matching declared poke parameter, but '${best}' is declared in this ` +
         `batch and is a close match — probably a typo of '${best}'.`,

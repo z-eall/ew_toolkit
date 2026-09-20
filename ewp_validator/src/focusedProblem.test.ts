@@ -7,7 +7,7 @@ import type { Problem } from "./structuralPrecheck";
 // file.model.getPositionAt — a fake covering just that surface stands in for
 // a real LoadedFile, same approach as fileManager.test.ts's FakeModel.
 function problem(overrides: Partial<Problem> = {}): Problem {
-  return { severity: "error", message: "x", branch: "b", range: [0, 1], ...overrides };
+  return { id: "ajv-value", severity: "error", message: "x", branch: "b", range: [0, 1], ...overrides };
 }
 
 function fakeFile(id: string, problems: Problem[], lineOf: Record<number, number> = {}): LoadedFile {

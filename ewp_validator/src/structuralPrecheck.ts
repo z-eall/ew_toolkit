@@ -17,11 +17,12 @@ import {
 } from "./ajvMessages";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage } from "./shapeMismatchDiagnosis";
 import { practiceMessages } from "./practiceRecommendations";
-import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
+import { YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
 import { translateYamlError } from "./yamlErrorMessages";
+import { kindFields, type DiagnosisId } from "./diagnosisKinds";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -50,6 +51,8 @@ export function pickHighestPriority<T extends { severity: Severity }>(
 }
 
 export interface Problem {
+  /** Stable kind id (registry: diagnosisKinds.ts). Required, so an emitter cannot skip it. */
+  id: DiagnosisId;
   severity: Severity;
   message: string;
   /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Practice recommendation) — see diagnosisCategories.ts. */
@@ -339,11 +342,11 @@ export function runStructuralPrecheck(text: string): Problem[] {
 
   for (const err of doc.errors) {
     const [start, end] = err.pos ?? [0, 0];
-    problems.push({ severity: "error", message: `YAML syntax error: ${translateYamlError(err)}`, branch: YAML_PROBLEM_CATEGORY, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
+    problems.push({ ...kindFields("yaml-syntax-error"), message: `YAML syntax error: ${translateYamlError(err)}`, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
   }
   for (const warn of doc.warnings) {
     const [start, end] = warn.pos ?? [0, 0];
-    problems.push({ severity: "warning", message: translateYamlError(warn), branch: YAML_PROBLEM_CATEGORY, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
+    problems.push({ ...kindFields("yaml-warning"), message: translateYamlError(warn), entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
   }
   if (doc.errors.length > 0) return problems; // downstream checks need a parseable document
 
@@ -355,18 +358,16 @@ export function runStructuralPrecheck(text: string): Problem[] {
     // that's disabled on purpose. Downgrade to a warning instead.
     if (hasNoActiveContent(text)) {
       problems.push({
-        severity: "warning",
+        ...kindFields("yaml-no-active-content"),
         message: NO_ACTIVE_CONTENT_MESSAGE,
-        branch: YAML_PROBLEM_CATEGORY,
         entryType: YAML_SUBGROUP_ROOT,
         range: [0, text.length],
       });
       return problems;
     }
     problems.push({
-      severity: "error",
+      ...kindFields("yaml-top-level-not-list"),
       message: "The top level must be a YAML list. Start each entry with `- `.",
-      branch: YAML_PROBLEM_CATEGORY,
       entryType: YAML_SUBGROUP_ROOT,
       range: root && (root as any).range ? nodeRange(root as any) : [0, text.length],
     });
@@ -376,9 +377,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
   for (const itemNode of root.items) {
     if (!isMap(itemNode)) {
       problems.push({
-        severity: "error",
+        ...kindFields("yaml-entry-not-map"),
         message: "Each entry must be `key: value` pairs, not a single value or a list.",
-        branch: YAML_PROBLEM_CATEGORY,
         entryType: YAML_SUBGROUP_ITEM,
         range: nodeRange(itemNode as any),
       });
@@ -398,6 +398,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
     );
     for (const d of entryShape.diagnoses) {
       problems.push({
+        id: d.id,
         severity: d.severity,
         message: d.message,
         branch: d.branch,
@@ -415,9 +416,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
       if ("delay" in value) {
         strip.push("delay");
         problems.push({
-          severity: "info",
+          ...kindFields("practice-legacy-delay"),
           message: practiceMessages.legacyDelay(),
-          branch: PRACTICE_CATEGORY,
           entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
           range: findPairRange(itemNode, "delay") ?? itemRange,
         });
@@ -426,9 +426,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
         if (typeof value[key] === "string") {
           strip.push(key);
           problems.push({
-            severity: "info",
+            ...kindFields("practice-legacy-spawn"),
             message: practiceMessages.legacySpawn(key),
-            branch: PRACTICE_CATEGORY,
             entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
             range: findPairRange(itemNode, key) ?? itemRange,
           });
@@ -449,6 +448,7 @@ export function runStructuralPrecheck(text: string): Problem[] {
         : { diagnoses: [], suppressAjvPaths: new Set<string>(), skipRpcParamCheck: new Map() };
     for (const d of rpcOrphan.diagnoses) {
       problems.push({
+        id: d.id,
         severity: d.severity,
         message: d.message,
         branch: d.branch,
@@ -474,9 +474,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
           if (typeof entryValue.name !== "string") return;
           for (const issue of checkRpcParams(table, entryValue.name, entryValue)) {
             problems.push({
-              severity: "warning",
+              ...kindFields("rpc-param-mismatch"),
               message: rpcParamIssueMessage(entryValue.name, issue),
-              branch: VALUE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
               range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
             });
@@ -492,9 +491,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
           // resolves to a documented RPC (unlike checkRpcParams above).
           for (const issue of checkRpcUnrecognizedKeys(entryValue)) {
             problems.push({
-              severity: "warning",
+              ...kindFields("rpc-unrecognized-key"),
               message: rpcParamIssueMessage(entryValue.name, issue),
-              branch: STRUCTURE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
               range: findPairRange(entryNode as YAMLMap, issue.key) ?? itemRange,
             });
@@ -530,9 +528,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
             const clearer = scalarDataFieldTypeMessage(field);
             if (clearer) {
               problems.push({
-                severity: "error",
+                ...kindFields("ajv-scalar-field-type"),
                 message: clearer,
-                branch: VALUE_PROBLEM_CATEGORY,
                 entryType: ENTRY_TYPE_TITLES[branch],
                 range: ajvErrorRange(itemNode, itemRange, error),
               });
@@ -551,9 +548,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
           const commentRange = keyRange ? commentedOutListItemRange(text, keyRange[0]) : null;
           if (commentRange) {
             problems.push({
-              severity: "warning",
+              ...kindFields("ajv-commented-out-list"),
               message: commentedOutListMessage(field[0]!),
-              branch: STRUCTURE_PROBLEM_CATEGORY,
               entryType: ENTRY_TYPE_TITLES[branch],
               range: commentRange,
             });
@@ -572,22 +568,21 @@ export function runStructuralPrecheck(text: string): Problem[] {
         // message split: an unknown/misspelled key or a missing required
         // field is a Structure problem (something about which keys exist is
         // wrong); a known field holding the wrong value is a Value problem.
-        let kind: string;
+        let id: DiagnosisId;
         let message: string;
         if (error.keyword === "pattern" && isTypeValuePath(error.instancePath)) {
-          kind = VALUE_PROBLEM_CATEGORY;
+          id = "ajv-type-value-enum";
           message = typeValueEnumMessage(error.instancePath, KNOWN_TYPES_LIST);
         } else if (error.params && "additionalProperty" in error.params) {
-          kind = STRUCTURE_PROBLEM_CATEGORY;
+          id = "ajv-unknown-key";
           message = unknownKeyMessage((error.params as { additionalProperty: string }).additionalProperty, ENTRY_TYPE_TITLES[branch]);
         } else {
-          kind = error.keyword === "required" ? STRUCTURE_PROBLEM_CATEGORY : VALUE_PROBLEM_CATEGORY;
+          id = error.keyword === "required" ? "ajv-required" : "ajv-value";
           message = formatAjvFallthroughMessage(error);
         }
         problems.push({
-          severity: "error",
+          ...kindFields(id),
           message,
-          branch: kind,
           entryType: ENTRY_TYPE_TITLES[branch],
           range: ajvErrorRange(itemNode, itemRange, error),
         });
@@ -600,9 +595,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
         const r =
           (hint.field ? findPairRange(itemNode, hint.field) : null) ?? findPairRange(itemNode, "prefab") ?? itemRange;
         problems.push({
-          severity: "error",
+          ...kindFields("prefab-requiredness"),
           message: hint.message,
-          branch: STRUCTURE_PROBLEM_CATEGORY,
           entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
           range: r,
         });

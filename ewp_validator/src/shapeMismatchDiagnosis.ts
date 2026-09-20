@@ -30,12 +30,13 @@ import {
   TOP_LEVEL_LIST_REF_FIELDS,
   TOP_LEVEL_SCALAR_REF_FIELDS,
 } from "./dataFieldValidation";
-import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 import { practiceMessages } from "./practiceRecommendations";
 import { findOrphanRpcListItems, numberedRpcParamKeys, type RpcActualType, type RpcKeyOwner, type RpcParamIssue } from "./rpcValidation";
 import { findPairRange, getPairValueNode, nodeRange, type Severity } from "./structuralPrecheck";
+import { kindFields, type DiagnosisId } from "./diagnosisKinds";
 
 export interface ShapeMismatchDiagnosis {
+  id: DiagnosisId;
   severity: Severity;
   message: string;
   branch: string;
@@ -173,9 +174,8 @@ function diagnoseScalarFieldAsList(
   if (section && (field === "filter" || field === "bannedFilter") && !isMalformedTypedLineList(field, lines)) {
     const plural = field === "filter" ? "filters" : "bannedFilters";
     return {
-      severity: "info",
+      ...kindFields("shape-filter-as-list"),
       message: practiceMessages.filterAsList(field, plural, section),
-      branch: PRACTICE_CATEGORY,
       entryType,
       range: rangeForScalarListField(parentNode, field),
       suppressAjvPath,
@@ -207,9 +207,8 @@ function diagnoseScalarFieldAsList(
   }
 
   return {
-    severity: "error",
+    ...kindFields("shape-scalar-field-as-list"),
     message,
-    branch: VALUE_PROBLEM_CATEGORY,
     entryType,
     range: rangeForScalarListField(parentNode, field),
     suppressAjvPath,
@@ -226,12 +225,11 @@ function diagnoseListFieldAsInlineTriple(
   if (typeof raw !== "string" || !looksLikeTypedValueLine(raw)) return null;
   const singular = field === "filters" ? "filter" : "bannedFilter";
   return {
-    severity: "error",
+    ...kindFields("shape-list-field-as-inline-triple"),
     message:
       `Invalid \`${field}:\` format — this looks like one filter line written as a scalar. ` +
       `Use \`${singular}: ${raw}\`, or a YAML list under \`${field}:\`:\n` +
       `  ${field}:\n  - ${raw}`,
-    branch: VALUE_PROBLEM_CATEGORY,
     entryType,
     range: findPairRange(parentNode, field) ?? nodeRange(parentNode as any),
     suppressAjvPath,
@@ -350,9 +348,8 @@ export function diagnoseShapeMismatches(
 /** WEC data entry with `data:` instead of `name:` — detector lives in guessBranch(). */
 export function diagnoseWecNameTypo(itemNode: YAMLMap, entryType: string): ShapeMismatchDiagnosis {
   return {
-    severity: "warning",
+    ...kindFields("wec-data-key-name-typo"),
     message: WEC_NAME_TYPO_MESSAGE,
-    branch: STRUCTURE_PROBLEM_CATEGORY,
     entryType,
     range: findPairRange(itemNode, "data") ?? nodeRange(itemNode as any),
     suppressAjvPath: "/name",
@@ -418,9 +415,8 @@ export function diagnoseRpcOrphanListItems(
       const message = previousIsNameOnly ? ORPHAN_SIBLING_PARAM_MESSAGE : MISSING_RPC_NAME_MESSAGE;
 
       diagnoses.push({
-        severity: "warning",
+        ...kindFields(previousIsNameOnly ? "rpc-orphan-sibling-param" : "rpc-missing-name"),
         message,
-        branch: VALUE_PROBLEM_CATEGORY,
         entryType,
         range,
         suppressAjvPath: `/${field}/${entryIdx}`,

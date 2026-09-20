@@ -8,9 +8,10 @@
 //   - anything else            — allegedly not an EWP structural file: a hard
 //     "Invalid file" error, and the diagnosis passes are skipped for it
 //     entirely (see FileManager.revalidateAll).
-import { INVALID_FILE_CATEGORY, PRACTICE_CATEGORY } from "./diagnosisCategories";
+import { INVALID_FILE_CATEGORY } from "./diagnosisCategories";
 import { practiceMessages } from "./practiceRecommendations";
 import type { Problem } from "./structuralPrecheck";
+import { kindFields, type DiagnosisId } from "./diagnosisKinds";
 
 export { INVALID_FILE_CATEGORY };
 
@@ -69,8 +70,7 @@ export function checkFileName(name: string): FileNameCheck {
     return {
       verdict,
       problem: {
-        severity: "info",
-        branch: PRACTICE_CATEGORY,
+        ...kindFields("filename-legacy"),
         message: practiceMessages.legacyFilename(target),
         range: [0, 0],
       },
@@ -80,8 +80,7 @@ export function checkFileName(name: string): FileNameCheck {
   return {
     verdict,
     problem: {
-      severity: "error",
-      branch: INVALID_FILE_CATEGORY,
+      ...kindFields("filename-invalid"),
       message:
         `Invalid file: '${name}' doesn't match an EWP structural filename ` +
         `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml). ` +

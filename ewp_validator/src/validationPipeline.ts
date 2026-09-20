@@ -1,26 +1,9 @@
 // The whole validation pipeline as pure functions (no editor, no DOM), shared by the
 // browser app (fileManager.ts) and the command-line tool (cli.ts) so both run the SAME
 // checks: filename gate, structural pre-check per file, then cross-file reference checks.
-import { PRACTICE_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation, type FileProblem } from "./referenceValidation";
 import { runStructuralPrecheck, type Problem } from "./structuralPrecheck";
-
-// Both "data-reference" (undefined/unused data.yaml entry) and "custom-key"
-// (orphaned saved key) merge into one Reference problem category — they were
-// already close cousins (ticket 04's naming pass), and both mix a hard error
-// with merely-informational findings, matching the "___ problem" naming
-// principle in diagnosisCategories.ts.
-export const REFERENCE_BRANCH_LABEL: Record<FileProblem["kind"], string> = {
-  "ignored-data-with-filter": PRACTICE_CATEGORY,
-  "filter-both-forms": PRACTICE_CATEGORY,
-  "data-reference": REFERENCE_PROBLEM_CATEGORY,
-  "custom-key": REFERENCE_PROBLEM_CATEGORY,
-  "legacy-object-data": PRACTICE_CATEGORY,
-  "template-function": REFERENCE_PROBLEM_CATEGORY,
-  "poke-parameter": REFERENCE_PROBLEM_CATEGORY,
-  "malformed-reference": REFERENCE_PROBLEM_CATEGORY,
-};
 
 /**
  * Filename gate plus structural pre-check for one file. `scannable` is false when the name is
@@ -55,9 +38,10 @@ export function runFullValidation(files: PipelineFile[]): Map<string, Problem[]>
   }
   for (const rp of runReferenceValidation(scannable.map((f) => ({ id: f.id, text: f.text })))) {
     out.get(rp.fileId)?.push({
+      id: rp.id,
       severity: rp.severity,
       message: rp.message,
-      branch: REFERENCE_BRANCH_LABEL[rp.kind],
+      branch: rp.branch,
       range: rp.range,
     });
   }
