@@ -8,6 +8,8 @@
 // theme-toggle mechanism un-shared, see ew_toolkit/hub-map.md's Not yet
 // specified).
 //
+import { confirmKeyDecision, initialFocusIndex } from "./uiRules";
+
 // Long filename lists (confirm-modal-large-list tickets 02–04): pass
 // `fileList` so the modal owns the always-boxed bullet scroll region.
 export interface ConfirmButton {
@@ -82,7 +84,6 @@ export function showConfirmModal(opts: ConfirmModalOptions): Promise<string> {
 
     const buttonRow = document.createElement("div");
     buttonRow.className = "confirm-buttons";
-    let primaryBtn: HTMLButtonElement | null = null;
     let primaryValue: string | null = null;
     for (const b of opts.buttons) {
       const btn = document.createElement("button");
@@ -92,7 +93,6 @@ export function showConfirmModal(opts: ConfirmModalOptions): Promise<string> {
       btn.addEventListener("click", () => finish(b.value));
       buttonRow.appendChild(btn);
       if (b.primary) {
-        primaryBtn = btn;
         primaryValue = b.value;
       }
     }
@@ -107,21 +107,15 @@ export function showConfirmModal(opts: ConfirmModalOptions): Promise<string> {
     }
 
     function onKeydown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        finish(opts.cancelValue);
-        return;
-      }
-      if (e.key === "Enter") {
-        // Swallowed unconditionally (not just left to fall through) so a
-        // destructive dialog's focused Cancel button never activates from a
-        // stray Enter either — see allowEnter's doc comment.
-        e.preventDefault();
-        if (opts.allowEnter && primaryValue !== null) finish(primaryValue);
-      }
+      // Rules live in uiRules.ts (tested): Escape = safe value; Enter is always swallowed and
+      // confirms only when allowEnter is set.
+      const r = confirmKeyDecision(e.key, { allowEnter: opts.allowEnter, cancelValue: opts.cancelValue, primaryValue });
+      if (!r.handled) return;
+      e.preventDefault();
+      if (r.resolve !== null) finish(r.resolve);
     }
     document.addEventListener("keydown", onKeydown);
 
-    (primaryBtn ?? buttonRow.querySelector("button"))?.focus();
+    buttonRow.querySelectorAll("button")[initialFocusIndex(opts.buttons)]?.focus();
   });
 }

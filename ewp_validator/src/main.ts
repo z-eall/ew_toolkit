@@ -30,6 +30,7 @@ import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
 import { buildNavItems, renderNavBar } from "../../shared/navBar";
 import { getStoredTheme, mountThemeToggle, type Theme as HubTheme } from "../../shared/theme";
 import { showConfirmModal } from "./confirmModal";
+import { anyUnsavedWork, applyLeaveWarning } from "./uiRules";
 import "./style.css";
 import type { ZipEntry } from "./zip";
 import type { ZipWorkerRequest, ZipWorkerResponse } from "./zipWorker";
@@ -1439,15 +1440,9 @@ document.addEventListener("click", (e) => {
 // top of it, since the click's own navigation still triggers beforeunload
 // underneath. Removed once the real beforeunload bug below was fixed.)
 window.addEventListener("beforeunload", (e) => {
-  if (fileManager.hasUnsavedWork()) {
-    e.preventDefault();
-    // A non-empty returnValue is required to actually raise the native leave
-    // dialog: an empty string is the legacy signal for "no prompt", so several
-    // browsers (Firefox, Safari, older Chrome) silently skipped it — which is
-    // why closing/switching on the live site never warned. The text itself is
-    // ignored by modern browsers, but the value must be truthy.
-    e.returnValue = "You have unsaved changes.";
-  }
+  // Rule (tested in uiRules.ts): prevent default AND set a non-empty returnValue. An empty
+  // string is the legacy "no prompt" signal, so Firefox/Safari silently skipped the warning.
+  applyLeaveWarning(e, fileManager.hasUnsavedWork());
 });
 
 // The Problems panel follows the caret: land on a flagged line and its note is

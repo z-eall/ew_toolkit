@@ -25,3 +25,10 @@ Every new or changed validation rule goes through this order:
 `npm test` uses a saved copy of the mod docs (`schema/fixtures/RPCs.md`, no internet). Builds and the daily GitHub run use the live docs (`npm run test:upstream`). If the daily run fails, the mod docs changed: read the diff, refresh the fixture, fix the validator. Failed scheduled runs show in the repo Actions tab; GitHub also emails the person who last changed the schedule.
 
 Source-verify against the local mirror of Jere's mods first (see `docs/sources.md`); a hook checks the copy is fresh. After the mirror updates, its `changes` report lists which of our files are affected. Refresh the saved docs copy with `npm run refresh-fixture`, then run `npm test`.
+
+## UI rules that broke before
+
+Decisions live in `src/uiRules.ts` with tests in `uiRules.test.ts`. Change the rule there, not in the page code.
+
+- Leave warning: needs `preventDefault()` and a non-empty `returnValue`. An empty string means "no prompt" in Firefox and Safari. Do not add a second `confirm()` on nav links; it stacks on the native prompt.
+- Confirm dialog: Escape picks the safe value. Enter confirms only with `allowEnter` (one call site). Focus starts on the primary button. Never mark a danger button primary.

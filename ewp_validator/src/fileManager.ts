@@ -9,6 +9,7 @@
 // Manual is selected, only the Validate button runs a pass, so loading or
 // editing a big batch doesn't re-scan the whole file set behind the user's back.
 import * as monaco from "monaco-editor";
+import { anyUnsavedWork } from "./uiRules";
 import { pickHighestPriority, type Problem, type Severity } from "./structuralPrecheck";
 import { runFullValidation, scanStructural } from "./validationPipeline";
 import type { SaveScope } from "./fileView";
@@ -277,7 +278,7 @@ export class FileManager {
 
   /** True if any file with content still has unsaved edits (drives leave prompts). */
   hasUnsavedWork(): boolean {
-    return this.files.some((f) => f.dirty && f.model.getValue().trim() !== "");
+    return anyUnsavedWork(this.files.map((f) => ({ dirty: f.dirty, text: f.model.getValue() })));
   }
 
   private onContentChanged(file: LoadedFile): void {
