@@ -23,11 +23,11 @@ describe("runFullValidation", () => {
     const out = runFullValidation([{ id: "a", name: "simple.yaml", text: usesData }]);
     const problems = out.get("a")!;
     expect(problems).toHaveLength(1);
-    expect(problems[0].message).toMatch(/Invalid file/);
+    expect(problems[0].message).toMatch(/not an EWP file name/);
   });
 
   it("a draft on the placeholder name is exempt from the filename gate", () => {
     const out = runFullValidation([{ id: "a", name: "unnamed.yaml", text: usesData, filenameExempt: true }]);
-    expect(out.get("a")!.some((p) => /Invalid file/.test(p.message))).toBe(false);
+    expect(out.get("a")!.some((p) => /not an EWP file name/.test(p.message))).toBe(false);
   });
 });

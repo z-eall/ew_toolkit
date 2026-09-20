@@ -40,7 +40,7 @@ A value in one EWP YAML file that points at an id/key defined in a *different* E
 Opening/uploading multiple EWP YAML files at once, each validated independently against the schema, with per-file, per-line error locations. Implemented as the sidebar file list + Problems panel layout (ticket 11).
 
 **Structural pre-check**:
-The mechanism behind [[Structural validation]] for the [[Discriminator-less array]]: guess an array entry's intended shape (EWP rule entry / WEC data entry / value entry / value group) from which distinguishing keys are present, then validate against only that one shape's schema. Chosen over a naive `oneOf` because the union alone produces 13-15 unscoped errors per typo (see `prototype/oneof-union-error-quality`) — `oneOf` stays only the acceptance mechanism, never the error-reporting source.
+The mechanism behind [[Structural validation]] for the [[Discriminator-less array]]: guess an array entry's intended shape (EWP entry / WEC data entry / value entry / value group) from which distinguishing keys are present, then validate against only that one shape's schema. Chosen over a naive `oneOf` because the union alone produces 13-15 unscoped errors per typo (see `prototype/oneof-union-error-quality`) — `oneOf` stays only the acceptance mechanism, never the error-reporting source.
 
 **Reference validation**:
 The v1 implementation of [[Cross-file reference]] checking, scoped to the one namespace with a clean structural definition/usage split: a `name:` entry anywhere in the loaded batch defines a `data.yaml` identifier; a bareword `data:`/`addItems:`/`removeItems:`/`drops:` value elsewhere in the batch (same file or not) uses it. An undefined reference is a hard error; a defined-but-unused entry is a low-severity hint. Distinct from [[Data-aware autocomplete]], which needs real game data this doesn't.
@@ -48,12 +48,12 @@ The v1 implementation of [[Cross-file reference]] checking, scoped to the one na
 **Custom saved key**:
 A scripter-chosen identifier written via the `<save_X_Y>` string template and read via `keys:`/`bannedKeys:`/`type: key` or the `<load_X>`/`<clear_X>` templates. [[Reference validation]] flags a one-sided read-without-write or write-without-read within the loaded batch as an info notice, not a warning or error — a key can legitimately be written by another mod or a console command outside the batch, so the check points the scripter at `expand_world/ewp_data.yaml` to verify rather than asserting a bug. Distinct from global keys, which are deliberately not checked (too many are set by vanilla game logic, not scripter YAML).
 
-**EWP rule entry**:
+**EWP entry**:
 A YAML list item shaped like EWP's own `Data` structure (`prefab`/`type`/filters/actions/etc.) — one of four legal shapes that can appear in a script file's top-level array.
-_Avoid_: "script entry" (ambiguous with the other three shapes below)
+_Avoid_: "rule" and "rule entry" (not a word the EWP community uses). Say **script** for a whole file and **entry** for one item in it.
 
 **WEC data entry**:
-A YAML list item with a `name:` key plus typed value lists (`ints`, `floats`, `strings`, etc.) — WEC's reusable data template, referenced by an EWP rule entry's `data:` field.
+A YAML list item with a `name:` key plus typed value lists (`ints`, `floats`, `strings`, etc.) — WEC's reusable data template, referenced by an EWP entry's `data:` field.
 
 **Value entry / Value group**:
 WEC's `value:` and `valueGroup:` list-item shapes — a value entry defines a single substitutable value; a value group randomly picks one value from a named pool. Both can appear anywhere in the same array as EWP rule entries and WEC data entries.

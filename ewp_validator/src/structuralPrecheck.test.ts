@@ -24,7 +24,7 @@ describe("guessBranch", () => {
   });
 
   it("does not guess wecDataEntry when prefab/type is also present, even with a typed list", () => {
-    // e.g. a real EWP rule entry that happens to also set `ints` via some other path
+    // e.g. a real EWP entry that happens to also set `ints` via some other path
     expect(guessBranch({ name: "x", prefab: "Bonemass", ints: ["a"] }).branch).toBe("ewpRuleEntry");
   });
 
@@ -69,7 +69,7 @@ describe("runStructuralPrecheck", () => {
     const errors = problems.filter((p) => p.severity === "error");
     expect(errors).toHaveLength(1);
     expect(errors[0].branch).toBe(STRUCTURE_PROBLEM_CATEGORY);
-    expect(errors[0].entryType).toBe("EWP rule entry");
+    expect(errors[0].entryType).toBe("EWP entry");
     expect(errors[0].message).toContain("chace");
     // range should point at the bad key: value pair, not the whole entry
     expect(yaml.slice(...errors[0].range).trim()).toBe("chace: 0.1");
@@ -87,7 +87,7 @@ describe("runStructuralPrecheck", () => {
   it("scopes garbage input to the default-guessed branch instead of every branch", () => {
     const yaml = "- foo: bar\n  baz: 1\n";
     const problems = runStructuralPrecheck(yaml);
-    expect(problems.every((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.entryType === "EWP rule entry")).toBe(
+    expect(problems.every((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.entryType === "EWP entry")).toBe(
       true,
     );
     expect(problems.some((p) => p.message.includes("foo"))).toBe(true);
@@ -124,7 +124,7 @@ describe("runStructuralPrecheck", () => {
     expect(flag!.message).toContain("Legacy format:");
     expect(flag!.message).not.toContain("Old format");
     expect(flag!.branch).toBe(PRACTICE_CATEGORY);
-    expect(flag!.entryType).toBe("EWP rule entry");
+    expect(flag!.entryType).toBe("EWP entry");
   });
 
   it("flags a legacy single-line spawn: string under the Practice recommendation category, not an error — ticket 13", () => {
@@ -143,7 +143,7 @@ describe("runStructuralPrecheck", () => {
     // its required `values:` list missing).
     const yaml = "- valueGroup: biome_pool\n";
     const problems = runStructuralPrecheck(yaml);
-    const err = problems.find((p) => p.message.includes("required"));
+    const err = problems.find((p) => p.message.includes("needs"));
     expect(err).toBeDefined();
     expect(err!.branch).toBe(STRUCTURE_PROBLEM_CATEGORY);
     expect(err!.entryType).toBe("Value group");
@@ -384,7 +384,7 @@ describe("runStructuralPrecheck", () => {
     expect(flag).toBeDefined();
     expect(flag!.severity).toBe("warning");
     expect(flag!.message).toContain("'triggerRules:'");
-    expect(flag!.message).toContain("rule entry");
+    expect(flag!.message).toContain("EWP entry");
   });
 
   it("still flags an unrecognized objectRpc key once its value is quoted (the scripter's 'fix' that currently goes silent)", () => {
@@ -398,7 +398,7 @@ describe("runStructuralPrecheck", () => {
     const problems = runStructuralPrecheck(yaml);
     const flag = problems.find((p) => p.branch === STRUCTURE_PROBLEM_CATEGORY && p.message.includes("remove"));
     expect(flag).toBeDefined();
-    expect(flag!.message).toContain("rule entry");
+    expect(flag!.message).toContain("EWP entry");
   });
 
   it("does not flag known RPC entry keys (name/target/delay/overwrite/etc) as unrecognized", () => {

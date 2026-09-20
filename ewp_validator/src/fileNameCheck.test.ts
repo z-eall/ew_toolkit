@@ -70,7 +70,7 @@ describe("checkFileName", () => {
     expect(verdict).toBe("invalid");
     expect(problem!.severity).toBe("error");
     expect(problem!.branch).toBe(INVALID_FILE_CATEGORY);
-    expect(problem!.message).toContain("Invalid file");
+    expect(problem!.message).toContain("not an EWP file name");
     expect(problem!.message).toContain("random.yaml");
   });
 });

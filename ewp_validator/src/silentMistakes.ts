@@ -183,9 +183,9 @@ interface FileFacts {
   /** `setkey KEY` in a command (lowercase keys). */
   setKeys: Set<string>;
   /** Watchers of Valheim global keys: `type: globalkey, KEY` and `globalKeys:` entries. */
-  globalWatchers: Array<{ key: string; via: "globalkey" | "globalKeys"; range: [number, number] }>;
-  /** `type: key, KEY` watchers of EWP keys. */
-  keyWatchers: Array<{ key: string; range: [number, number] }>;
+  globalWatchers: Array<{ key: string; shown: string; via: "globalkey" | "globalKeys"; range: [number, number] }>;
+  /** `type: key, KEY` watchers of EWP keys. `shown` keeps the spelling written in the script. */
+  keyWatchers: Array<{ key: string; shown: string; range: [number, number] }>;
 }
 
 const TYPED_LISTS = ["ints", "floats", "strings", "bools", "longs", "vecs", "quats", "bytes", "hashes"];
@@ -228,16 +228,16 @@ function collectFacts(text: string): FileFacts {
         const arg = firstTypeArgument(text);
         if (!arg) continue;
         if (word === "change" && prefab !== "") facts.changeWatchers.push({ prefab, key: arg });
-        if (word === "globalkey") facts.globalWatchers.push({ key: arg.toLowerCase(), via: "globalkey", range: typeRange });
-        if (word === "key") facts.keyWatchers.push({ key: arg.toLowerCase(), range: typeRange });
+        if (word === "globalkey") facts.globalWatchers.push({ key: arg.toLowerCase(), shown: arg, via: "globalkey", range: typeRange });
+        if (word === "key") facts.keyWatchers.push({ key: arg.toLowerCase(), shown: arg, range: typeRange });
       }
 
       for (const field of ["globalKeys", "bannedGlobalKeys"]) {
         const raw = value[field];
         if (typeof raw !== "string") continue;
         for (const part of raw.split(/[,;]/)) {
-          const key = part.trim().split("=")[0]!.trim().toLowerCase();
-          if (key) facts.globalWatchers.push({ key, via: "globalKeys", range: findPairRange(item, field) ?? nodeRange(item) });
+          const shown = part.trim().split("=")[0]!.trim();
+          if (shown) facts.globalWatchers.push({ key: shown.toLowerCase(), shown, via: "globalKeys", range: findPairRange(item, field) ?? nodeRange(item) });
         }
       }
 
@@ -292,11 +292,11 @@ export function findSilentCrossFileMistakes(files: Array<{ id: string; text: str
     }
     // Rule 5, EWP key read as a global key
     for (const g of facts.globalWatchers) {
-      if (ewpWrites.has(g.key) && !setKeys.has(g.key)) out.push({ fileId: id, finding: { id: "silent-key-store-mix", key: g.key, watcher: g.via, range: g.range } });
+      if (ewpWrites.has(g.key) && !setKeys.has(g.key)) out.push({ fileId: id, finding: { id: "silent-key-store-mix", key: g.shown, watcher: g.via, range: g.range } });
     }
     // Rule 5, global key read as an EWP key
     for (const k of facts.keyWatchers) {
-      if (setKeys.has(k.key) && !ewpWrites.has(k.key)) out.push({ fileId: id, finding: { id: "silent-key-store-mix", key: k.key, watcher: "key", range: k.range } });
+      if (setKeys.has(k.key) && !ewpWrites.has(k.key)) out.push({ fileId: id, finding: { id: "silent-key-store-mix", key: k.shown, watcher: "key", range: k.range } });
     }
   }
   return out;

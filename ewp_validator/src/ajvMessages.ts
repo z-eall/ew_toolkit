@@ -46,9 +46,10 @@ export function fieldLabelFromInstancePath(instancePath: string): string {
 }
 
 /** Replace ajv's JSON-Pointer-prefixed fallthrough with field-native wording (ticket 14). */
-export function formatAjvFallthroughMessage(error: ErrorObject): string {
+export function formatAjvFallthroughMessage(error: ErrorObject, ownerLabel?: string): string {
   if (error.keyword === "required") {
     const missing = (error.params as { missingProperty?: string }).missingProperty;
+    if (missing && ownerLabel && error.instancePath === "") return `${ownerLabel} needs \`${missing}:\`.`;
     if (missing) return `\`${missing}:\` is required.`;
     return "A required field is missing.";
   }
@@ -105,9 +106,43 @@ export function typeValueEnumMessage(instancePath: string, knownTypesList: strin
   return `${fieldLabelFromInstancePath(instancePath)} must be one of: ${knownTypesList} (any case), optionally followed by ", param1 param2".`;
 }
 
-/** additionalProperties error — names the bad key instead of ajv's generic message. */
-export function unknownKeyMessage(key: string, entryTypeTitle: string): string {
-  return `'${key}' is not a valid key in a ${entryTypeTitle}.`;
+function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length]!;
+}
+
+/**
+ * The valid key nearest to a misspelled one, or null when nothing is close. Case is ignored
+ * (`maxdistance` finds `maxDistance`). The allowed distance grows with the word:
+ * 1 edit up to 4 letters, 2 up to 8, 3 beyond. Ties go to the first candidate.
+ */
+export function closestKey(bad: string, candidates: readonly string[]): string | null {
+  const b = bad.toLowerCase();
+  const allowed = b.length <= 4 ? 1 : b.length <= 8 ? 2 : 3;
+  let best: string | null = null;
+  let bestDistance = allowed + 1;
+  for (const c of candidates) {
+    const d = editDistance(b, c.toLowerCase());
+    if (d < bestDistance) {
+      best = c;
+      bestDistance = d;
+    }
+  }
+  return best;
+}
+
+/** additionalProperties error — names the bad key, and the nearest valid key when there is one. */
+export function unknownKeyMessage(key: string, entryTypeTitle: string, suggestion?: string | null): string {
+  const article = /^[AEIOU]/.test(entryTypeTitle) ? "an" : "a";
+  const hint = suggestion ? ` Did you mean \`${suggestion}:\`?` : "";
+  return `'${key}' is not a valid key in ${article} ${entryTypeTitle}.${hint}`;
 }
 
 /**

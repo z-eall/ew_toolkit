@@ -66,7 +66,11 @@ describe("typeValueEnumMessage", () => {
 
 describe("unknownKeyMessage", () => {
   it("names the key and the entry type", () => {
-    expect(unknownKeyMessage("typo", "EWP rule entry")).toBe("'typo' is not a valid key in a EWP rule entry.");
+    expect(unknownKeyMessage("typo", "EWP entry")).toBe("'typo' is not a valid key in an EWP entry.");
+    expect(unknownKeyMessage("typo", "WEC data entry")).toBe("'typo' is not a valid key in a WEC data entry.");
+    expect(unknownKeyMessage("maxdistanse", "EWP entry", "maxDistance")).toBe(
+      "'maxdistanse' is not a valid key in an EWP entry. Did you mean `maxDistance:`?",
+    );
   });
 });
 

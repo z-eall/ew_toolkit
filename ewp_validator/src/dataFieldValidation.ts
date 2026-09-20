@@ -204,7 +204,7 @@ function collectScalarRefs(
   }
 }
 
-/** Walk one EWP rule entry for data.yaml reference usages (top-level + nested). */
+/** Walk one EWP entry for data.yaml reference usages (top-level + nested). */
 export function collectRuleEntryDataReferences(
   itemNode: YAMLMap,
   value: Record<string, unknown>,

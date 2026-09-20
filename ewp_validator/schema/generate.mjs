@@ -261,11 +261,11 @@ const objectOrLegacyString = { oneOf: [objectData, { type: "string" }] };
 // (schema-source-audit ticket 01).
 const spawnOrLegacyString = { oneOf: [{ type: "array", items: spawnData }, { type: "string" }] };
 
-// ---------- EWP rule entry (PrefabData.cs: Data class, ~70 fields) ----------
+// ---------- EWP entry (PrefabData.cs: Data class, ~70 fields) ----------
 // Grouped to mirror docs/scripting.md's own section headers.
 
 const ewpRuleEntry = {
-  title: "EWP rule entry",
+  title: "EWP entry",
   type: "object",
   properties: withFilterFields({
     // Identity/trigger

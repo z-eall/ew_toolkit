@@ -19,9 +19,8 @@ export const practiceMessages = {
   legacySpawn: (key: string) => legacy(`a single-line \`${key}:\``),
 
   legacyFilename: (target: string) =>
-    `Legacy filename: 'expand_data*.yaml' is the old data file name. It still works, ` +
-    `but we recommend renaming it to '${target}' and move into the '/config/data' directory ` +
-    `— click the filename above to rename it.`,
+    `Legacy filename: 'expand_data*.yaml' is the old data name. It still works, ` +
+    `but rename it to '${target}' in '/config/data' (click the name above).`,
 
   legacyDataAlias: (section: string) =>
     `Legacy format: \`data:\` under \`${section}:\` is an old alias for \`filter:\`. It still works, ` +
@@ -48,7 +47,7 @@ export const practiceMessages = {
     `Silently ignored: \`${op}\` is not a comparison EWP knows, so this condition never passes. Use \`${op === "==" ? "=" : "!="}\`.`,
 
   changeNeedsTriggerRules: (key: string) =>
-    `Silently ignored: this rule writes \`${key}\` on its own object, so the \`type: change, ${key}\` rule does not fire. Add \`triggerRules: true\`.`,
+    `Silently ignored: this entry writes \`${key}\` on its own object, so the \`type: change, ${key}\` entry does not fire. Add \`triggerRules: true\`.`,
 
   pokeWorldCentre: () =>
     "Silently ignored: this trigger has no place, so the poke measures from the world centre and reaches only 100 m. Add `maxDistance:`.",

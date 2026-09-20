@@ -1,5 +1,5 @@
 // Ticket 10's structural pre-check: guess which of the four discriminator-less
-// array shapes (EWP rule entry / WEC data entry / value entry / value group) an
+// array shapes (EWP entry / WEC data entry / value entry / value group) an
 // item is clearly attempting by which distinguishing keys are present, then
 // validate against only that one schema. This is what actually produces
 // user-facing errors — the schema's top-level `oneOf` stays only as the
@@ -13,6 +13,7 @@ import {
   formatAjvFallthroughMessage,
   scalarDataFieldTypeMessage,
   typeValueEnumMessage,
+  closestKey,
   unknownKeyMessage,
 } from "./ajvMessages";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage } from "./shapeMismatchDiagnosis";
@@ -21,7 +22,7 @@ import { YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SU
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
-import { translateYamlError } from "./yamlErrorMessages";
+import { explainSyntaxError, translateYamlError } from "./yamlErrorMessages";
 import { kindFields, type DiagnosisId } from "./diagnosisKinds";
 import { findSilentEntryMistakes } from "./silentMistakes";
 
@@ -58,7 +59,7 @@ export interface Problem {
   message: string;
   /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Practice recommendation) — see diagnosisCategories.ts. */
   branch: string;
-  /** Schema-shape subtitle (EWP rule entry, …) — kept on `Problem` for backend use but not shown in the tag UI (ticket 04). YAML-native sub-groups `(parse)`/`(root)`/`(item)` reuse this field and *are* shown under {@link YAML_PROBLEM_CATEGORY}. */
+  /** Schema-shape subtitle (EWP entry, …) — kept on `Problem` for backend use but not shown in the tag UI (ticket 04). YAML-native sub-groups `(parse)`/`(root)`/`(item)` reuse this field and *are* shown under {@link YAML_PROBLEM_CATEGORY}. */
   entryType?: string;
   /** Character offsets into the source text, for mapping to editor positions. */
   range: [start: number, end: number];
@@ -84,13 +85,14 @@ const TYPED_LIST_KEYS = [
 // kind-based categories), but still shown as a diagnosis tag's subtitle so
 // "which shape" stays visible at a glance.
 export const ENTRY_TYPE_TITLES: Record<BranchName, string> = {
-  ewpRuleEntry: "EWP rule entry",
+  ewpRuleEntry: "EWP entry",
   wecDataEntry: "WEC data entry",
   valueEntry: "Value entry",
   valueGroup: "Value group",
 };
 
-const ajv = new Ajv({ allErrors: true, strict: false });
+// verbose: errors carry parentSchema, so an unknown key can be matched against the valid ones.
+const ajv = new Ajv({ allErrors: true, strict: false, verbose: true });
 const validators: Partial<Record<BranchName, ReturnType<Ajv["compile"]>>> = {};
 function getValidator(branch: BranchName) {
   let v = validators[branch];
@@ -176,7 +178,7 @@ function isTypeValuePath(instancePath: string): boolean {
   return head === "type" || head === "types";
 }
 
-// Undocumented/legacy constructs on an EWP rule entry that are live-tested to
+// Undocumented/legacy constructs on an EWP entry that are live-tested to
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
 // notices and stripped before ajv so they don't also raise a hard error. They
 // carry the "Practice recommendation" category — the wording follows Jere's docs,
@@ -216,7 +218,7 @@ function checkPrefabRequiredness(item: Record<string, unknown>): PrefabHint | nu
     : typeof item.type === "string"
       ? "type"
       : null;
-  const tail = "Only globalkey/key/custom/event/time/realtime can omit it. EWP still loads the rule, but it never matches anything.";
+  const tail = "Only globalkey/key/custom/event/time/realtime can omit it. EWP still loads the entry, but it never matches anything.";
 
   if (typeWords.length === 0) {
     return { message: `type '(none)' needs a 'prefab'. ${tail}`, field };
@@ -341,9 +343,15 @@ export function runStructuralPrecheck(text: string): Problem[] {
 
   const doc = parseDocument(text, { keepSourceTokens: false });
 
-  for (const err of doc.errors) {
-    const [start, end] = err.pos ?? [0, 0];
-    problems.push({ ...kindFields("yaml-syntax-error"), message: `YAML syntax error: ${translateYamlError(err)}`, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
+  // Read the lines for the real cause first; the parser's own code is often a wrong guide.
+  const explained = explainSyntaxError(text, doc.errors);
+  if (explained) {
+    problems.push({ ...kindFields("yaml-syntax-error"), message: `YAML syntax error: ${explained.message}`, entryType: YAML_SUBGROUP_PARSE, range: explained.range });
+  } else {
+    for (const err of doc.errors) {
+      const [start, end] = err.pos ?? [0, 0];
+      problems.push({ ...kindFields("yaml-syntax-error"), message: `YAML syntax error: ${translateYamlError(err)}`, entryType: YAML_SUBGROUP_PARSE, range: [start, end] });
+    }
   }
   for (const warn of doc.warnings) {
     const [start, end] = warn.pos ?? [0, 0];
@@ -576,10 +584,14 @@ export function runStructuralPrecheck(text: string): Problem[] {
           message = typeValueEnumMessage(error.instancePath, KNOWN_TYPES_LIST);
         } else if (error.params && "additionalProperty" in error.params) {
           id = "ajv-unknown-key";
-          message = unknownKeyMessage((error.params as { additionalProperty: string }).additionalProperty, ENTRY_TYPE_TITLES[branch]);
+          const badKey = (error.params as { additionalProperty: string }).additionalProperty;
+          const valid = Object.keys((error.parentSchema as { properties?: object } | undefined)?.properties ?? {});
+          message = unknownKeyMessage(badKey, ENTRY_TYPE_TITLES[branch], closestKey(badKey, valid));
         } else {
           id = error.keyword === "required" ? "ajv-required" : "ajv-value";
-          message = formatAjvFallthroughMessage(error);
+          // A missing top-level key names its entry kind: "A `valueGroup:` needs `values:`."
+          const owner = branch === "valueGroup" ? "A `valueGroup:`" : `A ${ENTRY_TYPE_TITLES[branch]}`;
+          message = formatAjvFallthroughMessage(error, owner);
         }
         problems.push({
           ...kindFields(id),

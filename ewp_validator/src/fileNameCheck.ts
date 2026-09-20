@@ -85,10 +85,8 @@ export function checkFileName(name: string): FileNameCheck {
     problem: {
       ...kindFields("filename-invalid"),
       message:
-        `Invalid file: '${name}' doesn't match an EWP structural filename ` +
-        `${FILENAME_PATTERN_HINT}. ` +
-        `Allegedly not an EWP structural file — use the "Clear invalid files" trash icon ` +
-        `to remove it.`,
+        `'${name}' is not an EWP file name ${FILENAME_PATTERN_HINT}, so EWP skips it. ` +
+        `Rename it, or remove it with the trash icon.`,
       range: [0, 0],
     },
   };

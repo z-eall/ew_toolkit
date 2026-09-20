@@ -59,7 +59,7 @@ describe("formatProblemTag", () => {
   });
 
   it("returns branch only for kind-based categories even when entryType is set", () => {
-    expect(formatProblemTag("Structure problem", "EWP rule entry")).toBe("Structure problem");
+    expect(formatProblemTag("Structure problem", "EWP entry")).toBe("Structure problem");
   });
 });
 
@@ -67,6 +67,6 @@ describe("shouldShowTagSubline", () => {
   it("shows subline only for YAML problem with a sub-group", () => {
     expect(shouldShowTagSubline(YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_PARSE)).toBe(true);
     expect(shouldShowTagSubline(YAML_PROBLEM_CATEGORY)).toBe(false);
-    expect(shouldShowTagSubline("Structure problem", "EWP rule entry")).toBe(false);
+    expect(shouldShowTagSubline("Structure problem", "EWP entry")).toBe(false);
   });
 });

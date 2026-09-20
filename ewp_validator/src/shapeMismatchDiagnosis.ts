@@ -452,19 +452,13 @@ function unrecognizedRpcKeyMessage(key: string, belongsTo: RpcKeyOwner): string 
   if (belongsTo) {
     const where =
       belongsTo === "both"
-        ? "the rule entry itself or a spawn:/swap: entry"
+        ? "the EWP entry itself or a spawn:/swap: entry"
         : belongsTo === "rule-entry"
-          ? "the rule entry itself"
+          ? "the EWP entry itself"
           : "a spawn:/swap: entry";
-    return (
-      `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
-      `correctly (it's a field on ${where}, not on an objectRpc:/clientRpc: entry). Move it there, or remove it.`
-    );
+    return `'${key}:' does nothing inside an RPC entry. It belongs on ${where}. Move it there, or remove it.`;
   }
-  return (
-    `RPC entries don't recognize '${key}:' — it does nothing here, even once its value is written ` +
-    `correctly. If this is meant as a numbered call parameter, use "1", "2", etc. instead.`
-  );
+  return `'${key}:' does nothing inside an RPC entry. For a call parameter, use "1", "2", etc.`;
 }
 
 /** Phrases one {@link checkRpcParams}/{@link checkRpcUnrecognizedKeys} detector result. */

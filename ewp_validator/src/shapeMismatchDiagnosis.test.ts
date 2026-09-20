@@ -28,7 +28,7 @@ describe("diagnoseShapeMismatches", () => {
   it("detects typed filter line written as YAML list under data:", () => {
     const yaml = "- prefab: Player\n  type: create\n  data:\n  - int, isCustom, 1\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses, suppressAjvPaths } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses, suppressAjvPaths } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toContain("filter line written as a YAML list");
     expect(diagnoses[0].message).toContain("data: int, isCustom, 1");
@@ -38,21 +38,21 @@ describe("diagnoseShapeMismatches", () => {
   it("detects filters: given as inline triple scalar", () => {
     const yaml = "- prefab: P\n  type: create\n  filters: int, isCustom, 1\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses.some((d) => d.message.includes("one filter line written as a scalar"))).toBe(true);
   });
 
   it("dedupes by suppress path when multiple rules could fire", () => {
     const yaml = "- prefab: P\n  type: create\n  data:\n  - int, isCustom, 1\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses.filter((d) => d.suppressAjvPath === "/data")).toHaveLength(1);
   });
 
   it("detects incomplete typed line written as YAML list under data:", () => {
     const yaml = "- prefab: P\n  type: create\n  data:\n  - foo, bar\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toContain("incomplete `type, key, value` line");
     expect(diagnoses[0].severity).toBe("error");
@@ -62,7 +62,7 @@ describe("diagnoseShapeMismatches", () => {
     const yaml =
       "- prefab: P\n  type: create\n  data:\n  - foo, bar\n  - int, isCustom\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses[0].message).toContain("filters:");
   });
 
@@ -84,7 +84,7 @@ describe("diagnoseRpcOrphanListItems", () => {
       "  - name: RPC_AddFuelAmount\n" +
       "  - 1: float, 5\n";
     const { itemNode } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP rule entry");
+    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].severity).toBe("warning");
     expect(diagnoses[0].message).toContain("previous RPC entry");
@@ -99,7 +99,7 @@ describe("diagnoseRpcOrphanListItems", () => {
       "  - 1: int, 5\n" +
       "    2: string, hello\n";
     const { itemNode } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP rule entry");
+    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toContain("no `name:`");
   });
@@ -112,7 +112,7 @@ describe("diagnoseRpcOrphanListItems", () => {
       "  - name: ShowMessage\n" +
       "  - 1: string, hi\n";
     const { itemNode } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP rule entry");
+    const { diagnoses } = diagnoseRpcOrphanListItems(itemNode, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toContain("previous RPC entry");
   });
@@ -144,7 +144,7 @@ describe("shape mismatch integration", () => {
   it("gives drops: as a YAML list its own message, not the filter/bannedFilter plural text", () => {
     const yaml = "- prefab: Player\n  type: create\n  drops:\n  - a\n  - b\n";
     const { itemNode, value } = firstEwpEntry(yaml);
-    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP rule entry");
+    const { diagnoses } = diagnoseShapeMismatches(itemNode, value, "EWP entry");
     expect(diagnoses).toHaveLength(1);
     expect(diagnoses[0].message).toBe("`drops:` must be a single string value, not a YAML list.");
   });
@@ -185,14 +185,14 @@ describe("rpcParamIssueMessage", () => {
 
   it("names the rule entry, both, or neither for an unrecognized RPC key", () => {
     expect(rpcParamIssueMessage("RPC_Damage", { key: "remove", kind: "unrecognized-key", belongsTo: "rule-entry" })).toContain(
-      "rule entry itself",
+      "EWP entry itself",
     );
     expect(
       rpcParamIssueMessage("RPC_Damage", { key: "triggerRules", kind: "unrecognized-key", belongsTo: "both" }),
-    ).toContain("rule entry itself or a spawn:/swap: entry");
+    ).toContain("EWP entry itself or a spawn:/swap: entry");
     expect(
       rpcParamIssueMessage("RPC_Damage", { key: "totallyMadeUp", kind: "unrecognized-key", belongsTo: null }),
-    ).toContain("numbered call parameter");
+    ).toContain("For a call parameter");
   });
 });
 

@@ -894,7 +894,7 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
     const problems = runReferenceValidation(files).filter((p) => p.id === "malformed-reference");
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatchObject({ fileId: "a", severity: "warning", id: "malformed-reference" });
-    expect(problems[0].message).toContain("Doubled");
+    expect(problems[0].message).toContain("two '_'");
   });
 
   it("does not flag a well-formed single underscore before a nested group", () => {

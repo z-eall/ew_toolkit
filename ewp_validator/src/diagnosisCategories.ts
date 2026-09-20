@@ -10,7 +10,7 @@
 // Redesigned (message-catalog / category-grouping ticket) from the original
 // 10 categories — one per internal check or schema branch — to 5, grouped by
 // *kind of mistake* instead of by which internal mechanism found it. The old
-// grouping had EWP rule entry absorbing dozens of unrelated mistakes while
+// grouping had EWP entry absorbing dozens of unrelated mistakes while
 // RPC rule entry/Formatting/Invalid file each got their own bucket for one
 // narrow check — uneven, and it didn't help a scripter tell at a glance what
 // kind of problem they were looking at.

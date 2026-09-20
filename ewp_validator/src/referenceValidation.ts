@@ -256,10 +256,10 @@ function findDoubledUnderscoreBeforeGroup(inner: string, offset: number): [numbe
 
 function scanKeyOccurrences(
   text: string,
-): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[]; malformed: { range: [number, number] }[] } {
+): { writes: RawKeyOccurrence[]; reads: RawKeyOccurrence[]; malformed: { range: [number, number]; group: [number, number] }[] } {
   const writes: RawKeyOccurrence[] = [];
   const reads: RawKeyOccurrence[] = [];
-  const malformed: { range: [number, number] }[] = [];
+  const malformed: { range: [number, number]; group: [number, number] }[] = [];
   for (let i = 0; i < text.length; i++) {
     if (text[i] !== "<") continue;
     const head = KEY_HEAD_RE.exec(text.slice(i));
@@ -272,7 +272,7 @@ function scanKeyOccurrences(
     const range: [number, number] = [i, end];
 
     for (const [start, doubledEnd] of findDoubledUnderscoreBeforeGroup(inner, i + head[0].length)) {
-      malformed.push({ range: [start, doubledEnd] });
+      malformed.push({ range: [start, doubledEnd], group: range });
     }
 
     let key: string;
@@ -614,15 +614,15 @@ function suggestFunctionName(head: string): FunctionNameSuggestion | null {
 // `ResolveValue` falls back to a value-group lookup on the *whole* bracket
 // text, not just `head`, whenever no function matches).
 function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestion | null): string {
-  const base = `'<${head}...>' doesn't match any known EWP function name`;
-  const runtime = "left as literal text at runtime, no error";
+  const base = `'<${head}...>' is not an EWP function`;
+  const runtime = "It stays as plain text (no error).";
   if (!suggestion) {
-    return `${base} — ${runtime}. Could be a value:/valueGroup: entry from another file; check ${CUSTOM_KEY_DATA_PATH_HINT}.`;
+    return `${base}, so it stays as plain text (no error). Fine if it is a value: or valueGroup: from another file.`;
   }
   if (suggestion.caseOnly) {
-    return `${base} — case-sensitive, differs from '<${suggestion.name}...>' only by case. ${runtime[0].toUpperCase()}${runtime.slice(1)}.`;
+    return `${base}: names are case-sensitive. Use '<${suggestion.name}...>'. ${runtime}`;
   }
-  return `${base} — probably a typo of '<${suggestion.name}...>'. ${runtime[0].toUpperCase()}${runtime.slice(1)}.`;
+  return `${base}. Did you mean '<${suggestion.name}...>'? ${runtime}`;
 }
 
 // Scan the whole document for balanced `<...>` groups whose head isn't any
@@ -754,7 +754,7 @@ interface PokeTokenOccurrence {
   occ: Occurrence;
 }
 
-// Walks one EWP rule entry for both halves of the ticket 07 feature: declared
+// Walks one EWP entry for both halves of the ticket 07 feature: declared
 // poke parameters (`poke[].parameter`/`pars`, legacy top-level `pokeParameter`)
 // and `type: poke, X` / `types:` trigger filter tokens.
 function collectPokeSignals(
@@ -845,14 +845,15 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
     const { writes, reads, malformed: malformedKeys } = scanKeyOccurrences(stripLineComments(file.text));
     for (const w of writes) recordOccurrence(keyWrites, w.key, { fileId: file.id, range: w.range });
     for (const r of reads) recordOccurrence(keyReads, r.key, { fileId: file.id, range: r.range });
-    for (const { range } of malformedKeys) {
+    for (const { range, group } of malformedKeys) {
+      const whole = file.text.slice(group[0], group[1]);
+      const shown = whole.length > 60 ? `${whole.slice(0, 57)}...` : whole;
       problems.push({
         fileId: file.id,
         ...kindFields("malformed-reference"),
         message:
-          "Doubled '_' right before a nested '<...>' parameter. EWP's key/value split only " +
-          "consumes one underscore — the extra one is saved as a leading '_' baked into the " +
-          "value ('_X' instead of 'X'), silently, with no error.",
+          `\`${shown}\` has two '_' before the inner '<...>'. ` +
+          "EWP keeps the extra '_' at the start of the saved value ('_3', not '3'), with no error. Use one '_'.",
         range,
       });
     }
@@ -1139,8 +1140,8 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
       fileId: occ.fileId,
       ...kindFields("poke-parameter"),
       message:
-        `Poke parameter '${token}' has no matching \`type: poke, ${token}\` trigger anywhere in the loaded ` +
-        `files. This still works if a rule outside this batch (or another mod) listens for it — otherwise it's dead.`,
+        `No \`type: poke, ${token}\` entry listens for this parameter in the loaded files. ` +
+        `Fine if a script outside them listens; otherwise it does nothing.`,
       range: occ.range,
     });
   }

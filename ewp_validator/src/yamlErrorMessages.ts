@@ -53,3 +53,63 @@ export function translateYamlError(err: { code?: string; message: string }): str
   if (known) return known;
   return `This file has a YAML formatting problem here (${err.message}). Check the indentation, quotes, and punctuation around this spot.`;
 }
+
+// The parser's error codes are poor guides for the mistakes people really make: an unclosed `[`
+// reports BAD_INDENT, a tab reports UNEXPECTED_TOKEN three times, a missing `:` reports
+// MULTILINE_IMPLICIT_KEY. So once the parser has failed, read the lines themselves and name the
+// real cause. Only these vague codes are second-guessed; a precise code (DUPLICATE_KEY,
+// MISSING_CHAR from a bad escape, ...) keeps the table message above.
+const VAGUE_CODES = new Set(["BAD_INDENT", "UNEXPECTED_TOKEN", "MISSING_CHAR", "BLOCK_AS_IMPLICIT_KEY", "MULTILINE_IMPLICIT_KEY", "BLOCK_IN_FLOW", "IMPOSSIBLE", "BAD_COLLECTION_TYPE", "TAB_AS_INDENT"]);
+
+/** The first cause found by reading the lines, or null when none of the five patterns fits. */
+export function explainSyntaxError(
+  text: string,
+  errors: ReadonlyArray<{ code?: string; pos?: [number, number] }>,
+): { message: string; range: [number, number] } | null {
+  if (errors.length === 0 || !errors.every((e) => e.code && VAGUE_CODES.has(e.code))) return null;
+
+  const lines: Array<{ n: number; start: number; raw: string }> = [];
+  let start = 0;
+  text.split("\n").forEach((raw, i) => {
+    lines.push({ n: i + 1, start, raw: raw.replace(/\r$/, "") });
+    start += raw.length + 1;
+  });
+  const lineOfOffset = (o: number) => lines.filter((l) => l.start <= o).length;
+  const errorLines = new Set(errors.map((e) => lineOfOffset(e.pos?.[0] ?? 0)));
+  const at = (l: { start: number; raw: string }): [number, number] => [l.start, l.start + l.raw.length];
+
+  const live = lines.filter((l) => l.raw.trim() !== "" && !l.raw.trimStart().startsWith("#"));
+  const bodyOf = (raw: string) => raw.trimStart().replace(/^(?:- +)+/, "");
+  const valueOf = (body: string) => {
+    const i = body.indexOf(": ");
+    return i === -1 ? null : body.slice(i + 2).trim();
+  };
+  const quoteCount = (v: string, q: string) => v.split(q).length - 1;
+
+  for (const l of live) {
+    if (/^ *\t/.test(l.raw)) {
+      return { message: `Line ${l.n} starts with a tab. YAML needs spaces for indentation. Replace the tab with spaces.`, range: at(l) };
+    }
+  }
+  for (const l of live) {
+    const v = valueOf(bodyOf(l.raw));
+    if (v === null) continue;
+    if ((v.startsWith('"') && quoteCount(v, '"') % 2 === 1) || (v.startsWith("'") && quoteCount(v, "'") % 2 === 1)) {
+      return { message: `Line ${l.n} opens a quote that never closes. Add the closing quote.`, range: at(l) };
+    }
+    if ((v.startsWith("[") && !v.includes("]")) || (v.startsWith("{") && !v.includes("}"))) {
+      return { message: `Line ${l.n} opens \`${v[0]}\` that never closes. Add the closing \`${v[0] === "[" ? "]" : "}"}\`, or wrap the value in quotes.`, range: at(l) };
+    }
+    if (!/^["'[{]/.test(v) && v.includes(": ")) {
+      return { message: `Line ${l.n} has a second \`: \` inside a value. Wrap the value in quotes.`, range: at(l) };
+    }
+  }
+  for (const l of live) {
+    if (!errorLines.has(l.n)) continue;
+    const body = bodyOf(l.raw);
+    if (!body.includes(":") && /\s/.test(body)) {
+      return { message: `Line ${l.n} has no \`:\` after the key. Write it as \`key: value\`.`, range: at(l) };
+    }
+  }
+  return null;
+}
