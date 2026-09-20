@@ -18,6 +18,9 @@ export { INVALID_FILE_CATEGORY };
 export type FileNameVerdict = "valid" | "legacy" | "invalid";
 
 const REQUIRED_EXT = ".yaml";
+/** The accepted file names, in words. One copy: the upload dialog in main.ts uses it too. */
+export const FILENAME_PATTERN_HINT = "(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml)";
+
 const LEGACY_PREFIX = "expand_data";
 /**
  * Current-format prefixes; the legacy `expand_data` prefix is handled separately.
@@ -83,7 +86,7 @@ export function checkFileName(name: string): FileNameCheck {
       ...kindFields("filename-invalid"),
       message:
         `Invalid file: '${name}' doesn't match an EWP structural filename ` +
-        `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml). ` +
+        `${FILENAME_PATTERN_HINT}. ` +
         `Allegedly not an EWP structural file — use the "Clear invalid files" trash icon ` +
         `to remove it.`,
       range: [0, 0],

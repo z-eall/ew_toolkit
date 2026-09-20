@@ -149,7 +149,7 @@ const TYPES_WITHOUT_PREFAB = new Set(["globalkey", "key", "custom", "event", "ti
 // flagged by ajv's pattern check) apart from a known one that's missing its
 // prefab, so the two checks don't double-diagnose the same typo (duplicate/
 // clash audit following the Schema Source Audit map).
-const KNOWN_TYPES = new Set([
+export const KNOWN_TYPES = new Set([
   "create",
   "destroy",
   "change",

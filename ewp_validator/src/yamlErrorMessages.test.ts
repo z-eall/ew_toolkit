@@ -1,40 +1,16 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ErrorCode } from "yaml";
 import { translateYamlError } from "./yamlErrorMessages";
 
-// Mirrors the closed 23-value union in node_modules/yaml/dist/errors.d.ts —
-// kept as a literal here (not imported) so this test fails loudly if that
-// union ever grows, prompting a new table entry rather than a silent
-// fallback-only translation for the new code.
-const ALL_ERROR_CODES: ErrorCode[] = [
-  "ALIAS_PROPS",
-  "BAD_ALIAS",
-  "BAD_DIRECTIVE",
-  "BAD_DQ_ESCAPE",
-  "BAD_INDENT",
-  "BAD_PROP_ORDER",
-  "BAD_SCALAR_START",
-  "BLOCK_AS_IMPLICIT_KEY",
-  "BLOCK_IN_FLOW",
-  "DUPLICATE_KEY",
-  "IMPOSSIBLE",
-  "KEY_OVER_1024_CHARS",
-  "MISSING_CHAR",
-  "MULTILINE_IMPLICIT_KEY",
-  "MULTIPLE_ANCHORS",
-  "MULTIPLE_DOCS",
-  "MULTIPLE_TAGS",
-  "NON_STRING_KEY",
-  "RESOURCE_EXHAUSTION",
-  "TAB_AS_INDENT",
-  "TAG_RESOLVE_FAILED",
-  "UNEXPECTED_TOKEN",
-  "BAD_COLLECTION_TYPE",
-];
+// The real list of codes, read from the yaml library's own type file, so this test fails loudly
+// the day the library adds a code without a table entry here. (A copy typed by hand cannot do that.)
+const dts = readFileSync(new URL("../node_modules/yaml/dist/errors.d.ts", import.meta.url), "utf8");
+const ALL_ERROR_CODES = [...(dts.match(/export type ErrorCode = ([^;]+);/)?.[1] ?? "").matchAll(/'([A-Z_0-9]+)'/g)].map((m) => m[1] as ErrorCode);
 
 describe("translateYamlError", () => {
-  it("covers all 23 known ErrorCode values with a distinct, non-raw message", () => {
-    expect(ALL_ERROR_CODES).toHaveLength(23);
+  it("covers every ErrorCode value the yaml library defines with a distinct, non-raw message", () => {
+    expect(ALL_ERROR_CODES.length, "could not read the ErrorCode list").toBeGreaterThan(15);
     const seen = new Set<string>();
     for (const code of ALL_ERROR_CODES) {
       const message = translateYamlError({ code, message: "raw technical message" });

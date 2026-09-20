@@ -23,7 +23,7 @@ import {
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
 import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, formatProblemTag, presentSortedCategories, shouldShowTagSubline } from "./diagnosisCategories";
-import { INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
+import { FILENAME_PATTERN_HINT, INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
 import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
 import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList, type Ingestable, type PreparedFile } from "./fileIngestion";
 import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
@@ -1103,7 +1103,7 @@ async function ingest(entries: Ingestable[], defaultFolder = "") {
     const choice = await showConfirmModal({
       message:
         `${invalid.length} uploaded file${invalid.length > 1 ? "s" : ""} don't match an EWP structural filename ` +
-        `(expand_prefabs*.yaml, expand_data*.yaml, or data*.yaml):`,
+        `${FILENAME_PATTERN_HINT}:`,
       fileList: names,
       fileListLabel: "Flagged files",
       buttons: [
