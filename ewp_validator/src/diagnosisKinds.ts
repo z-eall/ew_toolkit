@@ -36,6 +36,9 @@ const kinds = {
   "yaml-top-level-not-list": { category: YAML_PROBLEM_CATEGORY, severity: "error", what: "top level is not a list" },
   "yaml-entry-not-map": { category: YAML_PROBLEM_CATEGORY, severity: "error", what: "list item is not key: value pairs" },
 
+  // --- The checker itself ---
+  "check-crashed": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "warning", what: "a check threw on this file; it was skipped, other files still run" },
+
   // --- Format lint / structure ---
   "format-bad-key": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "error", what: "key has a typo such as a double colon" },
   "wec-data-key-name-typo": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "warning", what: "WEC data entry uses data: instead of name:" },

@@ -12,7 +12,7 @@ type Case = { files: Array<{ name: string; text: string; exempt?: boolean }> };
 const one = (name: string, text: string): Case => ({ files: [{ name, text }] });
 const rule = (body: string) => one(P, `- prefab: Boar\n  type: create\n${body}`);
 
-const CASES: Record<DiagnosisId, Case> = {
+const CASES: Partial<Record<DiagnosisId, Case>> = {
   "filename-invalid": one("simple.yaml", "- a: 1\n"),
   "filename-legacy": one("expand_data.yaml", "- name: a\n  ints:\n  - health, 5\n"),
   "yaml-syntax-error": one(P, "- prefab: [Boar\n"),
@@ -50,7 +50,9 @@ const CASES: Record<DiagnosisId, Case> = {
 
 // Ids whose bad input needs a fuller setup than one small file. Keep this empty if you can;
 // each entry needs a reason.
-const NOT_COVERED: Partial<Record<DiagnosisId, string>> = {};
+const NOT_COVERED: Partial<Record<DiagnosisId, string>> = {
+  "check-crashed": "needs a check that throws; proven with mocks in pipelineRobustness.test.ts",
+};
 
 describe("every diagnosis id fires on one bad input", () => {
   it("has a case (or a reason) for every registered id", () => {
@@ -60,7 +62,7 @@ describe("every diagnosis id fires on one bad input", () => {
   for (const id of DIAGNOSIS_IDS) {
     if (id in NOT_COVERED) continue;
     it(`emits ${id}`, () => {
-      const c = CASES[id];
+      const c = CASES[id]!;
       const files = c.files.map((f, i) => ({ id: `f${i}`, name: f.name, text: f.text, filenameExempt: f.exempt }));
       const seen = new Set<string>();
       for (const problems of runFullValidation(files).values()) for (const p of problems) seen.add(p.id);
