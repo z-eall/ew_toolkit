@@ -46,6 +46,8 @@ const HANDLE_CHANGED = `${EWP}ExpandWorldPrefabs/HandleChanged.cs`;
 const PREFAB_MANAGER = `${EWP}ExpandWorldPrefabs/PrefabManager.cs`;
 const INFO_MANAGER = `${EWP}ExpandWorldPrefabs/InfoManager.cs`;
 const HANDLE_GLOBAL_KEY = `${EWP}ExpandWorldPrefabs/HandleGlobalKey.cs`;
+const FILTER_SHORTHAND = `${EWP}ExpandWorldPrefabs/service/FilterShorthand.cs`;
+const YAML_LOADER = `${EWP}ExpandWorldPrefabs/service/Yaml.cs`;
 const WEC_DATA_MD = `${WEC}README_data.md`;
 
 // The schema audit (map "Schema Source Audit", tickets 01-07) compared all 8 strict shapes with
@@ -69,7 +71,7 @@ export const DIAGNOSIS_PROVENANCE: Record<DiagnosisId, Provenance> = {
 
   "shape-scalar-field-as-list": { level: "source", files: [PREFAB_DATA], ...AUDIT, note: "these fields are single strings in the C# class" },
   "shape-list-field-as-inline-triple": { level: "heuristic", files: [PREFAB_DATA], ...NOT_DATED, note: "guess about intent from the shape of the line" },
-  "shape-filter-as-list": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "message says EWP rewrites a nested filter list to the plural form; the code check was not written down" },
+  "shape-filter-as-list": { level: "source", files: [FILTER_SHORTHAND, YAML_LOADER], checked: "2026-09-20", ewpVersion: "1.60.0", note: "FilterShorthand.cs renames every filter:/bannedFilter: key to the plural and keeps a list as a list, so a list under the singular name works" },
   "rpc-orphan-sibling-param": { level: "heuristic", files: [RPC_INFO], ...NOT_DATED, note: "guess that a numbered parameter split from its name entry was a mis-indented list" },
   "rpc-missing-name": { level: "heuristic", files: [RPC_INFO], ...NOT_DATED, note: "guess that an entry with numbered parameters and no name lost its name" },
   "rpc-param-mismatch": { level: "docs", files: [RPCS_MD, RPC_INFO], ...NOT_DATED, note: "the parameter table is rebuilt from docs/RPCs.md on every schema run; warning only" },
@@ -90,9 +92,9 @@ export const DIAGNOSIS_PROVENANCE: Record<DiagnosisId, Provenance> = {
   "template-function": { level: "source", files: [FUNCTIONS, OBJECT_FUNCTIONS], ...NOT_DATED, note: "function-name tables copied from the two files (line numbers in the code comments)" },
   "poke-parameter": { level: "source", files: [PREFAB_DATA], ...NOT_DATED, note: "parameter/pars splitting rules from PrefabData.cs (round 3 research)" },
   "malformed-reference": { level: "source", files: [PARSE], ...NOT_DATED, note: "key/value split is a plain first-underscore find (round 5 research)" },
-  "legacy-object-data": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "the old data alias on an object still works; the check was not written down" },
-  "ignored-data-with-filter": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "data: is ignored when a filter is present; the check was not written down" },
-  "filter-both-forms": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "filter: and filters: on one item; the check was not written down" },
+  "legacy-object-data": { level: "source", files: [PREFAB_DATA], checked: "2026-09-20", ewpVersion: "1.60.0", note: "Object(ObjectData) uses data: as a one-entry filter when neither filters nor bannedFilters is written" },
+  "ignored-data-with-filter": { level: "source", files: [PREFAB_DATA], checked: "2026-09-20", ewpVersion: "1.60.0", note: "in Object(ObjectData) data: is read only in the else branch, so filters or bannedFilters make it unused" },
+  "filter-both-forms": { level: "source", files: [FILTER_SHORTHAND, YAML_LOADER], checked: "2026-09-20", ewpVersion: "1.60.0", note: "both become filters: after FilterShorthand.cs; the loader has no duplicate-key check, so the later one wins and the earlier is lost without an error" },
 
   "silent-condition-operator": { level: "source", files: [CONDITIONS, PREFAB_DATA, PREFAB_LOADING], checked: "2026-09-20", ewpVersion: "1.60.0", note: "Conditions.cs reads a single =; == and <> do not parse; PrefabData.cs and PrefabLoading.cs log a warning and use an always-false condition, so the rule still loads" },
   "silent-change-needs-trigger-rules": { level: "source", files: [PREFAB_LOADING, PREFAB_MANAGER, HANDLE_CHANGED], checked: "2026-09-20", ewpVersion: "1.60.0", note: "TriggerRules defaults to false; while a rule writes data: on its own object PrefabManager sets HandleChanged.IgnoreZdo, and the change handler returns early for that object" },
