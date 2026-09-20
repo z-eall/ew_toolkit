@@ -23,6 +23,9 @@ A pure predicate function living in a domain module (`dataFieldValidation.ts`, `
 **Priority stack**:
 The ordered resolution chain applied when more than one check could fire on the same YAML entry: parse → format lint → branch/intent guess → shape arbitration → domain validators (RPC, references) → ajv fallback. Highest wins and suppresses lower layers on the same path.
 
+**Diagnosis kind**:
+One registered id per kind of message the tool can emit (`diagnosisKinds.ts`), with its filter category and default severity. `Problem.id` is required, so no emitter can skip it. Emit with `kindFields(id)`.
+
 **Problems panel**:
 The bottom UI panel listing every diagnosis across every loaded file at once, alongside the sidebar file list and the Monaco editor — the tool's primary answer to the multi-file correlated-system debugging pain point that drove the validator's UI design.
 
