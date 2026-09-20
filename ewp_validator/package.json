@@ -6,7 +6,7 @@
   "scripts": {
     "generate-schema": "node schema/generate.mjs",
     "predev": "node ../scripts/sync-favicon.mjs",
-    "dev": "npm run generate-schema && vite",
+    "dev": "npm run build:cli && vite",
     "prebuild": "node ../scripts/sync-favicon.mjs",
     "build": "npm run generate-schema && vite build",
     "preview": "vite preview",

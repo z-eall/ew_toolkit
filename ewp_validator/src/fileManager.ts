@@ -9,10 +9,8 @@
 // Manual is selected, only the Validate button runs a pass, so loading or
 // editing a big batch doesn't re-scan the whole file set behind the user's back.
 import * as monaco from "monaco-editor";
-import { checkFileName } from "./fileNameCheck";
-import { runReferenceValidation } from "./referenceValidation";
-import { PRACTICE_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
-import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
+import { pickHighestPriority, type Problem, type Severity } from "./structuralPrecheck";
+import { runFullValidation, scanStructural } from "./validationPipeline";
 import type { SaveScope } from "./fileView";
 
 export interface LoadedFile {
@@ -66,32 +64,6 @@ export const DRAFT_PLACEHOLDER_NAME = "unnamed.yaml";
 const FAST_VALIDATE_DEBOUNCE_MS = 400;
 /** Full-project pass (structural + cross-file references) after typing stops. */
 const FULL_VALIDATE_IDLE_MS = 1200;
-
-// Both "data-reference" (undefined/unused data.yaml entry) and "custom-key"
-// (orphaned saved key) merge into one Reference problem category — they were
-// already close cousins (ticket 04's naming pass), and both mix a hard error
-// with merely-informational findings, matching the "___ problem" naming
-// principle in diagnosisCategories.ts.
-const REFERENCE_BRANCH_LABEL: Record<
-  | "data-reference"
-  | "custom-key"
-  | "legacy-object-data"
-  | "ignored-data-with-filter"
-  | "filter-both-forms"
-  | "template-function"
-  | "poke-parameter"
-  | "malformed-reference",
-  string
-> = {
-  "ignored-data-with-filter": PRACTICE_CATEGORY,
-  "filter-both-forms": PRACTICE_CATEGORY,
-  "data-reference": REFERENCE_PROBLEM_CATEGORY,
-  "custom-key": REFERENCE_PROBLEM_CATEGORY,
-  "legacy-object-data": PRACTICE_CATEGORY,
-  "template-function": REFERENCE_PROBLEM_CATEGORY,
-  "poke-parameter": REFERENCE_PROBLEM_CATEGORY,
-  "malformed-reference": REFERENCE_PROBLEM_CATEGORY,
-};
 
 export class FileManager {
   private files: LoadedFile[] = [];
@@ -496,14 +468,9 @@ export class FileManager {
   }
 
   private scanFileStructural(file: LoadedFile): boolean {
-    const nameCheck = this.isFilenameGateExempt(file) ? null : checkFileName(file.name);
-    if (nameCheck && nameCheck.verdict === "invalid") {
-      file.problems = nameCheck.problem ? [nameCheck.problem] : [];
-      return false;
-    }
-    file.problems = runStructuralPrecheck(file.model.getValue());
-    if (nameCheck && nameCheck.problem) file.problems.push(nameCheck.problem);
-    return true;
+    const s = scanStructural(file.name, file.model.getValue(), this.isFilenameGateExempt(file));
+    file.problems = s.problems;
+    return s.scannable;
   }
 
   private revalidateAll() {
@@ -515,22 +482,10 @@ export class FileManager {
     // unsaved draft (ephemeral, never saved, still `unnamed.yaml`) is exempt:
     // an in-progress buffer, not a claimed EWP file. Once renamed, the gate
     // applies (validator-round3 ticket 07).
-    const scannable: LoadedFile[] = [];
-    for (const file of this.files) {
-      if (this.scanFileStructural(file)) scannable.push(file);
-    }
-
-    const refProblems = runReferenceValidation(scannable.map((f) => ({ id: f.id, text: f.model.getValue() })));
-    for (const rp of refProblems) {
-      const file = this.files.find((f) => f.id === rp.fileId);
-      if (!file) continue;
-      file.problems.push({
-        severity: rp.severity,
-        message: rp.message,
-        branch: REFERENCE_BRANCH_LABEL[rp.kind],
-        range: rp.range,
-      });
-    }
+    const result = runFullValidation(
+      this.files.map((f) => ({ id: f.id, name: f.name, text: f.model.getValue(), filenameExempt: this.isFilenameGateExempt(f) })),
+    );
+    for (const file of this.files) file.problems = result.get(file.id) ?? [];
 
     for (const file of this.files) this.applyMarkers(file);
     this.validationStatus = "clean";

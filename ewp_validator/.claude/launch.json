@@ -3,9 +3,21 @@
   "configurations": [
     {
       "name": "ewp-validator-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["-e", "bash", "-lc", "source ~/.nvm/nvm.sh && node ../scripts/sync-favicon.mjs && npm run build:cli && node node_modules/vite/bin/vite.js --port 5173 --host 0.0.0.0"],
       "port": 5173
+    },
+    {
+      "name": "ew-wiki-dev",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["-e", "bash", "-lc", "source ~/.nvm/nvm.sh && cd ../ew_wiki && node ../scripts/sync-favicon.mjs && node node_modules/astro/bin/astro.mjs dev --port 4321 --host 0.0.0.0"],
+      "port": 4321
+    },
+    {
+      "name": "ew-wiki-preview",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["-e", "bash", "-lc", "source ~/.nvm/nvm.sh && cd ../ew_wiki && node node_modules/astro/bin/astro.mjs preview --port 4321 --host 0.0.0.0"],
+      "port": 4321
     }
   ]
 }

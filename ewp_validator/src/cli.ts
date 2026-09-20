@@ -1,48 +1,53 @@
-// Headless CLI wrapper around the same validation pipeline the browser app
-// uses (see main.ts / fileManager.ts). Locked scope, see memory
-// project_ewp_script_skill_design.md: thin wrapper only, no logic duplicated
-// here — checkFileName and runStructuralPrecheck are the same pure functions
-// the browser calls, so a fix or new rule there is picked up here for free.
+// Headless command-line wrapper around the same validation pipeline the browser app uses
+// (validationPipeline.ts: filename check, structural pre-check, cross-file reference checks).
+// Thin wrapper only: no rules live here, so a new rule is picked up for free.
 //
-// Usage: node dist/cli.mjs <path-to-script.yaml>
+// Usage: node dist/cli.mjs <script.yaml> [more.yaml ...]   (several files are checked together,
+//        so a data entry defined in one file and used in another resolves)
+//        node dist/cli.mjs --version
 import { readFileSync } from "node:fs";
-import { checkFileName } from "./fileNameCheck";
-import { runStructuralPrecheck, type Problem } from "./structuralPrecheck";
+import pkg from "../package.json";
+import schemaJson from "./schema.generated.json";
+import { runFullValidation } from "./validationPipeline";
 
-const path = process.argv[2];
-if (!path) {
-  console.error("Usage: cli <path-to-script.yaml>");
+const args = process.argv.slice(2);
+if (args[0] === "--version") {
+  const meta = (schemaJson as { _meta?: { ewpVersion?: string | null } })._meta;
+  console.log(`ewp-validator ${pkg.version} (schema built for EWP ${meta?.ewpVersion ?? "unknown"})`);
+  process.exit(0);
+}
+if (args.length === 0) {
+  console.error("Usage: cli <script.yaml> [more.yaml ...] | --version");
   process.exit(2);
 }
 
-const text = readFileSync(path, "utf8");
+const files = args.map((path, i) => ({
+  id: String(i),
+  path,
+  name: path.split(/[/\\]/).pop() ?? path,
+  text: readFileSync(path, "utf8"),
+}));
 
-// Character offset -> 1-based line number, same mapping main.ts gets from
-// Monaco's getPositionAt — done by hand here since there's no editor model.
-const lineStarts: number[] = [0];
-for (let i = 0; i < text.length; i++) if (text[i] === "\n") lineStarts.push(i + 1);
-function lineOf(offset: number): number {
-  let lo = 0, hi = lineStarts.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1;
-    if (lineStarts[mid] <= offset) lo = mid;
-    else hi = mid - 1;
+// Character offset -> 1-based line number, same mapping main.ts gets from Monaco's
+// getPositionAt, done by hand here since there is no editor model.
+function lineOf(text: string, offset: number): number {
+  let line = 1;
+  for (let i = 0; i < offset && i < text.length; i++) if (text[i] === "\n") line++;
+  return line;
+}
+
+const result = runFullValidation(files);
+let errors = 0;
+let total = 0;
+for (const f of files) {
+  const problems = result.get(f.id) ?? [];
+  total += problems.length;
+  for (const p of problems) {
+    if (p.severity === "error") errors++;
+    console.log(`${f.path}:${lineOf(f.text, p.range[0])}: [${p.severity}] ${p.message}`);
   }
-  return lo + 1;
 }
-
-const problems: Problem[] = [];
-const nameCheck = checkFileName(path.split(/[/\\]/).pop() ?? path);
-if (nameCheck.problem) problems.push(nameCheck.problem);
-problems.push(...runStructuralPrecheck(text));
-
-if (problems.length === 0) {
-  console.log(`${path}: valid, no problems found`);
-  process.exit(0);
+if (total === 0) {
+  console.log(`${files.length === 1 ? files[0].path : `${files.length} files`}: no problems found`);
 }
-
-for (const p of problems) {
-  console.log(`${path}:${lineOf(p.range[0])}: [${p.severity}] ${p.message}`);
-}
-const errorCount = problems.filter((p) => p.severity === "error").length;
-process.exit(errorCount > 0 ? 1 : 0);
+process.exit(errors > 0 ? 1 : 0);

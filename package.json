@@ -10,6 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:hub": "node scripts/build-hub.mjs",
+    "smoke:hub": "node scripts/smoke-hub.mjs",
     "cut-release": "node scripts/cut-release.mjs"
   },
   "devDependencies": {
