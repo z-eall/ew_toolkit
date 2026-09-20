@@ -191,7 +191,7 @@ const KEY_HEAD_RE = /^<(save\+\+|save--|save|load|clear)_/;
 // a `#` following real content on the same line is left untouched, because
 // that's exactly the shape of a block scalar's literal content (`exec: |` /
 // in-game chat commands like `s Say #hello`), which must never be blanked.
-function stripLineComments(text: string): string {
+export function stripLineComments(text: string): string {
   const out = text.split("");
   let lineStart = 0;
   let i = 0;

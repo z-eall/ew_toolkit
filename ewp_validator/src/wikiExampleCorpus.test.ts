@@ -8,6 +8,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runStructuralPrecheck } from "./structuralPrecheck";
+import { runFullValidation } from "./validationPipeline";
 
 const DOCS_ROOT = join(__dirname, "../../ew_wiki/src/content/docs");
 
@@ -58,6 +59,24 @@ describe.skipIf(!wikiPresent)("wiki example corpus (Round 6 ticket 05)", () => {
     const caught = wrong.filter((f) => runStructuralPrecheck(f.code).length > 0);
     expect(wrong.length).toBeGreaterThanOrEqual(18);
     expect(caught.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Ticket 18: five of the WRONG examples are silent mistakes the validator now warns about.
+  it("warns on the five silent-mistake WRONG examples (and only those pages carry them)", () => {
+    const expected: Record<string, string> = {
+      "advanced-filter-condition.mdx": "silent-condition-operator",
+      "advanced-triggers-change.mdx": "silent-change-needs-trigger-rules",
+      "advanced-triggers-no-prefab.mdx": "silent-poke-world-centre",
+      "basic-filter.mdx": "silent-filter-weight-part",
+      "ewp-key.mdx": "silent-key-store-mix",
+    };
+    const wrong = fences.filter((f) => isLabelledWrong(f.code) && !isFragment(f.code));
+    for (const [page, id] of Object.entries(expected)) {
+      const block = wrong.find((f) => f.file.endsWith(page));
+      expect(block, `no WRONG example on ${page}`).toBeDefined();
+      const ids = [...runFullValidation([{ id: "a", name: "expand_prefabs_x.yaml", text: block!.code }]).get("a")!].map((p) => p.id);
+      expect(ids, `${page} should warn ${id}`).toContain(id);
+    }
   });
 
   it("has no errors in full-list examples", () => {

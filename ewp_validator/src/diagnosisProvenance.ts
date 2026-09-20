@@ -41,6 +41,11 @@ const DATA_STORAGE = `${EWP}ExpandWorldPrefabs/service/DataStorage.cs`;
 const RPC_INFO = `${EWP}ExpandWorldPrefabs/RpcInfo.cs`;
 const RPCS_MD = `${EWP}docs/RPCs.md`;
 const SCRIPTING_MD = `${EWP}docs/scripting.md`;
+const CONDITIONS = `${EWP}ExpandWorldPrefabs/service/data/Conditions.cs`;
+const HANDLE_CHANGED = `${EWP}ExpandWorldPrefabs/HandleChanged.cs`;
+const PREFAB_MANAGER = `${EWP}ExpandWorldPrefabs/PrefabManager.cs`;
+const INFO_MANAGER = `${EWP}ExpandWorldPrefabs/InfoManager.cs`;
+const HANDLE_GLOBAL_KEY = `${EWP}ExpandWorldPrefabs/HandleGlobalKey.cs`;
 const WEC_DATA_MD = `${WEC}README_data.md`;
 
 // The schema audit (map "Schema Source Audit", tickets 01-07) compared all 8 strict shapes with
@@ -88,6 +93,12 @@ export const DIAGNOSIS_PROVENANCE: Record<DiagnosisId, Provenance> = {
   "legacy-object-data": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "the old data alias on an object still works; the check was not written down" },
   "ignored-data-with-filter": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "data: is ignored when a filter is present; the check was not written down" },
   "filter-both-forms": { level: "unrecorded", files: [PREFAB_DATA], ...NOT_DATED, note: "filter: and filters: on one item; the check was not written down" },
+
+  "silent-condition-operator": { level: "source", files: [CONDITIONS, PREFAB_DATA, PREFAB_LOADING], checked: "2026-09-20", ewpVersion: "1.60.0", note: "Conditions.cs reads a single =; == and <> do not parse; PrefabData.cs and PrefabLoading.cs log a warning and use an always-false condition, so the rule still loads" },
+  "silent-change-needs-trigger-rules": { level: "source", files: [PREFAB_LOADING, PREFAB_MANAGER, HANDLE_CHANGED], checked: "2026-09-20", ewpVersion: "1.60.0", note: "TriggerRules defaults to false; while a rule writes data: on its own object PrefabManager sets HandleChanged.IgnoreZdo, and the change handler returns early for that object" },
+  "silent-poke-world-centre": { level: "source", files: [PREFAB_DATA, INFO_MANAGER, HANDLE_GLOBAL_KEY], checked: "2026-09-20", ewpVersion: "1.60.0", note: "globalkey, key, time and realtime triggers call HandleGlobal at Vector3.zero; a poke filter is an Object whose maxDistance defaults to 100; event and custom carry a real position, so they are excluded" },
+  "silent-filter-weight-part": { level: "source", files: [PREFAB_DATA], checked: "2026-09-20", ewpVersion: "1.60.0", note: "Filter reads a 4th comma part as the weight; the default limit is the number of filters, so a second value is never accepted" },
+  "silent-key-store-mix": { level: "source", files: [INFO_MANAGER, HANDLE_GLOBAL_KEY, DATA_STORAGE], checked: "2026-09-20", ewpVersion: "1.60.0", note: "type: key fires from DataStorage (EWP keys); type: globalkey fires from ZoneSystem RPC_SetGlobalKey (Valheim keys); setkey is the vanilla console command for Valheim keys (vanilla code not opened)" },
 
   "check-crashed": { level: "library", files: [], ...NOT_DATED, note: "our own safety net, not a mod rule" },
 };

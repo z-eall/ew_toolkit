@@ -65,6 +65,13 @@ const kinds = {
   "ajv-required": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "error", what: "required field is missing" },
   "ajv-value": { category: VALUE_PROBLEM_CATEGORY, severity: "error", what: "known field holds a wrong value" },
 
+  // --- Silent mistakes (EWP loads the script; part of it does nothing) ---
+  "silent-condition-operator": { category: PRACTICE_CATEGORY, severity: "warning", what: "== or <> in a condition: it never parses, so the condition never passes" },
+  "silent-change-needs-trigger-rules": { category: PRACTICE_CATEGORY, severity: "warning", what: "a rule writes data: on its own object without triggerRules: true, so a type: change rule for that key does not fire" },
+  "silent-poke-world-centre": { category: PRACTICE_CATEGORY, severity: "warning", what: "a poke under a prefab-less globalkey/key/time/realtime rule measures from the world centre, 100 m by default" },
+  "silent-filter-weight-part": { category: PRACTICE_CATEGORY, severity: "warning", what: "a 4th comma part in a filter is a weight, not a second accepted value" },
+  "silent-key-store-mix": { category: PRACTICE_CATEGORY, severity: "warning", what: "EWP keys and Valheim global keys are separate stores; the watcher reads the other one" },
+
   // --- Cross-file references ---
   "data-reference": { category: REFERENCE_PROBLEM_CATEGORY, severity: "error", alsoSeverity: ["info", "warning"], what: "data entry undefined (error), unused (info) or defined twice (warning)" },
   "custom-key": { category: REFERENCE_PROBLEM_CATEGORY, severity: "info", what: "custom data key note" },

@@ -45,6 +45,11 @@ const CASES: Partial<Record<DiagnosisId, Case>> = {
   "malformed-reference": rule("  command: <save_bossKillCount__<int_bossKills=0>>\n"),
   "legacy-object-data": rule("  objects:\n  - prefab: Boar\n    data: someData\n"),
   "ignored-data-with-filter": rule("  objects:\n  - prefab: Boar\n    data: someData\n    filter: int, health, 5\n"),
+  "silent-condition-operator": rule("  condition: <int_level> == 3\n"),
+  "silent-change-needs-trigger-rules": one(P, "- prefab: Boar\n  type: destroy\n  data: int, level, 3\n\n- prefab: Boar\n  type: change, level\n"),
+  "silent-poke-world-centre": one(P, "- type: globalkey, raidCooldown\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"),
+  "silent-filter-weight-part": rule("  filter: int, level, 2,3\n"),
+  "silent-key-store-mix": one(P, "- prefab: Player\n  type: say, ack\n  exec: <save_raidRank_3>\n\n- type: globalkey, raidRank\n"),
   "filter-both-forms": rule("  objects:\n  - prefab: Boar\n    filter: int, health, 5\n    filters:\n    - int, x, 1\n"),
 };
 

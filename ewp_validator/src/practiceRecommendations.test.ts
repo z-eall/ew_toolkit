@@ -14,6 +14,11 @@ const SAMPLES: Record<keyof typeof practiceMessages, string[]> = {
     practiceMessages.dataIgnored("objects", "filters", "filters", false),
     practiceMessages.dataIgnored("objects", "bannedFilter", "bannedFilters", true),
   ],
+  conditionOperator: [practiceMessages.conditionOperator("=="), practiceMessages.conditionOperator("<>")],
+  changeNeedsTriggerRules: [practiceMessages.changeNeedsTriggerRules("level")],
+  pokeWorldCentre: [practiceMessages.pokeWorldCentre()],
+  filterWeightPart: [practiceMessages.filterWeightPart("int, level, 2,3")],
+  keyStoreMix: [practiceMessages.keyStoreMix("raidRank", "globalkey"), practiceMessages.keyStoreMix("raidRank", "globalKeys"), practiceMessages.keyStoreMix("raidRank", "key")],
   filterBothForms: [practiceMessages.filterBothForms("filter", "filters", "poke"), practiceMessages.filterBothForms("filter", "filters", null)],
 };
 

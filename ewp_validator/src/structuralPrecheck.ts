@@ -16,13 +16,14 @@ import {
   unknownKeyMessage,
 } from "./ajvMessages";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage } from "./shapeMismatchDiagnosis";
-import { practiceMessages } from "./practiceRecommendations";
+import { practiceMessages, silentFindingMessage } from "./practiceRecommendations";
 import { YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
 import { translateYamlError } from "./yamlErrorMessages";
 import { kindFields, type DiagnosisId } from "./diagnosisKinds";
+import { findSilentEntryMistakes } from "./silentMistakes";
 
 export type Severity = "error" | "warning" | "info";
 
@@ -590,6 +591,10 @@ export function runStructuralPrecheck(text: string): Problem[] {
     }
 
     if (branch === "ewpRuleEntry") {
+      // Scripts EWP loads where part of what was written does nothing (ticket 18).
+      for (const f of findSilentEntryMistakes(itemNode, value)) {
+        problems.push({ ...kindFields(f.id), message: silentFindingMessage(f), entryType: ENTRY_TYPE_TITLES.ewpRuleEntry, range: f.range });
+      }
       const hint = checkPrefabRequiredness(value);
       if (hint) {
         const r =
