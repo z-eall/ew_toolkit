@@ -44,6 +44,9 @@ jobs:
       - run: npm ci
         working-directory: ew_wiki
 
+      - run: npm run typecheck
+        working-directory: ewp_validator
+
       - run: npm test
         working-directory: ewp_validator
 
