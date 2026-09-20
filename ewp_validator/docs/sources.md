@@ -25,3 +25,7 @@ Jere's mods are open source, so a current local copy of each one is kept in the 
 ## Community-observed, no single source
 
 Facts with wide community agreement but no citable official doc. Mark these clearly at the point of use (a code comment, not silent) — never present as if runtime-verified line-by-line.
+
+## Rule provenance
+
+`src/diagnosisProvenance.ts` records, for every validation rule, whether it was read from the mod's C# (source), taken from the mod docs (docs), or is our own guess (heuristic), plus the mod files it rests on. After the mirror updates, its `changes` report lists the rules to re-check for each changed file. When you re-check a rule, update its entry (level, date, EWP version).
