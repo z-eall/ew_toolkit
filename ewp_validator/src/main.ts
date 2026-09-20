@@ -22,7 +22,8 @@ import {
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
-import { DIAGNOSIS_CATEGORIES, DIAGNOSIS_CATEGORY_SET, formatProblemTag, presentSortedCategories, shouldShowTagSubline } from "./diagnosisCategories";
+import { DIAGNOSIS_CATEGORIES, formatProblemTag, shouldShowTagSubline } from "./diagnosisCategories";
+import { foldRows, hiddenNote, kindKey, kindsPresent, parentState, passesKindFilter, setKindsVisible } from "./problemFilter";
 import { FILENAME_PATTERN_HINT, INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
 import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
 import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList, type Ingestable, type PreparedFile } from "./fileIngestion";
@@ -317,9 +318,11 @@ let activeTab: ProblemTab = "error";
 // with fileManager's reference labels and unit-tested there). YAML-native
 // sub-groups reuse `entryType` under YAML problem (ticket 04).
 
-// Category multi-select filter for the Problems panel (all on by default).
-const categoryFilter = new Set<string>(DIAGNOSIS_CATEGORIES);
-const categoriesAreDefault = () => categoryFilter.size === DIAGNOSIS_CATEGORIES.length;
+// Kinds hidden by the Problems-panel filter (see problemFilter.ts). Empty on every load: ticks are
+// not remembered, so a hidden kind cannot quietly hide a real problem next week.
+const hiddenKinds = new Set<string>();
+// Folded rows the user opened, keyed "fileId:kindKey".
+const openFoldedGroups = new Set<string>();
 
 // Files whose diagnosis group the user has collapsed in the Problems panel.
 const collapsedProblemFiles = new Set<string>();
@@ -537,9 +540,7 @@ function renderProblemsPanel() {
   const activeId = fileManager.activeFile?.id ?? null;
   // Category filter narrows the pool before counts/tabs are derived, so a hidden
   // category's rows never inflate the tab badges — counts must match what's shown.
-  const categoryPassing = rows.filter(
-    (r) => !DIAGNOSIS_CATEGORY_SET.has(r.problem.branch) || categoryFilter.has(r.problem.branch),
-  );
+  const categoryPassing = rows.filter((r) => passesKindFilter(r.problem, hiddenKinds));
   const counts: Record<ProblemTab, number> = { error: 0, warning: 0, info: 0, thisfile: 0 };
   for (const { file, problem } of categoryPassing) {
     counts[problem.severity]++;
@@ -567,8 +568,8 @@ function renderProblemsPanel() {
   if (shown.length === 0) {
     visibleProblemFileIds = [];
     const label = activeTab === "thisfile" ? "problems in this file" : `${TAB_LABEL[activeTab].toLowerCase()} to report`;
-    const suffix = bySeverity.length > 0 && !categoriesAreDefault() ? " match the category filter" : "";
-    problemsListEl.innerHTML = `<div class="problems-empty">No ${label}${suffix}.</div>`;
+    const suffix = bySeverity.length > 0 && hiddenKinds.size > 0 ? " match the filter" : "";
+    problemsListEl.innerHTML = `${hiddenNoteHtml()}<div class="problems-empty">No ${label}${suffix}.</div>`;
     return;
   }
 
@@ -587,7 +588,7 @@ function renderProblemsPanel() {
   }
   visibleProblemFileIds = groups.map((g) => g.file.id);
 
-  problemsListEl.innerHTML = "";
+  problemsListEl.innerHTML = hiddenNoteHtml();
   for (const group of groups) {
     // A user's manual collapse always wins — cursor-follow still tracks
     // focusedProblemKey (below) and switches tabs, but never force-opens a
@@ -610,11 +611,11 @@ function renderProblemsPanel() {
     problemsListEl.appendChild(header);
     if (collapsed) continue;
 
-    for (const { file, problem } of group.rows) {
+    const appendProblemRow = ({ file, problem }: ProblemRow, inGroup: boolean) => {
       const start = file.model.getPositionAt(problem.range[0]);
       const row = document.createElement("div");
       const key = `${file.id}:${problem.range[0]}`;
-      row.className = `problem ${problem.severity} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
+      row.className = `problem ${problem.severity} ${inGroup ? "in-group" : ""} ${key === focusedProblemKey ? "cursor-focus" : ""}`;
       row.dataset.key = key;
       const sublineTag =
         shouldShowTagSubline(problem.branch, problem.entryType)
@@ -630,6 +631,27 @@ function renderProblemsPanel() {
         copyDiagnosis(e.currentTarget as HTMLButtonElement, file, problem, start.lineNumber);
       });
       problemsListEl.appendChild(row);
+    };
+
+    // A non-error kind that repeats folds into one row that opens on click (problemFilter.ts).
+    for (const seg of foldRows(group.rows, (r) => r.problem)) {
+      if (seg.type === "row") {
+        appendProblemRow(seg.row, false);
+        continue;
+      }
+      const groupKey = `${group.file.id}:${seg.key}`;
+      const holdsCursor = seg.rows.some((r) => `${r.file.id}:${r.problem.range[0]}` === focusedProblemKey);
+      const open = openFoldedGroups.has(groupKey) || holdsCursor;
+      const head = document.createElement("div");
+      head.className = `problem-fold ${seg.rows[0]!.problem.severity} ${open ? "open" : ""}`;
+      head.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="fold-label">${escapeHtml(seg.label)}</span><span class="fold-count">${seg.rows.length} places</span>`;
+      head.addEventListener("click", () => {
+        if (openFoldedGroups.has(groupKey)) openFoldedGroups.delete(groupKey);
+        else openFoldedGroups.add(groupKey);
+        renderProblemsPanel();
+      });
+      problemsListEl.appendChild(head);
+      if (open) for (const r of seg.rows) appendProblemRow(r, true);
     }
   }
   if (focusedProblemKey) {
@@ -840,57 +862,84 @@ const catFilterMenu = document.getElementById("catfilter-menu")!;
 const reportBtn = document.getElementById("report-btn")!;
 const reportMenu = document.getElementById("report-menu")!;
 
+// The "N kinds hidden" line at the top of the list, with a Show all button. Counts only hidden kinds
+// that exist in the current results, so a leftover tick from removed files is not counted.
+function hiddenNoteHtml(): string {
+  const presentKeys = new Set(fileManager.allFiles.flatMap((f) => f.problems.map((p) => kindKey(p))));
+  const note = hiddenNote([...hiddenKinds].filter((k) => presentKeys.has(k)).length);
+  return note ? `<div class="problems-hidden-note"><span>${note}</span><button class="link-btn" data-show-all-kinds>Show all</button></div>` : "";
+}
+
+problemsListEl.addEventListener("click", (e) => {
+  if (!(e.target as HTMLElement).closest("[data-show-all-kinds]")) return;
+  e.stopPropagation();
+  hiddenKinds.clear();
+  renderCatFilterMenu();
+  renderProblemsPanel();
+});
+
+// Two-level filter: a category (parent tick: selects or unselects every kind under it, mixed mark
+// when only some are ticked) and its kinds with counts. Only what the current results contain is
+// listed (ticket 13 round 7). Rules live in problemFilter.ts.
 function renderCatFilterMenu() {
-  const reset = !categoriesAreDefault();
+  const reset = hiddenKinds.size > 0;
   catFilterBtn.classList.toggle("funnel-active", reset);
-  // Only offer categories that the current diagnoses actually produced, in
-  // ascending alphabetical order — a filter for a category that can't appear
-  // right now is just noise (ticket 13 round 7).
-  const present = presentSortedCategories(
-    fileManager.allFiles.flatMap((f) => f.problems.map((p) => p.branch)),
-  );
+  const present = kindsPresent(fileManager.allFiles.flatMap((f) => f.problems));
   const items =
     present.length > 0
       ? present
-          .map(
-            (c) =>
-              `<label class="menu-item filter-item">
-          <input type="checkbox" data-cat="${escapeHtml(c)}" ${categoryFilter.has(c) ? "checked" : ""} />
-          <span class="menu-label">${escapeHtml(c)}</span>
+          .map(({ category, kinds }) => {
+            const state = parentState(kinds.map((k) => k.key), hiddenKinds);
+            const total = kinds.reduce((n, k) => n + k.count, 0);
+            const children = kinds
+              .map(
+                (k) => `<label class="menu-item filter-item filter-kind">
+          <input type="checkbox" data-kind="${escapeHtml(k.key)}" ${hiddenKinds.has(k.key) ? "" : "checked"} />
+          <span class="menu-label">${escapeHtml(k.label)}</span><span class="menu-count">${k.count}</span>
         </label>`,
-          )
-          .join("") + renderToggleAllButton(present.every((c) => categoryFilter.has(c)), "cat")
+              )
+              .join("");
+            return `<label class="menu-item filter-item filter-parent">
+          <input type="checkbox" data-parent="${escapeHtml(category)}" data-state="${state}" ${state === "all" ? "checked" : ""} />
+          <span class="menu-label">${escapeHtml(category)}</span><span class="menu-count">${total}</span>
+        </label>${children}`;
+          })
+          .join("")
       : `<div class="menu-empty">No categorised diagnoses.</div>`;
   catFilterMenu.innerHTML = `
     <div class="menu-section-head">
       <span class="menu-section-title">Categories</span>
-      ${reset ? `<button class="menu-reset" data-reset="cat" title="Show all categories">${icon(ICONS.reset)}</button>` : ""}
+      ${reset ? `<button class="menu-reset" data-reset="cat" title="Show all kinds">${icon(ICONS.reset)}</button>` : ""}
     </div>
     ${items}
   `;
-  catFilterMenu.querySelectorAll<HTMLInputElement>("input[data-cat]").forEach((cb) => {
+  // The mixed mark cannot be set in HTML.
+  catFilterMenu.querySelectorAll<HTMLInputElement>("input[data-parent]").forEach((cb) => {
+    cb.indeterminate = cb.dataset.state === "some";
     cb.addEventListener("change", () => {
-      const c = cb.dataset.cat!;
-      if (cb.checked) categoryFilter.add(c);
-      else categoryFilter.delete(c);
+      const entry = present.find((c) => c.category === cb.dataset.parent);
+      if (!entry) return;
+      // A mixed parent turns everything on first; a full one turns everything off.
+      const makeVisible = cb.dataset.state !== "all";
+      const next = setKindsVisible(hiddenKinds, entry.kinds.map((k) => k.key), makeVisible);
+      hiddenKinds.clear();
+      next.forEach((k) => hiddenKinds.add(k));
       renderCatFilterMenu();
       renderProblemsPanel();
     });
   });
-  catFilterMenu.querySelector<HTMLButtonElement>('[data-toggle-all="cat"]')?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const next = toggleAllSelection(categoryFilter, present);
-    for (const c of present) {
-      if (next.has(c)) categoryFilter.add(c);
-      else categoryFilter.delete(c);
-    }
-    renderCatFilterMenu();
-    renderProblemsPanel();
+  catFilterMenu.querySelectorAll<HTMLInputElement>("input[data-kind]").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const k = cb.dataset.kind!;
+      if (cb.checked) hiddenKinds.delete(k);
+      else hiddenKinds.add(k);
+      renderCatFilterMenu();
+      renderProblemsPanel();
+    });
   });
   catFilterMenu.querySelector<HTMLButtonElement>(".menu-reset")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    categoryFilter.clear();
-    for (const c of DIAGNOSIS_CATEGORIES) categoryFilter.add(c);
+    hiddenKinds.clear();
     renderCatFilterMenu();
     renderProblemsPanel();
   });

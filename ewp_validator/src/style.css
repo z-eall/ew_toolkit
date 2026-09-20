@@ -799,7 +799,9 @@ body {
 }
 
 .catfilter-menu {
-  min-width: 180px;
+  min-width: 260px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 /* `display: flex` on .report-menu would otherwise beat the `hidden` attribute's
@@ -1316,4 +1318,73 @@ body {
 .rename-note-popover.info {
   color: var(--info);
   border-color: var(--info);
+}
+
+/* Two-level Problems filter and folded rows (hub ticket 29 / round 6 ticket 20). */
+.filter-parent {
+  font-weight: 600;
+}
+
+.filter-kind {
+  padding-left: 24px;
+}
+
+.menu-count {
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.problems-hidden-note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.link-btn {
+  background: transparent;
+  border: 0;
+  color: var(--info);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.problem-fold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.problem-fold:hover {
+  background: var(--bg);
+}
+
+.problem-fold .pf-caret svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(-90deg);
+  transition: transform 0.1s;
+}
+
+.problem-fold.open .pf-caret svg {
+  transform: none;
+}
+
+.problem-fold .fold-count {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.problem.in-group {
+  padding-left: 26px;
 }
