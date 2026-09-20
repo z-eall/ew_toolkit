@@ -19,3 +19,7 @@ Every new or changed validation rule goes through this order:
 5. **Calibrate severity to verification strength.** A rule generated from docs, not runtime-verified line-by-line (e.g. the RPC param table, rebuilt from `docs/RPCs.md` on every schema-generate run), stays warning-only — never promote a doc-generated mismatch to a hard error.
 
 6. **Practice recommendations live in one catalog** (`practiceRecommendations.ts`, messages only; detectors stay in their domain modules). Add an entry whenever EWP accepts an input but a habit is recommended, or part of it is silently unused. Never an error. Message shape: group, what was found (named from the scan), simplest fix. A test over the catalog enforces the wording. Check `ew_wiki` for a page that documents the habit.
+
+## Tests and the daily check
+
+`npm test` uses a saved copy of the mod docs (`schema/fixtures/RPCs.md`, no internet). Builds and the daily GitHub run use the live docs (`npm run test:upstream`). If the daily run fails, the mod docs changed: read the diff, refresh the fixture, fix the validator. Failed scheduled runs show in the repo Actions tab; GitHub also emails the person who last changed the schedule.

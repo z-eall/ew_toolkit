@@ -10,9 +10,10 @@
     "prebuild": "node ../scripts/sync-favicon.mjs",
     "build": "npm run generate-schema && vite build",
     "preview": "vite preview",
-    "pretest": "npm run generate-schema",
+    "pretest": "node schema/generate.mjs --offline",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:upstream": "npm run generate-schema && vitest run",
     "build:cli": "npm run generate-schema && esbuild src/cli.ts --bundle --packages=external --platform=node --format=esm --outfile=dist/cli.mjs",
     "validate": "npm run build:cli && node dist/cli.mjs"
   },

@@ -10,7 +10,8 @@ name: Build and deploy
 # push back to the repo in the first place.
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/work]
+  pull_request: {}
   schedule:
     # Daily. Off-the-hour minute to avoid GitHub's documented queuing delay
     # at the top of every hour.
@@ -47,7 +48,17 @@ jobs:
       - run: npm run typecheck
         working-directory: ewp_validator
 
+      # Regular tests use the saved copy of the mod's docs, so they never fail
+      # because of the internet or an upstream edit.
       - run: npm test
+        working-directory: ewp_validator
+
+      # Daily run only: the same tests against the mod's live docs. A failure
+      # here means "the mod docs changed; update schema/fixtures/RPCs.md and
+      # the validator", not "the code broke".
+      - name: Upstream docs check (daily run)
+        if: github.event_name == 'schedule'
+        run: npm run test:upstream
         working-directory: ewp_validator
 
       # Builds the landing page and every Tool (regenerating
@@ -62,6 +73,8 @@ jobs:
           path: dist
 
   deploy:
+    # Only main deploys. Pull requests and the second branch build and test only.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:

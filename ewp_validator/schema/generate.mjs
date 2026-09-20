@@ -10,11 +10,14 @@
 // decided at build time — see the scaffold session's handoff notes).
 //
 // Run: node schema/generate.mjs  (writes ../src/schema.generated.json)
+//   --offline: read the saved copy of the mod's RPCs.md (schema/fixtures/RPCs.md)
+//   instead of the internet. Regular tests use this so an upstream edit or no
+//   network cannot break them. Builds and the daily check use the live docs.
 
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
-import { emitRpcParamsTs, fetchAndParseRpcs } from "./parse-rpcs.mjs";
+import { emitRpcParamsTs, fetchAndParseRpcs, parseRpcsMarkdown } from "./parse-rpcs.mjs";
 import { RPCS_MD_URL } from "./rpcOverrides.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -497,7 +500,8 @@ async function fetchEwpVersion() {
 // triggering a network fetch and file write as a side effect of the import —
 // this block only runs when the file is executed directly (`node generate.mjs`).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  const ewpVersion = await fetchEwpVersion();
+  const offline = process.argv.includes("--offline");
+  const ewpVersion = offline ? null : await fetchEwpVersion();
   const schema = buildSchema({
     ewpVersion,
     generatedAt: new Date().toISOString(),
@@ -507,7 +511,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   await writeFile(OUT_PATH, JSON.stringify(schema, null, 2) + "\n", "utf-8");
   console.log(`generate.mjs: wrote ${OUT_PATH}${ewpVersion ? ` (EWP ${ewpVersion})` : ""}`);
 
-  const rpcTables = await fetchAndParseRpcs(RPCS_MD_URL);
+  const rpcTables = offline
+    ? parseRpcsMarkdown(await readFile(path.join(__dirname, "fixtures", "RPCs.md"), "utf-8"))
+    : await fetchAndParseRpcs(RPCS_MD_URL);
   const rpcTs = emitRpcParamsTs({ ...rpcTables, sourceUrl: RPCS_MD_URL });
   await writeFile(RPC_PARAMS_OUT, rpcTs, "utf-8");
   const objectCount = Object.keys(rpcTables.objectRpcParams).length;
