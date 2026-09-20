@@ -5,6 +5,9 @@ import { defineConfig } from "vitest/config";
 // the ew_toolkit hub.
 export default defineConfig({
   base: "/ew_toolkit/ewp_validator/",
+  // monaco-yaml's worker imports path-browserify, a CommonJS file. The dev server serves it
+  // unconverted unless it is pre-bundled, and the workers then fail ("module is not defined").
+  optimizeDeps: { include: ["path-browserify"] },
   test: {
     environment: "node",
   },
