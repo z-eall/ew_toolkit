@@ -4,6 +4,10 @@ Reference list for source-verifying validation rules, per [AGENTS.md](../AGENTS.
 
 Each entry: link/path, tier (**official** — from Jere directly; **community** — forums, decompiled dumps, hosting vendors), and what it's good for.
 
+## Local mirror (check here first)
+
+Jere's mods are open source, so a current local copy of each one is kept in the workspace (skill `upstream-mirror`; a hook checks that the copy is fresh before it is used). Search the copy, and cite the file, the line and the copy's short commit id. Use the GitHub links below only for a mod that is not mirrored yet.
+
 ## EWP
 
 - `src/schema.generated.json` and its `*.test.ts` fixtures (in this repo) — **official**, generated straight from EWP's own schema. Check here first for any key/value/type question — fastest ground truth, no network round-trip.

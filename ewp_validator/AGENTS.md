@@ -23,3 +23,5 @@ Every new or changed validation rule goes through this order:
 ## Tests and the daily check
 
 `npm test` uses a saved copy of the mod docs (`schema/fixtures/RPCs.md`, no internet). Builds and the daily GitHub run use the live docs (`npm run test:upstream`). If the daily run fails, the mod docs changed: read the diff, refresh the fixture, fix the validator. Failed scheduled runs show in the repo Actions tab; GitHub also emails the person who last changed the schedule.
+
+Source-verify against the local mirror of Jere's mods first (see `docs/sources.md`); a hook checks the copy is fresh. After the mirror updates, its `changes` report lists which of our files are affected. Refresh the saved docs copy with `npm run refresh-fixture`, then run `npm test`.

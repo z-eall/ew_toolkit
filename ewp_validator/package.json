@@ -13,6 +13,7 @@
     "pretest": "node schema/generate.mjs --offline",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "refresh-fixture": "node schema/refresh-fixture.mjs",
     "test:upstream": "npm run generate-schema && vitest run",
     "build:cli": "npm run generate-schema && esbuild src/cli.ts --bundle --packages=external --platform=node --format=esm --outfile=dist/cli.mjs",
     "validate": "npm run build:cli && node dist/cli.mjs"
