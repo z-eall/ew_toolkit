@@ -193,6 +193,76 @@ describe("data.yaml reference validation (ticket 06)", () => {
     expect(problems.some((p) => p.kind === "legacy-object-data" && p.message.includes("bannedObjects:"))).toBe(true);
   });
 
+  describe("data: next to a filter field (ticket 26)", () => {
+    it("reported poke case: data: with a typed filter: gives one warning, and no rename advice", () => {
+      const files = [
+        {
+          id: "a",
+          text:
+            "- prefab: Player\n  type: say, x\n  poke:\n" +
+            "  - prefab: BossStone_TheElder, BossStone_Eikthyr\n    filter: string, Piece.m_name, Farming Shop\n    data: FarmingShopStone03\n    limit: 100\n",
+        },
+      ];
+      const problems = runReferenceValidation(files).filter(
+        (p) => p.kind === "ignored-data-with-filter" || p.kind === "legacy-object-data",
+      );
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatchObject({ kind: "ignored-data-with-filter", severity: "warning" });
+      expect(problems[0].message).toContain("Remove `data:`, or list both names in `filters:` (plural).");
+      expect(problems[0].message).not.toMatch(/EWP|C#|ignored by/i);
+    });
+
+    it("reported objects case: data: already listed in filters: says to remove data:", () => {
+      const files = [
+        {
+          id: "a",
+          text:
+            "- prefab: Coins\n  type: create\n  objects:\n" +
+            "  - prefab: BossStone_TheElder\n    data: WizardShopStone01\n    filters:\n    - WizardShopStone01\n    - WizardShopStone02\n    filterLimit: 1\n",
+        },
+      ];
+      const problems = runReferenceValidation(files).filter(
+        (p) => p.kind === "ignored-data-with-filter" || p.kind === "legacy-object-data",
+      );
+      expect(problems).toHaveLength(1);
+      expect(problems[0].kind).toBe("ignored-data-with-filter");
+      expect(problems[0].message).toContain("Remove `data:`");
+    });
+
+    it("still gives the rename advice when data: stands alone", () => {
+      const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  objects:\n  - prefab: Chest\n    data: some_name\n" }];
+      const kinds = runReferenceValidation(files).map((p) => p.kind);
+      expect(kinds).toContain("legacy-object-data");
+      expect(kinds).not.toContain("ignored-data-with-filter");
+    });
+
+    it("counts a bannedFilters: list as a filter field too", () => {
+      const files = [
+        { id: "a", text: "- prefab: X\n  type: create\n  objects:\n  - prefab: Chest\n    data: a\n    bannedFilters:\n    - b\n" },
+      ];
+      expect(runReferenceValidation(files).some((p) => p.kind === "ignored-data-with-filter")).toBe(true);
+    });
+  });
+
+  describe("filter and filters together (ticket 26)", () => {
+    it("warns once, neutrally, when filter: and filters: are both set at the top level", () => {
+      const files = [{ id: "a", text: "- prefab: Coins\n  type: create\n  filter: a\n  filters:\n  - b\n" }];
+      const both = runReferenceValidation(files).filter((p) => p.kind === "filter-both-forms");
+      expect(both).toHaveLength(1);
+      expect(both[0].severity).toBe("warning");
+      expect(both[0].message).toBe("Overlapping fields: `filter:` and `filters:` are both written here. Check which one you want to keep.");
+    });
+
+    it("warns for bannedFilter/bannedFilters inside a nested item, and not for a lone field", () => {
+      const nested = [
+        { id: "a", text: "- prefab: X\n  type: create\n  poke:\n  - prefab: Chest\n    bannedFilter: a\n    bannedFilters:\n    - b\n" },
+      ];
+      expect(runReferenceValidation(nested).filter((p) => p.kind === "filter-both-forms")).toHaveLength(1);
+      const lone = [{ id: "a", text: "- prefab: X\n  type: create\n  filters:\n  - b\n" }];
+      expect(runReferenceValidation(lone).some((p) => p.kind === "filter-both-forms")).toBe(false);
+    });
+  });
+
   it("flags an undefined bannedFilter:/bannedFilters: reference the same way as filter:", () => {
     const scalar = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  bannedFilter: missingBanned\n" }];
     expect(runReferenceValidation(scalar).some((p) => p.message.includes("missingBanned"))).toBe(true);

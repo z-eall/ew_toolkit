@@ -14,6 +14,8 @@ Every new or changed validation rule goes through this order:
 
 3. **Architect the split.** Detectors are pure predicates in domain modules (`dataFieldValidation.ts`, `rpcValidation.ts`, …) — never carrying user-facing strings. Messages live in one of two catalog modules: `shapeMismatchDiagnosis.ts` for pre-ajv shape arbitration (plus `suppressAjvPath`), `ajvMessages.ts` for post-ajv fallback text (see [[Ajv fallback]] in CONTEXT.md). `structuralPrecheck.ts` calls both and holds no diagnosis text of its own.
 
-4. **Respect the priority stack** when more than one check could fire on the same entry: parse → format lint → branch/intent guess → shape arbitration → domain validators (RPC, references) → ajv fallback. Highest wins and suppresses lower layers on the same path.
+4. **Respect the priority stack** when more than one check could fire on the same entry: parse → format lint → branch/intent guess → shape arbitration → domain validators (RPC, references) → ajv fallback. Highest wins and suppresses lower layers on the same path. When several notices still hit one field for one root cause (a legacy-rename info plus an ignored-field warning), emit a single warning that states the simplest fix, and suppress the rest.
 
 5. **Calibrate severity to verification strength.** A rule generated from docs, not runtime-verified line-by-line (e.g. the RPC param table, rebuilt from `docs/RPCs.md` on every schema-generate run), stays warning-only — never promote a doc-generated mismatch to a hard error.
+
+6. **Practice recommendations live in one catalog** (`practiceRecommendations.ts`, messages only; detectors stay in their domain modules). Add an entry whenever EWP accepts an input but a habit is recommended, or part of it is silently unused. Never an error. Message shape: group, what was found (named from the scan), simplest fix. A test over the catalog enforces the wording. Check `ew_wiki` for a page that documents the habit.

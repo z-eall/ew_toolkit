@@ -4,7 +4,7 @@ import { isMap, isSeq } from "yaml";
 import { looksLikeTypedValueLine } from "./dataFieldValidation";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, diagnoseShapeMismatches, rpcParamIssueMessage, SHAPE_MISMATCH_RULE_IDS, WEC_NAME_TYPO_RULE_ID } from "./shapeMismatchDiagnosis";
 import { runStructuralPrecheck } from "./structuralPrecheck";
-import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 
 function firstEwpEntry(yaml: string) {
   const doc = parseDocument(yaml);
@@ -193,5 +193,21 @@ describe("rpcParamIssueMessage", () => {
     expect(
       rpcParamIssueMessage("RPC_Damage", { key: "totallyMadeUp", kind: "unrecognized-key", belongsTo: null }),
     ).toContain("numbered call parameter");
+  });
+});
+
+describe("nested filter: written as a list (ticket 28)", () => {
+  it("is an info Practice recommendation naming the real section, not an error", () => {
+    const yaml = ["- prefab: Player", "  type: create", "  objects:", "  - prefab: Rock", "    filter:", "    - Farming1", "    - Farming2", ""].join(String.fromCharCode(10));
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "info", branch: PRACTICE_CATEGORY });
+    expect(problems[0].message).toContain("`filter:` is written as a list under `objects:`");
+    expect(problems[0].message).toContain("`filters:`");
+  });
+
+  it("keeps the error for an incomplete typed triple in the list", () => {
+    const yaml = ["- prefab: Player", "  type: create", "  poke:", "  - prefab: Rock", "    filter:", "    - int, isCustom", ""].join(String.fromCharCode(10));
+    expect(runStructuralPrecheck(yaml).some((p) => p.severity === "error")).toBe(true);
   });
 });

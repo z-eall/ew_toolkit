@@ -76,6 +76,18 @@ describe("ewpRuleEntry", () => {
     expect(terrainPaint).not.toContain("cultivated");
   });
 
+  it("includes DeepSnow in terrain's paint enum, added to EWP's docs after the ticket 08 baseline (schema-source-audit ticket 07)", () => {
+    const terrainPaint = terrainData.properties.paint.anyOf[0].enum;
+    expect(terrainPaint).toContain("DeepSnow");
+  });
+
+  it("accepts a bare numeric paint/minPaint/maxPaint value, not just a quoted numeric string (schema-source-audit ticket 07)", () => {
+    for (const field of ["paint", "minPaint", "maxPaint"]) {
+      expect(ewpRuleEntry.properties[field].anyOf).toContainEqual({ type: "number" });
+    }
+    expect(terrainData.properties.paint.anyOf).toContainEqual({ type: "number" });
+  });
+
   it("has the shared spawn/swap default delay field (schema-source-audit ticket 01: PrefabData.cs delay, missing before)", () => {
     expect(ewpRuleEntry.properties.delay).toEqual({ anyOf: [{ type: "number" }, { type: "string" }] });
   });
@@ -140,7 +152,8 @@ describe("valueEntry and valueGroup", () => {
 describe("object/poke filter fields (ticket 08)", () => {
   it("gives objectData and pokeData the same filter/bannedFilter singular+plural fields as top level", () => {
     for (const shape of [objectData, pokeData]) {
-      expect(shape.properties.filter).toEqual({ type: "string" });
+      // Nested singular fields also tolerate a list (ticket 28: Practice recommendation, not an ajv error).
+      expect(shape.properties.filter).toEqual({ anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] });
       expect(shape.properties.filters).toEqual({ type: "array", items: { type: "string" } });
     }
   });

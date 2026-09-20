@@ -109,15 +109,15 @@ const TOP_LEVEL_PAINT_ENUM = [
 ];
 // paint/minPaint/maxPaint also accept a numeric r,g,b,a value (docs/scripting.md).
 const topLevelPaintValue = {
-  anyOf: [{ enum: TOP_LEVEL_PAINT_ENUM }, { type: "string" }],
+  anyOf: [{ enum: TOP_LEVEL_PAINT_ENUM }, { type: "string" }, { type: "number" }],
 };
 // Not a bare enum despite ticket 09's "enum fields validate strictly" policy:
 // Terrain.Get's paint parsing (PrefabData.cs) is Enum.TryParse(name) ->
 // int.TryParse(numeric) -> default Reset, so a numeric string is also valid,
 // same escape hatch as the top-level paint fields just below.
-const TERRAIN_PAINT_ENUM = ["ClearVegetation", "Cultivate", "Dirt", "Paved", "Reset"];
+const TERRAIN_PAINT_ENUM = ["ClearVegetation", "Cultivate", "Dirt", "DeepSnow", "Paved", "Reset"];
 const terrainPaintValue = {
-  anyOf: [{ enum: TERRAIN_PAINT_ENUM }, { type: "string" }],
+  anyOf: [{ enum: TERRAIN_PAINT_ENUM }, { type: "string" }, { type: "number" }],
 };
 
 // objectRpc/clientRpc items are a true open Dictionary<string,string> in C#
@@ -171,6 +171,9 @@ const spawnData = {
   additionalProperties: false,
 };
 
+// Nested filter/bannedFilter also accept a YAML list: EWP rewrites it to the plural form
+// (ticket 26), so ajv stays quiet and the shape rules give the Practice recommendation
+// (ticket 28). Without this, the entry would fail its oneOf and raise a false "must be text".
 const objectDataBaseProperties = withFilterFields({
   prefab: str,
   maxDistance: numberOrString,
@@ -184,6 +187,8 @@ const objectDataBaseProperties = withFilterFields({
   self: boolOrString,
   condition: str,
 });
+objectDataBaseProperties.filter = { anyOf: [str, strArray] };
+objectDataBaseProperties.bannedFilter = { anyOf: [str, strArray] };
 
 const objectData = {
   title: "Object filter entry",

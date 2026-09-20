@@ -16,7 +16,8 @@ import {
   unknownKeyMessage,
 } from "./ajvMessages";
 import { diagnoseEntryShapeIssues, diagnoseRpcOrphanListItems, rpcParamIssueMessage } from "./shapeMismatchDiagnosis";
-import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
+import { practiceMessages } from "./practiceRecommendations";
+import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_ITEM, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { runFormatLint } from "./formatLint";
 import { checkRpcParams, checkRpcUnrecognizedKeys, CLIENT_RPC_PARAMS, OBJECT_RPC_PARAMS } from "./rpcValidation";
 import schemaJson from "./schema.generated.json";
@@ -51,7 +52,7 @@ export function pickHighestPriority<T extends { severity: Severity }>(
 export interface Problem {
   severity: Severity;
   message: string;
-  /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Legacy but working) — see diagnosisCategories.ts. */
+  /** The filterable *kind* of mistake (Structure/Value/Reference problem, Invalid file, Practice recommendation) — see diagnosisCategories.ts. */
   branch: string;
   /** Schema-shape subtitle (EWP rule entry, …) — kept on `Problem` for backend use but not shown in the tag UI (ticket 04). YAML-native sub-groups `(parse)`/`(root)`/`(item)` reuse this field and *are* shown under {@link YAML_PROBLEM_CATEGORY}. */
   entryType?: string;
@@ -174,16 +175,12 @@ function isTypeValuePath(instancePath: string): boolean {
 // Undocumented/legacy constructs on an EWP rule entry that are live-tested to
 // work but aren't in the schema (ticket 13). Surfaced as blue "flag" (info)
 // notices and stripped before ajv so they don't also raise a hard error. They
-// carry the "Legacy but working" category — the wording follows Jere's docs,
+// carry the "Practice recommendation" category — the wording follows Jere's docs,
 // which call these "Legacy format" rather than "Old format".
 const RPC_FIELDS = [
   ["objectRpc", OBJECT_RPC_PARAMS],
   ["clientRpc", CLIENT_RPC_PARAMS],
 ] as const;
-const LEGACY_DELAY_MESSAGE =
-  "Legacy format: a top-level `delay:`. It still works, but we recommend using the latest format.";
-const legacySpawnMessage = (key: string) =>
-  `Legacy format: a single-line \`${key}:\`. It still works, but we recommend using the latest format.`;
 
 // Collect the trigger-type words this entry declares — a `type:` string and/or
 // each item of a `types:` list — taking each type's leading word (before any
@@ -419,8 +416,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
         strip.push("delay");
         problems.push({
           severity: "info",
-          message: LEGACY_DELAY_MESSAGE,
-          branch: LEGACY_CATEGORY,
+          message: practiceMessages.legacyDelay(),
+          branch: PRACTICE_CATEGORY,
           entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
           range: findPairRange(itemNode, "delay") ?? itemRange,
         });
@@ -430,8 +427,8 @@ export function runStructuralPrecheck(text: string): Problem[] {
           strip.push(key);
           problems.push({
             severity: "info",
-            message: legacySpawnMessage(key),
-            branch: LEGACY_CATEGORY,
+            message: practiceMessages.legacySpawn(key),
+            branch: PRACTICE_CATEGORY,
             entryType: ENTRY_TYPE_TITLES.ewpRuleEntry,
             range: findPairRange(itemNode, key) ?? itemRange,
           });

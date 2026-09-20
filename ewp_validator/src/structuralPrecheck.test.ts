@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
+import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY, YAML_PROBLEM_CATEGORY, YAML_SUBGROUP_PARSE, YAML_SUBGROUP_ROOT } from "./diagnosisCategories";
 import { guessBranch, runStructuralPrecheck } from "./structuralPrecheck";
 
 describe("guessBranch", () => {
@@ -113,7 +113,7 @@ describe("runStructuralPrecheck", () => {
     expect(problems[0].branch).toBe(VALUE_PROBLEM_CATEGORY);
   });
 
-  it("flags a legacy top-level delay: under the Legacy but working category, not an error — ticket 13", () => {
+  it("flags a legacy top-level delay: under the Practice recommendation category, not an error — ticket 13", () => {
     const yaml = "- prefab: dungeon_queen_door_custom\n  type: change, state true\n  delay: 18\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
@@ -123,18 +123,18 @@ describe("runStructuralPrecheck", () => {
     // Renamed to match Jere's docs, and carries its own filterable category.
     expect(flag!.message).toContain("Legacy format:");
     expect(flag!.message).not.toContain("Old format");
-    expect(flag!.branch).toBe(LEGACY_CATEGORY);
+    expect(flag!.branch).toBe(PRACTICE_CATEGORY);
     expect(flag!.entryType).toBe("EWP rule entry");
   });
 
-  it("flags a legacy single-line spawn: string under the Legacy but working category, not an error — ticket 13", () => {
+  it("flags a legacy single-line spawn: string under the Practice recommendation category, not an error — ticket 13", () => {
     const yaml = "- prefab: Beehive\n  type: create\n  spawn: fx_BonusYield, 0,0,1\n";
     const problems = runStructuralPrecheck(yaml);
     expect(problems.filter((p) => p.severity === "error")).toEqual([]);
     const flag = problems.find((p) => p.severity === "info" && p.message.includes("spawn"));
     expect(flag).toBeDefined();
     expect(flag!.message).toContain("Legacy format:");
-    expect(flag!.branch).toBe(LEGACY_CATEGORY);
+    expect(flag!.branch).toBe(PRACTICE_CATEGORY);
   });
 
   it("classifies a missing required field as a Structure problem, not a Value problem (category-grouping ticket)", () => {

@@ -103,6 +103,72 @@ export interface LegacyFormatNotice {
   range: [number, number];
 }
 
+/** Nested `data:` sitting next to a filter field — EWP only reads it when no filter field exists. */
+export interface IgnoredDataNotice {
+  arrKey: string;
+  range: [number, number];
+  /** True when the `data:` name already appears in the item's own filter fields. */
+  redundant: boolean;
+  /** The filter field the scan found written next to `data:` (and its plural form). */
+  written: string;
+  plural: string;
+}
+
+/** A singular filter field and its plural list written in the same entry. */
+export interface FilterBothFormsNotice {
+  singular: "filter" | "bannedFilter";
+  plural: "filters" | "bannedFilters";
+  /** Nested section it was found under; absent for the entry's own top level. */
+  section?: string;
+  range: [number, number];
+}
+
+const FILTER_FIELD_PAIRS = [
+  ["filter", "filters"],
+  ["bannedFilter", "bannedFilters"],
+] as const;
+
+function hasFilterField(value: Record<string, unknown>): boolean {
+  return FILTER_FIELD_PAIRS.some(([s, p]) => value[s] != null || value[p] != null);
+}
+
+function filterFieldNames(value: Record<string, unknown>): Set<string> {
+  const names = new Set<string>();
+  for (const [s, p] of FILTER_FIELD_PAIRS) {
+    const plural = value[p];
+    for (const raw of [value[s], ...(Array.isArray(plural) ? plural : [plural])]) {
+      const name = normalizeDataReferenceValue(raw);
+      if (name) names.add(name.toLowerCase());
+    }
+  }
+  return names;
+}
+
+function firstWrittenFilterField(value: Record<string, unknown>): { written: string; plural: string } {
+  for (const [s, p] of FILTER_FIELD_PAIRS) {
+    if (value[s] != null) return { written: s, plural: p };
+    if (value[p] != null) return { written: p, plural: p };
+  }
+  return { written: "filter", plural: "filters" };
+}
+
+function collectBothForms(
+  parentNode: YAMLMap,
+  value: Record<string, unknown>,
+  out: FilterBothFormsNotice[],
+  section?: string,
+): void {
+  for (const [singular, plural] of FILTER_FIELD_PAIRS) {
+    if (value[singular] == null || value[plural] == null) continue;
+    out.push({
+      singular,
+      plural,
+      section,
+      range: findPairRange(parentNode, singular) ?? nodeRange(parentNode as any),
+    });
+  }
+}
+
 function collectListRefs(
   parentNode: YAMLMap,
   field: string,
@@ -142,9 +208,17 @@ function collectScalarRefs(
 export function collectRuleEntryDataReferences(
   itemNode: YAMLMap,
   value: Record<string, unknown>,
-): { usages: DataReferenceUsage[]; legacyNotices: LegacyFormatNotice[] } {
+): {
+  usages: DataReferenceUsage[];
+  legacyNotices: LegacyFormatNotice[];
+  ignoredData: IgnoredDataNotice[];
+  bothForms: FilterBothFormsNotice[];
+} {
   const usages: DataReferenceUsage[] = [];
   const legacyNotices: LegacyFormatNotice[] = [];
+  const ignoredData: IgnoredDataNotice[] = [];
+  const bothForms: FilterBothFormsNotice[] = [];
+  collectBothForms(itemNode, value, bothForms);
 
   const addUsage = (name: string, range: [number, number], suppressUndefinedError?: boolean) =>
     usages.push({ name: name.trim(), range, suppressUndefinedError });
@@ -177,18 +251,31 @@ export function collectRuleEntryDataReferences(
         collectListRefs(nestedMap, field, addUsage);
       }
 
+      collectBothForms(nestedMap, nestedValue, bothForms, arrKey);
+
       const legacyRaw = nestedValue[NESTED_LEGACY_FILTER_DATA_FIELD];
       const legacyName = normalizeDataReferenceValue(legacyRaw);
       if (legacyName) {
         const range =
           findPairRange(nestedMap, NESTED_LEGACY_FILTER_DATA_FIELD) ?? nodeRange(nestedMap as any);
         addUsage(legacyName, range, true);
-        legacyNotices.push({ arrKey, range });
+        // One diagnosis per root cause: with a filter field present the rename
+        // advice would create a duplicate key, so only the ignored-data warning fires.
+        if (hasFilterField(nestedValue)) {
+          ignoredData.push({
+            arrKey,
+            range,
+            redundant: filterFieldNames(nestedValue).has(legacyName.toLowerCase()),
+            ...firstWrittenFilterField(nestedValue),
+          });
+        } else {
+          legacyNotices.push({ arrKey, range });
+        }
       }
     }
   }
 
-  return { usages, legacyNotices };
+  return { usages, legacyNotices, ignoredData, bothForms };
 }
 
 function hasLiteralAnchor(key: string): boolean {

@@ -8,7 +8,8 @@
 //   - anything else            — allegedly not an EWP structural file: a hard
 //     "Invalid file" error, and the diagnosis passes are skipped for it
 //     entirely (see FileManager.revalidateAll).
-import { INVALID_FILE_CATEGORY, LEGACY_CATEGORY } from "./diagnosisCategories";
+import { INVALID_FILE_CATEGORY, PRACTICE_CATEGORY } from "./diagnosisCategories";
+import { practiceMessages } from "./practiceRecommendations";
 import type { Problem } from "./structuralPrecheck";
 
 export { INVALID_FILE_CATEGORY };
@@ -69,11 +70,8 @@ export function checkFileName(name: string): FileNameCheck {
       verdict,
       problem: {
         severity: "info",
-        branch: LEGACY_CATEGORY,
-        message:
-          `Legacy filename: 'expand_data*.yaml' is the old data file name. It still works, ` +
-          `but we recommend renaming it to '${target}' and move into the '/config/data' directory ` +
-          `— click the filename above to rename it.`,
+        branch: PRACTICE_CATEGORY,
+        message: practiceMessages.legacyFilename(target),
         range: [0, 0],
       },
     };

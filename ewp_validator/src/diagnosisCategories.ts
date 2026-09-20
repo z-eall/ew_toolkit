@@ -18,15 +18,16 @@
 // Naming principle: "___ problem" for any bucket that mixes severities (a
 // real error alongside a merely-informational finding — "worth checking,"
 // not "definitely broken"); "Invalid ___" reserved for the one bucket that's
-// always a hard error every time it fires; "Legacy but working" for the one
-// bucket that's never an error. The differently-shaped names are deliberate:
-// they signal at a glance which kind of certainty a tag carries.
+// always a hard error every time it fires; "Practice recommendation" for the
+// one bucket that's never an error (EWP accepts it; a habit is recommended —
+// messages live in practiceRecommendations.ts). The differently-shaped names
+// are deliberate: they signal at a glance which kind of certainty a tag carries.
 export const STRUCTURE_PROBLEM_CATEGORY = "Structure problem";
 export const VALUE_PROBLEM_CATEGORY = "Value problem";
 export const REFERENCE_PROBLEM_CATEGORY = "Reference problem";
 export const YAML_PROBLEM_CATEGORY = "YAML problem";
 export const INVALID_FILE_CATEGORY = "Invalid file";
-export const LEGACY_CATEGORY = "Legacy but working";
+export const PRACTICE_CATEGORY = "Practice recommendation";
 
 /** Sub-group labels shown under {@link YAML_PROBLEM_CATEGORY} in the tag UI. */
 export const YAML_SUBGROUP_PARSE = "(parse)";
@@ -39,7 +40,7 @@ export const DIAGNOSIS_CATEGORIES = [
   REFERENCE_PROBLEM_CATEGORY,
   YAML_PROBLEM_CATEGORY,
   INVALID_FILE_CATEGORY,
-  LEGACY_CATEGORY,
+  PRACTICE_CATEGORY,
 ] as const;
 
 export const DIAGNOSIS_CATEGORY_SET: ReadonlySet<string> = new Set(DIAGNOSIS_CATEGORIES);

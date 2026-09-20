@@ -15,10 +15,10 @@ describe("presentSortedCategories", () => {
   });
 
   it("sorts ascending alphabetical, case-insensitive", () => {
-    const branches = ["Value problem", "Legacy but working", "Structure problem", "Invalid file", "YAML problem"];
+    const branches = ["Value problem", "Practice recommendation", "Structure problem", "Invalid file", "YAML problem"];
     expect(presentSortedCategories(branches)).toEqual([
       "Invalid file",
-      "Legacy but working",
+      "Practice recommendation",
       "Structure problem",
       "Value problem",
       "YAML problem",
@@ -42,7 +42,7 @@ describe("presentSortedCategories", () => {
       "Reference problem",
       "YAML problem",
       "Invalid file",
-      "Legacy but working",
+      "Practice recommendation",
     ]);
   });
 

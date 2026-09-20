@@ -11,7 +11,7 @@
 import * as monaco from "monaco-editor";
 import { checkFileName } from "./fileNameCheck";
 import { runReferenceValidation } from "./referenceValidation";
-import { LEGACY_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { PRACTICE_CATEGORY, REFERENCE_PROBLEM_CATEGORY } from "./diagnosisCategories";
 import { pickHighestPriority, runStructuralPrecheck, type Problem, type Severity } from "./structuralPrecheck";
 import type { SaveScope } from "./fileView";
 
@@ -76,14 +76,18 @@ const REFERENCE_BRANCH_LABEL: Record<
   | "data-reference"
   | "custom-key"
   | "legacy-object-data"
+  | "ignored-data-with-filter"
+  | "filter-both-forms"
   | "template-function"
   | "poke-parameter"
   | "malformed-reference",
   string
 > = {
+  "ignored-data-with-filter": PRACTICE_CATEGORY,
+  "filter-both-forms": PRACTICE_CATEGORY,
   "data-reference": REFERENCE_PROBLEM_CATEGORY,
   "custom-key": REFERENCE_PROBLEM_CATEGORY,
-  "legacy-object-data": LEGACY_CATEGORY,
+  "legacy-object-data": PRACTICE_CATEGORY,
   "template-function": REFERENCE_PROBLEM_CATEGORY,
   "poke-parameter": REFERENCE_PROBLEM_CATEGORY,
   "malformed-reference": REFERENCE_PROBLEM_CATEGORY,

@@ -30,7 +30,8 @@ import {
   TOP_LEVEL_LIST_REF_FIELDS,
   TOP_LEVEL_SCALAR_REF_FIELDS,
 } from "./dataFieldValidation";
-import { STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { PRACTICE_CATEGORY, STRUCTURE_PROBLEM_CATEGORY, VALUE_PROBLEM_CATEGORY } from "./diagnosisCategories";
+import { practiceMessages } from "./practiceRecommendations";
 import { findOrphanRpcListItems, numberedRpcParamKeys, type RpcActualType, type RpcKeyOwner, type RpcParamIssue } from "./rpcValidation";
 import { findPairRange, getPairValueNode, nodeRange, type Severity } from "./structuralPrecheck";
 
@@ -161,9 +162,25 @@ function diagnoseScalarFieldAsList(
   raw: unknown,
   suppressAjvPath: string,
   entryType: string,
+  section?: string,
 ): ShapeMismatchDiagnosis | null {
   const lines = stringListItems(raw);
   if (!lines) return null;
+
+  // Nested `filter:`/`bannedFilter:` written as a list: EWP accepts it (rewrites it to the
+  // plural form), so it is a Practice recommendation, not an error — unless a comma line is
+  // an incomplete triple, which is a real content mistake and keeps the error below.
+  if (section && (field === "filter" || field === "bannedFilter") && !isMalformedTypedLineList(field, lines)) {
+    const plural = field === "filter" ? "filters" : "bannedFilters";
+    return {
+      severity: "info",
+      message: practiceMessages.filterAsList(field, plural, section),
+      branch: PRACTICE_CATEGORY,
+      entryType,
+      range: rangeForScalarListField(parentNode, field),
+      suppressAjvPath,
+    };
+  }
 
   const allTyped = lines.every(looksLikeTypedValueLine);
   const allBareword = lines.every((line) => !line.includes(","));
@@ -262,6 +279,7 @@ const RULES: ShapeMismatchRule[] = [
               nestedValue[field],
               path,
               entryType,
+              arrKey,
             );
             if (d) out.push(d);
           }

@@ -20,6 +20,7 @@
 //      trailing value/parameter of a save or a `type: key` trigger is ignored.
 import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
 import { collectRuleEntryDataReferences } from "./dataFieldValidation";
+import { practiceMessages } from "./practiceRecommendations";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
 
 export interface FileProblem {
@@ -30,6 +31,8 @@ export interface FileProblem {
     | "data-reference"
     | "custom-key"
     | "legacy-object-data"
+    | "ignored-data-with-filter"
+    | "filter-both-forms"
     | "template-function"
     | "poke-parameter"
     | "malformed-reference";
@@ -928,7 +931,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
 
       if (branch !== "ewpRuleEntry") continue;
 
-      const { usages, legacyNotices } = collectRuleEntryDataReferences(itemNode, value);
+      const { usages, legacyNotices, ignoredData, bothForms } = collectRuleEntryDataReferences(itemNode, value);
       for (const u of usages) {
         addDataUsage(u.name, u.range, u.suppressUndefinedError);
       }
@@ -937,9 +940,26 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
           fileId: file.id,
           severity: "info",
           kind: "legacy-object-data",
-          message:
-            `Legacy format: \`data:\` under \`${arrKey}:\` is an old alias for \`filter:\`. It still works, ` +
-            `but we recommend renaming it to \`filter:\`.`,
+          message: practiceMessages.legacyDataAlias(arrKey),
+          range,
+        });
+      }
+
+      for (const { arrKey, range, redundant, written, plural } of ignoredData) {
+        problems.push({
+          fileId: file.id,
+          severity: "warning",
+          kind: "ignored-data-with-filter",
+          message: practiceMessages.dataIgnored(arrKey, written, plural, redundant),
+          range,
+        });
+      }
+      for (const { singular, plural, section, range } of bothForms) {
+        problems.push({
+          fileId: file.id,
+          severity: "warning",
+          kind: "filter-both-forms",
+          message: practiceMessages.filterBothForms(singular, plural, section ?? null),
           range,
         });
       }

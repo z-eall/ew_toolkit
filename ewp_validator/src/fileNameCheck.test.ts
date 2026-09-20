@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEGACY_CATEGORY } from "./diagnosisCategories";
+import { PRACTICE_CATEGORY } from "./diagnosisCategories";
 import { checkFileName, classifyFileName, INVALID_FILE_CATEGORY } from "./fileNameCheck";
 
 describe("classifyFileName", () => {
@@ -51,7 +51,7 @@ describe("checkFileName", () => {
     expect(verdict).toBe("legacy");
     expect(problem).not.toBeNull();
     expect(problem!.severity).toBe("info");
-    expect(problem!.branch).toBe(LEGACY_CATEGORY);
+    expect(problem!.branch).toBe(PRACTICE_CATEGORY);
     expect(problem!.message).toContain("Legacy filename");
     expect(problem!.message).toContain("data_mydata.yaml");
     expect(problem!.message).toContain("/config/data");
