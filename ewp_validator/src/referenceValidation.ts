@@ -223,8 +223,7 @@ function stripLineComments(text: string): string {
 // its name can contain `/`, so a flat character-class regex can't extract it.
 // Scan the whole document, balance the outer `<...>`, then keep only the
 // key-name portion. Per EWP's actual source (Functions.cs's GetFunction/
-// SetValue — see .scratch/validator-round2/research/07-custom-key-source-
-// verification.md §1): `save++`/`save--`/`load`/`clear` all use their entire
+// SetValue): `save++`/`save--`/`load`/`clear` all use their entire
 // remainder as the key, unsplit — `_` characters inside are literal, part of
 // the name. Only plain `save` splits its remainder a second time, and only on
 // the FIRST top-level `_`: everything before it is the key, everything from
@@ -419,8 +418,7 @@ function orphanKeyMessage(direction: KeyDirection, name: string, counterpartOnly
 }
 
 // Ticket 06 — EWP string-template function name typo detection. Source-verified
-// catalog (.scratch/validator-round4/research/05-string-template-function-source
-// -audit.md, EWP's Functions.cs/ObjectFunctions.cs fetched and read in full,
+// catalog (EWP's Functions.cs/ObjectFunctions.cs fetched and read in full,
 // 2026-08-22): every `<...>` group is resolved by first trying the *entire*
 // bracket contents against a no-argument name table, and only if that fails,
 // splitting on the first top-level `_` and trying the head against an
@@ -1032,8 +1030,7 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   }
 
   // Duplicate `name:` (WEC data entry) definitions — source-verified against
-  // EWP's own DataLoading.cs (`LoadEntry`, .scratch/validator-round4/issues/
-  // 04-duplicate-name-entry-detection.md's ## Answer): entries load in file-list
+  // EWP's own DataLoading.cs (`LoadEntry`): entries load in file-list
   // order, and each subsequent `name:` with an already-seen hash overwrites
   // `Data[hash]` unconditionally while logging `Log.Warning("Duplicate data
   // entry: ...")`. So the runtime behavior really is "last loaded silently wins,

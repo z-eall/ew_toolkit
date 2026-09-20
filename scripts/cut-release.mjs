@@ -1,5 +1,4 @@
-// Publishes a GitHub Release from a notes file someone (a Claude Code session,
-// per .scratch/changelog-automation/issues/02-trigger-and-mechanism.md) has
+// Publishes a GitHub Release from a notes file someone (a Claude Code session) has
 // already drafted from `git log`/diff since the last tag. This script only
 // handles the mechanical part: compute the next date-based tag, create it,
 // push it, and hand the notes file to `gh release create`. No CI involvement,
@@ -49,8 +48,7 @@ execFileSync("gh", ["release", "create", tag, "--title", tag, "--notes-file", no
 
 console.log(`Done: https://github.com/z-eall/ew_toolkit/releases/tag/${tag}`);
 
-// Reset CHANGELOG-unreleased.md (see .scratch/changelog-automation/issues/
-// 08-unreleased-log-and-push-reminder.md) now that its contents shipped in
+// Reset CHANGELOG-unreleased.md now that its contents shipped in
 // a real release — otherwise the next cycle's raw log would start out
 // duplicating everything this release already covers.
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -61,7 +59,7 @@ if (existsSync(unreleasedPath)) {
     "# Unreleased\n\n" +
       "Raw commit log since the last release tag, auto-appended by `guard-changelog-unreleased-log.cjs` on every commit. " +
       "Not reader-facing prose — a human/Claude curates this into the real release notes " +
-      "(What's New/Changed/Bug Fixes, see .scratch/changelog-automation/issues/07-whats-new-changed-bugfixes-format.md) " +
+      "(What's New/Changed/Bug Fixes) " +
       "at actual cut-release time, then this file resets to empty for the next cycle.\n\n" +
       "## Unreleased\n\n",
     "utf8"

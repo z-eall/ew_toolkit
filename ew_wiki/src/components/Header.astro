@@ -4,7 +4,7 @@
 // restyled) and replaces them with the hub's own shared site-nav bar — the
 // same Home / Tool / Support strip every Tool now renders via
 // shared/navBar.ts (previously a 3rd hand-copy here; see
-// .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md) — so arriving at
+// docs/agents/hub-tool-nav.md) — so arriving at
 // ew_wiki from the hub feels like switching tabs, not leaving the site.
 // Standing rule: docs/agents/hub-tool-nav.md.
 import { buildNavItems, renderNavBar } from '../../../shared/navBar';
@@ -37,13 +37,12 @@ const navHtml = renderNavBar(buildNavItems('ew_wiki', hrefFor), 'hub-theme-toggl
 	CollapsibleToc.astro) - a magnifier button and the on-this-page toggle,
 	both opening a panel to their own left rather than below, so neither
 	needs any reserved layout space either. See
-	.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
-	Round 4.
+	ew_wiki/docs/widget-build-notes.md.
 -->
 
 <script>
 	// Theme apply/toggle logic itself now lives in shared/theme.ts (was its
-	// own copy here, see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md).
+	// own copy here, see docs/agents/hub-tool-nav.md).
 	// The one piece genuinely local to this Tool: bridging the hub's
 	// `ew-toolkit-theme` key to Starlight's own separate `starlight-theme`
 	// key (set by Starlight's inline anti-flash script in <head> before this
@@ -71,7 +70,7 @@ const navHtml = renderNavBar(buildNavItems('ew_wiki', hrefFor), 'hub-theme-toggl
 	function setupPage() {
 		mountThemeToggle('hub-theme-toggle', (theme) => localStorage.setItem(STARLIGHT_KEY, theme));
 
-		// Root cause of the reported "title crop" bug (.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md):
+		// Root cause of the reported "title crop" bug (ew_wiki/docs/widget-build-notes.md):
 		// Starlight wraps this entire component's output in its own fixed
 		// <header class="header"> landmark (position: fixed, top: 0) - our added
 		// site-nav row and Starlight's own title/search row both render inside

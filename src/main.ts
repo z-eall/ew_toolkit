@@ -1,7 +1,7 @@
 import "./style.css";
 import { navHtml, mountThemeToggle, iconFor, toolboxIcon } from "./nav";
 
-// Hardcoded v1 Tool registration — see .scratch/ew_toolkit/hub-map.md Notes.
+// Hardcoded v1 Tool registration (no auto-discovery).
 // `key` matches the corresponding entry in nav.ts's navItems and picks the
 // tool's icon via iconFor; omit it (or use a key with no icon mapping) and
 // the tool gets nav.ts's default icon automatically.

@@ -20,7 +20,7 @@ export default defineConfig({
 			// the hub's real icon never showed up here. Synced from the hub's one
 			// master (shared/favicon.png) by scripts/sync-favicon.mjs, run as
 			// this Tool's own `prebuild` step - see
-			// .scratch/ew_toolkit/issues/22-unify-favicon.md.
+			// scripts/sync-favicon.mjs.
 			favicon: '/favicon.png',
 			// No `social` entry — the GitHub link is dropped from the header
 			// entirely (see Header.astro override below), so this would be
@@ -116,8 +116,7 @@ export default defineConfig({
 								'ewp/concepts/advanced-rpcs',
 								'ewp/concepts/advanced-filter-condition',
 								// Player identity/object-ownership split into its own map,
-								// "Player Identity & Object Ownership" (.scratch/ew-wiki-player-identity/
-								// map.md, see its ticket 1 for the page-shape decision). This page is
+								// "Player Identity & Object Ownership". This page is
 								// the short Advanced-tier half; the deep-dive half ("Object Ownership")
 								// lives in Extended Reading, not here.
 								'ewp/concepts/advanced-functions-player-identity',
@@ -128,9 +127,8 @@ export default defineConfig({
 						// required to learn EWP fully. For a reader who wants complete
 						// worked systems, not new syntax. "Object Ownership" is the one
 						// exception to "worked script" — a deliberate "level 4," deeper
-						// than Advanced but not required to write advanced scripts (see
-						// .scratch/ew-wiki-player-identity/map.md's ticket 1) — placed
-						// last, per that map's own page-shape decision.
+						// than Advanced but not required to write advanced scripts —
+						// placed last.
 						{
 							label: 'Extended Reading',
 							items: [

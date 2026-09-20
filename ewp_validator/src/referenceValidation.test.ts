@@ -585,8 +585,7 @@ describe("custom saved key lint (ticket 06)", () => {
   });
 
   // Round 2 rework, source-verified against EWP's actual DataStorage.cs/
-  // Functions.cs (.scratch/validator-round2/research/07-custom-key-source-
-  // verification.md) rather than reverse-engineered from observed behavior.
+  // Functions.cs rather than reverse-engineered from observed behavior.
   describe("source-verified rework (round 2)", () => {
     it("takes the whole remainder as the key for save++/save--, literal underscores included", () => {
       // Per source, save++/save-- never split their remainder — unlike plain

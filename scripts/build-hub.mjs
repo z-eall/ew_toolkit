@@ -1,10 +1,8 @@
-// Builds every Tool (each its own package.json/vite.config, per
-// .scratch/ew_toolkit/hub-map.md's Notes) plus the landing page, then
+// Builds every Tool (each its own package.json/vite.config) plus the landing page, then
 // combines them into one dist/ for a single Pages deploy: the landing
 // page at dist/, each Tool copied into dist/<subpath>/.
 //
-// Plain script, no workspace/monorepo tooling — see hub-map.md Notes and
-// .scratch/ew_toolkit/issues/17-multi-tool-build-pipeline.md.
+// Plain script, no workspace/monorepo tooling.
 import { execSync } from "node:child_process";
 import { cpSync, mkdirSync, renameSync, rmSync } from "node:fs";
 

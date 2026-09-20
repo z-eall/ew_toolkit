@@ -1,6 +1,6 @@
 # Widget-building lessons
 
-Judgment-based lessons from building `ew_wiki`'s interactive widgets (tickets 17-22 on the [Ew Wiki Real Build map](../.scratch/ew-wiki-real-build/map.md)) — none of these have a mechanical trigger (see `docs/agents/hooks-vs-rules.md`'s test), so they stay here as reference rather than becoming a hook. Read before starting a new widget.
+Judgment-based lessons from building `ew_wiki`'s interactive widgets (tickets 17-22 of the Real Build effort) — none of these have a mechanical trigger (see `docs/agents/hooks-vs-rules.md`'s test), so they stay here as reference rather than becoming a hook. Read before starting a new widget.
 
 - **Starlight's own global CSS gives non-first siblings a stray `margin-top`** (commonly 16px) inside a widget — hits `<select>`s, checkbox rows, and control buttons. Fix: `margin: 0` explicitly on every widget-internal element; don't assume browser/framework defaults are clean.
 - **Never overwrite a server-rendered, Astro-scoped element's `className =` wholesale** — it wipes the scoping class and silently breaks every scoped CSS rule targeting it. Use `classList.add/remove/toggle`.
@@ -11,7 +11,7 @@ Judgment-based lessons from building `ew_wiki`'s interactive widgets (tickets 17
 - **Spacing/padding must be measured against the widget's own actual content**, not copied verbatim from another widget's numbers — content density differs enough that borrowed padding reads as visibly oversized or cramped.
 - **WSL's `astro dev` watcher is unreliable against `/mnt/c` paths and frequently leaves a stale process bound to the port from an earlier session.** Before starting a dev-server preview: `wsl.exe -d Ubuntu -- bash -lc "pkill -9 -f 'astro dev'; sleep 1; ps aux | grep astro | grep -v grep"`, confirm zero processes remain, then start fresh. After any CSS/markup edit, curl-verify the served HTML server-side before trusting what the browser renders — HMR has silently served stale content more than once.
 
-Page-chrome (Header/TableOfContents overrides) gotchas, found fixing [ticket 23](../.scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md) — reusable for anyone touching this layer again, not just widgets:
+Page-chrome (Header/TableOfContents overrides) gotchas, found fixing the header and contents-list layout — reusable for anyone touching this layer again, not just widgets:
 
 - **Starlight's own fixed `<header>` landmark is sized by `height: var(--sl-nav-height))`** — reading that element's own rendered height to *set* the same variable is circular and just returns the stale value. To get its real natural content height, temporarily force `height: auto` (inline style beats the stylesheet's `var()` rule), read `scrollHeight`, then restore.
 - **`.right-sidebar`'s `overflow-y: auto` implicitly forces `overflow-x: auto` too** (CSS spec: a non-`visible` axis paired with a `visible` one promotes the visible one to `auto`) — clips any child, like a popup panel deliberately wider than its own narrow column, that needs to overflow sideways. Needs an explicit `overflow: visible` override.

@@ -9,8 +9,7 @@ tabs, not leaving the site.
 3 times (`ew_toolkit/src/nav.ts`, `ewp_validator/src/main.ts`,
 `ew_wiki/src/components/Header.astro`) and drifted each time it was touched
 — a missing Tool button, a different hover color, sticky-on-one-page-only.
-See `.scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md` for the
-incident. Now:
+That was the incident. Now:
 
 - **The Tool registry** (which keys exist, in what order, which icon) lives
   in `shared/navBar.ts`'s `NAV_TOOLS` array. Adding a Tool means adding one

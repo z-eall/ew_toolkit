@@ -27,7 +27,7 @@ body {
 }
 
 /* .site-nav and friends moved to shared/theme.css (already @imported above)
-   - see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md. */
+   - see docs/agents/hub-tool-nav.md. */
 
 .landing {
   max-width: 40rem;

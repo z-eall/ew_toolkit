@@ -5,7 +5,7 @@
 // ew_wiki/src/components/Header.astro) and drifted each time: main.ts never
 // got a `ew_wiki` entry when that Tool registered, and each copy's CSS
 // diverged in small ways (sticky-vs-not, a stray hover color). See
-// docs/agents/hub-tool-nav.md and .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md.
+// docs/agents/hub-tool-nav.md.
 //
 // Fixing the *renderer* alone isn't enough — the Tool *registry* itself
 // (which keys exist, in what order, with which icon) also has to live in

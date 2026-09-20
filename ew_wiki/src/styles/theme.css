@@ -38,8 +38,7 @@
    the floating rail panels (CollapsibleToc.astro): overscroll-behavior:
    contain stops a maxed-out inner scroll from leaking to whatever's
    underneath. See
-   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
-   Round 5. */
+   ew_wiki/docs/widget-build-notes.md. */
 .sidebar-pane {
 	overscroll-behavior: contain;
 }
@@ -56,8 +55,7 @@
    mirror our floating icon rail's own position (CollapsibleToc.astro) -
    same vertical offset below the header - but on the opposite (left)
    side, which is otherwise empty at every width. See
-   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
-   Round 6. */
+   ew_wiki/docs/widget-build-notes.md. */
 button.sl-menu-button {
 	top: calc(var(--sl-nav-height) + 0.75rem);
 	inset-inline-end: auto;
@@ -76,7 +74,7 @@ button.sl-menu-button {
    Header.astro's script now, not here — plain CSS rules for this, even
    with !important, didn't reliably beat Starlight's own TwoColumnContent
    rule live in the browser, while a direct inline style always does. See
-   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md. */
+   ew_wiki/docs/widget-build-notes.md. */
 
 /* Starlight's own fixed header landmark (header.header, PageFrame.astro)
    carries --sl-nav-pad-x/--sl-nav-pad-y padding meant for its original
@@ -89,8 +87,7 @@ button.sl-menu-button {
    left to keep it for. Unlayered, so it wins over Starlight's layered
    rule regardless of source order - same mechanism already used
    elsewhere in this file. See
-   .scratch/ew-wiki-real-build/issues/23-header-toc-layout-rework.md's
-   Round 4. */
+   ew_wiki/docs/widget-build-notes.md. */
 header.header {
 	padding: 0;
 }

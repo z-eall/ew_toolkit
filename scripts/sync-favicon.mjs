@@ -3,7 +3,7 @@
 // asset - unlike the nav bar (shared/navBar.ts), it can't be shared as
 // imported code, so "1 master" here means "1 real source file, copied into
 // place on every build" rather than "1 file every consumer reads directly".
-// See .scratch/ew_toolkit/issues/22-unify-favicon.md - this replaces a
+// This replaces a
 // state where the landing page and ewp_validator each had their own
 // byte-identical-by-accident copy, and ew_wiki was silently serving
 // Starlight's own generic default icon instead of the Hub's brand icon at

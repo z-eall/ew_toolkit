@@ -50,7 +50,7 @@ body {
 }
 
 /* .site-nav and friends moved to shared/theme.css (already @imported above)
-   - see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md. Note the
+   - see docs/agents/hub-tool-nav.md. Note the
    nav bar is now sticky (position: sticky, was position:static/flex:none
    here before) to match the landing page - intentional per that ticket. */
 
@@ -1286,7 +1286,7 @@ body {
    echo of the reactive Invalid-file/Legacy diagnosis, shown immediately at
    commit instead of only in the Problems panel. Prototyped as variant C
    (floating popover) + variant A (filename text color), see
-   .scratch/validator-round2/issues/01-filename-edit-validation.md. */
+   src/fileNameCheck.ts. */
 #filename-text.rename-flag.error {
   color: var(--error);
 }

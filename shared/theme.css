@@ -26,7 +26,7 @@
 /* The Hub's site-nav bar — single copy, replacing 3 independent ones that
    had drifted (sticky-on-landing-only, a stray --info/--accent hover color
    instead of --text, an extra redundant font-family on the wiki's copy).
-   See .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md. Every
+   See docs/agents/hub-tool-nav.md. Every
    consumer's own style.css/theme.css already @imports this file, so this
    block alone is enough — no Tool needs its own copy of these rules. */
 .site-nav {

@@ -1,5 +1,5 @@
 // Build-time parser for EWP docs/RPCs.md → OBJECT_RPC_PARAMS / CLIENT_RPC_PARAMS.
-// Spec: .scratch/validation-maintenance/research/01-rpcs-md-parser-edge-cases.md
+// Input: EWP's docs/RPCs.md
 
 import { MIN_RPC_NAME_COUNT, OMIT_RPCS, VARIADIC_RPCS } from "./rpcOverrides.mjs";
 

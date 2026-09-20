@@ -1,6 +1,6 @@
 // Landing page's own thin wrapper around the shared nav-bar mechanism
 // (shared/navBar.ts, shared/theme.ts) - see
-// .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md. The Tool
+// docs/agents/hub-tool-nav.md. The Tool
 // registry itself (which keys/labels/icons exist) now lives in
 // shared/navBar.ts's NAV_TOOLS, not here - this file only supplies the
 // landing page's own href-resolution (Vite's BASE_URL) and re-exports a

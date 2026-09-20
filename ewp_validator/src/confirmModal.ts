@@ -1,5 +1,4 @@
-// Custom in-app replacement for window.confirm() (ticket 09,
-// .scratch/validator-round2/issues/09-custom-confirm-modal.md): native
+// Custom in-app replacement for window.confirm(): native
 // confirm() is hard-capped at two buttons in every browser, and this Tool
 // needs a real 3-way choice at one call site. Styled with the shared hub
 // identity tokens so it reads as the same site as everything else. Kept

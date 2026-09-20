@@ -3,7 +3,7 @@
 // reimplemented independently in ew_toolkit/src/nav.ts,
 // ewp_validator/src/main.ts, and ew_wiki/src/components/Header.astro (which
 // also had to reconcile Starlight's own separate `starlight-theme` key).
-// See .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md.
+// See docs/agents/hub-tool-nav.md.
 //
 // A consumer with its own extra theme-dependent work (the validator's Monaco
 // editor theme, the wiki's Starlight-key bridge) passes `onApply` rather

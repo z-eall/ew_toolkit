@@ -108,7 +108,7 @@ const ICONS = Object.fromEntries(ICON_NAMES.map((key) => [key, ICON_PATHS[key]])
 const icon = (paths: string, extra = "") => svgIcon(paths, extra);
 
 // Theme apply/toggle logic itself now lives in shared/theme.ts (was its own
-// copy here, see .scratch/ew_toolkit/issues/21-unify-hub-tool-nav-bar.md).
+// copy here, see docs/agents/hub-tool-nav.md).
 // Monaco's own editor theme is the one piece genuinely local to this Tool,
 // wired via the onApply hook mountThemeToggle() takes below.
 function syncMonacoTheme(theme: HubTheme) {
@@ -1473,8 +1473,7 @@ filenameTextEl.addEventListener("keydown", (e) => {
 // echo of checkFileName's verdict, shown the instant a rename commits,
 // instead of leaving the scripter to discover it later in the Problems
 // panel. Folded in from the prototype's variant C (floating popover) +
-// variant A (filename text color) — full detail on the ticket
-// (.scratch/validator-round2/issues/01-filename-edit-validation.md). Uses
+// variant A (filename text color). Uses
 // the exact same checkFileName() the reactive revalidateAll() pass uses,
 // so this note and the Problems panel can never disagree — and since
 // fileManager.renameFile() below triggers that reactive pass synchronously

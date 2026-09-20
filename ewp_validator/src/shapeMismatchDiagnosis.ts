@@ -15,7 +15,7 @@
 // ajvMessages.ts, a separate catalog module — see diagnosis-arbitration
 // ticket 08.
 //
-// See `.scratch/diagnosis-arbitration/map.md` for the full arbitration stack
+// See ewp_validator/AGENTS.md (validation rule lifecycle) for the full arbitration stack
 // and rules against duplication with RPC / legacy / format-lint layers.
 
 import { isMap, isSeq, type YAMLMap } from "yaml";
