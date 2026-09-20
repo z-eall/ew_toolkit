@@ -215,7 +215,7 @@ function checkPrefabRequiredness(item: Record<string, unknown>): PrefabHint | nu
     : typeof item.type === "string"
       ? "type"
       : null;
-  const tail = "Only globalkey/key/custom/event/time/realtime can omit it.";
+  const tail = "Only globalkey/key/custom/event/time/realtime can omit it. EWP still loads the rule, but it never matches anything.";
 
   if (typeWords.length === 0) {
     return { message: `type '(none)' needs a 'prefab'. ${tail}`, field };

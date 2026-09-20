@@ -60,7 +60,7 @@ export const DIAGNOSIS_PROVENANCE: Record<DiagnosisId, Provenance> = {
 
   "format-bad-key": { level: "heuristic", files: [], ...NOT_DATED, note: "a real EWP key never contains a colon, so a double colon is a typo" },
   "wec-data-key-name-typo": { level: "heuristic", files: [WEC_DATA_MD], ...NOT_DATED, note: "guess: a data entry with data: but no name: was meant to have name:" },
-  "prefab-requiredness": { level: "docs", files: [SCRIPTING_MD, PREFAB_DATA], ...NOT_DATED, note: "which types need a prefab comes from docs/scripting.md" },
+  "prefab-requiredness": { level: "source", files: [PREFAB_LOADING, `${EWP}ExpandWorldPrefabs/InfoManager.cs`], checked: "2026-09-20", ewpVersion: "1.60.0", note: "PrefabLoading.cs logs a warning (not an error) for a prefab-less rule of any other type, then InfoManager.Add still loads it; verified 2026-09-20 against the local mirror" },
 
   "shape-scalar-field-as-list": { level: "source", files: [PREFAB_DATA], ...AUDIT, note: "these fields are single strings in the C# class" },
   "shape-list-field-as-inline-triple": { level: "heuristic", files: [PREFAB_DATA], ...NOT_DATED, note: "guess about intent from the shape of the line" },

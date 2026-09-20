@@ -26,8 +26,6 @@ describe("provenance table", () => {
     for (const id of DIAGNOSIS_IDS) {
       if (DIAGNOSIS_PROVENANCE[id].level !== "docs") continue;
       const k = DIAGNOSIS_KINDS[id];
-      // prefab-requiredness predates this table; its docs-only basis is a known gap (ticket 14 or later).
-      if (id === "prefab-requiredness") continue;
       expect([k.severity, ...(k.alsoSeverity ?? [])], id).not.toContain("error");
     }
   });

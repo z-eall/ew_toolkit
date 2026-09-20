@@ -202,23 +202,23 @@ describe("runStructuralPrecheck", () => {
     expect(problems[0].message).toContain("must be a YAML list");
   });
 
-  it("errors on a missing prefab for a type that requires one (was a warning, now hard error)", () => {
+  it("warns on a missing prefab for a type that requires one (EWP logs a warning and still loads the rule, so not an error)", () => {
     const yaml = "- type: create\n  chance: 0.1\n";
     const problems = runStructuralPrecheck(yaml);
     const err = problems.find((p) => p.message.includes("prefab"));
     expect(err).toBeDefined();
-    expect(err!.severity).toBe("error");
+    expect(err!.severity).toBe("warning");
     expect(err!.message).toContain("'create'");
     // Points at the `type:` field, not the whole entry.
     expect(yaml.slice(...err!.range).trim()).toBe("type: create");
   });
 
-  it("errors with '(none)' when there is neither a prefab nor any trigger type", () => {
+  it("warns with '(none)' when there is neither a prefab nor any trigger type", () => {
     const yaml = "- chance: 0.1\n";
     const problems = runStructuralPrecheck(yaml);
     const err = problems.find((p) => p.message.includes("prefab"));
     expect(err).toBeDefined();
-    expect(err!.severity).toBe("error");
+    expect(err!.severity).toBe("warning");
     expect(err!.message).toContain("(none)");
   });
 
@@ -247,12 +247,12 @@ describe("runStructuralPrecheck", () => {
     }
   });
 
-  it("errors on a `types:` list that includes a prefab-requiring type (say), naming it", () => {
+  it("warns on a `types:` list that includes a prefab-requiring type (say), naming it", () => {
     const yaml = "- types:\n  - say, hello\n  - realtime, minute 0,5\n";
     const problems = runStructuralPrecheck(yaml);
     const err = problems.find((p) => p.message.includes("prefab"));
     expect(err).toBeDefined();
-    expect(err!.severity).toBe("error");
+    expect(err!.severity).toBe("warning");
     expect(err!.message).toContain("'say'");
     expect(err!.message).not.toContain("'realtime'"); // realtime is prefab-less, not named
     // Range points at the `types:` field.

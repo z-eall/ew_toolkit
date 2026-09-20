@@ -42,7 +42,7 @@ const kinds = {
   // --- Format lint / structure ---
   "format-bad-key": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "error", what: "key has a typo such as a double colon" },
   "wec-data-key-name-typo": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "warning", what: "WEC data entry uses data: instead of name:" },
-  "prefab-requiredness": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "error", what: "rule needs a prefab (or field) it does not have" },
+  "prefab-requiredness": { category: STRUCTURE_PROBLEM_CATEGORY, severity: "warning", what: "rule has no prefab, so EWP loads it but it never matches anything" },
 
   // --- Shape mismatch (pre-ajv arbitration) ---
   "shape-scalar-field-as-list": { category: VALUE_PROBLEM_CATEGORY, severity: "error", what: "single-value field written as a YAML list" },
