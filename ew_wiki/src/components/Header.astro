@@ -155,13 +155,26 @@ const navHtml = renderNavBar(buildNavItems('ew_wiki', hrefFor), 'hub-theme-toggl
 			// hold at every width, not just desktop. (2.125rem buttons need more
 			// than 3.5rem width once real padding is added - 4.5rem clears it.)
 			rightSidebar.style.position = 'fixed';
-			rightSidebar.style.top = '0';
+			// Root cause of the "theme toggle button doesn't respond to real
+			// clicks on any page with a table of contents" bug (found live,
+			// 2026-09-19): this box used to start at top: 0 - the very top of
+			// the screen, same as the header - and only LOOKED like it started
+			// lower because paddingTop pushed its visible links down. But an
+			// element's padding is still part of its own clickable box (unless
+			// pointer-events: none is set, which this never was), so that
+			// invisible top band silently sat on top of the header and
+			// swallowed every click meant for the theme-toggle button
+			// underneath it - confirmed via document.elementFromPoint() at the
+			// button's own coordinates returning this rail, not the button.
+			// Fix: make the box's real top edge start below the header instead
+			// of faking it with padding, so there's no overlap at all, on any
+			// page width.
+			rightSidebar.style.top = 'calc(var(--sl-nav-height) + 0.75rem)';
 			rightSidebar.style.zIndex = '10';
 			rightSidebar.style.width = '4.5rem';
 			rightSidebar.style.right = '0.75rem';
 			rightSidebar.style.overflow = 'visible';
 			rightSidebar.style.borderInlineStart = 'none';
-			rightSidebar.style.paddingTop = 'calc(var(--sl-nav-height) + 0.75rem)';
 		}
 
 		// Content was rendering hard against the right edge of its available
