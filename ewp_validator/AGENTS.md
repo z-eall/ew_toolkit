@@ -10,6 +10,8 @@ Every new or changed validation rule goes through this order:
 
    If source-verification hits a real wall — no honest signal the tool can check (e.g. the `"data"` filename prefix: this validator has no access to the scripter's real EWP install path) — don't force a source-backed rule. Ship it as a documented heuristic instead, with the divergence noted in a comment at the point of use.
 
+   Record each rule's provenance (level, mod files, date) in `diagnosisProvenance.ts`; update the entry when you re-check the rule.
+
 2. **Dedupe-check.** Before adding the rule, check whether an existing check already flags the same root cause from a different angle (grep `structuralPrecheck.ts`, `formatLint.ts`, `referenceValidation.ts`, `rpcValidation.ts`) — extend or suppress an existing check rather than double-diagnosing.
 
 3. **Architect the split.** Detectors are pure predicates in domain modules (`dataFieldValidation.ts`, `rpcValidation.ts`, …) — never carrying user-facing strings. Messages live in one of two catalog modules: `shapeMismatchDiagnosis.ts` for pre-ajv shape arbitration (plus `suppressAjvPath`), `ajvMessages.ts` for post-ajv fallback text (see [[Ajv fallback]] in CONTEXT.md). `structuralPrecheck.ts` calls both and holds no diagnosis text of its own. Every diagnosis has an id in `diagnosisKinds.ts`; emit it with `kindFields(id)`, never a hand-typed category or severity.
