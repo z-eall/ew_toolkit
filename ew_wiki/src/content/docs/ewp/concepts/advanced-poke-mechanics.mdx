@@ -34,9 +34,9 @@ Field semantics on this page come from EWP's own [`docs/scripting.md`](https://g
 ```yaml
 - prefab: Ship
   type: poke, stormHit
-  connected: true   # also pokes anything connect:/attach:-ed to this Ship (e.g. a passenger)
   poke:
   - prefab: Player
+    connected: true   # also reaches anything connect:/attach:-ed to that Player
     parameter: braceForImpact
 ```
 
@@ -124,8 +124,8 @@ Same syntax, because a poke is a trigger like any other — `<par_X>` always mea
   type: poke, openDoor
   poke:
   - prefab: Player
-    parameter: message "Price: 5-2"   # evaluate: true (the default) could try to compute 5-2 here
-    evaluate: false   # keeps "Price: 5-2" as literal text instead
+    parameter: message "Price = 5-2"   # evaluate: true (the default) could try to compute 5-2 here
+    evaluate: false   # keeps "Price = 5-2" as literal text instead
 ```
 
 <Aside type="caution">
@@ -138,7 +138,7 @@ Don't do this: sending text that happens to contain math symbols (like a price r
   type: poke, openDoor
   poke:
   - prefab: Player
-    parameter: message "Price: 5-2"
+    parameter: message "Price = 5-2"
 ```
 
 ```yaml
@@ -147,7 +147,7 @@ Don't do this: sending text that happens to contain math symbols (like a price r
   type: poke, openDoor
   poke:
   - prefab: Player
-    parameter: message "Price: 5-2"
+    parameter: message "Price = 5-2"
     evaluate: false
 ```
 

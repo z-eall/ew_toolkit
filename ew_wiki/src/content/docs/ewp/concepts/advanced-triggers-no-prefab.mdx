@@ -23,7 +23,7 @@ If a rule under one of these three trigger types needs to *do* something to a sp
 
 ## `event`: reacting to a named game event
 
-`type: event` fires when a game event starts; add `end: true` to fire when it ends instead. Its parameter is the event's own id.
+`type: event` fires when a game event starts; add `remove: true` to fire when it ends instead. Its parameter is the event's own id.
 
 Vanilla Valheim's random events all use a fixed id:
 
@@ -50,7 +50,7 @@ A separate mod by the same author, [Expand World Events](https://github.com/Jere
   command: s Eikthyr has rallied the forest. Stay close to camp.
 
 - type: event, army_eikthyr
-  end: true   # fires when the same event ends, not when it starts
+  remove: true   # fires when the same event ends, not when it starts
   command: s The forest has gone quiet again.
 ```
 

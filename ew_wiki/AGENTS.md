@@ -38,6 +38,10 @@ not:
 
 Both parse identically — this is the convention scripters actually use, not a schema requirement. Applies to every YAML snippet in this wiki.
 
+## No `: ` inside a text value
+
+In a YAML example, never write a colon followed by a space inside a text value (`command: s Roll: 5` breaks the file). Write ` = ` instead (`s Roll = 5`). Enforced by `ewp_validator/src/wikiExampleCorpus.test.ts`.
+
 ## Component conventions
 
 - **`<Steps>`** marks a sequence — steps a reader performs in order, or an example whose later blocks depend on earlier ones. Skip it when the passage already reads fine as one continuous block, or is short enough that numbering adds nothing.
