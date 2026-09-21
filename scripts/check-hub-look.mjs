@@ -84,6 +84,38 @@ function readBar() {
   };
 }
 
+// The validator's own panels: load one file that gives an Info note, then check that tabs, buttons,
+// file names and note text use the page font, and that only quoted code and the line number use the
+// code font. Sizes must come from the tokens (11, 12.5 or 13.5px).
+async function checkValidatorPanel(tab, here) {
+  const yaml = "- type: create\n  prefab: Boar\n  spawn: Wolf, 1\n";
+  await tab.setInputFiles("#file-input", { name: "expand_prefabs_look.yaml", mimeType: "text/yaml", buffer: Buffer.from(yaml) });
+  await tab.waitForSelector(".problem-tab", { timeout: 8000 }).catch(() => {});
+  await tab.evaluate(() => [...document.querySelectorAll(".problem-tab")].find((t) => /Info/.test(t.textContent))?.click());
+  await tab.waitForSelector(".problem .msg", { timeout: 8000 }).catch(() => {});
+  const seen = await tab.evaluate(() => {
+    const cs = (sel) => { const e = document.querySelector(sel); if (!e) return null; const c = getComputedStyle(e); return { font: c.fontFamily, size: c.fontSize }; };
+    return {
+      body: getComputedStyle(document.body).fontFamily,
+      mono: getComputedStyle(document.documentElement).getPropertyValue("--font-mono").trim(),
+      prose: { ".problem-tab": cs(".problem-tab"), ".problem .msg": cs(".problem .msg"), ".problem .branch-kind": cs(".problem .branch-kind"), ".pf-name": cs(".pf-name"), ".file-name": cs(".file-name"), ".folder-name": cs(".folder-name"), "button": cs("button") },
+      code: { ".problem .msg code": cs(".problem .msg code"), ".problem .loc": cs(".problem .loc") },
+    };
+  });
+  const norm = (s) => (s ?? "").replace(/["'\s]/g, "");
+  const out = [];
+  for (const [sel, v] of Object.entries(seen.prose)) {
+    if (!v) { out.push(`${here}: validator panel: ${sel} not found (the check needs it)`); continue; }
+    if (norm(v.font) !== norm(seen.body)) out.push(`${here}: validator ${sel} uses ${v.font}, not the page font`);
+    if (!["11px", "12.5px", "13.5px"].includes(v.size)) out.push(`${here}: validator ${sel} is ${v.size}, not a token size (11, 12.5, 13.5)`);
+  }
+  for (const [sel, v] of Object.entries(seen.code)) {
+    if (!v) { out.push(`${here}: validator panel: ${sel} not found (the check needs it)`); continue; }
+    if (norm(v.font) !== norm(seen.mono)) out.push(`${here}: validator ${sel} uses ${v.font}, not the shared --font-mono`);
+  }
+  return out;
+}
+
 const browser = await chromium.launch({ channel: process.env.HUB_BROWSER_CHANNEL ?? "chrome" });
 const problems = [];
 try {
@@ -96,6 +128,7 @@ try {
       if (!res || res.status() !== 200) { problems.push(`${vp.name} / ${page.name}: page did not load (${res?.status()})`); await ctx.close(); continue; }
       await tab.waitForSelector(".site-nav .theme-toggle .theme-icon", { timeout: 8000 }).catch(() => {});
       const bar = await tab.evaluate(readBar);
+      if (page.name === "ewp_validator") problems.push(...(await checkValidatorPanel(tab, `${vp.name} / ${page.name}`)));
       await ctx.close();
       if (bar.missing) { problems.push(`${vp.name} / ${page.name}: ${bar.missing}`); continue; }
       seen.push({ page: page.name, bar });

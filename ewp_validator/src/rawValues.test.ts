@@ -55,7 +55,7 @@ describe("Tool CSS uses design tokens, not raw values", () => {
     for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if (/font-family:\s*var\(--font-mono\)/.test(m[2]!)) selectors.push(m[1]!.replace(/\s+/g, " ").trim());
     }
-    expect(selectors.sort()).toEqual([".confirm-list-scroll ul", ".problem .msg, .problem .loc"]);
+    expect(selectors.sort()).toEqual([".confirm-list-scroll ul", ".problem .loc, .problem .msg code, .fold-label code"]);
   });
 
   // The validator keeps its own status colors, but as named variables: no raw hex outside a

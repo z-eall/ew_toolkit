@@ -983,10 +983,11 @@ body {
   scroll-margin-bottom: 8px;
 }
 
-/* Only the note text and its line number are monospace: notes quote code such as `data:`. The tabs,
-   headers, buttons and group labels use the site font, like the rest of the page. */
-.problem .msg,
-.problem .loc {
+/* Notes are prose in the site font. Only the line number and the quoted code (`data:`) are
+   monospace. The tabs, headers, buttons and group labels use the site font too. */
+.problem .loc,
+.problem .msg code,
+.fold-label code {
   font-family: var(--font-mono);
 }
 

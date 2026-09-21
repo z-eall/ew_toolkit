@@ -626,7 +626,7 @@ function renderProblemsPanel() {
         shouldShowTagSubline(problem.branch, problem.entryType)
           ? `<span class="branch-entry">${escapeHtml(problem.entryType!)}</span>`
           : "";
-      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${escapeHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch"><span class="branch-kind">${escapeHtml(problem.branch)}</span>${sublineTag}</span>`;
+      row.innerHTML = `<span class="loc">:${start.lineNumber}</span><span class="msg">${noteHtml(problem.message)}</span><button class="copy-btn" title="Copy diagnosis to clipboard" aria-label="Copy diagnosis to clipboard">${icon(ICONS.copy)}</button><span class="branch"><span class="branch-kind">${escapeHtml(problem.branch)}</span>${sublineTag}</span>`;
       row.addEventListener("click", () => {
         fileManager.revealProblem(file.id, problem.range[0], { focus: false });
         scrollFileRowIntoView(file.id);
@@ -650,7 +650,7 @@ function renderProblemsPanel() {
       const open = openFoldedGroups.has(groupKey) || holdsCursor;
       const head = document.createElement("div");
       head.className = `problem-fold ${seg.rows[0]!.problem.severity} ${open ? "open" : ""}`;
-      head.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="fold-label">${escapeHtml(seg.label)}</span><span class="fold-count">${seg.rows.length} places</span>`;
+      head.innerHTML = `<span class="pf-caret">${icon(ICONS.chevron)}</span><span class="fold-label">${noteHtml(seg.label)}</span><span class="fold-count">${seg.rows.length} places</span>`;
       head.addEventListener("click", () => {
         if (openFoldedGroups.has(groupKey)) openFoldedGroups.delete(groupKey);
         else openFoldedGroups.add(groupKey);
@@ -727,6 +727,11 @@ function renderTabs(counts: Record<ProblemTab, number>) {
 
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
+// A note is prose in the site font; the parts in backticks are code and get the code font.
+function noteHtml(s: string): string {
+  return escapeHtml(s).replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
 // ---------- Sort & filter menu ----------
