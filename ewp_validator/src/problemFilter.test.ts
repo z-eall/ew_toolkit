@@ -6,6 +6,7 @@ import {
   FOLD_MIN,
   foldRows,
   hiddenNote,
+  inTab,
   kindKey,
   kindLabel,
   kindsPresent,
@@ -140,5 +141,22 @@ describe("foldRows", () => {
   });
   it("kindKey joins id and severity", () => {
     expect(kindKey({ id: "a", severity: "info" })).toBe("a:info");
+  });
+  it("inTab: a severity tab holds only that severity, the file tab holds the open file", () => {
+    expect(inTab({ severity: "error" }, "error", false)).toBe(true);
+    expect(inTab({ severity: "info" }, "error", true)).toBe(false);
+    expect(inTab({ severity: "info" }, "thisfile", true)).toBe(true);
+    expect(inTab({ severity: "error" }, "thisfile", false)).toBe(false);
+  });
+  it("the menu lists only the kinds of the tab being viewed", () => {
+    const problems = [
+      { id: "unknown-key", severity: "error", branch: "Format problem" },
+      { id: "data-reference", severity: "info", branch: "Reference problem" },
+    ].map((p) => ({ ...p, file: p.severity === "error" ? "a" : "b" }));
+    const forTab = (tab: string, active: string) => problems.filter((p) => inTab(p, tab, p.file === active));
+    const kinds = (tab: string, active: string) => kindsPresent(forTab(tab, active)).flatMap((c) => c.kinds.map((k) => k.key));
+    expect(kinds("error", "a")).not.toContain("data-reference:info");
+    expect(kinds("info", "a")).not.toContain("unknown-key:error");
+    expect(kinds("thisfile", "b")).toEqual(["data-reference:info"]);
   });
 });

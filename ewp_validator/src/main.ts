@@ -24,7 +24,7 @@ import {
 import schemaJson from "./schema.generated.json";
 import stamp from "../schema/verified-against.json";
 import { DIAGNOSIS_CATEGORIES, formatProblemTag, shouldShowTagSubline } from "./diagnosisCategories";
-import { foldRows, hiddenNote, kindKey, kindsPresent, parentState, passesKindFilter, setKindsVisible } from "./problemFilter";
+import { foldRows, hiddenNote, inTab, kindKey, kindsPresent, parentState, passesKindFilter, setKindsVisible } from "./problemFilter";
 import { FILENAME_PATTERN_HINT, INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
 import { computeFocusedProblem, type ProblemTab } from "./focusedProblem";
 import { classifyUploadEntries, findDuplicateFiles, fromDataTransfer, fromFileList, type Ingestable, type PreparedFile } from "./fileIngestion";
@@ -869,8 +869,14 @@ const reportMenu = document.getElementById("report-menu")!;
 
 // The "N kinds hidden" line at the top of the list, with a Show all button. Counts only hidden kinds
 // that exist in the current results, so a leftover tick from removed files is not counted.
+// The problems of the tab being viewed: the filter menu and its hidden note follow the tab.
+function problemsInActiveTab() {
+  const activeId = fileManager.activeFile?.id ?? null;
+  return fileManager.allFiles.flatMap((f) => f.problems.filter((p) => inTab(p, activeTab, f.id === activeId)));
+}
+
 function hiddenNoteHtml(): string {
-  const presentKeys = new Set(fileManager.allFiles.flatMap((f) => f.problems.map((p) => kindKey(p))));
+  const presentKeys = new Set(problemsInActiveTab().map((p) => kindKey(p)));
   const note = hiddenNote([...hiddenKinds].filter((k) => presentKeys.has(k)).length);
   return note ? `<div class="problems-hidden-note"><span>${note}</span><button class="link-btn" data-show-all-kinds>Show all</button></div>` : "";
 }
@@ -885,11 +891,11 @@ problemsListEl.addEventListener("click", (e) => {
 
 // Two-level filter: a category (parent tick: selects or unselects every kind under it, mixed mark
 // when only some are ticked) and its kinds with counts. Only what the current results contain is
-// listed (ticket 13 round 7). Rules live in problemFilter.ts.
+// listed, and only from the tab being viewed. Rules live in problemFilter.ts.
 function renderCatFilterMenu() {
   const reset = hiddenKinds.size > 0;
   catFilterBtn.classList.toggle("funnel-active", reset);
-  const present = kindsPresent(fileManager.allFiles.flatMap((f) => f.problems));
+  const present = kindsPresent(problemsInActiveTab());
   const items =
     present.length > 0
       ? present
@@ -910,7 +916,7 @@ function renderCatFilterMenu() {
         </label>${children}`;
           })
           .join("")
-      : `<div class="menu-empty">No categorised diagnoses.</div>`;
+      : `<div class="menu-empty">Nothing in this tab to filter.</div>`;
   catFilterMenu.innerHTML = `
     <div class="menu-section-head">
       <span class="menu-section-title">Categories</span>

@@ -63,6 +63,14 @@ export function kindsPresent(problems: Iterable<KindedProblem>): CategoryEntry[]
     .map(([category, kinds]) => ({ category, kinds: [...kinds.values()].sort((a, b) => collator(a.label, b.label)) }));
 }
 
+/**
+ * Does a problem belong to the tab being viewed? "thisfile" holds every severity of the open file;
+ * the other tabs hold one severity each. The filter menu lists only the kinds of the current tab.
+ */
+export function inTab(p: { severity: string }, tab: string, inActiveFile: boolean): boolean {
+  return tab === "thisfile" ? inActiveFile : p.severity === tab;
+}
+
 export type ParentState = "all" | "none" | "some";
 
 /** The parent tick: all kinds visible, none visible, or a mix. */
