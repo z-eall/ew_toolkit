@@ -297,7 +297,8 @@ function hasLiteralAnchor(key: string): boolean {
   return found;
 }
 
-function findGroupEnd(text: string, start: number): number {
+/** From the `<` at `start`, the index just past its matching `>`, or -1 when the brackets never balance. */
+export function findGroupEnd(text: string, start: number): number {
   let depth = 0;
   for (let i = start; i < text.length; i++) {
     if (text[i] === "<") depth++;

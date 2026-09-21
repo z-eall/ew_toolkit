@@ -34,8 +34,14 @@ if (existsSync(indexPath)) {
   }
   need(assets.some((a) => a.startsWith("codicon-") && a.endsWith(".ttf")), "editor icon font (codicon) not built");
 }
+// Every Tool in shared/tools.json must have a built page under dist/<key>/
+// (only when checking the default dist/, not a custom folder).
+if (process.argv[2] === undefined) {
+  const tools = JSON.parse(readFileSync("shared/tools.json", "utf8"));
+  for (const t of tools) need(existsSync(path.join("dist", t.key, "index.html")), `Tool page not built: dist/${t.key}/index.html`);
+}
 if (fail.length) {
   console.error("smoke-hub FAILED:\n- " + fail.join("\n- "));
   process.exit(1);
 }
-console.log(`smoke-hub ok: ${dir} (base path, referenced files, 3 workers, icon font)`);
+console.log(`smoke-hub ok: ${dir} (base path, referenced files, 3 workers, icon font, every Tool page)`);

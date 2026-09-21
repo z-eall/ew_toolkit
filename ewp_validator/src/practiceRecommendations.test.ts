@@ -19,6 +19,9 @@ const SAMPLES: Record<keyof typeof practiceMessages, string[]> = {
   pokeWorldCentre: [practiceMessages.pokeWorldCentre()],
   filterWeightPart: [practiceMessages.filterWeightPart("int, level, 2,3")],
   keyStoreMix: [practiceMessages.keyStoreMix("raidRank", "globalkey"), practiceMessages.keyStoreMix("raidRank", "globalKeys"), practiceMessages.keyStoreMix("raidRank", "key")],
+  terrainPaintName: [practiceMessages.terrainPaintName("Dirtt")],
+  ownerDropped: [practiceMessages.ownerDropped()],
+  iterOperation: [practiceMessages.iterOperation("ad")],
   filterBothForms: [practiceMessages.filterBothForms("filter", "filters", "poke"), practiceMessages.filterBothForms("filter", "filters", null)],
 };
 
@@ -36,8 +39,11 @@ describe("practice recommendation catalog wording", () => {
     expect(msg).not.toMatch(/\bset\b/i);
     expect(msg).not.toMatch(/\(or\b/i);
   });
-  it.each(all)("%s stays short (one to three sentences, under 220 characters; ticket 29 sweep may tighten)", (_id, msg) => {
-    expect(msg.length).toBeLessThan(220);
+  it.each(all)("%s stays short (under 200 characters)", (_id, msg) => {
+    expect(msg.length).toBeLessThan(200);
+  });
+  it.each(all)("%s has no emoji or pictograph", (_id, msg) => {
+    expect(msg).not.toMatch(/\p{Extended_Pictographic}/u);
   });
   it.each(all)("%s never calls the input an error or invalid", (_id, msg) => {
     expect(msg).not.toMatch(/\b(invalid|error|wrong)\b/i);

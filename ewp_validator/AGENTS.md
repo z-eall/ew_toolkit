@@ -28,6 +28,8 @@ Every new or changed validation rule goes through this order:
 
 Source-verify against the local mirror of Jere's mods first (see `docs/sources.md`); a hook checks the copy is fresh. After the mirror updates, its `changes` report lists which of our files are affected. Refresh the saved docs copy with `npm run refresh-fixture`, then run `npm test`.
 
+Checking a change in the browser: see [preview tips](../docs/agents/preview-tips.md) (worktree launch trap, computed-style fallback).
+
 ## UI rules that broke before
 
 Decisions live in `src/uiRules.ts` with tests in `uiRules.test.ts`. Change the rule there, not in the page code.

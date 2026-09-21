@@ -14,8 +14,16 @@
 //                                 the change handler unless triggerRules is true).
 //   silent-key-store-mix          EWP keys (`<save_X>`, `type: key`) and Valheim global keys
 //                                 (`setkey`, `type: globalkey`, `globalKeys:`) are two separate stores.
-import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
-import { stripLineComments } from "./referenceValidation";
+// Added by round 6 ticket 22 (sweep 4 findings), each read against the C# first:
+//   silent-terrain-paint-name     a `terrain:` item's `paint:` that is not a paint name or a number
+//                                 (PrefabData.cs: Enum.TryParse, then int.TryParse, else Reset).
+//   silent-owner-dropped          `owner:` on an entry that changes items but writes no `data:` and
+//                                 lacks `injectData: true` (PrefabManager.cs: the object is recreated,
+//                                 and owner is applied only when it is not).
+//   silent-iter-operation         `<iter_OP_...>` / `<iter2_OP_...>` where OP is not a function EWP
+//                                 has (Functions.cs builds `<OP_v1_v2...>`, which then never resolves).
+import { isMap, isScalar, isSeq, parseDocument, type YAMLMap } from "yaml";
+import { ALL_KNOWN_FUNCTION_NAMES, stripLineComments } from "./referenceValidation";
 import { findPairRange, getPairValueNode, nodeRange } from "./structuralPrecheck";
 
 export type SilentFinding =
@@ -23,7 +31,13 @@ export type SilentFinding =
   | { id: "silent-poke-world-centre"; range: [number, number] }
   | { id: "silent-filter-weight-part"; shown: string; range: [number, number] }
   | { id: "silent-change-needs-trigger-rules"; key: string; range: [number, number] }
-  | { id: "silent-key-store-mix"; key: string; watcher: "globalkey" | "globalKeys" | "key"; range: [number, number] };
+  | { id: "silent-key-store-mix"; key: string; watcher: "globalkey" | "globalKeys" | "key"; range: [number, number] }
+  | { id: "silent-terrain-paint-name"; shown: string; range: [number, number] }
+  | { id: "silent-owner-dropped"; range: [number, number] }
+  | { id: "silent-iter-operation"; op: string; range: [number, number] };
+
+/** TerrainModifier.PaintType, from the decompiled game (a test checks it against the schema list). */
+export const TERRAIN_PAINT_NAMES: readonly string[] = ["Dirt", "Cultivate", "Paved", "Reset", "ClearVegetation", "DeepSnow"];
 
 // ---------------------------------------------------------------------------------------------
 // Rule 1: `==` and `<>` in a condition
@@ -165,7 +179,75 @@ export function findSilentEntryMistakes(itemNode: YAMLMap, value: Record<string,
       }
     }
   }
+  found.push(...findTerrainPaintNames(itemNode), ...findDroppedOwner(itemNode, value), ...findIterOperations(itemNode));
   return found;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Rules 6 to 8 (round 6 ticket 22)
+
+/** A `terrain:` item's `paint:` that EWP cannot read: it paints Reset instead. A number or a `<...>` value is left alone. */
+function findTerrainPaintNames(itemNode: YAMLMap): SilentFinding[] {
+  const out: SilentFinding[] = [];
+  const terrain = getPairValueNode(itemNode, "terrain");
+  if (!isSeq(terrain)) return out;
+  const known = new Set(TERRAIN_PAINT_NAMES.map((n) => n.toLowerCase()));
+  for (const item of terrain.items) {
+    if (!isMap(item)) continue;
+    const paint = ((item as YAMLMap).toJSON() as Record<string, unknown>).paint;
+    if (typeof paint !== "string") continue;
+    const text = paint.trim();
+    if (text === "" || text.includes("<") || /^-?\d+$/.test(text) || known.has(text.toLowerCase())) continue;
+    out.push({ id: "silent-terrain-paint-name", shown: text.slice(0, 30), range: findPairRange(item as YAMLMap, "paint") ?? nodeRange(item as YAMLMap) });
+  }
+  return out;
+}
+
+const hasItems = (v: unknown) => (typeof v === "string" ? v.trim() !== "" : Array.isArray(v) && v.length > 0);
+const isTrue = (v: unknown) => v === true || (typeof v === "string" && v.trim().toLowerCase() === "true");
+
+/**
+ * `owner:` next to `addItems:` or `removeItems:` with no `data:` and no `injectData: true`. EWP
+ * (PrefabLoading.cs) marks such an entry Regenerate; PrefabManager.cs recreates the object and only
+ * applies `owner` when it did not. Left alone when `data:` is written (whether it can be injected
+ * depends on what the data holds) or when the entry removes the object.
+ */
+function findDroppedOwner(itemNode: YAMLMap, value: Record<string, unknown>): SilentFinding[] {
+  const owner = value.owner;
+  if (owner === undefined || owner === null || String(owner).trim() === "") return [];
+  if (value.data !== undefined && value.data !== null && String(value.data).trim() !== "") return [];
+  if (!hasItems(value.addItems) && !hasItems(value.removeItems)) return [];
+  if (isTrue(value.injectData) || isTrue(value.remove)) return [];
+  return [{ id: "silent-owner-dropped", range: findPairRange(itemNode, "owner") ?? nodeRange(itemNode) }];
+}
+
+/** Every plain string value inside a node, with its range. */
+function scalarStrings(node: unknown, out: Array<{ text: string; range: [number, number] }> = []): Array<{ text: string; range: [number, number] }> {
+  if (isScalar(node)) {
+    const r = node.range;
+    if (typeof node.value === "string" && r) out.push({ text: node.value, range: [r[0], r[1]] });
+  } else if (isMap(node) || isSeq(node)) {
+    for (const child of node.items as unknown[]) {
+      if (isMap(node)) {
+        const pair = child as { value: unknown };
+        scalarStrings(pair.value, out);
+      } else scalarStrings(child, out);
+    }
+  }
+  return out;
+}
+
+/** `<iter_OP_...>` or `<iter2_OP_...>` with an OP that is not a function name EWP has. A function that is known but takes one value is not checked here. */
+function findIterOperations(itemNode: YAMLMap): SilentFinding[] {
+  const known = new Set(ALL_KNOWN_FUNCTION_NAMES);
+  const out: SilentFinding[] = [];
+  for (const { text, range } of scalarStrings(itemNode)) {
+    for (const m of text.matchAll(/<iter2?_([^_<>]+)_/g)) {
+      const op = m[1]!;
+      if (!known.has(op)) out.push({ id: "silent-iter-operation", op: op.slice(0, 30), range });
+    }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------

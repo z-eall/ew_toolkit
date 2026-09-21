@@ -22,6 +22,7 @@ import {
   type ViewFile,
 } from "./fileView";
 import schemaJson from "./schema.generated.json";
+import stamp from "../schema/verified-against.json";
 import { DIAGNOSIS_CATEGORIES, formatProblemTag, shouldShowTagSubline } from "./diagnosisCategories";
 import { foldRows, hiddenNote, kindKey, kindsPresent, parentState, passesKindFilter, setKindsVisible } from "./problemFilter";
 import { FILENAME_PATTERN_HINT, INVALID_FILE_CATEGORY, checkFileName } from "./fileNameCheck";
@@ -31,7 +32,7 @@ import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
 import { buildNavItems, renderNavBar } from "../../shared/navBar";
 import { getStoredTheme, mountThemeToggle, type Theme as HubTheme } from "../../shared/theme";
 import { showConfirmModal } from "./confirmModal";
-import { anyUnsavedWork, applyLeaveWarning } from "./uiRules";
+import { anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss } from "./uiRules";
 import "./style.css";
 import type { ZipEntry } from "./zip";
 import type { ZipWorkerRequest, ZipWorkerResponse } from "./zipWorker";
@@ -50,30 +51,11 @@ const DEFAULT_FOLDER_NAME = "unnamed";
   },
 };
 
-const meta = (schemaJson as any)._meta as { ewpVersion: string | null; generatedAt: string };
 
-// generatedAt is a UTC ISO string (schema/generate.mjs); render it in whatever
-// timezone the browser is actually in — Intl resolves the zone from the
-// runtime automatically, no timezone argument needed.
-//
-// Full form (year/month/day/zone spelled out) is used as the hover title so
-// it never reads as "is this UTC or mine?"; the short form (just the time) is
-// what's shown inline, since the header line is tight on space and the date
-// is almost always "today" anyway.
-function formatLocalTimestamp(isoUtc: string): string {
-  return new Date(isoUtc).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-function formatShortLocalTime(isoUtc: string): string {
-  return new Date(isoUtc).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
+// The stamp says which EWP version we last rechecked against and when
+// (schema/stamp.mjs writes it; builds never change it). Kept short: it is
+// an internal cross-check, so readers only see the EWP version and the date.
+const stampLine = `EWP ${stamp.ewp.version} · Validator last updated ${stamp.checkedOn}`;
 
 // Icon glyphs live in shared/icons.ts (Hub-wide, imported not copied —
 // message-quality checklist item 8). ICON_NAMES lists which shared keys
@@ -131,7 +113,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     ${renderNavBar(buildNavItems("ewp_validator", hrefFor))}
     <div class="app-header">
       <span><b>Expand World Prefabs YAML Validator</b></span>
-      <span>${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · Schema last updated at <span title="${formatLocalTimestamp(meta.generatedAt)}">${formatShortLocalTime(meta.generatedAt)}</span></span>
+      <span class="app-header-stamp">${stampLine}</span>
     </div>
     <div class="app-body">
       <div class="sidebar" id="sidebar">
@@ -1032,7 +1014,7 @@ function submitReport() {
     reportDescription.trim() || "_(no description provided)_",
     "",
     "---",
-    `_${meta.ewpVersion ? `EWP ${meta.ewpVersion}` : "EWP version unknown"} · schema generated ${meta.generatedAt}_`,
+    `_${stampLine}_`,
   ]
     .filter((line) => line !== "")
     .join("\n");
@@ -1551,25 +1533,13 @@ function showRenameNote(severity: "error" | "info", message: string) {
   popover.style.top = `${rect.bottom + 6}px`;
   renameNotePopover = popover;
 
-  // Stays up until the scripter does something else — no timer. Deferred by
-  // one tick so the same click/keystroke that committed the rename (and
-  // triggered this note) doesn't immediately dismiss it too. Listeners are
-  // capture-phase: Monaco's own mousedown/keydown handling stops
-  // propagation before it would otherwise bubble up to document, so a
-  // bubble-phase listener never sees a click or keystroke made inside the
-  // editor.
-  const dismiss = () => clearRenameNote();
-  const timer = window.setTimeout(() => {
-    document.addEventListener("mousemove", dismiss, { once: true, capture: true });
-    document.addEventListener("mousedown", dismiss, { once: true, capture: true });
-    document.addEventListener("keydown", dismiss, { once: true, capture: true });
-  }, 0);
-  renameNoteDismiss = () => {
-    window.clearTimeout(timer);
-    document.removeEventListener("mousemove", dismiss, { capture: true });
-    document.removeEventListener("mousedown", dismiss, { capture: true });
-    document.removeEventListener("keydown", dismiss, { capture: true });
-  };
+  // Stays up until the scripter does something else — no timer. The rule (one tick of delay,
+  // capture-phase listeners) lives in uiRules.ts, where a test pins it.
+  renameNoteDismiss = armRenameNoteDismiss(
+    document,
+    () => clearRenameNote(),
+    { set: (fn) => window.setTimeout(fn, 0), clear: (id) => window.clearTimeout(id) },
+  );
 }
 
 filenameTextEl.addEventListener("blur", () => {

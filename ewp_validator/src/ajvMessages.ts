@@ -103,7 +103,7 @@ export function commentedOutListMessage(field: string): string {
  * since it's also used there for unrelated branch-guessing).
  */
 export function typeValueEnumMessage(instancePath: string, knownTypesList: string): string {
-  return `${fieldLabelFromInstancePath(instancePath)} must be one of: ${knownTypesList} (any case), optionally followed by ", param1 param2".`;
+  return `${fieldLabelFromInstancePath(instancePath)} must be one of: ${knownTypesList} (any case), then optional ", param1 param2". Unknown types act as \`create\`.`;
 }
 
 function editDistance(a: string, b: string): number {
@@ -142,7 +142,7 @@ export function closestKey(bad: string, candidates: readonly string[]): string |
 export function unknownKeyMessage(key: string, entryTypeTitle: string, suggestion?: string | null): string {
   const article = /^[AEIOU]/.test(entryTypeTitle) ? "an" : "a";
   const hint = suggestion ? ` Did you mean \`${suggestion}:\`?` : "";
-  return `'${key}' is not a valid key in ${article} ${entryTypeTitle}.${hint}`;
+  return `'${key}' is not a valid key in ${article} ${entryTypeTitle}. The mod ignores it.${hint}`;
 }
 
 /**

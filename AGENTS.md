@@ -16,7 +16,7 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 
 ## Cost & tooling
 
-- **$0 forever.** GitHub free tier only (Pages + Actions) — no paid hosting or services, ever, without explicit sign-off. The repo must stay public on the free plan — GitHub Pages doesn't support private repos without GitHub Pro/Enterprise (confirmed via [ticket 24](.scratch/ew_toolkit/issues/24-repo-privacy-and-changelog-link.md)).
+- **$0 forever.** GitHub free tier only (Pages + Actions) — no paid hosting or services, ever, without explicit sign-off. The repo must stay public on the free plan — GitHub Pages doesn't support private repos without GitHub Pro/Enterprise (checked when the repo-privacy question was decided, 2026-09).
 - **Reuse before building.** Prefer existing free/open tooling (e.g. Monaco + monaco-yaml) over a custom build.
 - **Minimal tooling.** No workspace/monorepo tooling (npm workspaces, Turborepo, Nx) unless plain per-Tool `package.json` + build scripts prove genuinely painful.
 - **`valheimtools.stream` is a cross-check reference only** — never a dependency, never coordinate with its owner.
@@ -29,7 +29,7 @@ State an external or domain fact — a file path, how a tool behaves, install st
 
 ## Wiki teaches, validator catches
 
-`ew_wiki` teaches EWP/WEC concepts with worked examples; `ewp_validator` catches and explains real mistakes live, at the point of error. Don't duplicate the validator's job as static wiki content (a "why isn't my script working" troubleshooting section) — the validator already does this for anything schema-checkable. `ew_wiki`'s own mechanism for silent, non-schema-checkable mistakes is its WRONG/CORRECT bad-cop pattern (see `ew_wiki/AGENTS.md`), added directly on the page where the mistake happens, not centralized in a separate section ([ticket 25](.scratch/ew-wiki-real-build/issues/25-troubleshooting-section-decision.md)).
+`ew_wiki` teaches EWP/WEC concepts with worked examples; `ewp_validator` catches and explains real mistakes live, at the point of error. Don't duplicate the validator's job as static wiki content (a "why isn't my script working" troubleshooting section) — the validator already does this for anything schema-checkable. `ew_wiki`'s own mechanism for silent, non-schema-checkable mistakes is its WRONG/CORRECT bad-cop pattern (see `ew_wiki/AGENTS.md`), added directly on the page where the mistake happens, not centralized in a separate section (decided during the wiki build, 2026-09).
 
 ## Script field order
 

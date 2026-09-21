@@ -909,7 +909,7 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
     expect(runReferenceValidation(files).filter((p) => p.id === "malformed-reference")).toEqual([]);
   });
 
-  it("flags a '<' that never closes with a matching '>'", () => {
+  it("flags a '<' with no matching '>'", () => {
     const files = [
       {
         id: "a",
@@ -918,7 +918,7 @@ describe("malformed nested-reference detection (round 5 ticket 08)", () => {
     ];
     const problems = runReferenceValidation(files).filter((p) => p.id === "malformed-reference");
     expect(problems.length).toBeGreaterThanOrEqual(1);
-    expect(problems.some((p) => p.message.includes("never closes"))).toBe(true);
+    expect(problems.some((p) => p.message.includes("no matching"))).toBe(true);
   });
 
   it("does not flag a lone '<' in freeform comparison text with no plausible reference shape", () => {
@@ -961,6 +961,21 @@ describe("poke parameter stray/typo matching (ticket 07)", () => {
     expect(typoWarning!.message).toContain("helloWorld");
     // helloWorld2 is still genuinely stray (no exact/wildcard match, typo or not).
     expect(problems.some((p) => p.severity === "info" && p.message.includes("helloWorld2"))).toBe(true);
+  });
+
+  it("gives one notice for one typo: the declaration the typo warning names is not also reported as stray", () => {
+    const files = [
+      {
+        id: "a",
+        text:
+          "- prefab: Player\n  type: create\n  poke:\n  - self: true\n    parameter: helloWorld <pname>\n\n" +
+          "- prefab: Player\n  type: poke, helloWord\n",
+      },
+    ];
+    const problems = runReferenceValidation(files).filter((p) => p.id === "poke-parameter");
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "warning" });
+    expect(problems[0].message).toContain("probably a typo of 'helloWorld'");
   });
 
   it("does not flag a poke declaration/trigger pair that matches exactly, cross-file", () => {

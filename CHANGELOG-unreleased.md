@@ -1,6 +1,6 @@
 # Unreleased
 
-Raw commit log since the last release tag, auto-appended by `guard-changelog-unreleased-log.cjs` on every commit. Not reader-facing prose — a human/Claude curates this into the real release notes (What's New/Changed/Bug Fixes, see .scratch/changelog-automation/issues/07-whats-new-changed-bugfixes-format.md) at actual cut-release time, then this file resets to empty for the next cycle.
+Raw commit log since the last release tag, auto-appended by `guard-changelog-unreleased-log.cjs` on every commit. Not reader-facing prose — a human/Claude curates this into the real release notes (What's New/Changed/Bug Fixes) at actual cut-release time, then this file resets to empty for the next cycle.
 
 ## Unreleased
 
@@ -94,3 +94,31 @@ Raw commit log since the last release tag, auto-appended by `guard-changelog-unr
 - 9be605e Standardize release-notes format; enforce it with a real hook
 - 82dfad1 Catch up backlog: resolved research tickets, standing-rule additions
 - 9ba5235 Add BFV example scripts as raw reference material
+- 0be4fd9 Add unreleased-commit log and ask-before-push release reminder
+- d6f0ddd Fix theme toggle breaking after the first page (Header.astro)
+- 654f10e Fix the same leave-and-return widget bug in 7 interactive widgets
+- df4f204 Make candid planning/session files and machine-specific hook config private
+- 3a07e05 Fix ew_wiki theme toggle: stop padding the right sidebar over the header controls
+- e424342 Document the narrow-screen hamburger drawer for the shared tool nav
+- d2b5cdd Add Practice recommendation catalog and data/filter overlap notices
+- 50e1905 Add a real type-check step (typecheck script, node types, CI)
+- bca2795 Test the wiki's published examples against the validator
+- 0bbbdc1 Fix wiki examples: no ': ' in values, connected: under poke item, end -> remove
+- ed831a0 Remove references to the private .scratch folder from tracked files
+- bc57f3b Tests use a saved copy of the mod docs; CI runs on PRs and cursor/work; daily live-docs check
+- 47051f2 Use the local mirror of Jere's mod source: sources.md, refresh-fixture script, AGENTS note
+- c191e52 CLI runs the full pipeline (shared validationPipeline), dev builds the CLI, path-free launch.json, hub smoke check
+- 13d19ba Pull leave-warning and confirm-dialog rules into uiRules.ts with tests
+- 04c1a2d Every diagnosis has a required stable id from one registry (diagnosisKinds.ts); remove hand-kept kind-to-category map
+- 68b11f2 Docs: diagnosis ids in AGENTS/CONTEXT; priority stack has one copy
+- 53dc544 Architecture and wording tests; every diagnosis id must fire on one bad input
+- 4dc8af2 One real copy or a comparing test for duplicated lists (types, variadic RPCs, file-name text, yaml error codes)
+- 920b188 Pre-bundle path-browserify so the dev server's editor workers start (fixes dev-console errors)
+- f50792c One crashing check no longer hides other files; per-file scan cache (800 files: re-check after one edit 1.2s -> 0.44s)
+- d734867 Rule provenance table: every diagnosis id records source/docs/heuristic, mod files and date; tests; sources.md note
+- c29c81e AGENTS.md: record rule provenance when re-checking a rule
+- 7763227 Missing prefab is a warning, not an error: EWP logs a warning and still loads the rule (verified in PrefabLoading.cs / InfoManager.cs)
+- 635b72b Five silent-mistake warnings: == or <> in a condition, change rule without triggerRules, world-centre poke, filter weight part, key store mix; each source-checked; wiki change example completed
+- 2db5159 Provenance: the four unrecorded rules are source-checked (FilterShorthand.cs, PrefabData.cs, Yaml.cs)
+- 96c0941 Ticket 31 wording pass: did-you-mean for unknown keys, YAML line reader, script/entry vocabulary, shorter texts, village-cargo maxDistance
+- b2a760b Problems panel: two-level filter (parent tick), folded rows for repeats, plain kind names, hidden-kinds note; tickets 29 and 20 resolved

@@ -40,10 +40,11 @@ jobs:
       # Landing page and each Tool are separate npm projects with their own
       # lockfiles — install each.
       - run: npm ci
-      - run: npm ci
-        working-directory: ewp_validator
-      - run: npm ci
-        working-directory: ew_wiki
+      - name: Install each Tool (list in shared/tools.json)
+        run: |
+          for tool in $(node -p "require('./shared/tools.json').map(t => t.key).join(' ')"); do
+            (cd "$tool" && npm ci)
+          done
 
       - run: npm run typecheck
         working-directory: ewp_validator

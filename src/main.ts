@@ -1,10 +1,9 @@
 import "./style.css";
+import toolList from "../shared/tools.json";
 import { navHtml, mountThemeToggle, iconFor, toolboxIcon } from "./nav";
 
-// Hardcoded v1 Tool registration (no auto-discovery).
-// `key` matches the corresponding entry in nav.ts's navItems and picks the
-// tool's icon via iconFor; omit it (or use a key with no icon mapping) and
-// the tool gets nav.ts's default icon automatically.
+// Tools come from shared/tools.json, the one list (no auto-discovery). `key`
+// is also the Tool's folder name and picks its icon via iconFor.
 interface Tool {
   key: string;
   name: string;
@@ -12,20 +11,12 @@ interface Tool {
   description: string;
 }
 
-const tools: Tool[] = [
-  {
-    key: "ewp_validator",
-    name: "EWP Validator",
-    subpath: "./ewp_validator/",
-    description: "Validate Expand World Prefabs YAML files.",
-  },
-  {
-    key: "ew_wiki",
-    name: "Expand World Wiki",
-    subpath: "./ew_wiki/",
-    description: "Guides for scripting with Expand World Prefabs.",
-  },
-];
+const tools: Tool[] = toolList.map((t) => ({
+  key: t.key,
+  name: t.label,
+  subpath: `./${t.key}/`,
+  description: t.description,
+}));
 
 interface Mention {
   icon: string;

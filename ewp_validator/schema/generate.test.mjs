@@ -55,8 +55,10 @@ describe("ewpRuleEntry", () => {
   });
 
   it("accepts filter/bannedFilter singular alongside filters/bannedFilters plural (ticket 08)", () => {
-    expect(ewpRuleEntry.properties.filter).toEqual({ type: "string" });
-    expect(ewpRuleEntry.properties.bannedFilter).toEqual({ type: "string" });
+    // A list under the singular is accepted too: EWP's FilterShorthand.cs keeps a list a list.
+    const oneOrList = { anyOf: [{ type: "string" }, { type: "array", items: { type: "string" } }] };
+    expect(ewpRuleEntry.properties.filter).toEqual(oneOrList);
+    expect(ewpRuleEntry.properties.bannedFilter).toEqual(oneOrList);
     expect(ewpRuleEntry.properties.filters).toEqual({ type: "array", items: { type: "string" } });
     expect(ewpRuleEntry.properties.bannedFilters).toEqual({ type: "array", items: { type: "string" } });
   });

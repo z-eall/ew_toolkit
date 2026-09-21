@@ -49,14 +49,16 @@ const scalarArray = { type: "array", items: scalar };
 
 // filter/bannedFilter singular forms are real (live-tested, not a typo — see
 // ticket 08) even though the current C# source only declares the plural
-// filters/bannedFilters array fields. Singular = one value, plural = array of
-// the same value type, same underlying property.
+// filters/bannedFilters array fields. FilterShorthand.cs renames the singular key to the plural
+// at every mapping level: a single value becomes a one-item list, and a list stays a list. So
+// the singular accepts one value or a list here, as it does in the nested object filters; the
+// validator reports a list under the singular as a Practice info (shapeMismatchDiagnosis.ts).
 function withFilterFields(properties) {
   return {
     ...properties,
-    filter: str,
+    filter: { anyOf: [str, strArray] },
     filters: strArray,
-    bannedFilter: str,
+    bannedFilter: { anyOf: [str, strArray] },
     bannedFilters: strArray,
     filterLimit: numberOrString,
   };

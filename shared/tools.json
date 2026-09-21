@@ -1,0 +1,14 @@
+[
+  {
+    "key": "ewp_validator",
+    "label": "EWP Validator",
+    "icon": "file",
+    "description": "Validate Expand World Prefabs YAML files."
+  },
+  {
+    "key": "ew_wiki",
+    "label": "Expand World Wiki",
+    "icon": "book",
+    "description": "Guides for scripting with Expand World Prefabs."
+  }
+]

@@ -60,16 +60,16 @@ describe("commentedOutListMessage", () => {
 describe("typeValueEnumMessage", () => {
   it("names the field and lists the known types passed in", () => {
     const msg = typeValueEnumMessage("/type", "create, destroy");
-    expect(msg).toBe('`type:` must be one of: create, destroy (any case), optionally followed by ", param1 param2".');
+    expect(msg).toBe('`type:` must be one of: create, destroy (any case), then optional ", param1 param2". Unknown types act as `create`.');
   });
 });
 
 describe("unknownKeyMessage", () => {
   it("names the key and the entry type", () => {
-    expect(unknownKeyMessage("typo", "EWP entry")).toBe("'typo' is not a valid key in an EWP entry.");
-    expect(unknownKeyMessage("typo", "WEC data entry")).toBe("'typo' is not a valid key in a WEC data entry.");
+    expect(unknownKeyMessage("typo", "EWP entry")).toBe("'typo' is not a valid key in an EWP entry. The mod ignores it.");
+    expect(unknownKeyMessage("typo", "WEC data entry")).toBe("'typo' is not a valid key in a WEC data entry. The mod ignores it.");
     expect(unknownKeyMessage("maxdistanse", "EWP entry", "maxDistance")).toBe(
-      "'maxdistanse' is not a valid key in an EWP entry. Did you mean `maxDistance:`?",
+      "'maxdistanse' is not a valid key in an EWP entry. The mod ignores it. Did you mean `maxDistance:`?",
     );
   });
 });

@@ -15,6 +15,8 @@ describe("provenance table", () => {
     it(`${id}: entry is complete for its level (${p.level})`, () => {
       if (p.level === "source" || p.level === "docs") expect(p.files.length, "needs the mod file(s) it rests on").toBeGreaterThan(0);
       if (p.level !== "source" && p.level !== "docs") expect((p.note ?? "").length, "needs a note saying why").toBeGreaterThan(10);
+      // Round 6 ticket 23: a rule that says it was read from the mod source or docs must say when.
+      if (p.level === "source" || p.level === "docs") expect(p.checked, "a source or docs rule needs a check date").not.toBeNull();
       if (p.checked !== null) expect(p.checked).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       if (p.checked !== null) expect(p.ewpVersion, "a dated check names the EWP version").not.toBeNull();
       for (const f of p.files) expect(REPOS.some((r) => f.startsWith(r)), `${f} must start with a mirrored repo name`).toBe(true);

@@ -8,28 +8,16 @@
       "port": 5173
     },
     {
-      "name": "ewp-validator-dev-round4",
+      "name": "ew-toolkit-hub-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "ewp_validator", "run", "dev", "--", "--port", "5175"],
-      "port": 5175
+      "runtimeArgs": ["run", "dev", "--", "--port", "5174"],
+      "port": 5174
     },
     {
-      "name": "ewp-toolkit-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173
-    },
-    {
-      "name": "ewp-toolkit-preview",
+      "name": "ew-toolkit-hub-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
-    },
-    {
-      "name": "ew-toolkit-hub-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173
     },
     {
       "name": "ew-wiki-dev",

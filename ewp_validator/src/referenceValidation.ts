@@ -19,7 +19,7 @@
 //      treated as wildcards, and only the key-name portion is compared — the
 //      trailing value/parameter of a save or a `type: key` trigger is ignored.
 import { isMap, isSeq, parseDocument, type YAMLMap } from "yaml";
-import { collectRuleEntryDataReferences } from "./dataFieldValidation";
+import { collectRuleEntryDataReferences, findGroupEnd } from "./dataFieldValidation";
 import { practiceMessages } from "./practiceRecommendations";
 import { findPairRange, getPairValueNode, guessBranch, nodeRange, type Severity } from "./structuralPrecheck";
 import { kindFields, type DiagnosisId } from "./diagnosisKinds";
@@ -112,19 +112,8 @@ function scanCommentedReadKeys(text: string): string[] {
 
 // Saved keys nest one or more balanced `<...>` dynamic parameters. Every scan
 // below (token extraction, top-level splitting, wildcard matching) needs the
-// same primitive: from the `<` at `start`, find the index just past its matching
-// `>`. Returns -1 if the brackets never balance.
-function findGroupEnd(text: string, start: number): number {
-  let depth = 0;
-  for (let i = start; i < text.length; i++) {
-    if (text[i] === "<") depth++;
-    else if (text[i] === ">") {
-      depth--;
-      if (depth === 0) return i + 1;
-    }
-  }
-  return -1;
-}
+// same primitive, `findGroupEnd` (one copy, in dataFieldValidation.ts): from the `<` at
+// `start`, the index just past its matching `>`, or -1 if the brackets never balance.
 
 // Walk a key name, calling `onGroup` once per balanced `<...>` parameter and
 // `onLiteral` for every character outside a group. Trailing unbalanced text is
@@ -266,7 +255,7 @@ function scanKeyOccurrences(
     if (!head) continue;
 
     const end = findGroupEnd(text, i);
-    if (end === -1) continue; // unbalanced, leave for the structural pre-check
+    if (end === -1) continue; // unbalanced: reported once by scanUnrecognizedFunctionHeads, not here
 
     const inner = text.slice(i + head[0].length, end - 1); // between "<head_" and ">"
     const range: [number, number] = [i, end];
@@ -432,14 +421,12 @@ const NO_ARG_FUNCTION_NAMES = new Set([
 // rather than risk a false positive.
 const NO_ARG_OBJECT_FUNCTION_NAMES = new Set([
   "zdo", "pos", "i", "j", "a", "rad", "deg", "rot", "pid", "cid", "platform",
-  "pname", "pchar", "pvisible", "owner", "connected", "biome", "joints",
-  // `<none>`: documented (docs/functions.md, "Empty or lack of value when using
-  // filters") but not found in Functions.cs/ObjectFunctions.cs's own dispatch
-  // switches during ticket 05's research — likely resolved by filter-comparison
-  // code elsewhere in the mod, not the general `<...>` template engine. Included
-  // here on the strength of the docs rather than a pinned source line, since
-  // treating a documented, scripter-facing keyword as a "typo" would be a
-  // needless false positive either way.
+  "pname", "pchar", "pvisible", "owner", "connected", "biome", "altbiome", "joints",
+  // `<none>`: documented (docs/functions.md:50, "Empty or lack of value when using filters"). It is
+  // not a dispatch name in Functions.cs or ObjectFunctions.cs. It is a plain word the mod itself
+  // writes and compares: DataValues.cs:239 treats a value of "<none>" as empty, and
+  // HandleChanged.cs:176 and :202 write it for an empty prefab or value. Kept in this list so a
+  // scripter's `<none>` is not called a typo (checked against the mod source 2026-09-20).
   "none",
 ]);
 // `GetValueFunction`, Functions.cs:155-251 (68 names, argument-taking).
@@ -468,7 +455,7 @@ const ARG_OBJECT_FUNCTION_HEADS = new Set([
 
 const KNOWN_NO_ARG_NAMES = new Set([...NO_ARG_FUNCTION_NAMES, ...NO_ARG_OBJECT_FUNCTION_NAMES]);
 const KNOWN_ARG_HEADS = new Set([...ARG_FUNCTION_HEADS, ...ARG_OBJECT_FUNCTION_HEADS]);
-const ALL_KNOWN_FUNCTION_NAMES = [...new Set([...KNOWN_NO_ARG_NAMES, ...KNOWN_ARG_HEADS])];
+export const ALL_KNOWN_FUNCTION_NAMES = [...new Set([...KNOWN_NO_ARG_NAMES, ...KNOWN_ARG_HEADS])];
 // Case-insensitive lookup, keyed by lowercase, back to the real (correctly-cased)
 // spelling(s) — used only to recognize "right name, wrong case" as a distinct,
 // high-confidence case from a genuine spelling typo (dispatch itself is
@@ -626,8 +613,8 @@ function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestio
 }
 
 // Scan the whole document for balanced `<...>` groups whose head isn't any
-// known function name, skipping (a) unbalanced brackets — same "leave for
-// structural pre-check" rule scanKeyOccurrences follows — and (b) a head built
+// known function name. It returns unbalanced brackets in their own list (reported as
+// "malformed reference"; scanKeyOccurrences skips them) and skips a head built
 // entirely from a nested `<...>` group, which has no literal spelling to check
 // (the real name only exists at runtime, same reasoning as hasLiteral above).
 // Deliberately no jump-past-match on a hit, matching scanKeyOccurrences: a
@@ -747,6 +734,32 @@ function pokeTriggerAlternatives(token: string): string[] {
 // would only add surface area no real script needs.
 function pokeNameCompatible(declaredName: string, triggerToken: string): boolean {
   return pokeTriggerAlternatives(triggerToken).some((alt) => keysCompatible(declaredName, alt));
+}
+
+/**
+ * The declared poke name a `type: poke, X` trigger most likely misspells: literal names only,
+ * edit distance 1 or 2, one clear winner. Null when the trigger already matches a declaration,
+ * is dynamic, or has no single close match.
+ */
+function closestPokeDeclaration(token: string, declarations: readonly { token: string }[]): string | null {
+  if (token.includes("<")) return null;
+  if (declarations.some((d) => pokeNameCompatible(token, d.token))) return null;
+  let best: string | null = null;
+  let bestDist = Infinity;
+  let tie = false;
+  for (const { token: declared } of declarations) {
+    if (declared.includes("<")) continue;
+    const dist = levenshtein(token.toLowerCase(), declared.toLowerCase());
+    if (dist < bestDist) {
+      best = declared;
+      bestDist = dist;
+      tie = false;
+    } else if (dist === bestDist && declared.toLowerCase() !== best?.toLowerCase()) {
+      tie = true;
+    }
+  }
+  if (!best || tie || bestDist === 0 || bestDist > 2) return null;
+  return best;
 }
 
 interface PokeTokenOccurrence {
@@ -883,8 +896,8 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         fileId: file.id,
         ...kindFields("malformed-reference"),
         message:
-          "This '<' never closes with a matching '>'. EWP leaves it — and everything after it " +
-          "in the same string — as literal, unresolved text.",
+          "This '<' has no matching '>'. EWP can leave it, and everything after it in the same " +
+          "string, as literal text. Add the missing '>'.",
         range,
       });
     }
@@ -1134,8 +1147,16 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   // warning, per the same "another mod/console command outside the batch" carve
   // -out custom-key orphans already use — a poke can legitimately be caught by
   // a rule that isn't loaded here.
+  // A declaration that a typo warning below points at is not also reported as stray: one root
+  // cause, one message (AGENTS rule 4). The trigger's warning already names it.
+  const suggestedByTypo = new Set<string>();
+  for (const { token } of pokeTriggers) {
+    const best = closestPokeDeclaration(token, pokeDeclarations);
+    if (best) suggestedByTypo.add(best.toLowerCase());
+  }
   for (const { token, occ } of pokeDeclarations) {
     if (pokeTriggers.some((t) => pokeNameCompatible(token, t.token))) continue;
+    if (suggestedByTypo.has(token.toLowerCase())) continue;
     problems.push({
       fileId: occ.fileId,
       ...kindFields("poke-parameter"),
@@ -1154,23 +1175,8 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
   // fully-literal tokens (no `<...>`) on both sides — comparing edit distance
   // against a dynamic skeleton doesn't mean anything.
   for (const { token, occ } of pokeTriggers) {
-    if (token.includes("<")) continue;
-    if (pokeDeclarations.some((d) => pokeNameCompatible(token, d.token))) continue;
-    let best: string | null = null;
-    let bestDist = Infinity;
-    let tie = false;
-    for (const { token: declared } of pokeDeclarations) {
-      if (declared.includes("<")) continue;
-      const dist = levenshtein(token.toLowerCase(), declared.toLowerCase());
-      if (dist < bestDist) {
-        best = declared;
-        bestDist = dist;
-        tie = false;
-      } else if (dist === bestDist && declared.toLowerCase() !== best?.toLowerCase()) {
-        tie = true;
-      }
-    }
-    if (!best || tie || bestDist === 0 || bestDist > 2) continue;
+    const best = closestPokeDeclaration(token, pokeDeclarations);
+    if (!best) continue;
     problems.push({
       fileId: occ.fileId,
       ...kindFields("poke-parameter", "warning"),

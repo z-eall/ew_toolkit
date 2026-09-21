@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { anyUnsavedWork, applyLeaveWarning, confirmKeyDecision, initialFocusIndex } from "./uiRules";
+import { RENAME_NOTE_DISMISS_EVENTS, anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss, confirmKeyDecision, initialFocusIndex } from "./uiRules";
 
 describe("anyUnsavedWork", () => {
   it("is false with no files", () => expect(anyUnsavedWork([])).toBe(false));
@@ -66,5 +66,44 @@ describe("call sites keep the rules", () => {
   it("no dialog marks a danger button as primary", () => {
     const main = readFileSync(new URL("./main.ts", import.meta.url), "utf8");
     expect(/primary:\s*true[^}]*danger:\s*true|danger:\s*true[^}]*primary:\s*true/.test(main)).toBe(false);
+  });
+});
+
+describe("rename note dismiss (round 6 ticket 25)", () => {
+  const fake = () => {
+    const calls: { op: string; type: string; options: Record<string, boolean> }[] = [];
+    const target = {
+      addEventListener: (type: string, _l: () => void, options: { once: boolean; capture: boolean }) => calls.push({ op: "add", type, options }),
+      removeEventListener: (type: string, _l: () => void, options: { capture: boolean }) => calls.push({ op: "remove", type, options }),
+    };
+    let pending: (() => void) | null = null;
+    const cleared: number[] = [];
+    const timers = { set: (fn: () => void) => ((pending = fn), 7), clear: (id: number) => void cleared.push(id) };
+    return { calls, target, timers, fire: () => pending?.(), cleared };
+  };
+
+  it("adds nothing until the tick passes, so the click that made the note does not close it", () => {
+    const f = fake();
+    armRenameNoteDismiss(f.target, () => {}, f.timers);
+    expect(f.calls).toEqual([]);
+    f.fire();
+    expect(f.calls.map((c) => c.type)).toEqual([...RENAME_NOTE_DISMISS_EVENTS]);
+  });
+
+  it("uses capture-phase, once-only listeners (a bubble-phase one never sees a click inside Monaco)", () => {
+    const f = fake();
+    armRenameNoteDismiss(f.target, () => {}, f.timers);
+    f.fire();
+    for (const c of f.calls) expect(c.options).toEqual({ once: true, capture: true });
+  });
+
+  it("undoing it cancels the timer and removes each listener with the same capture flag", () => {
+    const f = fake();
+    const undo = armRenameNoteDismiss(f.target, () => {}, f.timers);
+    f.fire();
+    f.calls.length = 0;
+    undo();
+    expect(f.cleared).toEqual([7]);
+    expect(f.calls).toEqual(RENAME_NOTE_DISMISS_EVENTS.map((type) => ({ op: "remove", type, options: { capture: true } })));
   });
 });

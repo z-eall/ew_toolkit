@@ -168,10 +168,11 @@ function diagnoseScalarFieldAsList(
   const lines = stringListItems(raw);
   if (!lines) return null;
 
-  // Nested `filter:`/`bannedFilter:` written as a list: EWP accepts it (rewrites it to the
-  // plural form), so it is a Practice recommendation, not an error — unless a comma line is
-  // an incomplete triple, which is a real content mistake and keeps the error below.
-  if (section && (field === "filter" || field === "bannedFilter") && !isMalformedTypedLineList(field, lines)) {
+  // `filter:`/`bannedFilter:` written as a list, at any level: EWP accepts it (FilterShorthand.cs
+  // renames the key at every mapping level and keeps a list as a list), so it is a Practice
+  // recommendation, not an error — unless a comma line is an incomplete triple, which is a real
+  // content mistake and keeps the error below.
+  if ((field === "filter" || field === "bannedFilter") && !isMalformedTypedLineList(field, lines)) {
     const plural = field === "filter" ? "filters" : "bannedFilters";
     return {
       ...kindFields("shape-filter-as-list"),

@@ -14,6 +14,7 @@
 // place; every consumer calls buildNavItems() against it rather than typing
 // its own list.
 import { icon, type IconKey } from "./icons";
+import toolList from "./tools.json";
 
 export interface NavToolMeta {
   key: string;
@@ -21,14 +22,12 @@ export interface NavToolMeta {
   icon: IconKey;
 }
 
-// Order matters: Home first, Tools in registration order, Support always
-// last. Add a future Tool between the last Tool and Support — every
-// consumer (landing page, every Tool's own nav, the wiki) picks it up
-// automatically, no other file to remember to touch.
+// Order matters: Home first, Tools in the order of shared/tools.json (the one
+// list every script and page reads), Support always last. To add a Tool, add
+// one entry to shared/tools.json and its folder; nothing else lists Tools.
 export const NAV_TOOLS: NavToolMeta[] = [
   { key: "home", label: "Home", icon: "home" },
-  { key: "ewp_validator", label: "EWP Validator", icon: "file" },
-  { key: "ew_wiki", label: "Expand World Wiki", icon: "book" },
+  ...(toolList as { key: string; label: string; icon: IconKey }[]).map(({ key, label, icon }) => ({ key, label, icon })),
   { key: "support", label: "Support", icon: "support" },
 ];
 

@@ -36,6 +36,6 @@ describe("unknown key in a real script", () => {
   });
   it("a far-off key has no guess", () => {
     const m = messagesOf("- prefab: Boar\n  type: create\n  bogusKey: 1\n");
-    expect(m[0]).toBe("'bogusKey' is not a valid key in an EWP entry.");
+    expect(m[0]).toBe("'bogusKey' is not a valid key in an EWP entry. The mod ignores it.");
   });
 });

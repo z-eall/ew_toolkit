@@ -46,3 +46,31 @@ export function initialFocusIndex(buttons: ReadonlyArray<{ primary?: boolean }>)
   const i = buttons.findIndex((b) => b.primary);
   return i >= 0 ? i : 0;
 }
+
+export const RENAME_NOTE_DISMISS_EVENTS = ["mousemove", "mousedown", "keydown"] as const;
+
+interface DismissTarget {
+  addEventListener(type: string, listener: () => void, options: { once: boolean; capture: boolean }): void;
+  removeEventListener(type: string, listener: () => void, options: { capture: boolean }): void;
+}
+
+/**
+ * The rename note stays up until the scripter does something else. This arms that: after one tick
+ * (so the click or key that caused the note does not close it at once) it listens for the events
+ * above, once each. The listeners must be capture-phase: Monaco stops mousedown and keydown before
+ * they bubble to the document, so a bubble-phase listener never saw a click inside the editor and
+ * the note stayed up (shipped once, fixed, now pinned by a test). Returns a function that undoes it.
+ */
+export function armRenameNoteDismiss(
+  target: DismissTarget,
+  dismiss: () => void,
+  timers: { set(fn: () => void): number; clear(id: number): void },
+): () => void {
+  const timer = timers.set(() => {
+    for (const type of RENAME_NOTE_DISMISS_EVENTS) target.addEventListener(type, dismiss, { once: true, capture: true });
+  });
+  return () => {
+    timers.clear(timer);
+    for (const type of RENAME_NOTE_DISMISS_EVENTS) target.removeEventListener(type, dismiss, { capture: true });
+  };
+}

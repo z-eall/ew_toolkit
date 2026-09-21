@@ -27,8 +27,8 @@ export const practiceMessages = {
     `but we recommend renaming it to \`filter:\`.`,
 
   /** `filter:`/`bannedFilter:` written as a YAML list — EWP rewrites it to the plural form. */
-  filterAsList: (field: string, plural: string, section: string) =>
-    `Preferred format: \`${field}:\` is written as a list under \`${section}:\`. It still works, ` +
+  filterAsList: (field: string, plural: string, section?: string) =>
+    `Preferred format: \`${field}:\` is written as a list${section ? ` under \`${section}:\`` : ""}. It still works, ` +
     `but a list belongs in \`${plural}:\`.`,
 
   /** Nested `data:` next to a filter field. `written` is the filter field the scan found. */
@@ -64,6 +64,15 @@ export const practiceMessages = {
     return `Silently ignored: \`${key}\` is saved with \`<save_${key}_...>\` in EWP's own keys, but ${reads} reads Valheim's global keys. ${fix}`;
   },
 
+  terrainPaintName: (shown: string) =>
+    `Silently ignored: \`paint: ${shown}\` is not a paint name EWP knows, so it paints Reset. Use Dirt, Cultivate, Paved, Reset, ClearVegetation or DeepSnow.`,
+
+  ownerDropped: () =>
+    "Silently ignored: this entry changes items, so EWP recreates the object and `owner:` is lost. Add `injectData: true`.",
+
+  iterOperation: (op: string) =>
+    `Silently ignored: \`${op}\` is not a function EWP knows, so this \`<iter_...>\` never resolves. Use a function like add, min or max.`,
+
   filterBothForms: (singular: string, plural: string, section: string | null) =>
     `Overlapping fields: \`${singular}:\` and \`${plural}:\` are both written ${section ? `under \`${section}:\`` : "here"}. ` +
     `Check which one you want to keep.`,
@@ -77,5 +86,8 @@ export function silentFindingMessage(f: SilentFinding): string {
     case "silent-poke-world-centre": return practiceMessages.pokeWorldCentre();
     case "silent-filter-weight-part": return practiceMessages.filterWeightPart(f.shown);
     case "silent-key-store-mix": return practiceMessages.keyStoreMix(f.key, f.watcher);
+    case "silent-terrain-paint-name": return practiceMessages.terrainPaintName(f.shown);
+    case "silent-owner-dropped": return practiceMessages.ownerDropped();
+    case "silent-iter-operation": return practiceMessages.iterOperation(f.op);
   }
 }

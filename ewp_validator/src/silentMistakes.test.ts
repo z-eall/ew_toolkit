@@ -143,3 +143,51 @@ describe("rule 5: EWP keys and Valheim global keys are separate stores", () => {
     expect(silent(idsOf("# exec: <save_raidRank_3>\n- type: globalkey, raidRank\n  command: s updated\n"))).toEqual([]);
   });
 });
+
+// Round 6 ticket 22: three more warnings, from the sweep 4 findings. Four other candidates were read
+// against the C# and dropped, because the mod handles them correctly (see the ticket).
+describe("rule 6: a terrain paint name EWP does not know", () => {
+  const terrain = (paint: string) => `- prefab: Player\n  type: create\n  terrain:\n  - paint: ${paint}\n    paintRadius: 4\n`;
+
+  it("warns on a misspelled paint name", () => {
+    expect(idsOf(terrain("Dirtt"))).toContain("silent-terrain-paint-name");
+  });
+  it("twin: every real name, in any case, and a number stay quiet", () => {
+    for (const ok of ["Dirt", "cultivate", "PAVED", "Reset", "ClearVegetation", "DeepSnow", "3", "<par_paint>"]) {
+      expect(silent(idsOf(terrain(ok))), ok).toEqual([]);
+    }
+  });
+  it("the name list equals the schema's paint list", async () => {
+    const schema = (await import("./schema.generated.json")).default as any;
+    const listed: string[] = schema.definitions.terrainData.properties.paint.anyOf.find((a: any) => a.enum).enum;
+    const { TERRAIN_PAINT_NAMES } = await import("./silentMistakes");
+    expect(new Set(TERRAIN_PAINT_NAMES)).toEqual(new Set(listed));
+  });
+});
+
+describe("rule 7: owner lost when items change", () => {
+  it("warns on owner with addItems and no injectData", () => {
+    expect(idsOf("- prefab: Boar\n  type: create\n  owner: 5\n  addItems: Wood, 1\n")).toContain("silent-owner-dropped");
+    expect(idsOf("- prefab: Boar\n  type: create\n  owner: 5\n  removeItems:\n  - Wood, 1\n")).toContain("silent-owner-dropped");
+  });
+  it("twin: injectData true, no item change, a data: value, or a removed object stay quiet", () => {
+    for (const ok of [
+      "- prefab: Boar\n  type: create\n  owner: 5\n  addItems: Wood, 1\n  injectData: true\n",
+      "- prefab: Boar\n  type: create\n  owner: 5\n",
+      "- prefab: Boar\n  type: create\n  owner: 5\n  addItems: Wood, 1\n  data: int, level, 3\n",
+      "- prefab: Boar\n  type: create\n  owner: 5\n  addItems: Wood, 1\n  remove: true\n",
+    ]) expect(silent(idsOf(ok)), ok).toEqual([]);
+  });
+});
+
+describe("rule 8: an unknown function in <iter_...>", () => {
+  it("warns on an OP that is not a function, for iter and iter2", () => {
+    expect(idsOf("- prefab: Boar\n  type: create\n  exec: <iter_ad_0_3_<par_i>>\n")).toContain("silent-iter-operation");
+    expect(idsOf("- prefab: Boar\n  type: create\n  exec: <iter2_summ_0_1_0_1_<par_i>>\n")).toContain("silent-iter-operation");
+  });
+  it("twin: real functions stay quiet", () => {
+    for (const ok of ["<iter_add_0_3_<par_i>>", "<iter_max_1_5_<par_i>>", "<iter2_mul_0_1_0_1_<par_i>>"]) {
+      expect(silent(idsOf(`- prefab: Boar\n  type: create\n  exec: ${ok}\n`)), ok).toEqual([]);
+    }
+  });
+});

@@ -4,13 +4,14 @@
 //
 // Plain script, no workspace/monorepo tooling.
 import { execSync } from "node:child_process";
-import { cpSync, mkdirSync, renameSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 
 function run(cmd, cwd = ".") {
   execSync(cmd, { cwd, stdio: "inherit" });
 }
 
-const tools = ["ewp_validator", "ew_wiki"];
+// shared/tools.json is the one list of Tools; each key is the Tool's folder.
+const tools = JSON.parse(readFileSync("shared/tools.json", "utf8")).map((t) => t.key);
 
 rmSync("dist", { recursive: true, force: true });
 

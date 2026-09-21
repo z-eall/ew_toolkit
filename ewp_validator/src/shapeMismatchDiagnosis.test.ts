@@ -206,6 +206,27 @@ describe("nested filter: written as a list (ticket 28)", () => {
     expect(problems[0].message).toContain("`filters:`");
   });
 
+  it("a top-level filter: list is the same info, without a section name (EWP accepts it at every level)", () => {
+    const yaml = ["- prefab: Player", "  type: create", "  filter:", "  - Farming1", "  - Farming2", ""].join(String.fromCharCode(10));
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatchObject({ severity: "info", branch: PRACTICE_CATEGORY });
+    expect(problems[0].message).toContain("`filter:` is written as a list.");
+    expect(problems[0].message).toContain("`filters:`");
+  });
+
+  it("a top-level bannedFilter: list gets the plural hint", () => {
+    const yaml = ["- prefab: Player", "  type: create", "  bannedFilter:", "  - Farming1", "  - Farming2", ""].join(String.fromCharCode(10));
+    const problems = runStructuralPrecheck(yaml);
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("`bannedFilters:`");
+  });
+
+  it("a top-level filter: list with an incomplete triple is still an error", () => {
+    const yaml = ["- prefab: Player", "  type: create", "  filter:", "  - int, isCustom", ""].join(String.fromCharCode(10));
+    expect(runStructuralPrecheck(yaml).some((p) => p.severity === "error")).toBe(true);
+  });
+
   it("keeps the error for an incomplete typed triple in the list", () => {
     const yaml = ["- prefab: Player", "  type: create", "  poke:", "  - prefab: Rock", "    filter:", "    - int, isCustom", ""].join(String.fromCharCode(10));
     expect(runStructuralPrecheck(yaml).some((p) => p.severity === "error")).toBe(true);

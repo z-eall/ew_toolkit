@@ -47,7 +47,7 @@ const kinds = {
   // --- Shape mismatch (pre-ajv arbitration) ---
   "shape-scalar-field-as-list": { category: VALUE_PROBLEM_CATEGORY, severity: "error", what: "single-value field written as a YAML list" },
   "shape-list-field-as-inline-triple": { category: VALUE_PROBLEM_CATEGORY, severity: "error", what: "list field written as one inline filter line" },
-  "shape-filter-as-list": { category: PRACTICE_CATEGORY, severity: "info", what: "nested filter written as a list; EWP accepts it" },
+  "shape-filter-as-list": { category: PRACTICE_CATEGORY, severity: "info", what: "filter written as a list (any level); EWP accepts it" },
   "rpc-orphan-sibling-param": { category: VALUE_PROBLEM_CATEGORY, severity: "warning", what: "RPC parameter split from its name entry" },
   "rpc-missing-name": { category: VALUE_PROBLEM_CATEGORY, severity: "warning", what: "RPC entry has parameters but no name" },
   "rpc-param-mismatch": { category: VALUE_PROBLEM_CATEGORY, severity: "warning", what: "RPC parameter differs from the documented table" },
@@ -71,6 +71,9 @@ const kinds = {
   "silent-poke-world-centre": { category: PRACTICE_CATEGORY, severity: "warning", what: "a poke under a prefab-less globalkey/key/time/realtime rule measures from the world centre, 100 m by default" },
   "silent-filter-weight-part": { category: PRACTICE_CATEGORY, severity: "warning", what: "a 4th comma part in a filter is a weight, not a second accepted value" },
   "silent-key-store-mix": { category: PRACTICE_CATEGORY, severity: "warning", what: "EWP keys and Valheim global keys are separate stores; the watcher reads the other one" },
+  "silent-terrain-paint-name": { category: PRACTICE_CATEGORY, severity: "warning", what: "a terrain paint: that is not a paint name or a number; EWP paints Reset instead" },
+  "silent-owner-dropped": { category: PRACTICE_CATEGORY, severity: "warning", what: "owner: with addItems/removeItems and no injectData: true; the object is recreated and the owner is lost" },
+  "silent-iter-operation": { category: PRACTICE_CATEGORY, severity: "warning", what: "<iter_OP_...> with an OP that is not a function EWP has; the expression never resolves" },
 
   // --- Cross-file references ---
   "data-reference": { category: REFERENCE_PROBLEM_CATEGORY, severity: "error", alsoSeverity: ["info", "warning"], what: "data entry undefined (error), unused (info) or defined twice (warning)" },

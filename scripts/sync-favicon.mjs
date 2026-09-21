@@ -12,14 +12,15 @@
 // Run as each Tool's own `prebuild` script (self-heals on every build, no
 // separate step to remember) - see package.json in ew_toolkit/,
 // ewp_validator/, and ew_wiki/.
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const hubRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const master = join(hubRoot, "shared", "favicon.png");
 
-const targets = ["public/favicon.png", "ewp_validator/public/favicon.png", "ew_wiki/public/favicon.png"];
+const tools = JSON.parse(readFileSync(join(hubRoot, "shared", "tools.json"), "utf8"));
+const targets = ["public/favicon.png", ...tools.map((t) => `${t.key}/public/favicon.png`)];
 
 for (const target of targets) {
   const dest = join(hubRoot, target);

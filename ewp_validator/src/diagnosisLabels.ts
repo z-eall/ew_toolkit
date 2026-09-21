@@ -46,6 +46,9 @@ export const KIND_LABELS: Record<DiagnosisId, KindLabel> = {
   "silent-poke-world-centre": "Poke with no place set",
   "silent-filter-weight-part": "Comma in a filter value",
   "silent-key-store-mix": "Key saved in one place, read in another",
+  "silent-terrain-paint-name": "Terrain paint name EWP does not know",
+  "silent-owner-dropped": "Owner lost when items change",
+  "silent-iter-operation": "Iterator uses an unknown function",
 
   "data-reference": { error: "Data name not defined anywhere", info: "Data entry never used", warning: "Data name defined twice" },
   "custom-key": "Custom key never saved or never read",
