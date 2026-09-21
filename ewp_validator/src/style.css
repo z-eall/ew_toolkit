@@ -1487,3 +1487,22 @@ body {
     text-align: center;
   }
 }
+
+/* Jump target: the whole flagged line is marked after a jump from the Problems panel, then fades.
+   The editor has no caret while the panel holds the keyboard. Length: REVEAL_HIGHLIGHT_MS in uiRules.ts. */
+.monaco-editor .reveal-line {
+  background: color-mix(in srgb, var(--info) 38%, transparent);
+  animation: reveal-line-fade 1500ms ease-out forwards;
+}
+
+@keyframes reveal-line-fade {
+  0% { background-color: color-mix(in srgb, var(--info) 45%, transparent); }
+  70% { background-color: color-mix(in srgb, var(--info) 30%, transparent); }
+  100% { background-color: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monaco-editor .reveal-line {
+    animation: none;
+  }
+}

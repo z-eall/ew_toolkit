@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { PHONE_MAX_WIDTH, effectiveValidationMode, isPhoneWidth, nextPhonePanel, RENAME_NOTE_DISMISS_EVENTS, anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss, confirmKeyDecision, initialFocusIndex } from "./uiRules";
+import { PHONE_MAX_WIDTH, REVEAL_HIGHLIGHT_MS, effectiveValidationMode, isPhoneWidth, nextPhonePanel, RENAME_NOTE_DISMISS_EVENTS, anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss, confirmKeyDecision, initialFocusIndex } from "./uiRules";
 
 describe("anyUnsavedWork", () => {
   it("is false with no files", () => expect(anyUnsavedWork([])).toBe(false));
@@ -140,5 +140,17 @@ describe("phone layout decisions", () => {
   it("the phone width matches the CSS media query in style.css", () => {
     const css = readFileSync(new URL("./style.css", import.meta.url), "utf8");
     expect(css).toContain(`@media (max-width: ${PHONE_MAX_WIDTH}px)`);
+  });
+});
+
+describe('reveal highlight', () => {
+  it('the CSS fade lasts as long as the rule says', () => {
+    const css = readFileSync(new URL('./style.css', import.meta.url), 'utf8');
+    expect(css).toContain('animation: reveal-line-fade ' + REVEAL_HIGHLIGHT_MS + 'ms');
+  });
+  it('revealProblem marks the line for that long', () => {
+    const src = readFileSync(new URL('./fileManager.ts', import.meta.url), 'utf8');
+    expect(src).toContain('REVEAL_HIGHLIGHT_MS');
+    expect(src).toContain('reveal-line');
   });
 });

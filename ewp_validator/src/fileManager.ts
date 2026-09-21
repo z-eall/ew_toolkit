@@ -9,7 +9,7 @@
 // Manual is selected, only the Validate button runs a pass, so loading or
 // editing a big batch doesn't re-scan the whole file set behind the user's back.
 import * as monaco from "monaco-editor";
-import { anyUnsavedWork } from "./uiRules";
+import { REVEAL_HIGHLIGHT_MS, anyUnsavedWork } from "./uiRules";
 import { pickHighestPriority, type Problem, type Severity } from "./structuralPrecheck";
 import { runFullValidation, scanStructural } from "./validationPipeline";
 import type { SaveScope } from "./fileView";
@@ -399,7 +399,24 @@ export class FileManager {
     const pos = file.model.getPositionAt(offset);
     this.editor.revealLineInCenter(pos.lineNumber);
     this.editor.setPosition(pos);
+    this.markRevealedLine(pos.lineNumber);
     if (opts.focus ?? true) this.editor.focus();
+  }
+
+  private revealMarks: monaco.editor.IEditorDecorationsCollection | null = null;
+  private revealTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * Mark the whole target line for a moment after a jump. A jump from the Problems panel leaves the
+   * editor without focus, so Monaco draws no caret; this mark shows where the jump went.
+   */
+  private markRevealedLine(line: number): void {
+    this.revealMarks?.clear();
+    clearTimeout(this.revealTimer);
+    this.revealMarks = this.editor.createDecorationsCollection([
+      { range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: "reveal-line" } },
+    ]);
+    this.revealTimer = setTimeout(() => this.revealMarks?.clear(), REVEAL_HIGHLIGHT_MS);
   }
 
   /**

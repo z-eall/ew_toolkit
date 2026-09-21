@@ -126,3 +126,8 @@ export function nextPhonePanel(current: PhonePanel, event: PhonePanelEvent): Pho
 export function effectiveValidationMode(stored: "auto" | "manual", phone: boolean): "auto" | "manual" {
   return phone ? "auto" : stored;
 }
+
+// How long the flagged line stays marked after a jump from the Problems panel. The editor keeps no
+// caret while the panel holds the keyboard, so this mark is what shows the target. The CSS fade
+// (`reveal-line-fade` in style.css) must last the same time; a test pins both.
+export const REVEAL_HIGHLIGHT_MS = 1500;
