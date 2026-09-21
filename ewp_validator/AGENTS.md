@@ -6,7 +6,7 @@ Rules specific to the validator's own code (`fileNameCheck.ts`, `structuralPrech
 
 Every new or changed validation rule goes through this order:
 
-1. **Source-verify.** Confirm the rule's real behavior against EWP/WEC's current C# source (or a live in-game test) — docs prose shows the idiomatic form, not necessarily the whole accepted grammar. For `data.yaml`-relevant behavior, verify against whichever mod's source actually implements it (EWP's `FileLoading.cs` for what EWP loads, WEC's `DataLoading.cs` for a WEC entry's own shape) — not both by default; they're independent implementations of the same folder convention, not a coupled pair.
+1. **Source-verify.** Confirm the rule's real behavior against EWP/WEC's current C# source (or a live in-game test) — docs prose shows the idiomatic form, not necessarily the whole accepted grammar. When you claim "the source has no X", name the searches you ran (one per spelling or call form); a single search is not proof of absence. For `data.yaml`-relevant behavior, verify against whichever mod's source actually implements it (EWP's `FileLoading.cs` for what EWP loads, WEC's `DataLoading.cs` for a WEC entry's own shape) — not both by default; they're independent implementations of the same folder convention, not a coupled pair.
 
    If source-verification hits a real wall — no honest signal the tool can check (e.g. the `"data"` filename prefix: this validator has no access to the scripter's real EWP install path) — don't force a source-backed rule. Ship it as a documented heuristic instead, with the divergence noted in a comment at the point of use.
 
