@@ -101,7 +101,7 @@ header.header {
 .pagination-links a {
 	border: none;
 	box-shadow: none;
-	border-radius: 6px;
+	border-radius: var(--radius);
 	background: transparent;
 	padding: 0.75rem 0.5rem;
 	transition: background-color 0.15s ease;
@@ -155,9 +155,9 @@ header.header {
 	background: var(--panel);
 	border: 1px solid var(--border);
 	color: var(--text);
-	border-radius: 6px;
+	border-radius: var(--radius);
 	padding: 8px 14px;
-	font-size: 13px;
+	font-size: var(--fs-md);
 	font-weight: 600;
 	text-decoration: none;
 	white-space: nowrap;
@@ -168,7 +168,7 @@ header.header {
 }
 .home-tool-desc {
 	color: var(--muted);
-	font-size: 13.5px;
+	font-size: var(--fs-md);
 }
 
 /* <Steps> title lines (the bold first line of each numbered item) rendered
@@ -211,7 +211,7 @@ header.header {
    dark-mode banner's identity. */
 :root[data-theme='light'] .sl-steps > li > p:first-child {
 	color: #ffffff;
-	background: #222831;
+	background: var(--text); /* light mode: the dark palette value */
 	border-left-color: #e6c18a;
 }
 /* A step title can include a `code:` mention (e.g. **`chance:` — an

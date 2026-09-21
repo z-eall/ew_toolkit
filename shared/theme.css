@@ -15,6 +15,15 @@
   --muted: #948979;
   /* Smallest button side on a phone (thumb size). Not theme-dependent. */
   --tap-size: 40px;
+  /* Design tokens, same in every Tool and both themes. Tool CSS uses these instead of raw values;
+     ewp_validator/src/rawValues.test.ts fails on a new raw radius, small font size, monospace
+     stack or palette color. Docs: "Design system" in docs/agents/hub-tool-nav.md. */
+  --radius: 6px; /* buttons, panels, inputs */
+  --radius-sm: 4px; /* badges, chips, small controls */
+  --fs-xs: 11px; /* captions, counts, tags */
+  --fs-sm: 12.5px; /* secondary text, controls */
+  --fs-md: 13.5px; /* body text in tools */
+  --font-mono: ui-monospace, "Cascadia Code", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :root[data-theme="light"] {
@@ -74,10 +83,10 @@
   gap: 6px;
   color: var(--muted);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   font-weight: 600;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 
 .nav-icon {
@@ -112,7 +121,7 @@
 .changelog-link {
   color: var(--muted);
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
 }
 
@@ -125,9 +134,9 @@
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 6px 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   cursor: pointer;
   /* A <button> never inherits font-family from its ancestors by default -
      that's a browser rule for ALL form controls (button/input/select/
@@ -198,7 +207,7 @@
   .nav-brand {
     display: block;
     color: var(--text);
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 700;
     white-space: nowrap;
   }
@@ -222,7 +231,7 @@
     background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
-    border-radius: 6px;
+    border-radius: var(--radius);
     cursor: pointer;
   }
 
@@ -273,6 +282,6 @@
     margin-top: 4px;
     padding: 12px 10px 4px;
     border-top: 1px solid var(--border);
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 }

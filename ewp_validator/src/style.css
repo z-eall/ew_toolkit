@@ -57,7 +57,7 @@ body {
 .app-header {
   padding: 8px 14px;
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  font-size: var(--fs-md);
   color: var(--muted);
   display: flex;
   justify-content: space-between;
@@ -66,7 +66,7 @@ body {
 
 .app-header b {
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .app-body {
@@ -107,7 +107,7 @@ body {
 .sidebar-header {
   justify-content: space-between;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -123,7 +123,7 @@ body {
   background: transparent;
   border: 1px solid transparent;
   color: var(--muted);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 3px;
   cursor: pointer;
   display: inline-flex;
@@ -169,7 +169,7 @@ body {
   min-width: 172px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 5px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   /* Sits inside .sidebar-header, which sets text-transform: uppercase for its
@@ -186,7 +186,7 @@ body {
 }
 
 .menu-section-title {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -205,7 +205,7 @@ body {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .menu-reset svg {
@@ -228,8 +228,8 @@ body {
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 12.5px;
-  border-radius: 4px;
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   text-align: left;
 }
@@ -240,7 +240,7 @@ body {
 
 .menu-empty {
   padding: 5px 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   color: var(--text-muted, var(--info));
   font-style: italic;
 }
@@ -275,7 +275,7 @@ body {
 .menu-toggle-all {
   justify-content: center;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   margin-top: 2px;
   border-top: 1px solid var(--border);
   border-radius: 0;
@@ -305,7 +305,7 @@ body {
 
 .upload-banner {
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text);
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -353,11 +353,11 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 10px 4px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--text);
   font-weight: 600;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .folder-row:hover {
@@ -406,7 +406,7 @@ body {
 }
 
 .folder-row .folder-count {
-  font-size: 10px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -415,7 +415,7 @@ body {
 
 .file-row {
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: var(--fs-md);
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -450,9 +450,9 @@ body {
 }
 
 .badge {
-  font-size: 10px;
+  font-size: var(--fs-xs);
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   flex: none;
 }
 
@@ -477,7 +477,7 @@ body {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1;
   padding: 0 2px;
   visibility: hidden;
@@ -510,9 +510,9 @@ body {
      code review) made the active state invisible against its own container. */
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 2px;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   font-weight: 600;
   flex: none;
 }
@@ -522,7 +522,7 @@ body {
   background: transparent;
   color: var(--muted);
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font: inherit;
 }
@@ -549,9 +549,9 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 5px 10px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -589,7 +589,7 @@ body {
 .empty-state {
   padding: 16px 14px;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   cursor: pointer;
 }
 
@@ -599,7 +599,7 @@ body {
   gap: 8px;
   margin: 0 0 12px;
   line-height: 1.4;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 2px 4px;
 }
 
@@ -652,7 +652,7 @@ body {
 
 .active-file-name {
   padding-left: 12px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--muted);
   gap: 8px;
 }
@@ -664,7 +664,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   outline: none;
 }
@@ -725,7 +725,7 @@ body {
   min-width: 148px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 5px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
@@ -743,8 +743,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  font-size: 12.5px;
-  font-family: Consolas, Menlo, monospace;
+  font-size: var(--fs-sm);
+  font-family: var(--font-mono);
 }
 
 .problems-header {
@@ -791,7 +791,7 @@ body {
   z-index: 30;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 5px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   text-transform: none;
@@ -823,7 +823,7 @@ body {
 }
 
 .report-heading {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -837,7 +837,7 @@ body {
 }
 
 .report-label {
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   color: var(--muted);
 }
 
@@ -847,10 +847,10 @@ body {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
 }
 
 .report-textarea {
@@ -874,9 +874,9 @@ body {
   background: var(--info);
   color: #fff;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 7px 10px;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -886,7 +886,7 @@ body {
 }
 
 .report-note {
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   line-height: 1.35;
 }
@@ -899,9 +899,9 @@ body {
   border: 1px solid transparent;
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   padding: 4px 9px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
@@ -1017,12 +1017,12 @@ body {
 .problem .branch-kind {
   color: var(--text);
   font-weight: 600;
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
 }
 
 .problem .branch-entry {
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: var(--fs-xs);
 }
 
 .problems-empty {
@@ -1038,7 +1038,7 @@ body {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1;
   padding: 0 2px;
   visibility: hidden;
@@ -1104,7 +1104,7 @@ body {
 
 .problem-file .pf-count {
   flex: none;
-  font-size: 10px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   margin-right: auto;
@@ -1116,7 +1116,7 @@ body {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1;
   padding: 0 2px;
   visibility: hidden;
@@ -1144,7 +1144,7 @@ body {
   color: var(--muted);
   cursor: pointer;
   padding: 1px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   visibility: hidden;
@@ -1192,7 +1192,7 @@ body {
 .confirm-box {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 18px;
   max-width: 420px;
   width: calc(100vw - 32px);
@@ -1210,7 +1210,7 @@ body {
 .confirm-message {
   margin: 0 0 16px;
   color: var(--text);
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   flex-shrink: 0;
   /* Preserves the \n / \n\n already used in every call site's message text. */
@@ -1226,7 +1226,7 @@ body {
   min-height: 0;
   overflow-y: auto;
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.12);
   padding: 8px 10px;
   margin-bottom: 12px;
@@ -1235,9 +1235,9 @@ body {
 .confirm-list-scroll ul {
   margin: 0;
   padding: 0 0 0 18px;
-  font-size: 13px;
+  font-size: var(--fs-md);
   line-height: 1.45;
-  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-family: var(--font-mono);
   color: var(--text);
 }
 
@@ -1256,9 +1256,9 @@ body {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 7px 14px;
-  font-size: 13px;
+  font-size: var(--fs-md);
   cursor: pointer;
 }
 
@@ -1302,8 +1302,8 @@ body {
   z-index: 200;
   max-width: 360px;
   padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 12.5px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
   line-height: 1.45;
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1341,7 +1341,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--muted);
   border-bottom: 1px solid var(--border);
 }
@@ -1362,7 +1362,7 @@ body {
   gap: 6px;
   padding: 4px 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--fs-md);
 }
 
 .problem-fold:hover {
@@ -1465,7 +1465,7 @@ body {
     border: 0;
     border-top: 2px solid transparent;
     color: var(--muted);
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-family: inherit;
     cursor: pointer;
   }
@@ -1478,10 +1478,10 @@ body {
   .phone-badge {
     min-width: 18px;
     padding: 1px 6px;
-    border-radius: 9px;
+    border-radius: var(--radius);
     background: var(--error);
     color: #fff;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     line-height: 16px;
     text-align: center;
