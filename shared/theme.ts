@@ -8,6 +8,7 @@
 // A consumer with its own extra theme-dependent work (the validator's Monaco
 // editor theme, the wiki's Starlight-key bridge) passes `onApply` rather
 // than reimplementing applyTheme from scratch.
+import { icon } from "./icons";
 import { mountNavMenu } from "./navMenu";
 
 export type Theme = "dark" | "light";
@@ -21,7 +22,11 @@ export function applyTheme(theme: Theme, themeButtonId = "theme-toggle", onApply
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem(THEME_KEY, theme);
   const btn = document.querySelector<HTMLButtonElement>(`#${themeButtonId}`);
-  if (btn) btn.textContent = theme === "dark" ? "☾ Dark" : "☀ Light";
+  if (btn) {
+    const label = theme === "dark" ? "Dark" : "Light";
+    btn.innerHTML = `<span class="theme-icon" aria-hidden="true">${icon(theme === "dark" ? "moon" : "sun")}</span><span class="theme-label">${label}</span>`;
+    btn.setAttribute("aria-label", `Theme: ${label}. Click to switch.`);
+  }
   onApply?.(theme);
 }
 

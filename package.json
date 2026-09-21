@@ -11,10 +11,12 @@
     "preview": "vite preview",
     "build:hub": "node scripts/build-hub.mjs",
     "smoke:hub": "node scripts/smoke-hub.mjs",
-    "cut-release": "node scripts/cut-release.mjs"
+    "cut-release": "node scripts/cut-release.mjs",
+    "check:look": "node scripts/check-hub-look.mjs"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "playwright-core": "^1.49.0"
   }
 }

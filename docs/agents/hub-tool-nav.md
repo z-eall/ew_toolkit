@@ -12,8 +12,8 @@ tabs, not leaving the site.
 That was the incident. Now:
 
 - **The Tool registry** (which keys exist, in what order, which icon) lives
-  in `shared/navBar.ts`'s `NAV_TOOLS` array. Adding a Tool means adding one
-  entry here — every consumer picks it up automatically.
+  in `shared/tools.json`; `shared/navBar.ts` builds `NAV_TOOLS` from it. Adding a Tool means adding one
+  entry there — every consumer picks it up automatically.
 - **The markup** is built by `shared/navBar.ts`'s `renderNavBar()` /
   `buildNavItems()`. A consumer supplies only its own `hrefFor(key)`
   function, since each site resolves links differently (Vite's `BASE_URL`
@@ -32,7 +32,7 @@ That was the incident. Now:
 
 **Adding a 4th Tool:**
 
-1. Add one entry to `shared/navBar.ts`'s `NAV_TOOLS`.
+1. Add one entry to `shared/tools.json` (key, label, icon, description). Nothing else lists Tools.
 2. In the new Tool's own entry file, call `renderNavBar(buildNavItems(<key>, hrefFor))`
    and `mountThemeToggle()` — see `ewp_validator/src/main.ts` (plain Vite) or
    `ew_wiki/src/components/Header.astro` (Astro, via `set:html`) for the two
@@ -57,3 +57,15 @@ That was the incident. Now:
 Under 768px the bar shows the brand, the theme button and a hamburger; the Tool links and Changelog open in a drawer below the bar. Markup: `renderNavBar`. Styles: the phone block at the end of `shared/theme.css`. Behavior: `shared/navMenu.ts` (one document-level listener, started by `mountThemeToggle`, so a Tool needs no extra call and it survives the wiki's page swaps). The width lives in `PHONE_NAV_MAX_WIDTH`; a test pins it to the CSS. The validator's phone layout uses the same width (`PHONE_MAX_WIDTH` in `ewp_validator/src/uiRules.ts`).
 
 Trap: on the wiki, Starlight's own page-menu button and the wiki's floating icon rail sat in the same layer as the header and drew over the open drawer. `ew_wiki/src/styles/theme.css` lifts the header one step on phones. A new Tool with its own floating buttons needs the same check at 375px, with a real tap on the hamburger.
+
+## Design system: what is shared and what is checked (2026-09-21)
+
+The theme toggle showed a color emoji on phones after it had been fixed for desktop. Cause: it was a text character (`☀`), and a phone draws that as an emoji whatever the font is. Pinning fonts never stops it. Checks now stand behind the shared look, so a new Tool inherits them:
+
+1. **Symbols are drawn, never typed.** Every symbol in shared code is an SVG from `shared/icons.ts`. `ewp_validator/src/sharedGlyphs.test.ts` fails on a symbol or emoji character in `shared/` code. A Tool's own code follows the same rule (a star or arrow typed as text can turn into an emoji on a phone).
+2. **The built hub is compared in a real browser.** `npm run check:look` (`scripts/check-hub-look.mjs`, run in CI after the smoke test) opens the landing page and every Tool in `shared/tools.json`, plus one sub-page per Tool, at 375px and 1280px. It fails if a page's nav bar differs from the landing page's (size, font, color, radius, links), if the theme button has no drawn icon, or if a phone bar button is under 40px. A new Tool is covered without editing the script. Run it after any `shared/` change: `npm run build:hub` in WSL, then `HUB_BROWSER_CHANNEL=msedge node scripts/check-hub-look.mjs` on Windows (CI uses Chrome).
+3. **Sizes come from one token.** `--tap-size` in `shared/theme.css` is the smallest button side on a phone. Use it; do not type a new pixel size.
+4. **The reminder hook** `guard-shared-verify-all-tools` fires on any edit under `shared/` and points to the check above. The hook only reminds; the check is what fails.
+
+Shared on purpose: the 5 palette colors, icons, the nav bar, the phone width, `--tap-size`. Local on purpose: the validator's error, warning and info colors, and the wiki explainer widgets' own colors. Not shared yet (open in the design-consistency map): radius, small font sizes, one monospace stack, status colors, and a test against new raw colors in Tool CSS.
+

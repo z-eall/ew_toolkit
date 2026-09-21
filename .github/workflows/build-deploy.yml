@@ -70,6 +70,10 @@ jobs:
       # The built validator under its hub path: files, workers and fonts exist.
       - run: npm run smoke:hub
 
+      # The landing page and every Tool in a real browser at phone and desktop
+      # width: the shared nav bar must look the same on all of them.
+      - run: npm run check:look
+
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5

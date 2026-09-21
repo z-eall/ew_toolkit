@@ -13,6 +13,8 @@
   --border: #948979;
   --text: #dfd0b8;
   --muted: #948979;
+  /* Smallest button side on a phone (thumb size). Not theme-dependent. */
+  --tap-size: 40px;
 }
 
 :root[data-theme="light"] {
@@ -49,17 +51,11 @@
        landing/validator pages don't have, which alone made this shared
        bar render ~5.6px taller there than on the other 2 Tools even with
        byte-identical padding.
-     - font-family (ticket 23 round 7): Starlight's own font stack lists
-       color-emoji fonts ("Apple Color Emoji" etc.) ahead of any plain
-       glyph for the theme-toggle's ☾/☀ characters, so the exact same
-       button rendered a colorful emoji on ew_wiki and a plain monochrome
-       symbol on the other 2 Tools - confirmed live: byte-identical
-       outerHTML on all 3 pages, genuinely the same shared code, just a
-       different font picked to draw the same character.
-     A shared component shouldn't visibly depend on which host page it's
-     dropped into for either property - pinned at the whole bar's level so
-     nothing inside it (theme-toggle, changelog link, nav links) can drift
-     the same way again without anyone adding a new override. */
+     - font-family (ticket 23 round 7): the font stack decides how text is
+       drawn, so it is pinned here.
+     Pinning a font does NOT stop a phone drawing a text symbol as a color
+     emoji. So the bar holds no symbol characters: every glyph is an SVG
+     from shared/icons.ts (a test in ewp_validator/src/sharedGlyphs.test.ts enforces it). */
   line-height: normal;
   font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -145,10 +141,39 @@
      here removes the dependency on each Tool happening to have its own
      reset. */
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .theme-toggle:hover {
   border-color: var(--text);
+}
+
+.theme-icon {
+  display: inline-flex;
+}
+
+.theme-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Phone: the icon alone is enough; the word only costs bar width. Same
+   breakpoint as the drawer below. */
+@media (max-width: 767px) {
+  .theme-label {
+    display: none;
+  }
+
+  /* Both bar buttons are the same size and big enough for a thumb. */
+  .theme-toggle {
+    box-sizing: border-box;
+    width: var(--tap-size);
+    height: var(--tap-size);
+    padding: 0;
+    justify-content: center;
+  }
 }
 
 /* Phone nav (mobile-support map, tickets 03 and 04): under 768px the link row
@@ -191,8 +216,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 32px;
+    width: var(--tap-size);
+    height: var(--tap-size);
     padding: 0;
     background: var(--bg);
     border: 1px solid var(--border);

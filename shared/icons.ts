@@ -25,6 +25,10 @@ export const ICON_PATHS = {
   arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
+  // Theme toggle: sun (light mode) and crescent moon (dark mode). Drawn, never
+  // typed as text characters, because a phone draws a text sun as a color emoji.
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.9 19.1 1.4-1.4"/><path d="m17.7 6.3 1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
   // Three bars: the phone nav's hamburger button.
   menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   // Circular two-arrow refresh — the "reset to default" affordance (clearer than
