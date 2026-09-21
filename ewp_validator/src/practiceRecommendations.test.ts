@@ -13,6 +13,8 @@ const SAMPLES: Record<keyof typeof practiceMessages, string[]> = {
     practiceMessages.dataIgnored("poke", "filter", "filters", false),
     practiceMessages.dataIgnored("objects", "filters", "filters", false),
     practiceMessages.dataIgnored("objects", "bannedFilter", "bannedFilters", true),
+    practiceMessages.dataIgnored("objects", "filters", "filters", false, true),
+    practiceMessages.dataIgnored("objects", "filter", "filters", false, true),
   ],
   conditionOperator: [practiceMessages.conditionOperator("=="), practiceMessages.conditionOperator("<>")],
   changeNeedsTriggerRules: [practiceMessages.changeNeedsTriggerRules("level")],

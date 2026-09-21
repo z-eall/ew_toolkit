@@ -69,13 +69,20 @@ describe.skipIf(!wikiPresent)("wiki example corpus (Round 6 ticket 05)", () => {
       "advanced-triggers-no-prefab.mdx": "silent-poke-world-centre",
       "basic-filter.mdx": "silent-filter-weight-part",
       "ewp-key.mdx": "silent-key-store-mix",
+      // data: written next to filters: (the page's WRONG example, checked in the full pipeline).
+      "advanced-filter-plural.mdx": "ignored-data-with-filter",
     };
-    const wrong = fences.filter((f) => isLabelledWrong(f.code) && !isFragment(f.code));
+    const wrong = fences.filter((f) => isLabelledWrong(f.code));
+    // A fragment (starts with `objects:`) is put inside a full entry so the validator can read it.
+    const asEntry = (code: string) =>
+      isFragment(code) ? "- prefab: Player\n  type: say, test\n" + code.split(/\r?\n/).map((l) => (l ? `  ${l}` : l)).join("\n") : code;
     for (const [page, id] of Object.entries(expected)) {
-      const block = wrong.find((f) => f.file.endsWith(page));
-      expect(block, `no WRONG example on ${page}`).toBeDefined();
-      const ids = [...runFullValidation([{ id: "a", name: "expand_prefabs_x.yaml", text: block!.code }]).get("a")!].map((p) => p.id);
-      expect(ids, `${page} should warn ${id}`).toContain(id);
+      const blocks = wrong.filter((f) => f.file.endsWith(page));
+      expect(blocks.length, `no WRONG example on ${page}`).toBeGreaterThan(0);
+      const idsPerBlock = blocks.map((b) =>
+        [...runFullValidation([{ id: "a", name: "expand_prefabs_x.yaml", text: asEntry(b.code) }]).get("a")!].map((p) => p.id as string),
+      );
+      expect(idsPerBlock.some((ids) => ids.includes(id)), `${page} should warn ${id}`).toBe(true);
     }
   });
 

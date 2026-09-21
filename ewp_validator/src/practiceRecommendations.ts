@@ -32,10 +32,14 @@ export const practiceMessages = {
     `but a list belongs in \`${plural}:\`.`,
 
   /** Nested `data:` next to a filter field. `written` is the filter field the scan found. */
-  dataIgnored: (section: string, written: string, plural: string, redundant: boolean) => {
+  dataIgnored: (section: string, written: string, plural: string, redundant: boolean, inline = false) => {
     if (redundant) return `Overlapping fields: \`data:\` repeats a name already in \`${written}:\`. Remove \`data:\`.`;
-    const fix =
-      written === plural
+    // `inline`: data: is a `type, key, value` line, not a saved name.
+    const fix = inline
+      ? written === plural
+        ? "Remove `data:`, or add it as a line in that list."
+        : `Remove \`data:\`, or move it into \`${plural}:\` (plural) as a list item.`
+      : written === plural
         ? "Remove `data:`, or add its name to that list."
         : `Remove \`data:\`, or list both names in \`${plural}:\` (plural).`;
     return (

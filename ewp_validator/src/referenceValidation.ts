@@ -948,11 +948,11 @@ export function runReferenceValidation(files: FileInput[]): FileProblem[] {
         });
       }
 
-      for (const { arrKey, range, redundant, written, plural } of ignoredData) {
+      for (const { arrKey, range, redundant, written, plural, inline } of ignoredData) {
         problems.push({
           fileId: file.id,
           ...kindFields("ignored-data-with-filter"),
-          message: practiceMessages.dataIgnored(arrKey, written, plural, redundant),
+          message: practiceMessages.dataIgnored(arrKey, written, plural, redundant, inline),
           range,
         });
       }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runReferenceValidation } from "./referenceValidation";
+import { runFullValidation } from "./validationPipeline";
 
 describe("data.yaml reference validation (ticket 06)", () => {
   it("flags an undefined data: reference as a hard error", () => {
@@ -241,6 +242,29 @@ describe("data.yaml reference validation (ticket 06)", () => {
         { id: "a", text: "- prefab: X\n  type: create\n  objects:\n  - prefab: Chest\n    data: a\n    bannedFilters:\n    - b\n" },
       ];
       expect(runReferenceValidation(files).some((p) => p.id === "ignored-data-with-filter")).toBe(true);
+    });
+
+    it("warns when data: is written as `type, key, value` next to filters:", () => {
+      const text =
+        "- prefab: Player\n  type: say, test\n  objects:\n  - prefab: Boar\n    maxDistance: 10\n" +
+        "    data: string, TamedName, Rex\n    filters:\n    - int, level, 2;3\n";
+      const problems = runReferenceValidation([{ id: "a", text }]).filter((p) => p.id === "ignored-data-with-filter");
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toMatchObject({ severity: "warning" });
+      expect(problems[0].message).toContain("Remove `data:`");
+    });
+
+    it("shows the warning through the full pipeline for the reported script", () => {
+      const text =
+        "- prefab: Player\n  type: say, test\n  objects:\n  - prefab: Boar\n    maxDistance: 10\n" +
+        "    data: string, TamedName, Rex\n    filters:\n    - int, level, 2;3\n";
+      const all = [...runFullValidation([{ id: "a", name: "expand_test.yaml", text, filenameExempt: true }]).values()].flat();
+      expect(all.some((p) => p.id === "ignored-data-with-filter")).toBe(true);
+    });
+
+    it("does not warn for a `type, key, value` data: with no filter field", () => {
+      const text = "- prefab: Player\n  type: say, test\n  objects:\n  - prefab: Boar\n    data: string, TamedName, Rex\n";
+      expect(runReferenceValidation([{ id: "a", text }]).some((p) => p.id === "ignored-data-with-filter")).toBe(false);
     });
   });
 

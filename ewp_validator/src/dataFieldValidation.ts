@@ -109,6 +109,8 @@ export interface IgnoredDataNotice {
   range: [number, number];
   /** True when the `data:` name already appears in the item's own filter fields. */
   redundant: boolean;
+  /** True when `data:` is a `type, key, value` line rather than a saved name. */
+  inline?: boolean;
   /** The filter field the scan found written next to `data:` (and its plural form). */
   written: string;
   plural: string;
@@ -271,6 +273,16 @@ export function collectRuleEntryDataReferences(
         } else {
           legacyNotices.push({ arrKey, range });
         }
+      } else if (typeof legacyRaw === "string" && legacyRaw.trim() !== "" && hasFilterField(nestedValue)) {
+        // `data: type, key, value` is not a saved name, but EWP skips it the same way
+        // when a filter field is written next to it.
+        ignoredData.push({
+          arrKey,
+          range: findPairRange(nestedMap, NESTED_LEGACY_FILTER_DATA_FIELD) ?? nodeRange(nestedMap as any),
+          redundant: false,
+          inline: true,
+          ...firstWrittenFilterField(nestedValue),
+        });
       }
     }
   }
