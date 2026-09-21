@@ -62,7 +62,7 @@ filters:
   type: create
   bannedFilters:
   - int, tamed, 1     # skip a Boar that's already tamed
-  - bool, boss, true   # skip a boss-tier Boar
+  - string, TamedName, Rex   # skip a Boar named Rex
   data: strongBoar
 ```
 
@@ -74,7 +74,7 @@ Give a `bannedFilters:` item its own smaller weight, and pull `filterLimit:` dow
 filterLimit: -1   # tolerate one matching bannedFilters item, but not two
 bannedFilters:
 - int, tamed, 1, 1     # custom weight 1, not the default 10000
-- bool, boss, true, 1
+- string, TamedName, Rex, 1
 ```
 
 One match brings the score to `-1` — still at the limit, so the rule passes. Two matches bring it to `-2` — below the limit, so it fails.
@@ -124,14 +124,14 @@ An [`objects:`](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) entry needi
     maxDistance: 10
     filters:
     - int, level, 2;3      # starred
-    - bool, boss, false    # not already a boss-tier Boar
+    - int, tamed, 0        # still wild
   data: commanderBoar
   command: s A commander boar has rallied its escort.
 ```
 
 <CommanderBoarData />
 
-A single `filter:` on this entry could check the star level *or* the boss flag, never both at once — `filters:` is what lets one nearby-object entry require both.
+A single `filter:` on this entry could check the star level *or* whether it is tamed, never both at once — `filters:` is what lets one nearby-object entry require both.
 
 A [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) entry works exactly the same way — it's the same nearby-object matching machinery under the hood, just poking instead of reading:
 
@@ -148,6 +148,32 @@ A [`poke:`](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) entry works exactly th
 ```
 
 Only a `wood_door` that's both flagged `isWoodDoor` *and* currently closed gets poked — a single `filter:` here could check one or the other, not both together.
+
+In an `objects:` or `poke:` entry, `data:` works as a one-item filter, but only while no `filters:` or `bannedFilters:` is written there.
+
+<Aside type="caution">
+Don't do this: no error, no warning — once `filters:` is written, `data:` is silently ignored, so its check never runs.
+</Aside>
+
+```yaml
+# WRONG — `data:` is dropped, so the name check never runs
+objects:
+- prefab: Boar
+  maxDistance: 10
+  data: string, TamedName, Rex
+  filters:
+  - int, level, 2;3
+```
+
+```yaml
+# CORRECT — every check is its own item in the list
+objects:
+- prefab: Boar
+  maxDistance: 10
+  filters:
+  - string, TamedName, Rex
+  - int, level, 2;3
+```
 
 <Aside type="tip">
 Want a plain on/off switch back at the top level instead of a list? [`condition:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-condition/) is a different, newer tool for a different job — comparing two values that aren't both fixed, not narrowing a list of static checks. See Advanced Filter - Condition if a `filters:` list stops being enough.

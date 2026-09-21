@@ -20,7 +20,7 @@ Single-context — `CONTEXT.md` + `docs/adr/` at the repo root; wayfinder maps u
 - **Reuse before building.** Prefer existing free/open tooling (e.g. Monaco + monaco-yaml) over a custom build.
 - **Minimal tooling.** No workspace/monorepo tooling (npm workspaces, Turborepo, Nx) unless plain per-Tool `package.json` + build scripts prove genuinely painful.
 - **`valheimtools.stream` is a cross-check reference only** — never a dependency, never coordinate with its owner.
-- **Tool registration is a hardcoded list** in the landing page source — no auto-discovery/manifest scanning until managing the list by hand becomes painful.
+- **Tool registration is one hand-kept list**, `shared/tools.json` (name, icon, description). The home page, nav bar, build, favicon script and workflow read it; no auto-discovery. Add a Tool there and add its folder.
 - **A new Tool making claims about a mod/game's real behavior** gets its own `docs/sources.md` (format: `ew_wiki/docs/sources.md`) and one line in the source-verify hook's config table — see `docs/agents/hooks-vs-rules.md`.
 
 ## Confirm, don't guess

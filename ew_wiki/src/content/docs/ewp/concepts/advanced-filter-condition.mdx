@@ -121,13 +121,13 @@ No `filter:`/`filters:` list can express this — those only ever check one obje
     filterLimit: 2       # both required filters must match
     filters:
     - int, level, 2;3    # starred
-    - bool, boss, false  # not already a boss-tier Boar
+    - int, tamed, 0      # still wild
     condition: <int_level> >= <globalkey_packrank=1>  # star count must keep pace with the pack's stored rank
   data: commanderBoar
   command: s A commander boar has rallied its escort.
 ```
 
-`filters:` decides which nearby Boars are even eligible escorts (starred, not already a boss). `condition:` then adds a check `filters:` structurally can't make — the Boar's own star count against a number pulled from elsewhere in the world (here, an illustrative `packrank` global key), rather than against a value written into the script itself.
+`filters:` decides which nearby Boars are even eligible escorts (starred, still wild). `condition:` then adds a check `filters:` structurally can't make — the Boar's own star count against a number pulled from elsewhere in the world (here, an illustrative `packrank` global key), rather than against a value written into the script itself.
 
 <Aside type="tip">
 `packrank` is another made-up global key, same caveat as `defeated_dvergr` above.

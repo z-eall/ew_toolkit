@@ -77,7 +77,7 @@ The Hub's root page — lists available Tools and links to each one's [[Subpath]
 The URL path segment a Tool builds and deploys into under the Hub's single domain, e.g. `/ewp_validator/` for the validator. Each Tool's build stays independent; only the deployed output is joined under the Hub's one Pages URL.
 
 **Tool registration**:
-The mechanism by which a Tool gets listed on the [[Landing page]]. v1 is a hardcoded list (name/subpath/description) in the landing page source — no auto-discovery, since only 1-2 Tools are expected near-term.
+The mechanism by which a Tool gets listed on the [[Landing page]]. It is one hand-kept list, `shared/tools.json` (name, icon, description), read by the home page, nav bar, build scripts and workflow — no auto-discovery, since only 1-2 Tools are expected near-term.
 
 **Release-worthy push**:
 A push to `main` the maintainer judges worth summarizing for scripters — the curated trigger for changelog generation. Distinct from every push (which triggers the deploy pipeline unconditionally regardless of release-worthiness) and from a fully manual, un-tooled writeup. A human decides when a push is release-worthy, then runs the local changelog script.
