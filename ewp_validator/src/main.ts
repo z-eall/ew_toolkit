@@ -92,6 +92,7 @@ const ICON_NAMES = [
   "export",
   "home",
   "support",
+  "check",
 ] as const satisfies readonly IconKey[];
 
 const ICONS = Object.fromEntries(ICON_NAMES.map((key) => [key, ICON_PATHS[key]])) as Record<
@@ -378,7 +379,7 @@ function statusBadge(status: FileStatus, errors: number, warnings: number, visib
   if (!visible) return "";
   if (status === "error") return `<span class="badge err">${errors}</span>`;
   if (status === "warning") return `<span class="badge warn">${warnings}</span>`;
-  return `<span class="badge ok">✓</span>`;
+  return `<span class="badge ok">${icon(ICONS.check)}</span>`;
 }
 
 function renderFileList() {
@@ -780,7 +781,7 @@ function renderSortFilterMenu() {
       (o) =>
         `<button class="menu-item sort-item ${o.mode === currentSort ? "active" : ""}" data-sort="${o.mode}">
           <span class="menu-symbol">${o.symbol}</span><span class="menu-label">${o.label}</span>
-          <span class="menu-check">${o.mode === currentSort ? "✓" : ""}</span>
+          <span class="menu-check">${o.mode === currentSort ? icon(ICONS.check) : ""}</span>
         </button>`,
     ).join("")}
     <div class="menu-divider"></div>

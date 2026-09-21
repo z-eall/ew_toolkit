@@ -12,6 +12,12 @@
   --error: #f14c4c;
   --warning: #cca700;
   --info: #3794ff;
+  --ok: #4fd18b;
+  --error-bg: #4a2020;
+  --warning-bg: #4a3c10;
+  --ok-bg: #1c3626;
+  --divider: #2a2a2a;
+  --on-accent: #fff;
 }
 
 :root[data-theme="light"] {
@@ -40,7 +46,7 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .app {
@@ -249,6 +255,13 @@ body {
   flex: 1;
 }
 
+.menu-item .menu-check svg,
+.badge.ok svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
 .menu-item .menu-check {
   color: var(--info);
   width: 12px;
@@ -298,7 +311,7 @@ body {
 }
 
 .status-dot.valid {
-  background: #4fd18b;
+  background: var(--ok);
 }
 
 /* ---- Upload progress banner (sits above #file-list, pushes it down while visible) ---- */
@@ -421,7 +434,7 @@ body {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--divider);
   /* Breathing room so scrollIntoView({block:"nearest"}) never leaves a
      scrolled-to row flush against the panel's edge. */
   scroll-margin-top: 8px;
@@ -457,18 +470,18 @@ body {
 }
 
 .badge.err {
-  background: #4a2020;
+  background: var(--error-bg);
   color: var(--error);
 }
 
 .badge.warn {
-  background: #4a3c10;
+  background: var(--warning-bg);
   color: var(--warning);
 }
 
 .badge.ok {
-  background: #1c3626;
-  color: #4fd18b;
+  background: var(--ok-bg);
+  color: var(--ok);
 }
 
 .remove-btn {
@@ -579,7 +592,7 @@ body {
    rather than introducing new semantic colors. */
 .validate-btn.dot-clean .validate-dot {
   display: inline-block;
-  background: #4fd18b;
+  background: var(--ok);
 }
 .validate-btn.dot-stale .validate-dot {
   display: inline-block;
@@ -795,7 +808,7 @@ body {
   padding: 5px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   text-transform: none;
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .catfilter-menu {
@@ -872,7 +885,7 @@ body {
 
 .report-submit {
   background: var(--info);
-  color: #fff;
+  color: var(--on-accent);
   border: none;
   border-radius: var(--radius-sm);
   padding: 7px 10px;
@@ -1166,7 +1179,7 @@ body {
 }
 
 .problem .copy-btn.copied {
-  color: #4fd18b;
+  color: var(--ok);
   visibility: visible;
 }
 
@@ -1480,7 +1493,7 @@ body {
     padding: 1px 6px;
     border-radius: var(--radius);
     background: var(--error);
-    color: #fff;
+    color: var(--on-accent);
     font-size: var(--fs-xs);
     font-weight: 600;
     line-height: 16px;

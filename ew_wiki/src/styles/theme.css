@@ -18,6 +18,13 @@
 	--sl-color-hairline: var(--border);
 	--sl-color-hairline-light: var(--border);
 	--sl-color-hairline-shade: var(--border);
+	/* Starlight fonts follow the hub tokens, so wiki text and code match the other Tools.
+	   Starlight builds its stack as `--sl-font, <its own fallbacks>` in --__sl-font, so the two
+	   internal variables are set as well; npm run check:look fails if a Starlight update renames them. */
+	--sl-font: var(--font-sans);
+	--sl-font-mono: var(--font-mono);
+	--__sl-font: var(--font-sans);
+	--__sl-font-mono: var(--font-mono);
 	/* Wider center content column (Starlight default 45rem). Widened again
 	   2026-09-12: with the right TOC column no longer reserved (ticket 23),
 	   56rem left ~70px of empty space on both sides at 1400px width. First

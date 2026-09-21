@@ -66,7 +66,15 @@ function readBar() {
   const theme = nav.querySelector(".theme-toggle");
   const menu = nav.querySelector(".nav-menu-toggle");
   const visible = (el) => !!el && getComputedStyle(el).display !== "none";
+  // Page body: the parts every Tool must share. Line height and link color are left out on purpose
+  // (the wiki sets its own for reading; docs/agents/hub-tool-nav.md).
+  const body = style(document.body, ["fontFamily", "fontSize", "color", "backgroundColor"]);
+  const codeEl = document.querySelector("main code, article code, pre code, pre");
   return {
+    body,
+    // Only pages that have a code block: the landing page and the validator shell may have none.
+    codeFont: codeEl ? getComputedStyle(codeEl).fontFamily : null,
+    monoToken: getComputedStyle(document.documentElement).getPropertyValue("--font-mono").trim(),
     navHeight: px(nav.getBoundingClientRect().height),
     nav: style(nav, ["fontFamily", "lineHeight", "backgroundColor", "borderBottomColor", "position"]),
     theme: theme && { ...box(theme), ...style(theme, ["fontFamily", "fontSize", "color", "backgroundColor", "borderRadius", "borderTopColor"]), hasIcon: !!theme.querySelector(".theme-icon svg"), text: theme.textContent.trim() },
@@ -111,11 +119,19 @@ try {
     for (const other of rest) {
       for (const key of Object.keys(base.bar)) {
         if (key === "links") continue;
+        if (key === "codeFont" || key === "monoToken") continue; // checked against the token below
         if (!same(base.bar[key], other.bar[key])) {
           problems.push(`${vp.name}: ${other.page} differs from ${base.page} in ${key}\n    ${base.page}: ${JSON.stringify(base.bar[key])}\n    ${other.page}: ${JSON.stringify(other.bar[key])}`);
         }
       }
       if (!same(base.bar.links, other.bar.links)) problems.push(`${vp.name}: ${other.page} lists different nav links than ${base.page}`);
+    }
+    // A code block must use the shared monospace token (--font-mono), whatever the page's own CSS says.
+    const norm = (s) => (s ?? "").replace(/["'\s]/g, "");
+    for (const s of seen) {
+      if (s.bar.codeFont !== null && norm(s.bar.codeFont) !== norm(s.bar.monoToken)) {
+        problems.push(`${vp.name} / ${s.page}: code font is ${s.bar.codeFont}, not the shared --font-mono (${s.bar.monoToken})`);
+      }
     }
     console.log(`checked ${vp.name} (${vp.width}px): ${seen.map((s) => s.page).join(", ")}`);
   }
@@ -128,4 +144,4 @@ if (problems.length) {
   console.error("check-hub-look FAILED:\n- " + problems.join("\n- "));
   process.exit(1);
 }
-console.log(`check-hub-look ok: ${pages.length} pages x ${VIEWPORTS.length} widths share one nav bar look`);
+console.log(`check-hub-look ok: ${pages.length} pages x ${VIEWPORTS.length} widths share one nav bar and page body look`);

@@ -37,3 +37,40 @@ describe("shared UI draws symbols as icons, not text", () => {
     expect(ICON_PATHS.moon).toBeTruthy();
   });
 });
+
+// Each Tool's own code (design-consistency ticket 04). Narrower than the shared rule: only characters
+// a phone can draw as a color emoji (Unicode "Extended_Pictographic", like the sun and the warning
+// sign). Text marks such as the Valheim star and plain arrows are not in that set and stay allowed.
+// The wiki pages' prose (.mdx) is content, not UI, and is not scanned.
+const ROOT = join(__dirname, "..", "..");
+const EMOJI_RISK = /\p{Extended_Pictographic}/u;
+const TOOL_CODE_DIRS = ["src", "ewp_validator/src", "ew_wiki/src/components", "ew_wiki/src/layouts", "ew_wiki/src/styles"];
+
+function toolCodeFiles(dir: string): string[] {
+  let names: string[] = [];
+  try {
+    names = readdirSync(join(ROOT, dir), { withFileTypes: true }).map((d) => (d.isDirectory() ? `d:${d.name}` : d.name));
+  } catch {
+    return [];
+  }
+  return names.flatMap((n) =>
+    n.startsWith("d:")
+      ? toolCodeFiles(`${dir}/${n.slice(2)}`)
+      : /\.(ts|astro|css)$/.test(n) && !n.endsWith(".test.ts") && !n.includes("generated")
+        ? [`${dir}/${n}`]
+        : [],
+  );
+}
+
+describe("each Tool's own code has no emoji-capable symbol", () => {
+  const files = TOOL_CODE_DIRS.flatMap(toolCodeFiles).filter((f) => !f.includes("/fixtures/"));
+  it("scans the Tool code", () => {
+    expect(files).toContain("ewp_validator/src/main.ts");
+    expect(files.some((f) => f.startsWith("ew_wiki/src/components/"))).toBe(true);
+  });
+  it.each(files)("%s", (file) => {
+    const code = withoutComments(readFileSync(join(ROOT, file), "utf8"));
+    const hit = code.match(EMOJI_RISK);
+    expect(hit, `symbol ${hit?.[0]} in ${file}: draw it with an icon from shared/icons.ts`).toBeNull();
+  });
+});

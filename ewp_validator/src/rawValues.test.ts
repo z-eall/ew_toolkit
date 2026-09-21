@@ -16,6 +16,7 @@ const RULES: { name: string; pattern: RegExp; fix: string }[] = [
   { name: "raw border-radius", pattern: /border-radius:\s*\d+(?:\.\d+)?px\s*(?:!important)?\s*;/, fix: "var(--radius) or var(--radius-sm)" },
   { name: "raw small font-size (10 to 14px)", pattern: /font-size:\s*(?:1[0-4](?:\.\d+)?)px\s*(?:!important)?\s*;/, fix: "var(--fs-xs), var(--fs-sm) or var(--fs-md)" },
   { name: "raw monospace font stack", pattern: /font-family:[^;{}]*monospace[^;{}]*;/i, fix: "var(--font-mono)" },
+  { name: "raw sans-serif font stack", pattern: /font-family:\s*-apple-system/i, fix: "var(--font-sans)" },
   { name: "raw palette color", pattern: PALETTE, fix: "var(--bg), var(--panel), var(--border), var(--text) or var(--muted)" },
 ];
 
@@ -40,8 +41,19 @@ describe("Tool CSS uses design tokens, not raw values", () => {
 
   it("defines every token in shared/theme.css", () => {
     const shared = readFileSync(join(ROOT, "shared", "theme.css"), "utf8");
-    for (const token of ["--radius", "--radius-sm", "--fs-xs", "--fs-sm", "--fs-md", "--font-mono", "--tap-size"]) {
+    for (const token of ["--font-sans", "--radius", "--radius-sm", "--fs-xs", "--fs-sm", "--fs-md", "--font-mono", "--tap-size"]) {
       expect(shared, token).toContain(`${token}:`);
     }
+  });
+
+  // The validator keeps its own status colors, but as named variables: no raw hex outside a
+  // `--name: #hex` definition line (design-consistency ticket 02).
+  it("ewp_validator/src/style.css: colors are named variables", () => {
+    const css = stripComments(readFileSync(join(ROOT, "ewp_validator/src/style.css"), "utf8"));
+    const hits = css
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => /(?:^|[\s:(,])#[0-9a-fA-F]{3,8}(?![-\w])/.test(l) && !/^--[\w-]+:/.test(l));
+    expect(hits, "name the color as a variable in :root, then use var(--name)").toEqual([]);
   });
 });

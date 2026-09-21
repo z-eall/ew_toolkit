@@ -23,6 +23,7 @@
   --fs-xs: 11px; /* captions, counts, tags */
   --fs-sm: 12.5px; /* secondary text, controls */
   --fs-md: 13.5px; /* body text in tools */
+  --font-sans: -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -66,7 +67,7 @@
      emoji. So the bar holds no symbol characters: every glyph is an SVG
      from shared/icons.ts (a test in ewp_validator/src/sharedGlyphs.test.ts enforces it). */
   line-height: normal;
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .site-nav-links {
