@@ -757,7 +757,6 @@ body {
   flex-direction: column;
   min-height: 0;
   font-size: var(--fs-sm);
-  font-family: var(--font-mono);
 }
 
 .problems-header {
@@ -982,6 +981,13 @@ body {
   gap: 8px;
   scroll-margin-top: calc(var(--group-header-h) + 4px);
   scroll-margin-bottom: 8px;
+}
+
+/* Only the note text and its line number are monospace: notes quote code such as `data:`. The tabs,
+   headers, buttons and group labels use the site font, like the rest of the page. */
+.problem .msg,
+.problem .loc {
+  font-family: var(--font-mono);
 }
 
 .problem .msg {

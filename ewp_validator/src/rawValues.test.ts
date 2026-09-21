@@ -46,6 +46,18 @@ describe("Tool CSS uses design tokens, not raw values", () => {
     }
   });
 
+  // Monospace is for code and file names only. A container that sets it makes every button and
+  // tab inside it monospace by inheritance (the Problems tabs did). Add a selector here only for
+  // text that quotes code or names a file.
+  it("ewp_validator/src/style.css: monospace only where code or file names are shown", () => {
+    const css = stripComments(readFileSync(join(ROOT, "ewp_validator/src/style.css"), "utf8"));
+    const selectors: string[] = [];
+    for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      if (/font-family:\s*var\(--font-mono\)/.test(m[2]!)) selectors.push(m[1]!.replace(/\s+/g, " ").trim());
+    }
+    expect(selectors.sort()).toEqual([".confirm-list-scroll ul", ".problem .msg, .problem .loc"]);
+  });
+
   // The validator keeps its own status colors, but as named variables: no raw hex outside a
   // `--name: #hex` definition line (design-consistency ticket 02).
   it("ewp_validator/src/style.css: colors are named variables", () => {
