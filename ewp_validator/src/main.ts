@@ -32,7 +32,17 @@ import { ICON_PATHS, svgIcon, type IconKey } from "../../shared/icons";
 import { buildNavItems, renderNavBar } from "../../shared/navBar";
 import { getStoredTheme, mountThemeToggle, type Theme as HubTheme } from "../../shared/theme";
 import { showConfirmModal } from "./confirmModal";
-import { anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss } from "./uiRules";
+import {
+  anyUnsavedWork,
+  applyLeaveWarning,
+  armRenameNoteDismiss,
+  effectiveValidationMode,
+  isPhoneWidth,
+  nextPhonePanel,
+  PHONE_MAX_WIDTH,
+  type PhonePanel,
+  type PhonePanelEvent,
+} from "./uiRules";
 import "./style.css";
 import type { ZipEntry } from "./zip";
 import type { ZipWorkerRequest, ZipWorkerResponse } from "./zipWorker";
@@ -181,6 +191,11 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
           <div id="problems-list"></div>
         </div>
       </div>
+    </div>
+    <div class="phone-tabs" id="phone-tabs" role="tablist" aria-label="Panels">
+      <button type="button" role="tab" data-phone-tab="files">Files</button>
+      <button type="button" role="tab" data-phone-tab="editor">Editor</button>
+      <button type="button" role="tab" data-phone-tab="problems">Problems<span class="phone-badge" id="phone-badge" hidden></span></button>
     </div>
   </div>
   <input type="file" id="file-input" multiple accept=".yaml" hidden />
@@ -455,8 +470,14 @@ function renderFileList() {
         ${statusBadge(vf.status, errors, warnings, showBadges)}
         <button class="remove-btn" title="Remove file">×</button>
       `;
-      row.querySelector(".file-name")!.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
-      row.querySelector(".badge")?.addEventListener("click", () => fileManager.revealTopProblem(vf.id));
+      row.querySelector(".file-name")!.addEventListener("click", () => {
+        fileManager.revealTopProblem(vf.id);
+        showPhonePanel("open-file");
+      });
+      row.querySelector(".badge")?.addEventListener("click", () => {
+        fileManager.revealTopProblem(vf.id);
+        showPhonePanel("open-file");
+      });
       row.querySelector(".remove-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
         const nextId = pickNextAfterRemoval(visibleFileIds, new Set([vf.id]), visibleFileIds.indexOf(vf.id));
@@ -530,6 +551,7 @@ function renderProblemsPanel() {
   }
 
   renderTabs(counts);
+  updatePhoneBadge(counts.error + counts.warning + counts.info);
 
   if (fileManager.allFiles.length === 0) {
     visibleProblemFileIds = [];
@@ -607,6 +629,7 @@ function renderProblemsPanel() {
       row.addEventListener("click", () => {
         fileManager.revealProblem(file.id, problem.range[0], { focus: false });
         scrollFileRowIntoView(file.id);
+        showPhonePanel("open-problem");
       });
       row.querySelector<HTMLButtonElement>(".copy-btn")!.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1354,6 +1377,7 @@ function showDraftIfEmpty() {
 function addBlankFile(folder: string) {
   const file = fileManager.addFile(DEFAULT_FILE_NAME, "", folder);
   fileManager.setActive(file.id);
+  showPhonePanel("new-file");
   editor.focus();
 }
 
@@ -1655,5 +1679,49 @@ document.addEventListener("click", (e) => {
   }
 });
 
-fileManager.setValidationMode(storedValidationMode());
+// ---------- Phone layout (mobile-support tickets 02 and 05) ----------
+// Under 768px the page shows one panel at a time, switched by bottom tabs. CSS does the
+// showing and hiding from the data-phone-panel attribute; which panel shows next, and the
+// forced Auto mode, are decided in uiRules.ts (tested). On wide screens none of this shows.
+const appEl = document.querySelector<HTMLDivElement>(".app")!;
+const phoneQuery = window.matchMedia(`(max-width: ${PHONE_MAX_WIDTH}px)`);
+let phonePanel: PhonePanel = "files";
+
+function setPhonePanelTo(panel: PhonePanel) {
+  phonePanel = panel;
+  appEl.dataset.phonePanel = panel;
+  document.querySelectorAll<HTMLButtonElement>("[data-phone-tab]").forEach((btn) => {
+    const on = btn.dataset.phoneTab === panel;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", String(on));
+  });
+  // The editor was hidden while another panel showed; make it measure itself again.
+  if (panel === "editor") requestAnimationFrame(() => editor.layout());
+}
+
+/** Switch panel after an event; does nothing on wide screens, where every panel is always visible. */
+function showPhonePanel(event: PhonePanelEvent) {
+  if (!isPhoneWidth(window.innerWidth)) return;
+  setPhonePanelTo(nextPhonePanel(phonePanel, event));
+}
+
+function updatePhoneBadge(count: number) {
+  // Looked up here, not held in a const: render() can run before this section is reached.
+  const phoneBadgeEl = document.getElementById("phone-badge") as HTMLSpanElement | null;
+  if (!phoneBadgeEl) return;
+  phoneBadgeEl.textContent = String(count);
+  phoneBadgeEl.hidden = count === 0;
+}
+
+document.querySelectorAll<HTMLButtonElement>("[data-phone-tab]").forEach((btn) => {
+  btn.addEventListener("click", () => setPhonePanelTo(nextPhonePanel(phonePanel, `tab-${btn.dataset.phoneTab}` as PhonePanelEvent)));
+});
+setPhonePanelTo(phonePanel);
+
+// A phone always validates on edit. The saved Manual choice is left alone for wide screens.
+function syncValidationModeToWidth() {
+  fileManager.setValidationMode(effectiveValidationMode(storedValidationMode(), phoneQuery.matches));
+}
+phoneQuery.addEventListener("change", syncValidationModeToWidth);
+syncValidationModeToWidth();
 render();

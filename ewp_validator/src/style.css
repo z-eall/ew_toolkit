@@ -1388,3 +1388,102 @@ body {
 .problem.in-group {
   padding-left: 26px;
 }
+
+/* ---------- Phone layout (mobile-support tickets 02 and 05) ----------
+   Check-only phone use: one panel at a time (Files / Editor / Problems), switched by bottom
+   tabs. The panel shown comes from data-phone-panel on .app (main.ts). The width must match
+   PHONE_MAX_WIDTH in uiRules.ts; a test pins them together. Wide screens never see the tabs. */
+.phone-tabs {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .app-body {
+    flex-direction: column;
+  }
+
+  /* Hidden on phones: the drag-resize bars, folder upload, and the Auto/Manual
+     switch with its Validate button (phones always validate on edit). */
+  .resizer-x,
+  .resizer-y,
+  #add-folder-btn,
+  .sidebar-footer,
+  .new-item[data-new="folder"],
+  #empty-state [data-open="folders"],
+  #empty-state p:not([data-open]) {
+    display: none !important;
+  }
+
+  /* The drag-resize code writes inline sizes; a phone panel always fills the space. */
+  .sidebar {
+    width: auto !important;
+    flex: 1;
+    min-height: 0;
+    border-right: 0;
+  }
+
+  .main {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .problems {
+    height: auto !important;
+    flex: 1;
+    border-top: 0;
+  }
+
+  .app[data-phone-panel="files"] .main,
+  .app[data-phone-panel="editor"] .sidebar,
+  .app[data-phone-panel="editor"] .problems,
+  .app[data-phone-panel="problems"] .sidebar,
+  .app[data-phone-panel="problems"] #editor {
+    display: none;
+  }
+
+  .phone-tabs {
+    flex: none;
+    display: flex;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+  }
+
+  .phone-tabs button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 13px 0;
+    background: none;
+    border: 0;
+    border-top: 2px solid transparent;
+    color: var(--muted);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .phone-tabs button.active {
+    color: var(--text);
+    border-top-color: var(--info);
+  }
+
+  .phone-badge {
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: 9px;
+    background: var(--error);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+  }
+}

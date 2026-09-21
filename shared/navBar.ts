@@ -58,17 +58,20 @@ export function buildNavItems(current: string, hrefFor: (key: string) => string)
 export function renderNavBar(items: NavLinkItem[], themeButtonId = "theme-toggle"): string {
   return `
     <nav class="site-nav">
-      <div class="site-nav-links">
+      <span class="nav-brand">EW Toolkit</span>
+      <div class="site-nav-links" id="site-nav-links">
         ${items
           .map(
             (item) =>
               `<a class="nav-link${item.active ? " active" : ""}" href="${item.href}"><span class="nav-icon" aria-hidden="true">${item.iconSvg}</span>${item.label}</a>`,
           )
           .join("")}
+        <a class="changelog-link drawer-changelog" href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">Changelog</a>
       </div>
       <div class="nav-right">
         <a class="changelog-link" href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">Changelog</a>
         <button id="${themeButtonId}" class="theme-toggle" aria-label="Current theme, click to switch"></button>
+        <button class="nav-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav-links"><span class="nav-menu-open-icon">${icon("menu")}</span><span class="nav-menu-close-icon">${icon("close")}</span></button>
       </div>
     </nav>
   `;

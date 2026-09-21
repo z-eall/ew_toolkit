@@ -25,6 +25,8 @@ export const ICON_PATHS = {
   arrowDown: '<path d="M12 4v14"/><path d="m6 12 6 6 6-6"/>',
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   close: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
+  // Three bars: the phone nav's hamburger button.
+  menu: '<path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/>',
   // Circular two-arrow refresh — the "reset to default" affordance (clearer than
   // a bare × for "put this back the way it was").
   reset: '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>',

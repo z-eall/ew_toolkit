@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { RENAME_NOTE_DISMISS_EVENTS, anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss, confirmKeyDecision, initialFocusIndex } from "./uiRules";
+import { PHONE_MAX_WIDTH, effectiveValidationMode, isPhoneWidth, nextPhonePanel, RENAME_NOTE_DISMISS_EVENTS, anyUnsavedWork, applyLeaveWarning, armRenameNoteDismiss, confirmKeyDecision, initialFocusIndex } from "./uiRules";
 
 describe("anyUnsavedWork", () => {
   it("is false with no files", () => expect(anyUnsavedWork([])).toBe(false));
@@ -105,5 +105,40 @@ describe("rename note dismiss (round 6 ticket 25)", () => {
     undo();
     expect(f.cleared).toEqual([7]);
     expect(f.calls).toEqual(RENAME_NOTE_DISMISS_EVENTS.map((type) => ({ op: "remove", type, options: { capture: true } })));
+  });
+});
+
+describe("phone layout decisions", () => {
+  it("phone width is 767 and below; tablets keep the desktop layout", () => {
+    expect(PHONE_MAX_WIDTH).toBe(767);
+    expect(isPhoneWidth(375)).toBe(true);
+    expect(isPhoneWidth(767)).toBe(true);
+    expect(isPhoneWidth(768)).toBe(false);
+    expect(isPhoneWidth(1280)).toBe(false);
+  });
+
+  it("a tab shows its own panel", () => {
+    expect(nextPhonePanel("editor", "tab-files")).toBe("files");
+    expect(nextPhonePanel("files", "tab-problems")).toBe("problems");
+    expect(nextPhonePanel("problems", "tab-editor")).toBe("editor");
+  });
+
+  it("opening a file, tapping a problem or adding a file goes to the editor", () => {
+    for (const event of ["open-file", "open-problem", "new-file"] as const) {
+      expect(nextPhonePanel("files", event)).toBe("editor");
+      expect(nextPhonePanel("problems", event)).toBe("editor");
+    }
+  });
+
+  it("a phone always validates on edit; a saved Manual is kept for wide screens", () => {
+    expect(effectiveValidationMode("manual", true)).toBe("auto");
+    expect(effectiveValidationMode("auto", true)).toBe("auto");
+    expect(effectiveValidationMode("manual", false)).toBe("manual");
+    expect(effectiveValidationMode("auto", false)).toBe("auto");
+  });
+
+  it("the phone width matches the CSS media query in style.css", () => {
+    const css = readFileSync(new URL("./style.css", import.meta.url), "utf8");
+    expect(css).toContain(`@media (max-width: ${PHONE_MAX_WIDTH}px)`);
   });
 });

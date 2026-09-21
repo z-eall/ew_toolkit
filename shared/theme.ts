@@ -8,6 +8,8 @@
 // A consumer with its own extra theme-dependent work (the validator's Monaco
 // editor theme, the wiki's Starlight-key bridge) passes `onApply` rather
 // than reimplementing applyTheme from scratch.
+import { mountNavMenu } from "./navMenu";
+
 export type Theme = "dark" | "light";
 const THEME_KEY = "ew-toolkit-theme";
 
@@ -24,6 +26,7 @@ export function applyTheme(theme: Theme, themeButtonId = "theme-toggle", onApply
 }
 
 export function mountThemeToggle(themeButtonId = "theme-toggle", onApply?: (theme: Theme) => void): void {
+  mountNavMenu(); // the phone drawer; every Tool already calls this function once per page
   applyTheme(getStoredTheme(), themeButtonId, onApply);
   document.querySelector<HTMLButtonElement>(`#${themeButtonId}`)?.addEventListener("click", () => {
     const current = document.documentElement.getAttribute("data-theme") as Theme;

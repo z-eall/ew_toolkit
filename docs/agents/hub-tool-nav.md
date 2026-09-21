@@ -51,3 +51,9 @@ That was the incident. Now:
    combined build catches a wrong `base` or a stale absolute link.
 5. Nothing else to touch — no other file's nav block needs updating, because
    there isn't another one.
+
+## Phone drawer (2026-09-21)
+
+Under 768px the bar shows the brand, the theme button and a hamburger; the Tool links and Changelog open in a drawer below the bar. Markup: `renderNavBar`. Styles: the phone block at the end of `shared/theme.css`. Behavior: `shared/navMenu.ts` (one document-level listener, started by `mountThemeToggle`, so a Tool needs no extra call and it survives the wiki's page swaps). The width lives in `PHONE_NAV_MAX_WIDTH`; a test pins it to the CSS. The validator's phone layout uses the same width (`PHONE_MAX_WIDTH` in `ewp_validator/src/uiRules.ts`).
+
+Trap: on the wiki, Starlight's own page-menu button and the wiki's floating icon rail sat in the same layer as the header and drew over the open drawer. `ew_wiki/src/styles/theme.css` lifts the header one step on phones. A new Tool with its own floating buttons needs the same check at 375px, with a real tap on the hamburger.

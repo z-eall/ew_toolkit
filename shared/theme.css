@@ -150,3 +150,104 @@
 .theme-toggle:hover {
   border-color: var(--text);
 }
+
+/* Phone nav (mobile-support map, tickets 03 and 04): under 768px the link row
+   becomes a drawer opened by a hamburger button, so the bar stays one short
+   row instead of wrapping into stacked lines. Wider screens never see the
+   brand, the button or the drawer-only Changelog link. Behavior:
+   shared/navMenu.ts. The breakpoint must match PHONE_NAV_MAX_WIDTH there. */
+.nav-brand,
+.nav-menu-toggle,
+.drawer-changelog {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .site-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .nav-brand {
+    display: block;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .nav-right .changelog-link {
+    display: none;
+  }
+
+  .nav-right {
+    gap: 8px;
+  }
+
+  .nav-menu-toggle {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 32px;
+    padding: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .nav-menu-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .nav-menu-close-icon,
+  .site-nav.menu-open .nav-menu-open-icon {
+    display: none;
+  }
+
+  .site-nav.menu-open .nav-menu-close-icon {
+    display: inline-flex;
+  }
+
+  .nav-menu-open-icon {
+    display: inline-flex;
+  }
+
+  .site-nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 2px;
+    padding: 6px 10px 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .site-nav.menu-open .site-nav-links {
+    display: flex;
+  }
+
+  .site-nav-links .nav-link {
+    padding: 10px;
+    font-size: 15px;
+  }
+
+  .drawer-changelog {
+    display: block;
+    margin-top: 4px;
+    padding: 12px 10px 4px;
+    border-top: 1px solid var(--border);
+    font-size: 14px;
+  }
+}

@@ -1,5 +1,6 @@
 // Small decisions pulled out of the page code so tests can pin them down (round 6 ticket 13).
 // Each one shipped once and broke once; keep them pure (no DOM, no Monaco).
+import { PHONE_NAV_MAX_WIDTH } from "../../shared/navMenu";
 
 /** True if any file with content still has unsaved edits. Drives the "leave this page?" warning. */
 export function anyUnsavedWork(files: ReadonlyArray<{ dirty: boolean; text: string }>): boolean {
@@ -73,4 +74,55 @@ export function armRenameNoteDismiss(
     timers.clear(timer);
     for (const type of RENAME_NOTE_DISMISS_EVENTS) target.removeEventListener(type, dismiss, { capture: true });
   };
+}
+
+// ---- Phone layout (mobile-support map, ticket 02 and its build, ticket 05) ----
+// Check-only phone use: under 768px the page shows one panel at a time, switched by bottom tabs.
+// Tablets and wider keep the desktop layout. The width is the same one the shared nav drawer uses.
+
+/** Screens this narrow (or narrower) get the phone layout. */
+export const PHONE_MAX_WIDTH = PHONE_NAV_MAX_WIDTH;
+
+export function isPhoneWidth(width: number): boolean {
+  return width <= PHONE_MAX_WIDTH;
+}
+
+export type PhonePanel = "files" | "editor" | "problems";
+
+export type PhonePanelEvent =
+  | "tab-files"
+  | "tab-editor"
+  | "tab-problems"
+  | "open-file"
+  | "open-problem"
+  | "new-file";
+
+/**
+ * Which panel shows after an event. A tab tap shows its own panel. Opening a file, tapping a
+ * problem and adding a new file all go to the Editor: the phone shows one panel at a time,
+ * so the result of those taps has to be visible at once.
+ */
+export function nextPhonePanel(current: PhonePanel, event: PhonePanelEvent): PhonePanel {
+  switch (event) {
+    case "tab-files":
+      return "files";
+    case "tab-problems":
+      return "problems";
+    case "tab-editor":
+    case "open-file":
+    case "open-problem":
+    case "new-file":
+      return "editor";
+    default:
+      return current;
+  }
+}
+
+/**
+ * The validation mode in force. A phone has no Auto/Manual switch and no Validate button, so it
+ * always validates on edit, even when Manual was saved on a desktop. The saved value is left
+ * alone, so it applies again on a wide screen.
+ */
+export function effectiveValidationMode(stored: "auto" | "manual", phone: boolean): "auto" | "manual" {
+  return phone ? "auto" : stored;
 }

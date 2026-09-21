@@ -228,3 +228,15 @@ header.header {
 	font-weight: 700;
 	padding: 0;
 }
+
+/* Phone nav drawer (mobile-support ticket 04): the hub's hamburger drawer opens
+   downward from the header. Starlight's own page-menu button (.sl-menu-button)
+   and this wiki's floating icon rail share the header's layer (z-index 10) and
+   are later in the page, so they drew on top of the open drawer. Lifting the
+   header one step keeps the drawer above both. Phone width only, matching
+   PHONE_NAV_MAX_WIDTH in shared/navMenu.ts. */
+@media (max-width: 767px) {
+	.header {
+		z-index: 20;
+	}
+}
