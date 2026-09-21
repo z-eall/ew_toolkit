@@ -11,6 +11,7 @@
     "build": "npm run generate-schema && vite build",
     "preview": "vite preview",
     "pretest": "node schema/generate.mjs --offline",
+    "pretypecheck": "node schema/generate.mjs --offline",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "refresh-fixture": "node schema/refresh-fixture.mjs",
