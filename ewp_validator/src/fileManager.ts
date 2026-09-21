@@ -493,9 +493,9 @@ export class FileManager {
 
   private revalidateAll() {
     this.cancelScheduledValidation();
-    // Filename gate (ticket 13 round 4): an "Invalid file" name skips both
-    // diagnosis passes entirely — it isn't an EWP structural file, so its
-    // shape and its data/key namespace shouldn't count. A legacy `expand_data*`
+    // Filename gate (ticket 13 round 4, changed by round 6 ticket 27): an "Invalid file" name
+    // keeps the file out of the cross-file checks — EWP skips it, so its data/key namespace
+    // must not count — but its own shape and wording checks still run. A legacy `expand_data*`
     // name still gets fully scanned, just with an added rename notice. An
     // unsaved draft (ephemeral, never saved, still `unnamed.yaml`) is exempt:
     // an in-progress buffer, not a claimed EWP file. Once renamed, the gate

@@ -86,7 +86,7 @@ export function checkFileName(name: string): FileNameCheck {
       ...kindFields("filename-invalid"),
       message:
         `'${name}' is not an EWP file name ${FILENAME_PATTERN_HINT}, so EWP skips it. ` +
-        `Rename it, or remove it with the trash icon.`,
+        `Rename it, or remove it with the trash icon. Other notes apply after a rename.`,
       range: [0, 0],
     },
   };
