@@ -31,7 +31,9 @@ As always, the mod's own [functions.md](https://github.com/JereKuusela/valheim-e
   command: s <iter_add_1_3_i>
 ```
 
-`<iter_add_1_3_i>` sums 1 through 3: the template `i` becomes `1`, `2`, `3` in turn, and `add` combines them into `1+2+3 = 6`. Written out by hand, that's exactly `<add_1_2_3>` — `iter` builds the same chain from a range instead of a fixed list, so summing 1 through 20 instead is a one-number edit (`3` → `20`), not a much longer line.
+`<iter_add_1_3_i>` sums 1 through 3. It builds the sum in two moves: first, the template `i` becomes `1`, `2`, `3` in turn, one per pass through the range; second, those three results get joined behind the named `OP` and combined as one call — `add_1_2_3` — which comes out to `1+2+3 = 6`. Written by hand, that middle step is exactly `<add_1_2_3>` — `iter` is just a machine for building that same call from a range instead of a fixed list.
+
+That's the whole trick, and it's also the whole benefit: summing 1 through 20 instead of 1 through 3 is a one-number edit (`3` → `20`), not twenty typed-out terms. The same applies to `mul` for a running product, `min`/`max` to find an extreme across a range, and so on for any of `OP`'s options — only the combining function changes, the range-building mechanism stays identical.
 
 <Aside type="note">
 A range of exactly one number (`MINI` and `MAXI` the same) skips `OP` entirely and returns that single value plain: `<iter_add_5_5_i>` is `5`, not `add` run on a single input.
@@ -39,7 +41,7 @@ A range of exactly one number (`MINI` and `MAXI` the same) skips `OP` entirely a
 
 ### Case study: totaling a numbered set of fields
 
-An object's `ints:`/`floats:` storage is flat key-value, not a list — so a loot table, a quest counter, or any set of numbered slots ends up as separate fields: `val_1`, `val_2`, `val_3`, and so on. A template isn't limited to plain numbers — naming a function pattern instead builds one call per number in the range, so `int_val_i` reads a different field on every pass:
+An object's `ints:`/`floats:` storage is flat key-value, not a list — so a loot table, a quest counter, or any set of numbered slots ends up as separate fields: `val_1`, `val_2`, `val_3`, and so on. A template isn't limited to plain numbers — naming a function pattern instead builds one call per number in the range, so `int_val_i` reads a different field on every pass: pass `i=1` reads `val_1`, pass `i=2` reads `val_2`, and so on.
 
 ```yaml
 - prefab: Container
@@ -47,7 +49,19 @@ An object's `ints:`/`floats:` storage is flat key-value, not a list — so a loo
   command: s Total so far = <iter_add_1_5_int_val_i>
 ```
 
-`<iter_add_1_5_int_val_i>` reads `val_1` through `val_5` and sums them — the same result as writing `<add_<int_val_1>_<int_val_2>_<int_val_3>_<int_val_4>_<int_val_5>>` by hand, except a sixth slot later only means changing `5` to `6`, not adding a sixth lookup by hand.
+If `val_1` through `val_5` currently hold `10, 5, 20, 15, 10`, `<iter_add_1_5_int_val_i>` reads all five and reports `60` — the same result as writing `<add_<int_val_1>_<int_val_2>_<int_val_3>_<int_val_4>_<int_val_5>>` by hand, except a sixth slot later only means changing `5` to `6`, not adding a sixth lookup by hand.
+
+### Case study: a range that sizes itself from the object's own data
+
+The two case studies above still have a fixed number typed into `MAXI` — useful, but the range itself never changes unless someone edits the script. The real advantage shows up once `MAXI` isn't a fixed number at all, but another function's result: `MINI`/`MAXI`/`TEMPLATE` are just text `iter` reads *after* everything nested inside them has already resolved, the same inside-out rule [Advanced Functions](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions/) already covers for any function argument. So `<int_slotCount>` — a plain ZDO field read — resolves to a literal number first, and only then does `iter` see it as `MAXI`:
+
+```yaml
+- prefab: Container
+  type: change, InUse
+  command: s Total so far = <iter_add_1_<int_slotCount>_int_val_i>
+```
+
+Say this container's `slotCount` field currently holds `3`, and `val_1`/`val_2`/`val_3` hold `10, 20, 30`. `<int_slotCount>` resolves first, to `3`, turning the whole expression into `<iter_add_1_3_int_val_i>` — which then runs exactly like the previous case study, reporting `60`. Give a different container `slotCount = 6` and six filled slots instead, and the exact same script line now sums six of them instead of three, with no edit at all. This is the case worth reaching for `iter` over a hand-written chain: whenever the number of things to combine is decided by the object itself, at runtime, rather than fixed when the script was written.
 
 ## `iter2` — combine a two-dimensional grid
 
@@ -55,9 +69,9 @@ An object's `ints:`/`floats:` storage is flat key-value, not a list — so a loo
 <iter2_OP_MINI_MAXI_MINJ_MAXJ_TEMPLATE>
 ```
 
-`iter2` is `iter` with a second loop variable, `j`, for building a grid of values before combining them. The evaluation order is fixed: **`j` is the outer loop, `i` is the inner loop.** For `MINI=1,MAXI=2,MINJ=1,MAXJ=2`, the four passes run in this order: `(i=1,j=1)`, `(i=2,j=1)`, `(i=1,j=2)`, `(i=2,j=2)`.
+`iter2` is `iter` with a second loop variable, `j`, for building a grid of values before combining them — every combination of `i` and `j`, not matched pairs. A `MINI=1,MAXI=2,MINJ=1,MAXJ=2` range doesn't produce 2 results (`i=1,j=1` and `i=2,j=2`); it produces all 4 combinations. The evaluation order is fixed: **`j` is the outer loop, `i` is the inner loop.** For that same range, the four passes run in this order: `(i=1,j=1)`, `(i=2,j=1)`, `(i=1,j=2)`, `(i=2,j=2)`.
 
-For an order-blind `OP` (`add`, `mul`, `min`, `max`), that order never shows up in the final number. It matters for an order-sensitive `OP` (`sub`, `div`, `mod`), or a template building something positional rather than a straight combine.
+For an order-blind `OP` (`add`, `mul`, `min`, `max`), that fixed order never shows up in the final number — every combination gets counted exactly once regardless of which pass happened first. It matters for an order-sensitive `OP` (`sub`, `div`, `mod`, where which value lands first in the chain changes the result), or for a template that's building something positional — a row of tile names, say — rather than a plain combine.
 
 ### Case study: a grid total
 
@@ -67,7 +81,19 @@ For an order-blind `OP` (`add`, `mul`, `min`, `max`), that order never shows up 
   command: s <iter2_add_1_2_1_2_i_mul_j>
 ```
 
-Each pass multiplies its own `i` and `j` first, then `add` sums all four products: `(1×1)=1`, `(2×1)=2`, `(1×2)=2`, `(2×2)=4` → `1+2+2+4 = 9`. A small grid, reduced to one number, in one line — the real reason to reach for `iter2` over plain `iter`.
+Each of the 4 passes multiplies its own `i` and `j` first (the template is `i_mul_j`, so pass `(i=2,j=1)` renders `2_mul_1`, which becomes its own nested `<mul_2_1>` call before `add` ever runs), then `add` sums all four products in order: `(1×1)=1`, `(2×1)=2`, `(1×2)=2`, `(2×2)=4` → `1+2+2+4 = 9`. A small grid, reduced to one number, in one line — this is what `iter` alone can't do, since `iter` only ever has one number changing per pass, not two crossed together.
+
+### Case study: totaling a 2D grid of stored fields
+
+The same "read a numbered field per pass" trick from `iter`'s own field-totaling case study extends naturally to two dimensions. A warehouse tracking stock across a 3-column, 2-row shelf grid might store each cell as its own field — `shelf_1_1`, `shelf_2_1`, `shelf_3_1` for row 1, `shelf_1_2`, `shelf_2_2`, `shelf_3_2` for row 2 — the same flat-key-value shape `ints:`/`floats:` always uses, just with two numbers in each field name instead of one:
+
+```yaml
+- prefab: Container
+  type: change, InUse
+  command: s Total stock = <iter2_add_1_3_1_2_int_shelf_i_j>
+```
+
+With `shelf_1_1=4, shelf_2_1=7, shelf_3_1=9` on row 1 and `shelf_1_2=2, shelf_2_2=5, shelf_3_2=1` on row 2, this reads all six cells and reports `28`. Written by hand, that's six separate lookups added together; growing the warehouse to a 5-column, 10-row grid — 50 cells — is still just two numbers to change (`3` → `5`, `2` → `10`), not 44 new lookups typed in by hand. This is the same "why reach for it" case as `iter`'s self-sizing range, just for data that's naturally laid out in two dimensions instead of one.
 
 <Aside type="caution">
 Don't do this: use a two-dimensional range but write a template that only mentions `i`, leaving `j` out.
