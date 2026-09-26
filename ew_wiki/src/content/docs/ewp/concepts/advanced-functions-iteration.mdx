@@ -1,0 +1,87 @@
+---
+title: "Advanced Functions - Iteration"
+description: "iter and iter2 turn a fixed-length chain of function calls into one parametric range — the mechanics, a real use case, and the silent-double-count gotcha in iter2's grid version."
+complexity: advanced
+draft: true
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`<iter_...>` and `<iter2_...>` build a range of values and reduce them down to one, using whichever [Numeric function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) you name as the reducer. They exist so a script can say "combine N of these" without hardcoding N — resize the range, and the same line still works. This page builds up from the smallest possible example to the real reason anyone reaches for these: reading a *variable-length* list of numbered fields off an object.
+
+<Aside type="note">
+As always, the mod's own [functions.md](https://github.com/JereKuusela/valheim-expand_world_prefabs/blob/main/docs/functions.md) is the complete, always-current reference. This page is the worked walkthrough functions.md doesn't have room for.
+</Aside>
+
+## `iter` — reduce over a range
+
+```
+<iter_OP_MINI_MAXI_TEMPLATE>
+```
+
+- **`OP`** — the function used to combine the results: any of `add`, `sub`, `mul`, `div`, `mod`, `min`, `max`, or the `...long` variants. It isn't special `iter` vocabulary — the range just gets built, then handed to that ordinary function.
+- **`MINI`/`MAXI`** — the range to loop over, inclusive.
+- **`TEMPLATE`** — a small pattern containing the letter `i`, swapped for the current loop number on every pass.
+
+### Case study: the mechanism, one step at a time
+
+```yaml
+- prefab: Player
+  type: say, sumtest
+  command: s <iter_add_1_3_i>
+```
+
+`<iter_add_1_3_i>` walks like this:
+
+1. Loop `i` from `1` to `3`.
+2. Each pass, swap the token `i` in the template for the current number: `"1"`, `"2"`, `"3"`.
+3. Join the results into a new call using `OP`: `<add_1_2_3>`.
+4. That gets resolved the normal way: `1+2+3 = 6`.
+
+So this one line just means "sum 1 through 3" — a longer-winded way to write `<add_1_2_3>` by hand, except now the range is a number you can change, not a fixed list you'd have to retype.
+
+<Aside type="note">
+If `MINI` and `MAXI` are the same number, `OP` never actually runs — the single rendered value comes back as-is. `<iter_add_5_5_i>` returns `5`, not `<add_5>` resolved. Harmless, but worth knowing if you're expecting `OP` to always fire.
+</Aside>
+
+### Case study: a real use case — totaling numbered slots
+
+`ints:`/`floats:` storage on an object is flat key-value, not a list — so a loot table, a quest counter, or any "numbered slot" system ends up as separate fields: `val_1`, `val_2`, `val_3`, and so on. Summing a *fixed* count of them means chaining `<add_...>` by hand and re-editing it every time the count changes:
+
+```yaml
+- prefab: Container
+  type: change, InUse
+  command: s Total so far: <iter_add_1_5_int_val_i>
+```
+
+The template here isn't a plain number after substitution (`int_val_1`, `int_val_2`, ...), so each one gets wrapped and resolved as its own function call — a lookup of the ZDO int field named `val_1`, `val_2`, and so on. The whole line is equivalent to writing `<add_<int_val_1>_<int_val_2>_<int_val_3>_<int_val_4>_<int_val_5>>` by hand, except changing the slot count now only means changing one number (`5`) instead of editing every call site that reads these slots.
+
+## `iter2` — the two-dimensional version
+
+```
+<iter2_OP_MINI_MAXI_MINJ_MAXJ_TEMPLATE>
+```
+
+Same idea, but with a second loop variable, `j`, for building a grid of values before reducing. The evaluation order is fixed: **`j` is the outer loop, `i` is the inner loop.** For `MINI=1,MAXI=2,MINJ=1,MAXJ=2`, the four passes happen in this order: `(i=1,j=1)`, `(i=2,j=1)`, `(i=1,j=2)`, `(i=2,j=2)`.
+
+For an order-blind `OP` like `add`, `mul`, `min`, or `max`, that order never shows up in the final number. It only matters for an order-sensitive `OP` (`sub`, `div`, `mod`), or if the template is building something positional rather than reducing.
+
+### Case study: a real 2D grid total
+
+```yaml
+- prefab: Player
+  type: say, gridtotal
+  command: s <iter2_add_1_2_1_2_i_mul_j>
+```
+
+Each of the 4 passes computes `i × j` first (`i_mul_j` isn't a plain number either, so it's wrapped and resolved as its own `<mul_...>` call), then sums all 4: `(1×1)=1`, `(2×1)=2`, `(1×2)=2`, `(2×2)=4` → `1+2+2+4 = 9`. This is the actual point of `iter2` — a small grid reduced to one number, in one line, without writing out every cell by hand.
+
+<Aside type="caution">
+Don't do this: use a two-dimensional range but write a template that only mentions `i`, forgetting `j` entirely.
+
+```yaml
+command: s <iter2_add_1_2_1_2_i>
+```
+
+All 4 passes still run — EWP has no way to know you meant to use `j` — so this silently computes `1+2+1+2 = 6`, quietly counting each `i` value twice, once per `j`, with no error and no signal anything went wrong. If a two-dimensional total looks suspiciously like it doubled (or tripled, for a 3-wide `j` range), this is the first thing to check.
+</Aside>

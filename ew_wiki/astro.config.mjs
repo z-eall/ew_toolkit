@@ -112,6 +112,7 @@ export default defineConfig({
 								'ewp/concepts/advanced-poke-mechanics',
 								'ewp/concepts/advanced-poke-creative-systems',
 								'ewp/concepts/advanced-functions',
+								'ewp/concepts/advanced-functions-iteration',
 								'ewp/concepts/ewp-key',
 								'ewp/concepts/advanced-rpcs',
 								'ewp/concepts/advanced-filter-condition',
