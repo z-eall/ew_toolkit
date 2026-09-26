@@ -1,0 +1,453 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// TriggerChangeExplainer.astro/NestingPeelExplainer.astro: class-scoped so
+// multiple instances coexist, client-side <script> does the computation,
+// re-initialized on astro:page-load so client-side nav doesn't leave the
+// widget inert.
+//
+// Validated as a throwaway HTML prototype first (3 rounds of maintainer
+// feedback): the fixed running-total display was reworked into a live-
+// growing <add_v1_v2_...> skeleton (unresolved <amount_x_y> pieces
+// collapsing into numbers left to right, matching iter2's real resolution
+// order) after the first round read as too summarized; a persistent grid
+// legend was added directly under the grid (not just mentioned once in
+// page prose) after the numbers alone tested as unclear on first look;
+// Back/Next/Reset were pinned to a fixed position via reserved min-height
+// on the narration/formula zones after the box's own height shrinking
+// mid-sequence moved the buttons; and the three case studies (row-only,
+// whole-grid, dual-dynamic-bound) were split into three separate
+// instances of this component, one per heading, after a single widget
+// mixing iter/iter2 controls under the `iter` heading read as confusing
+// as iter2's own controls would have.
+//
+// The example object throughout is a real Wood Chest (Container.m_width:
+// 5, Container.m_height: 2 — confirmed 5x2/10 slots via web search
+// against Fandom's Chest page and a mod description's own "default size"
+// claim, ew_wiki/docs/sources.md's community-observed-no-single-source
+// bar) — not an invented field. <amount_x_y> is EWP's own real per-slot
+// inventory read (ObjectFunctions.cs's GetAmountAt, bounded by the same
+// two real fields), confirmed against the upstream mirror.
+//
+// kind:
+//   'iter'     — row 0 only, no setup phase, no bug toggle.
+//   'iter2'    — the whole grid, plus the "template forgets j" bug toggle;
+//                the call-header text swaps live with the toggle.
+//   'iter2adv' — the whole grid, no bug toggle, but a 4-step setup phase
+//                resolving MAXI (<sub_<int_Container.m_width>_1>) then
+//                MAXJ (<sub_<int_Container.m_height>_1>) before the
+//                per-slot passes begin — the real inside-out resolution
+//                rule, applied to iter2's own arguments.
+interface Props {
+	kind: 'iter' | 'iter2' | 'iter2adv';
+}
+const { kind } = Astro.props;
+---
+
+<div class="ie-widget" data-kind={kind}>
+	{
+		kind === 'iter' && (
+			<>
+				<h4>A Wood Chest's storage — row 0</h4>
+				<p class="ie-sub">Step through to watch <code>iter</code> visit each slot in the top row.</p>
+				<div class="ie-call"><code>&lt;iter_add_0_4_amount_i_0&gt;</code></div>
+			</>
+		)
+	}
+	{
+		kind === 'iter2' && (
+			<>
+				<h4>The same Wood Chest — the whole grid</h4>
+				<p class="ie-sub">Step through to watch <code>iter2</code> visit every slot, row by row.</p>
+				<div class="ie-call"><code data-call /></div>
+				<div class="ie-bug-row">
+					<input type="checkbox" id={`ie-bug-${kind}`} data-bug-toggle />
+					<label for={`ie-bug-${kind}`}>
+						Template forgets <code>j</code> (the mistake below warns about)
+					</label>
+				</div>
+			</>
+		)
+	}
+	{
+		kind === 'iter2adv' && (
+			<>
+				<h4>Any Wood Chest — total reads its own real size</h4>
+				<p class="ie-sub">Step through to watch both bounds resolve before <code>iter2</code>'s own loop starts.</p>
+				<div class="ie-call">
+					<code>
+						&lt;iter2_add_0_&lt;sub_&lt;int_Container.m_width&gt;_1&gt;_0_&lt;sub_&lt;int_Container.m_height&gt;_1&gt;_amount_i_j&gt;
+					</code>
+				</div>
+				<div class="ie-setup" data-setup />
+			</>
+		)
+	}
+
+	<div class="ie-grid-block">
+		<div class="ie-grid-wrap"><div class="ie-grid" data-grid /></div>
+		<p class="ie-grid-legend">The number in each slot is how many of that item are sitting there.</p>
+	</div>
+
+	<div class="ie-narration-zone"><p class="ie-narration" data-narration /></div>
+	<div class="ie-formula-zone">
+		<div class="ie-formula-label">
+			the call <code>{kind === 'iter' ? 'iter' : 'iter2'}</code> is building, live
+		</div>
+		<div class="ie-formula" data-formula />
+	</div>
+	<div class="ie-controls">
+		<button type="button" data-back>Back</button>
+		<button type="button" data-next>Next</button>
+		<button type="button" data-reset>Reset</button>
+	</div>
+</div>
+
+<style>
+	.ie-widget {
+		--ie-active: #e6c18a;
+		--ie-done: #7fa8bf;
+		--ie-final: #8fbf7f;
+		--ie-revisit: #c97a7a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1rem 0;
+		font-size: 14px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .ie-widget {
+		--ie-active: #8a5a12;
+		--ie-done: #2c5f78;
+		--ie-final: #2f5233;
+		--ie-revisit: #7a2e1f;
+	}
+	.ie-widget h4 { margin: 0; padding: 10px 14px 0; font-size: 0.95em; color: var(--text); }
+	.ie-sub { margin: 0; padding: 4px 14px 8px; color: var(--muted); font-size: 0.88em; line-height: 1.4; }
+
+	/* The call this widget demonstrates lives here, in the widget itself —
+	   not restated in a trailing paragraph the reader has to look back at. */
+	.ie-call { padding: 0 14px 10px; text-align: center; }
+	.ie-call code { font-size: 13px; word-break: break-word; color: var(--text); }
+	.ie-call :global(.ie-swapped) { color: var(--ie-revisit); font-weight: 700; }
+
+	.ie-bug-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		font-size: 12.5px;
+		color: var(--muted);
+		border-top: 1px solid var(--border);
+	}
+
+	.ie-grid-block { padding: 10px 14px 6px; border-top: 1px solid var(--border); }
+	.ie-grid-wrap { display: flex; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+	.ie-grid { display: grid; gap: 4px; }
+	.ie-grid :global(.ie-cell) {
+		width: 34px;
+		height: 34px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		font-size: 13px;
+		color: var(--muted);
+		transition: background 0.15s, color 0.15s, border-color 0.15s;
+	}
+	.ie-grid :global(.ie-cell.current) {
+		background: color-mix(in srgb, var(--ie-active) 25%, transparent);
+		border-color: var(--ie-active);
+		color: var(--ie-active);
+		font-weight: 700;
+	}
+	.ie-grid :global(.ie-cell.done) {
+		background: color-mix(in srgb, var(--ie-done) 18%, transparent);
+		border-color: var(--ie-done);
+		color: var(--ie-done);
+	}
+	.ie-grid :global(.ie-cell.revisit) {
+		background: color-mix(in srgb, var(--ie-revisit) 25%, transparent);
+		border-color: var(--ie-revisit);
+		color: var(--ie-revisit);
+		font-weight: 700;
+	}
+	.ie-grid :global(.ie-cell.outside) { opacity: 0.25; }
+	.ie-grid-legend { text-align: center; font-size: 12px; color: var(--muted); line-height: 1.4; padding: 0 8px; margin: 0; }
+
+	/* Reserved so the longest possible narration sentence never grows this
+	   box further — every shorter sentence just sits inside the reserved
+	   space, so Back/Next/Reset never move mid-sequence. */
+	.ie-narration-zone { padding: 10px 14px 4px; border-top: 1px solid var(--border); min-height: 4.6em; }
+	.ie-narration { font-size: 13px; color: var(--text); line-height: 1.5; margin: 0; }
+	.ie-narration :global(code) { color: var(--ie-active); }
+	.ie-narration :global(.ie-warn) { color: var(--ie-revisit); font-weight: 600; }
+
+	.ie-setup {
+		padding: 8px 14px;
+		text-align: center;
+		border-top: 1px solid var(--border);
+		min-height: 5.4em;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 4px;
+	}
+	.ie-setup:empty { padding: 0; min-height: 0; border-top: none; }
+	.ie-setup :global(.ie-setup-label) { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+	.ie-setup :global(.ie-setup-formula) { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13.5px; word-break: break-word; color: var(--text); }
+	.ie-setup :global(.ie-tok.pending) { color: var(--muted); opacity: 0.6; }
+	.ie-setup :global(.ie-tok.active) { color: var(--ie-active); font-weight: 700; }
+	.ie-setup :global(.ie-tok.done) { color: var(--ie-done); }
+	.ie-setup :global(.ie-setup-settled) { font-size: 12.5px; color: var(--ie-final); font-weight: 600; }
+
+	/* Reserved so the longest possible skeleton (all 10 iter2 pieces still
+	   unresolved, the widest state) never grows the box further — every
+	   other state is shorter, so the box only ever shrinks INTO this
+	   reserved space, never past it. Measured against this widget's own
+	   longest real content, not guessed. */
+	.ie-formula-zone { padding: 6px 14px 10px; text-align: center; min-height: 4.6em; display: flex; flex-direction: column; justify-content: center; }
+	.ie-formula-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+	.ie-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; word-break: break-word; color: var(--text); }
+	.ie-formula :global(.ie-tok) { color: var(--text); }
+	.ie-formula :global(.ie-tok.pending) { color: var(--muted); opacity: 0.6; }
+	.ie-formula :global(.ie-tok.done) { color: var(--ie-done); }
+	.ie-formula :global(.ie-tok.active) { color: var(--ie-active); font-weight: 700; }
+	.ie-formula :global(.ie-tok.revisit) { color: var(--ie-revisit); font-weight: 700; }
+	.ie-formula :global(.ie-eq) { color: var(--ie-final); font-weight: 700; }
+
+	.ie-controls { display: flex; justify-content: center; gap: 8px; padding: 0 14px 12px; }
+	.ie-controls button {
+		box-sizing: border-box;
+		height: 27px;
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 0 14px;
+		font-size: 12.5px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.ie-controls button:disabled { opacity: 0.4; cursor: default; }
+	.ie-controls button:not(:disabled):hover { border-color: var(--text); }
+</style>
+
+<script>
+	const W = 5;
+	const H = 2;
+	const STOCK = [
+		[4, 7, 9, 2, 5],
+		[2, 0, 6, 4, 1],
+	];
+
+	// A dynamic-bound chain like <sub_<int_FIELD>_1>, shown resolving in 2
+	// stages: 0 = nothing resolved, 1 = the field read resolved, 2 = fully
+	// settled to its final number.
+	function subChainHTML(level: number, fieldName: string, fieldValue: number, finalValue: number): string {
+		if (level >= 2) return `<span class="ie-tok done">${finalValue}</span>`;
+		const inner =
+			level >= 1
+				? `<span class="ie-tok active">${fieldValue}</span>`
+				: `<span class="ie-tok pending">&lt;int_${fieldName}&gt;</span>`;
+		return `<span class="ie-tok">&lt;sub_</span>${inner}<span class="ie-tok">_</span><span class="ie-tok pending">1</span><span class="ie-tok">&gt;</span>`;
+	}
+
+	function setupWidgets() {
+		for (const root of document.querySelectorAll<HTMLElement>('.ie-widget')) {
+			const kind = root.dataset.kind as 'iter' | 'iter2' | 'iter2adv';
+			const gridEl = root.querySelector<HTMLElement>('[data-grid]')!;
+			const formulaEl = root.querySelector<HTMLElement>('[data-formula]')!;
+			const narrationEl = root.querySelector<HTMLElement>('[data-narration]')!;
+			const setupEl = root.querySelector<HTMLElement>('[data-setup]');
+			const callEl = root.querySelector<HTMLElement>('[data-call]');
+			const backBtn = root.querySelector<HTMLButtonElement>('[data-back]')!;
+			const nextBtn = root.querySelector<HTMLButtonElement>('[data-next]')!;
+			const bugToggle = root.querySelector<HTMLInputElement>('[data-bug-toggle]');
+
+			let bug = false;
+			let step = 0;
+
+			function slotPasses(): [number, number][] {
+				const list: [number, number][] = [];
+				if (kind === 'iter') {
+					for (let x = 0; x < W; x++) list.push([x, 0]);
+				} else {
+					for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) list.push(bug ? [x, 0] : [x, y]);
+				}
+				return list;
+			}
+
+			// Only the dual-dynamic-bound widget (iter2adv) has a setup phase:
+			// both MAXI and MAXJ resolve, in order, before iter2's own loop
+			// starts.
+			const metaCount = () => (kind === 'iter2adv' ? 4 : 0);
+
+			function buildGrid() {
+				gridEl.style.gridTemplateColumns = `repeat(${W}, 34px)`;
+				gridEl.innerHTML = '';
+				for (let y = 0; y < H; y++) {
+					for (let x = 0; x < W; x++) {
+						const c = document.createElement('div');
+						c.className = 'ie-cell';
+						c.textContent = String(STOCK[y][x]);
+						c.dataset.x = String(x);
+						c.dataset.y = String(y);
+						gridEl.appendChild(c);
+					}
+				}
+			}
+
+			function renderCall() {
+				if (!callEl) return;
+				callEl.innerHTML = bug
+					? '&lt;iter2_add_0_4_0_1_amount_i_<span class="ie-swapped">0</span>&gt;'
+					: '&lt;iter2_add_0_4_0_1_amount_i_j&gt;';
+			}
+
+			function renderSetup(metaStep: number, metaTotal: number) {
+				if (!setupEl) return;
+				if (metaTotal === 0) {
+					setupEl.innerHTML = '';
+					return;
+				}
+				const widthLevel = Math.min(2, metaStep);
+				const heightLevel = Math.max(0, Math.min(2, metaStep - 2));
+				const widthHTML = subChainHTML(widthLevel, 'Container.m_width', 5, 4);
+				const heightHTML = subChainHTML(heightLevel, 'Container.m_height', 2, 1);
+				const settled = metaStep >= metaTotal;
+				setupEl.innerHTML =
+					`<div class="ie-setup-label">MAXI / MAXJ, ${settled ? 'resolved' : 'resolving'} before iter2 starts</div>` +
+					`<div class="ie-setup-formula">MAXI = ${widthHTML}</div>` +
+					`<div class="ie-setup-formula">MAXJ = ${heightHTML}</div>` +
+					(settled
+						? '<div class="ie-setup-settled">Both read from the chest\'s own fields — nothing typed by hand.</div>'
+						: '');
+			}
+
+			function render() {
+				renderCall();
+				const list = slotPasses();
+				const meta = metaCount();
+				const maxStep = list.length + meta;
+				step = Math.min(step, maxStep);
+				const metaStep = Math.min(step, meta);
+				const slotStep = Math.max(0, step - meta);
+
+				renderSetup(metaStep, meta);
+
+				for (const c of Array.from(gridEl.children) as HTMLElement[]) {
+					c.className = 'ie-cell';
+					const y = Number(c.dataset.y);
+					if (kind === 'iter' && y !== 0) c.classList.add('outside');
+				}
+
+				const slotMax = list.length;
+				const values: number[] = [];
+				const seen = new Set<string>();
+				let lastRevisit = false;
+				for (let i = 0; i < slotStep; i++) {
+					const [x, y] = list[i];
+					const key = x + ',' + y;
+					const isRevisit = seen.has(key);
+					seen.add(key);
+					values.push(STOCK[y][x]);
+					const cell = gridEl.children[y * W + x] as HTMLElement;
+					cell.classList.remove('outside');
+					if (i === slotStep - 1) {
+						lastRevisit = isRevisit;
+						cell.classList.add(bug && isRevisit ? 'revisit' : 'current');
+					} else {
+						cell.classList.add('done');
+					}
+				}
+
+				// The skeleton: iter2 first builds ONE call with every slot as its
+				// own unresolved <amount_x_y> piece, then resolves each piece left
+				// to right (the same order the passes already ran in) before add
+				// ever combines anything. Show that whole shape, not just a
+				// running number.
+				const total = values.reduce((a, b) => a + b, 0);
+				const pieces = list.map(([x, y], i) => {
+					if (i < slotStep) {
+						const resolvedNow = i === slotStep - 1;
+						const cls = resolvedNow ? (bug && lastRevisit ? 'revisit' : 'active') : 'done';
+						return `<span class="ie-tok ${cls}">${STOCK[y][x]}</span>`;
+					}
+					return `<span class="ie-tok pending">&lt;amount_${x}_${y}&gt;</span>`;
+				});
+				let html = '<span class="ie-tok">&lt;add_</span>' + pieces.join('<span class="ie-tok">_</span>') + '<span class="ie-tok">&gt;</span>';
+				if (slotStep === slotMax) html += ' <span class="ie-eq">= ' + total + '</span>';
+				formulaEl.innerHTML = html;
+
+				// narration: meta steps first (iter2adv only), then one sentence
+				// per slot piece, matching the formula above
+				if (meta > 0 && metaStep < meta) {
+					const metaNarrations = [
+						'Not started. Both <code>MAXI</code> and <code>MAXJ</code> come from the chest\'s own fields, not typed numbers — everything nested resolves before <code>iter2</code>\'s own loop starts.',
+						'<code>&lt;int_Container.m_width&gt;</code> reads this chest\'s real field: <code>5</code>. Now <code>&lt;sub_5_1&gt;</code> takes its turn.',
+						'<code>&lt;sub_5_1&gt;</code> resolves to <code>4</code> — <code>MAXI</code> is settled. The same pattern now runs for <code>MAXJ</code>.',
+						'<code>&lt;int_Container.m_height&gt;</code> reads this chest\'s real field: <code>2</code>. Now <code>&lt;sub_2_1&gt;</code> takes its turn.',
+					];
+					narrationEl.innerHTML = metaNarrations[metaStep];
+				} else if (slotStep === 0) {
+					narrationEl.innerHTML =
+						kind === 'iter'
+							? 'Not started. The whole call is built first — one <code>&lt;amount_x_y&gt;</code> piece per slot in row 0 — then each piece resolves before <code>add</code> runs.'
+							: meta > 0
+								? '<code>&lt;sub_2_1&gt;</code> resolves to <code>1</code> — <code>MAXJ</code> is settled too. Only now does <code>iter2</code> begin its own loop, built the same way as always.'
+								: 'Not started. <code>j</code> is the outer loop, <code>i</code> is the inner loop, so all 10 <code>&lt;amount_x_y&gt;</code> pieces are laid out row 0 first, then row 1 — resolved left to right in that same order.';
+				} else {
+					const [x, y] = list[slotStep - 1];
+					const v = STOCK[y][x];
+					const label = `<code>&lt;amount_${x}_${y}&gt;</code>`;
+					const lead = slotStep === 1 ? 'First' : slotStep === slotMax ? 'Finally' : 'Then';
+					let sentence = `${lead}: ${label} resolves to <code>${v}</code>`;
+					if (bug && lastRevisit) {
+						sentence += ` — <span class="ie-warn">the same slot as before</span>, since the template never mentions <code>j</code>`;
+					}
+					sentence += '.';
+					if (slotStep === slotMax) {
+						sentence += bug
+							? ` Every piece is resolved now, but only 5 real slots ever got read — <code>add</code> still combines all ${slotMax} numbers into <code>${total}</code>, which is wrong.`
+							: meta > 0
+								? ` Every piece is resolved now — <code>add</code> combines all ${slotMax} into <code>${total}</code>. A different-sized chest resolves different bounds automatically — no edit, ever.`
+								: ` Every piece is resolved now — <code>add</code> combines all ${slotMax} into <code>${total}</code>.`;
+					}
+					narrationEl.innerHTML = sentence;
+				}
+
+				backBtn.disabled = step === 0;
+				nextBtn.disabled = step === maxStep;
+			}
+
+			backBtn.addEventListener('click', () => {
+				step = Math.max(0, step - 1);
+				render();
+			});
+			nextBtn.addEventListener('click', () => {
+				step = step + 1;
+				render();
+			});
+			root.querySelector('[data-reset]')!.addEventListener('click', () => {
+				step = 0;
+				render();
+			});
+			if (bugToggle) {
+				bugToggle.addEventListener('change', () => {
+					bug = bugToggle.checked;
+					step = 0;
+					render();
+				});
+			}
+
+			buildGrid();
+			render();
+		}
+	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
+</script>
