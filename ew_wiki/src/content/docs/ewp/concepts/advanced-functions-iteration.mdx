@@ -1,6 +1,6 @@
 ---
 title: "Advanced Functions - Iteration"
-description: "iter and iter2 turn a fixed-length chain of function calls into one parametric range — sizeable by changing a number, not by rewriting the line."
+description: "iter and iter2 turn a fixed-length chain of function calls into one parametric range — resizable by changing a number, not by rewriting the line."
 complexity: advanced
 draft: true
 ---
@@ -58,7 +58,7 @@ Don't do this: use a two-dimensional range but write a template that only mentio
 
 ### Case study: a total that sizes itself to any chest
 
-The case study above still has `4` and `1` typed into `MAXI`/`MAXJ` — this chest's real dimensions, but fixed in the script regardless of what chest it's actually pointed at. Both bounds are just text `iter2` reads *after* everything nested inside them has already resolved — the same inside-out rule any nested function call follows, applied twice, once per dimension. `<int_Container.m_width>` and `<int_Container.m_height>` — plain reads of the chest's own real fields — each resolve to a literal number first, and only then does `iter2` see them as `MAXI`/`MAXJ`.
+The case study above still has `4` and `1` typed into `MAXI`/`MAXJ` — this chest's real dimensions, but fixed in the script regardless of what chest it's actually pointed at. Both bounds are just text `iter2` reads *after* everything nested inside them has already resolved — the same inside-out rule any nested function call follows — here, once for `MAXI` and once for `MAXJ`. `<int_Container.m_width>` and `<int_Container.m_height>` — plain reads of the chest's own real fields — each resolve to a literal number first, and only then does `iter2` see them as `MAXI`/`MAXJ`.
 
 <IterationExplainer kind="iter2adv" />
 
