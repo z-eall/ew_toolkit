@@ -234,7 +234,7 @@ bannedLocationDistance: 0
 EWP has three different things that all look like "a distance setting," easy to mix up:
 
 - **`locationDistance:`/`bannedLocationDistance:`** (this section) — how close counts as "near" a specific place, using that place's own real size unless you pick a number yourself.
-- **A rule's own `maxDistance:`/`minDistance:`** — distance from the middle of the map, always a number you choose.
-- **[Poke's `maxDistance:`/`minDistance:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#range-mindistancemaxdistance-and-minheightmaxheight)** — distance from whatever object triggered the rule, defaulting to 100m, also always a number you choose.
+- **A top-level written `maxDistance:`/`minDistance:`** — distance from the middle of the map, always a number you choose.
+- **[Poke's or Object's nested `maxDistance:`/`minDistance:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#range-mindistancemaxdistance-and-minheightmaxheight)** — distance from whatever object triggered the rule, defaulting to 100m, also always a number you choose.
 
 Only `locations:` picks its own default by looking at the place itself — worth remembering before assuming any two "distance" settings in EWP mean the same thing.
