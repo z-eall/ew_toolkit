@@ -181,7 +181,7 @@ Want a plain on/off switch back at the top level instead of a list? [`condition:
 
 ## Location proximity: `locations:` / `bannedLocations:`
 
-A different kind of filter, same `scripting.md` "Filters" section: a **location** here is a specific placed instance from Valheim's own world generation — a dungeon, an altar, a boss spawn point, any of the game's built-in points of interest. Not a biome, not a coordinate box. `locations:` requires at least one to be nearby; `bannedLocations:` requires none. Both take a plain comma-separated list of location ids, the same shape as a `prefab:` list — not a YAML list of items:
+A **location** here means one of Valheim's own placed points of interest — a dungeon, an altar, a boss spawn site, anything the game itself put on the map. Not a biome, not a box of coordinates. `locations:` requires at least one nearby; `bannedLocations:` requires none. Both take a plain comma-separated list of location ids, the same shape as a `prefab:` list — not a YAML list:
 
 ```yaml
 - prefab: Boar
@@ -190,51 +190,51 @@ A different kind of filter, same `scripting.md` "Filters" section: a **location*
   data: int, level, 3
 ```
 
-Every Boar spawning within Eikthyr's altar's own search radius spawns already at 2 stars (max). This works on any rule — `create`, `change`, `state`, `poke`, whatever triggers it — not just something poke-specific; `type: create` is used here because it's the shape that naturally repeats near a location on its own, the same way most objects already spawn.
+Every Boar that spawns near Eikthyr's altar spawns already at 2 stars (max). Nothing extra needs to be set up for this to work — a rule like this simply re-checks itself every time a new Boar spawns anywhere, and `locations:` narrows that down to only the ones spawning near this one altar.
 
-### `locationDistance:` reads the location itself, not a number you pick
+### `locationDistance:` — how close counts as "near"
 
-Every other distance field on this wiki is a number *you* choose, with an author-set default. `locationDistance:` (default `0`) breaks that pattern: EWP doesn't invent a distance at all here — it reads that *specific* location's own size instead.
+Every other distance setting on this wiki is a number *you* choose yourself. `locationDistance:` works differently: left at its default (`0`), it doesn't use a fixed number at all — it borrows the size the game itself already gave that location.
 
-Every location Valheim places — a dungeon, an altar, any of the game's built-in points of interest — already carries its own "how close counts as near it" radius (a real, existing Valheim field, not something EWP invented — see [`Location`](https://valheimtools.stream/wiki/components/Location) if you want to look it up), decided once when the world generates and baked into that location from then on. A sprawling dungeon's radius reaches further than a small altar's. `locationDistance: 0` just tells EWP "use that same radius" instead of asking you to type a distance by hand — so the search area automatically matches how big that specific location actually is, with nothing written in the script to say so.
+Every place Valheim puts on the map — a dungeon, an altar, any built-in point of interest — already comes with its own "how big is this place" size, decided once when the world was made and never changing after that. A sprawling dungeon counts as bigger than a small altar. Leaving `locationDistance:` at `0` just means "use that place's own real size" instead of picking a number by hand.
 
 <Aside type="caution">
-Don't assume `locationDistance:` left unset means "no limit," or some fixed default distance. It means "whatever radius this exact location was already built with" — invisible from the YAML, and different for every location id.
+Don't assume `locationDistance:` left unset means "no limit," or some safe default distance. It means "however big this exact place really is" — not written anywhere in your script, and different for every location.
 </Aside>
 
-Set `locationDistance:` yourself to override that per-location default with one fixed number:
+Set `locationDistance:` yourself to use one fixed number instead, for every location in the list:
 
 ```yaml
 locations: Eikthyrnir
-locationDistance: 50   # ignore the altar's own exteriorRadius, always use 50m
+locationDistance: 50   # ignore the altar's real size, always use 50m
 ```
 
 <Aside type="caution">
-Don't do this: set `locationDistance:` and assume `bannedLocationDistance:` gets its own sensible default too. Left unset, it doesn't fall back to *its own* `exteriorRadius` — it silently inherits whatever `locationDistance:` is already set to.
+Don't do this: set `locationDistance:` and assume `bannedLocationDistance:` gets a sensible default of its own too. Left unset, it doesn't use that banned location's own real size — it silently copies whatever `locationDistance:` is already set to.
 </Aside>
 
 ```yaml
-# WRONG — bannedLocationDistance silently inherits 50 from locationDistance,
-# not StoneTowerX's own exteriorRadius
+# WRONG — bannedLocationDistance silently copies 50 from locationDistance,
+# not StoneTowerX's own real size
 locations: Eikthyrnir
 locationDistance: 50
 bannedLocations: StoneTowerX
 ```
 
 ```yaml
-# CORRECT — set it explicitly to actually fall back to StoneTowerX's own radius
+# CORRECT — set it on purpose, so it actually uses StoneTowerX's own size
 locations: Eikthyrnir
 locationDistance: 50
 bannedLocations: StoneTowerX
 bannedLocationDistance: 0
 ```
 
-### Not the same distance as `maxDistance:`
+### Not the same "distance" as `maxDistance:`
 
-Three different "distance" concepts live across EWP's filters, easy to conflate since they all read as the same kind of field:
+EWP has three different things that all look like "a distance setting," easy to mix up:
 
-- **`locationDistance:`/`bannedLocationDistance:`** (here) — distance from a specific placed location instance, defaulting to *that instance's own* `exteriorRadius`.
-- **A rule's own `maxDistance:`/`minDistance:`** — distance from the world center `(0,0,0)`, always a number you set.
-- **[Poke's `maxDistance:`/`minDistance:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#range-mindistancemaxdistance-and-minheightmaxheight)** — distance from the triggering/poking object, default 100m, also always a number you set.
+- **`locationDistance:`/`bannedLocationDistance:`** (this section) — how close counts as "near" a specific place, using that place's own real size unless you pick a number yourself.
+- **A rule's own `maxDistance:`/`minDistance:`** — distance from the middle of the map, always a number you choose.
+- **[Poke's `maxDistance:`/`minDistance:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#range-mindistancemaxdistance-and-minheightmaxheight)** — distance from whatever object triggered the rule, defaulting to 100m, also always a number you choose.
 
-Only `locations:` reads its default off the object itself instead of a number you chose — worth keeping straight before assuming any two "distance" fields in EWP mean the same thing.
+Only `locations:` picks its own default by looking at the place itself — worth remembering before assuming any two "distance" settings in EWP mean the same thing.
