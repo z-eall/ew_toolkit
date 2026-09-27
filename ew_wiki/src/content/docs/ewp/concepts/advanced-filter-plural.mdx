@@ -178,3 +178,60 @@ objects:
 <Aside type="tip">
 Want a plain on/off switch back at the top level instead of a list? [`condition:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-filter-condition/) is a different, newer tool for a different job — comparing two values that aren't both fixed, not narrowing a list of static checks. See Advanced Filter - Condition if a `filters:` list stops being enough.
 </Aside>
+
+## Location proximity: `locations:` / `bannedLocations:`
+
+A different kind of filter, same `scripting.md` "Filters" section: a **location** here is a specific placed instance from Valheim's own world generation — a dungeon, an altar, a boss spawn point, any of the game's built-in points of interest. Not a biome, not a coordinate box. `locations:` requires at least one to be nearby; `bannedLocations:` requires none. Both take a plain comma-separated list of location ids, the same shape as a `prefab:` list — not a YAML list of items:
+
+```yaml
+- prefab: Player
+  type: say, nearboss
+  filter: bool, boss, true
+  locations: Eikthyrnir
+  command: s You're near Eikthyr's altar.
+```
+
+Like everything else on this page, this works on any rule — `create`, `change`, `state`, `poke`, whatever triggers it — not just something poke-specific.
+
+### `locationDistance:` doesn't default to a fixed number — it reads the location itself
+
+Every distance field taught elsewhere on this wiki is a number *you* choose, with an author-set default (100m for poke's own `maxDistance:`, the world center for a rule's). `locationDistance:` breaks that pattern: left at its default (`0`), EWP doesn't invent a distance at all — it reads that *specific* location instance's own `exteriorRadius`, a base-game field ([`Location`](https://valheimtools.stream/wiki/components/Location), `20f` typical but set per-location by the world generator). A large dungeon gets a bigger free search radius than a small altar, automatically, with nothing written in the script to say so.
+
+<Aside type="caution">
+Don't assume `locationDistance:` left unset means "no limit," or some fixed default distance. It means "whatever radius this exact location was built with" — invisible from the YAML, and different for every location id.
+</Aside>
+
+Set `locationDistance:` yourself to override that per-location default with one fixed number:
+
+```yaml
+locations: Eikthyrnir
+locationDistance: 50   # ignore the altar's own exteriorRadius, always use 50m
+```
+
+`bannedLocationDistance:` mirrors `locationDistance:`, with one more trap layered on: left unset, it doesn't fall back to its *own* `exteriorRadius` default — it silently inherits whatever `locationDistance:` is already set to.
+
+```yaml
+# WRONG — bannedLocationDistance silently inherits 50 from locationDistance,
+# not StoneTowerX's own exteriorRadius
+locations: Eikthyrnir
+locationDistance: 50
+bannedLocations: StoneTowerX
+```
+
+```yaml
+# CORRECT — set it explicitly to actually fall back to StoneTowerX's own radius
+locations: Eikthyrnir
+locationDistance: 50
+bannedLocations: StoneTowerX
+bannedLocationDistance: 0
+```
+
+### Not the same distance as `maxDistance:`
+
+Three different "distance" concepts live across EWP's filters, easy to conflate since they all read as the same kind of field:
+
+- **`locationDistance:`/`bannedLocationDistance:`** (here) — distance from a specific placed location instance, defaulting to *that instance's own* `exteriorRadius`.
+- **A rule's own `maxDistance:`/`minDistance:`** — distance from the world center `(0,0,0)`, always a number you set.
+- **[Poke's `maxDistance:`/`minDistance:`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-poke-mechanics/#range-mindistancemaxdistance-and-minheightmaxheight)** — distance from the triggering/poking object, default 100m, also always a number you set.
+
+Only `locations:` reads its default off the object itself instead of a number you chose — worth keeping straight before assuming any two "distance" fields in EWP mean the same thing.
