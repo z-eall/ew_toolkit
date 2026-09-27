@@ -190,13 +190,13 @@ A different kind of filter, same `scripting.md` "Filters" section: a **location*
   data: int, level, 3
 ```
 
-Every Boar spawning within Eikthyr's altar's own search radius spawns already 3-starred. This works on any rule — `create`, `change`, `state`, `poke`, whatever triggers it — not just something poke-specific; `type: create` is used here because it's the shape that naturally repeats near a location on its own, the same way most objects already spawn.
+Every Boar spawning within Eikthyr's altar's own search radius spawns already at 2 stars (max). This works on any rule — `create`, `change`, `state`, `poke`, whatever triggers it — not just something poke-specific; `type: create` is used here because it's the shape that naturally repeats near a location on its own, the same way most objects already spawn.
 
 ### `locationDistance:` reads the location itself, not a number you pick
 
-Every other distance field on this wiki is a number *you* choose, with an author-set default. `locationDistance:` (default `0`) breaks that pattern: EWP doesn't invent a distance at all here — it reads that *specific* location instance's own `exteriorRadius`.
+Every other distance field on this wiki is a number *you* choose, with an author-set default. `locationDistance:` (default `0`) breaks that pattern: EWP doesn't invent a distance at all here — it reads that *specific* location's own size instead.
 
-`exteriorRadius` isn't an EWP concept — it's a real field on Valheim's own base-game [`Location`](https://valheimtools.stream/wiki/components/Location) component (`20f` typical, set per-location by the world generator), and it already means something to the base game before EWP ever touches it: it's the radius Valheim itself uses to mark out "this location's own space" — keeping other locations from generating too close together, and keeping ordinary creature spawns from popping up inside it. `locationDistance: 0` just points EWP at that same number instead of asking you to guess a radius by hand, so a sprawling dungeon's own exclusion zone reaches further than a small altar's, automatically, with nothing written in the script to say so.
+Every location Valheim places — a dungeon, an altar, any of the game's built-in points of interest — already carries its own "how close counts as near it" radius (a real, existing Valheim field, not something EWP invented — see [`Location`](https://valheimtools.stream/wiki/components/Location) if you want to look it up), decided once when the world generates and baked into that location from then on. A sprawling dungeon's radius reaches further than a small altar's. `locationDistance: 0` just tells EWP "use that same radius" instead of asking you to type a distance by hand — so the search area automatically matches how big that specific location actually is, with nothing written in the script to say so.
 
 <Aside type="caution">
 Don't assume `locationDistance:` left unset means "no limit," or some fixed default distance. It means "whatever radius this exact location was already built with" — invisible from the YAML, and different for every location id.
