@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import RealtimeExplainer from '../../../../components/RealtimeExplainer.astro';
 
 [Understanding Triggers](/ew_toolkit/ew_wiki/ewp/concepts/basic-triggers/) covered `create`, `destroy`, `state`, and `say`. This page covers `realtime` — firing a rule on the real-world wall clock.
 
@@ -24,6 +25,10 @@ Trigger semantics on this page come from EWP's own [`docs/scripting.md`](https:/
 ```
 
 Use `time` for anything that should follow Valheim's own day/night rhythm regardless of server uptime; use `realtime` for anything that should follow the wall clock — a daily reset, a weekday-only event, a real-world countdown.
+
+## See it live
+
+<RealtimeExplainer />
 
 ## Reading the result: `<realtime>` and friends
 
@@ -46,8 +51,8 @@ A `realtime` trigger tells you *that* the clock changed; the `<realtime_X>` func
   - s Today is <realtime_dddd>.
 ```
 
-<Aside type="caution">
-The par mapping for `realtime` (granularity word as `<par_0>`, own unit then the units above it) follows the same pattern as `time`, but `scripting.md` doesn't spell it out for `realtime` specifically — treat it, and day-of-year counting across leap years, as unconfirmed rather than settled fact. Reach for the `<realtime_X>` functions above instead of counting on a specific par index wherever you can.
+<Aside type="tip">
+The par mapping for `realtime` (granularity word as `<par_0>`, own unit then the units above it) is confirmed straight from EWP's source — `HandleTime.cs`'s `UpdateRealTime()` fires each granularity with exactly this argument order: `minute [minute] [hour] [dayOfYear]`, `hour [hour] [dayOfYear]`, `day [dayOfYear]`. Day-of-year is .NET's own `DateTime.DayOfYear`, a plain calendar count from January 1st — automatically leap-aware, since it's just counting real elapsed days (see [See it live](#see-it-live) above for what that means at the Feb 29 boundary).
 </Aside>
 
 ## Case study - a weekday buff rotation
@@ -147,7 +152,7 @@ An event that only ever announces itself the instant it starts gives players no 
 Each rule fires once, at one specific minute of every real-world hour — the same `minute [minute]` condition shape from [The four granularities](#same-shape-as-time-different-clock-one-extra-granularity) above, just used four times instead of once. `TradingPostOpen` is a global key other rules can gate on — a real vendor or a lootable chest checking `globalKeys: TradingPostOpen` is what would actually make "open" mean something beyond a message, not shown here.
 
 <Aside type="tip">
-This reaches for `minute`, not `second`, on purpose — the page's own caution above already flags `second`'s condition semantics as unconfirmed. `minute [minute]` is the documented, safe way to land a countdown on an exact real-world moment.
+This reaches for `minute`, not `second`, on purpose — `second`'s real condition value is a full Unix epoch timestamp (confirmed above), not the 0-59 a clock face shows. The matching itself works exactly the same as every other granularity, but hand-authoring a specific moment means already knowing that 10-digit number in advance. `minute [minute]` is the practical, easy-to-author way to land a countdown on an exact real-world moment — see [See it live](#see-it-live) above for what a `second` condition can actually do.
 </Aside>
 
 ## Case study - a real-world daily reset, independent of uptime

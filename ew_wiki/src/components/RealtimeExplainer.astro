@@ -1,0 +1,606 @@
+---
+// A plain Astro component (no UI framework) — same construction pattern as
+// TriggerChangeExplainer.astro / WorldLevelDialExplainer.astro: class-scoped
+// (never id-scoped) so more than one instance can coexist, client-side
+// <script> does the work, no client:load needed.
+//
+// Prototyped through 8 rounds before landing here. Key corrections along
+// the way, all source-verified against HandleTime.cs's UpdateRealTime()
+// (postfix on ZNet.UpdateNetTime) and docs/scripting.md's realtime bullet:
+//   - type: realtime is NOT an interval/repeat-every-N-seconds mechanism —
+//     same edge-triggered, specific-value-match shape as type: time, just
+//     on the real wall clock. The first tab shows this live: `second`'s
+//     real value is the full Unix epoch timestamp (UpdateRealTime's
+//     `now.ToUnixTimeSeconds()`), not 0-59.
+//   - Condition matching goes through EWP's real parser, Helper.cs's
+//     CheckWild(): comma list (OR), ';'-separated range, and '*' prefix/
+//     suffix wildcards all genuinely work — checkWild() below is a direct
+//     port, not an invented simplification.
+//   - `minute [minute] [hour] [dayOfYear]` — hour is the par right after
+//     minute, day right after that. The middle tab mixes real combinations
+//     across all three, not hour alone (an earlier round targeted hour
+//     only; the maintainer asked for the other two pars in the mix too).
+//   - `day`'s value is .NET's DateTime.DayOfYear — a plain calendar count
+//     from Jan 1, so it silently shifts by one across Feb 29 in a leap
+//     year. Third tab demonstrates this with the actual running sum
+//     (days-per-month added up), not just the final number.
+//
+// Height stability: the widest content swing on this widget isn't one
+// scenario resizing under interaction (like NestingPeelExplainer's step
+// walkthrough) — it's THREE DIFFERENT TABS with structurally different
+// content (a ticking clock + 4 rows / a moment tile + 3 param rows / a date
+// picker + comparison cards) all sharing one box. display:none swapping
+// left the box resizing every tab click. Fixed with CSS grid stacking
+// instead: all 3 panes share one grid cell (grid-row:1; grid-column:1),
+// the inactive ones set to visibility:hidden rather than display:none —
+// hidden-but-visibility elements still count toward the grid row's auto
+// height, so the row (and the widget around it) is always exactly as tall
+// as the tallest tab, whichever one is showing. The day-of-year sum line
+// separately grows through the year (more months to add up) — that
+// min-height is sized to the real December 31st render (the actual
+// longest case, checked directly, not estimated), same floor-not-ceiling
+// principle as every other widget's reserved zones (see
+// NestingPeelExplainer.astro's comment on why a floor, never a hard
+// height + overflow:hidden).
+---
+
+<div class="rte-widget">
+	<h4>Three real quirks of <code>type: realtime</code></h4>
+
+	<div class="rte-tabs">
+		<button type="button" class="rte-tab rte-tab-active" data-tab="sec">Every second</button>
+		<button type="button" class="rte-tab" data-tab="combo">Minute + hour + day</button>
+		<button type="button" class="rte-tab" data-tab="doy">Day of the year</button>
+	</div>
+
+	<div class="rte-pane-stack">
+		<!-- Tab 1: second -->
+		<div class="rte-pane rte-pane-active" data-pane="sec">
+			<p class="rte-sub">Watching your own clock tick, live. The number this rule actually compares against isn't the "seconds" on a clock face — it's a plain count of seconds since a fixed moment in 1970, always climbing.</p>
+			<div class="rte-clock-block">
+				<div class="rte-clock" data-epoch-clock>-</div>
+				<div class="rte-clock-label">the number the rule sees, right now</div>
+			</div>
+			<div class="rte-rows" data-sec-rows></div>
+			<div class="rte-narration" data-sec-narration>Watching...</div>
+			<div class="rte-controls">
+				<button type="button" class="rte-btn-primary" data-sec-reset>Give me new example times to watch</button>
+			</div>
+		</div>
+
+		<!-- Tab 2: combine minute + hour + day -->
+		<div class="rte-pane" data-pane="combo">
+			<p class="rte-sub">A <code>type: realtime, minute</code> rule can carry up to three values — minute, then hour, then day of the year — each one narrowing it further. Step through a few real combinations and watch which part of the line matches this step's example moment.</p>
+			<div class="rte-clock-block">
+				<div class="rte-moment-tile" data-moment-tile>
+					<div class="rte-day-label" data-moment-day>day -</div>
+					<div class="rte-time" data-moment-time>--:--:--</div>
+				</div>
+			</div>
+			<div class="rte-rule-line" data-combo-rule></div>
+			<div class="rte-rows" data-combo-rows></div>
+			<div class="rte-narration" data-combo-narration>Not started yet.</div>
+			<div class="rte-controls">
+				<button type="button" data-combo-back>Back</button>
+				<button type="button" data-combo-next>Next</button>
+				<button type="button" data-combo-reset>Reset</button>
+			</div>
+		</div>
+
+		<!-- Tab 3: day of year -->
+		<div class="rte-pane" data-pane="doy">
+			<div class="rte-doy-intro">
+				Every real-world day gets a running number for the year, starting at <b>1</b> on January 1st. Most years that's just a simple count-up — but a leap year sneaks in one extra day, <b>February 29th</b>, which pushes every date after it one number later than usual, for that year only.
+			</div>
+			<div class="rte-doy-picker-row">
+				<input type="date" class="rte-doy-picker" data-doy-picker />
+			</div>
+			<div class="rte-doy-answer">
+				<div class="rte-doy-lead" data-doy-lead></div>
+				<div class="rte-doy-num" data-doy-num></div>
+				<div class="rte-doy-of" data-doy-of></div>
+				<div class="rte-doy-sum" data-doy-sum></div>
+				<div class="rte-doy-sum-note" data-doy-sum-note></div>
+			</div>
+			<div class="rte-doy-story">
+				<div class="rte-doy-story-title">Same date, two different years</div>
+				<div class="rte-doy-compare">
+					<div class="rte-doy-card">
+						<div class="rte-doy-card-date">March 1, 2024</div>
+						<div class="rte-doy-card-val">61</div>
+						<div class="rte-doy-card-tag">a leap year — Feb had 29 days</div>
+					</div>
+					<div class="rte-doy-vs">vs</div>
+					<div class="rte-doy-card">
+						<div class="rte-doy-card-date">March 1, 2025</div>
+						<div class="rte-doy-card-val">60</div>
+						<div class="rte-doy-card-tag">a normal year — Feb had 28</div>
+					</div>
+				</div>
+				<div class="rte-doy-explain">A rule written as <code>type: realtime, day 61</code> means <b>March 1st in a leap year</b> — but <b>March 2nd</b> everywhere else.</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.rte-widget {
+		--rte-ok: #8fbf7f;
+		--rte-fail: #d98a7a;
+		--rte-gold: #e6c18a;
+		background: var(--panel);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin: 1rem 0;
+		font-size: 13.5px;
+		overflow: hidden;
+	}
+	:global(html[data-theme='light']) .rte-widget {
+		--rte-ok: #2f5233;
+		--rte-fail: #7a2e1f;
+		--rte-gold: #8a5a12;
+	}
+	.rte-widget h4 { margin: 0; padding: 10px 12px 0; font-size: 0.95em; color: var(--text); }
+
+	.rte-tabs { display: flex; margin: 8px 12px 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+	.rte-tab { flex: 1; margin: 0; text-align: center; padding: 7px 4px; font-size: 11.5px; color: var(--muted); cursor: pointer; background: var(--bg); border: none; border-right: 1px solid var(--border); font-family: inherit; font-weight: 600; }
+	.rte-tab:last-child { border-right: none; }
+	.rte-tab-active { color: var(--rte-gold); background: var(--panel); }
+
+	/* Grid-stacked panes — see the header comment for why. All 3 panes
+	   share one cell; only visibility (not display) toggles, so the
+	   inactive ones still count toward the row's auto height. */
+	.rte-pane-stack { display: grid; margin-top: 4px; }
+	.rte-pane { grid-row: 1; grid-column: 1; visibility: hidden; pointer-events: none; }
+	.rte-pane-active { visibility: visible; pointer-events: auto; }
+
+	.rte-sub { margin: 0; padding: 6px 12px 8px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+
+	.rte-clock-block { text-align: center; padding: 10px 12px 4px; }
+	.rte-clock { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text); }
+	.rte-clock-label { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; padding: 0 16px; }
+
+	.rte-rows { padding: 6px 12px 2px; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+	.rte-row { display: flex; align-items: center; gap: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; margin: 0; transition: border-color 0.15s ease, background 0.15s ease; }
+	.rte-row-pass { border-color: var(--rte-ok); background: color-mix(in srgb, var(--rte-ok) 14%, var(--bg)); }
+	.rte-row-fail { border-color: var(--rte-fail); background: color-mix(in srgb, var(--rte-fail) 12%, var(--bg)); }
+	.rte-row-neutral { opacity: 0.65; }
+	.rte-row-main { flex: 1; min-width: 0; }
+	.rte-row-label { font-size: 12px; color: var(--text); }
+	.rte-row code { font-size: 11px; display: block; margin-top: 2px; word-break: break-all; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+	.rte-badge { flex: none; font-size: 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+	.rte-row-pass .rte-badge { color: var(--rte-ok); border-color: var(--rte-ok); }
+	.rte-row-fail .rte-badge { color: var(--rte-fail); border-color: var(--rte-fail); }
+
+	/* min-height is a floor, not a ceiling (see NestingPeelExplainer.astro's
+	   comment for why a hard height+overflow:hidden is the wrong fix) —
+	   sized to the longest real narration string this widget shows,
+	   confirmed by checking every tab's every state, not guessed. */
+	.rte-narration { min-height: 3.4em; border-top: 1px solid var(--border); padding: 8px 12px; font-size: 12px; line-height: 1.45; text-align: center; color: var(--muted); }
+	.rte-narration :global(b) { color: var(--text); }
+
+	.rte-controls { display: flex; justify-content: center; gap: 8px; padding: 8px 12px 12px; margin: 0; flex-wrap: wrap; }
+	.rte-controls button {
+		box-sizing: border-box;
+		margin: 0;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		color: var(--text);
+		border-radius: 6px;
+		padding: 6px 12px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.rte-controls button:hover:not(:disabled) { border-color: var(--rte-gold); }
+	.rte-controls button:disabled { opacity: 0.35; cursor: default; }
+	.rte-controls .rte-btn-primary { border-color: var(--rte-gold); color: var(--rte-gold); }
+
+	/* Tab 2 */
+	.rte-moment-tile { background: var(--bg); border: 2px solid var(--border); border-radius: 6px; padding: 8px 18px; text-align: center; margin: 0 auto; width: fit-content; transition: border-color 0.2s ease; }
+	.rte-moment-tile-fires { border-color: var(--rte-ok); }
+	.rte-moment-tile-silent { border-color: var(--rte-fail); }
+	.rte-day-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+	.rte-time { font-size: 22px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text); }
+
+	.rte-rule-line { margin: 10px 12px 0; min-height: 2.2em; box-sizing: border-box; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.55; color: var(--muted); word-break: break-all; }
+	.rte-rule-line :global(.rte-rule-tag) { display: block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 2px; }
+	.rte-rule-line :global(.rte-rule-key) { color: var(--rte-gold); }
+
+	/* Day of year, tab 3 */
+	.rte-doy-intro { padding: 10px 12px 2px; font-size: 12.5px; line-height: 1.55; color: var(--text); }
+	.rte-doy-picker-row { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 8px 12px 2px; }
+	.rte-doy-picker { margin: 0; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 8px; font-family: inherit; font-size: 12.5px; }
+	.rte-doy-answer { text-align: center; padding: 12px 12px 2px; }
+	.rte-doy-lead { font-size: 12.5px; color: var(--muted); }
+	.rte-doy-num { font-size: 38px; font-weight: 700; color: var(--rte-gold); line-height: 1.1; margin: 2px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+	.rte-doy-of { font-size: 12.5px; color: var(--muted); }
+	/* Measured against the real Dec 31st render (the actual longest case —
+	   the most month-terms to sum), not estimated from a character count. */
+	.rte-doy-sum { font-size: 11px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin-top: 8px; line-height: 1.55; padding: 0 6px; min-height: 2.4em; }
+	.rte-doy-sum-note { font-size: 10.5px; color: var(--rte-gold); margin-top: 3px; min-height: 1.3em; }
+
+	.rte-doy-story { padding: 4px 12px 14px; }
+	.rte-doy-story-title { font-size: 11.5px; color: var(--muted); text-align: center; margin-bottom: 6px; }
+	.rte-doy-compare { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+	.rte-doy-card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px 8px; text-align: center; }
+	.rte-doy-card-date { font-size: 12px; color: var(--text); }
+	.rte-doy-card-val { font-size: 22px; font-weight: 700; margin-top: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text); }
+	.rte-doy-card-tag { font-size: 10px; color: var(--muted); margin-top: 2px; }
+	.rte-doy-vs { font-size: 11px; color: var(--muted); text-align: center; }
+	.rte-doy-explain { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.55; padding: 0 4px; }
+	.rte-doy-explain :global(b) { color: var(--rte-gold); }
+</style>
+
+<script>
+	// ============================================================
+	// PURE LOGIC — lifted straight from real EWP source (see header
+	// comment). checkWild() ports Helper.cs's CheckWild() (comma-list,
+	// ';' range, '*' prefix/suffix/both wildcards, exact-match fallback).
+	// dayOfYear() mirrors .NET's DateTime.DayOfYear. evalMinuteRule()
+	// mirrors InfoSelector.cs's CheckArgs(): every present parameter must
+	// independently match (AND); an absent one always passes.
+	// ============================================================
+	function checkWild(wild: string, str: string): boolean {
+		if (wild === '*') return true;
+		const commaSplit = wild
+			.split(',')
+			.map((s) => s.trim())
+			.filter((s) => s !== '');
+		if (commaSplit.length > 1) {
+			for (const s of commaSplit) if (checkWild(s, str)) return true;
+		}
+		const w = wild;
+		if (w.startsWith('*') && w.endsWith('*') && w.length > 1) {
+			return str.toLowerCase().includes(w.slice(1, -1).toLowerCase());
+		}
+		if (w.startsWith('*')) return str.toLowerCase().endsWith(w.slice(1).toLowerCase());
+		if (w.endsWith('*')) return str.toLowerCase().startsWith(w.slice(0, -1).toLowerCase());
+		const starIdx = w.indexOf('*');
+		if (starIdx > 0 && starIdx < w.length - 1) {
+			const prefix = w.slice(0, starIdx);
+			const suffix = w.slice(starIdx + 1);
+			return str.toLowerCase().startsWith(prefix.toLowerCase()) && str.toLowerCase().endsWith(suffix.toLowerCase());
+		}
+		if (w.includes(';')) {
+			const [minStr, maxStr] = w.split(';').map((s) => s.trim());
+			const min = parseFloat(minStr);
+			const max = parseFloat(maxStr);
+			const n = parseFloat(str);
+			if (!Number.isNaN(n) && !Number.isNaN(min) && !Number.isNaN(max)) return n >= min && n <= max;
+		}
+		return str === w;
+	}
+
+	function dayOfYear(date: Date): number {
+		const start = new Date(date.getFullYear(), 0, 1);
+		return Math.floor((date.getTime() - start.getTime()) / 86400000) + 1;
+	}
+
+	function isLeapYear(year: number): boolean {
+		return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+	}
+
+	interface MinuteRuleResult {
+		minuteOk: boolean;
+		hourOk: boolean;
+		dayOk: boolean;
+		fires: boolean;
+	}
+	interface Moment {
+		minute: number;
+		hour: number;
+		day: number;
+	}
+	function evalMinuteRule(minuteCond: string | null, hourCond: string | null, dayCond: string | null, moment: Moment): MinuteRuleResult {
+		const minuteOk = minuteCond == null || checkWild(minuteCond, String(moment.minute));
+		const hourOk = hourCond == null || checkWild(hourCond, String(moment.hour));
+		const dayOk = dayCond == null || checkWild(dayCond, String(moment.day));
+		return { minuteOk, hourOk, dayOk, fires: minuteOk && hourOk && dayOk };
+	}
+
+	const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	interface DoySumResult {
+		text: string;
+		involvesFeb: boolean;
+	}
+	function doySumBreakdown(date: Date): DoySumResult {
+		const y = date.getFullYear();
+		const m = date.getMonth();
+		const d = date.getDate();
+		const counts = [31, isLeapYear(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+		const terms: string[] = [];
+		let total = 0;
+		for (let i = 0; i < m; i++) {
+			terms.push(`${counts[i]} (${MONTH_ABBR[i]})`);
+			total += counts[i];
+		}
+		terms.push(`${d} (${MONTH_ABBR[m]} ${d})`);
+		total += d;
+		return { text: terms.join(' + ') + ' = ' + total, involvesFeb: m >= 1 };
+	}
+	// ============================================================
+
+	function pad(n: number): string {
+		return String(n).padStart(2, '0');
+	}
+
+	interface SecCondition {
+		label: string;
+		cond: string;
+		kind: 'front' | 'back' | 'range' | 'list';
+		note: string;
+	}
+	function buildSecConditions(baseEpoch: number): SecCondition[] {
+		const prefix9 = String(baseEpoch).slice(0, 9);
+		const lastDigit = String(baseEpoch).slice(-1);
+		return [
+			{
+				label: 'Starts with the same digits',
+				cond: prefix9 + '*',
+				kind: 'front',
+				note: 'Matches for a few seconds, then goes quiet for a very long time once the leading digits change.',
+			},
+			{
+				label: 'Ends in this digit',
+				cond: '*' + lastDigit,
+				kind: 'back',
+				note: 'Matches every ~10 seconds, over and over, for as long as the rule exists.',
+			},
+			{
+				label: 'A window between two moments',
+				cond: baseEpoch + 3 + ';' + (baseEpoch + 8),
+				kind: 'range',
+				note: 'Matches only inside this one window. Once it passes, it never matches again.',
+			},
+			{
+				label: 'A short list of exact moments',
+				cond: baseEpoch + 2 + ',' + (baseEpoch + 6) + ',' + (baseEpoch + 11),
+				kind: 'list',
+				note: 'Matches only at these three exact instants, nothing in between.',
+			},
+		];
+	}
+
+	interface ComboStep {
+		minuteCond: string;
+		hourCond: string | null;
+		dayCond: string | null;
+		moment: Moment;
+		story: string;
+	}
+	const COMBO_STEPS: ComboStep[] = [
+		{
+			minuteCond: '30',
+			hourCond: null,
+			dayCond: null,
+			moment: { minute: 30, hour: 14, day: 75 },
+			story: 'No hour or day given at all — this rule only ever checks the minute. It fires at :30 past every hour, every day.',
+		},
+		{
+			minuteCond: '0,15,30,45',
+			hourCond: '9;17',
+			dayCond: null,
+			moment: { minute: 15, hour: 9, day: 75 },
+			story: 'A quarter-hour chime, but only during business hours (9am-5pm, a range). Both the minute list and the hour range match here.',
+		},
+		{
+			minuteCond: '0,15,30,45',
+			hourCond: '9;17',
+			dayCond: null,
+			moment: { minute: 15, hour: 18, day: 75 },
+			story: 'Same rule, later in the day. The minute still matches the list — but 6pm is past the 9-5 range, so the hour fails and the whole rule stays silent.',
+		},
+		{
+			minuteCond: '*',
+			hourCond: '1*',
+			dayCond: null,
+			moment: { minute: 7, hour: 14, day: 75 },
+			story: 'Any minute at all (a bare wildcard) — but only while the hour starts with "1". That single digit catches 1am and every hour from 10am to 7pm, not just the teens.',
+		},
+		{
+			minuteCond: '0',
+			hourCond: '*',
+			dayCond: '60;90',
+			moment: { minute: 0, hour: 9, day: 75 },
+			story: 'The top of every hour, any hour — but only across a day-of-year window (60-90, roughly March). Right now the day falls inside that window.',
+		},
+		{
+			minuteCond: '0',
+			hourCond: '*',
+			dayCond: '60;90',
+			moment: { minute: 0, hour: 9, day: 200 },
+			story: 'Same rule, moved to day 200 (roughly July). Minute and hour still match — but the day is well outside the March window, so it fails and the rule stays silent.',
+		},
+	];
+
+	function fullRuleText(s: ComboStep): string {
+		const parts = [s.minuteCond];
+		if (s.hourCond != null) parts.push(s.hourCond);
+		else if (s.dayCond != null) parts.push('*');
+		if (s.dayCond != null) parts.push(s.dayCond);
+		return 'realtime, minute ' + parts.join(' ');
+	}
+
+	const MONTHS = [
+		'January', 'February', 'March', 'April', 'May', 'June',
+		'July', 'August', 'September', 'October', 'November', 'December',
+	];
+
+	function localTodayStr(): string {
+		// The reader's own device clock, not UTC — a date input's value is a
+		// plain YYYY-MM-DD with no timezone of its own, so this has to be
+		// built from local year/month/day, not a UTC-based ISO slice.
+		const now = new Date();
+		return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+	}
+
+	// Wrapped in a function that re-runs on every `astro:page-load` (fires on
+	// first load and after every Starlight client-side transition alike) —
+	// see Header.astro's fix for the same root cause: a plain top-level
+	// script only runs once, so this widget would render inert (no
+	// listeners) if a reader leaves this page and returns to it via
+	// client-side nav.
+	function setupWidgets() {
+		for (const widget of document.querySelectorAll<HTMLElement>('.rte-widget')) {
+			// --- Tabs ---
+			const tabs = [...widget.querySelectorAll<HTMLButtonElement>('.rte-tab')];
+			const panes = [...widget.querySelectorAll<HTMLElement>('.rte-pane')];
+			tabs.forEach((tab) => {
+				tab.addEventListener('click', () => {
+					tabs.forEach((t) => t.classList.remove('rte-tab-active'));
+					panes.forEach((p) => p.classList.remove('rte-pane-active'));
+					tab.classList.add('rte-tab-active');
+					const pane = widget.querySelector<HTMLElement>(`[data-pane="${tab.dataset.tab}"]`);
+					pane?.classList.add('rte-pane-active');
+				});
+			});
+
+			// --- Tab 1: second ---
+			const epochClock = widget.querySelector<HTMLElement>('[data-epoch-clock]')!;
+			const secRows = widget.querySelector<HTMLElement>('[data-sec-rows]')!;
+			const secNarration = widget.querySelector<HTMLElement>('[data-sec-narration]')!;
+			const secResetBtn = widget.querySelector<HTMLButtonElement>('[data-sec-reset]')!;
+
+			let secConditions: SecCondition[] = [];
+			let secFiredOnce = new Set<number>();
+
+			function renderSecRows() {
+				secRows.innerHTML = secConditions
+					.map(
+						(c, i) => `
+					<div class="rte-row" data-idx="${i}">
+						<div class="rte-row-main">
+							<div class="rte-row-label">${c.label}</div>
+							<code>type: realtime, second ${c.cond}</code>
+						</div>
+						<span class="rte-badge">waiting</span>
+					</div>`,
+					)
+					.join('');
+			}
+
+			function tickSec() {
+				const nowEpoch = Math.floor(Date.now() / 1000);
+				epochClock.textContent = String(nowEpoch);
+				secConditions.forEach((c, i) => {
+					const row = secRows.querySelector<HTMLElement>(`[data-idx="${i}"]`)!;
+					const badge = row.querySelector<HTMLElement>('.rte-badge')!;
+					const isMatch = checkWild(c.cond, String(nowEpoch));
+					row.classList.remove('rte-row-pass', 'rte-row-fail');
+					if (isMatch) {
+						row.classList.add('rte-row-pass');
+						badge.textContent = 'matching now';
+						secFiredOnce.add(i);
+						secNarration.innerHTML = `<b>${c.label}:</b> ${c.note}`;
+					} else if (c.kind !== 'back' && secFiredOnce.has(i)) {
+						badge.textContent = c.kind === 'front' ? 'gone quiet' : 'already passed';
+					} else {
+						badge.textContent = 'waiting';
+					}
+				});
+			}
+
+			secResetBtn.addEventListener('click', () => {
+				const base = Math.floor(Date.now() / 1000);
+				secConditions = buildSecConditions(base);
+				secFiredOnce = new Set();
+				renderSecRows();
+				secNarration.textContent = 'Watching...';
+			});
+			secConditions = buildSecConditions(Math.floor(Date.now() / 1000));
+			renderSecRows();
+			tickSec();
+			setInterval(tickSec, 1000);
+
+			// --- Tab 2: combine minute + hour + day ---
+			const momentDay = widget.querySelector<HTMLElement>('[data-moment-day]')!;
+			const momentTime = widget.querySelector<HTMLElement>('[data-moment-time]')!;
+			const momentTile = widget.querySelector<HTMLElement>('[data-moment-tile]')!;
+			const comboRule = widget.querySelector<HTMLElement>('[data-combo-rule]')!;
+			const comboRows = widget.querySelector<HTMLElement>('[data-combo-rows]')!;
+			const comboNarration = widget.querySelector<HTMLElement>('[data-combo-narration]')!;
+			const comboBack = widget.querySelector<HTMLButtonElement>('[data-combo-back]')!;
+			const comboNext = widget.querySelector<HTMLButtonElement>('[data-combo-next]')!;
+			const comboReset = widget.querySelector<HTMLButtonElement>('[data-combo-reset]')!;
+
+			let comboStep = 0;
+			function renderCombo() {
+				const s = COMBO_STEPS[comboStep];
+				const r = evalMinuteRule(s.minuteCond, s.hourCond, s.dayCond, s.moment);
+				momentDay.textContent = 'day ' + s.moment.day;
+				momentTime.textContent = pad(s.moment.hour) + ':' + pad(s.moment.minute) + ':00';
+				momentTile.classList.remove('rte-moment-tile-fires', 'rte-moment-tile-silent');
+				momentTile.classList.add(r.fires ? 'rte-moment-tile-fires' : 'rte-moment-tile-silent');
+				comboRule.innerHTML = '<span class="rte-rule-tag">The rule</span><span class="rte-rule-key">- type:</span> ' + fullRuleText(s);
+
+				const paramRows = [
+					{ label: 'Minute must match', cond: s.minuteCond as string | null, ok: r.minuteOk, present: true },
+					{ label: 'Hour must match', cond: s.hourCond, ok: r.hourOk, present: s.hourCond != null },
+					{ label: 'Day of year must match', cond: s.dayCond, ok: r.dayOk, present: s.dayCond != null },
+				];
+				comboRows.innerHTML = paramRows
+					.map((p) => {
+						if (!p.present) {
+							return `<div class="rte-row rte-row-neutral"><div class="rte-row-main"><div class="rte-row-label">${p.label}</div><code>not set — any value allowed</code></div><span class="rte-badge">n/a</span></div>`;
+						}
+						return `<div class="rte-row ${p.ok ? 'rte-row-pass' : 'rte-row-fail'}"><div class="rte-row-main"><div class="rte-row-label">${p.label}</div><code>${p.cond}</code></div><span class="rte-badge">${p.ok ? 'passes' : 'fails'}</span></div>`;
+					})
+					.join('');
+
+				comboNarration.textContent = s.story;
+				comboBack.disabled = comboStep <= 0;
+				comboNext.disabled = comboStep >= COMBO_STEPS.length - 1;
+			}
+			comboBack.addEventListener('click', () => {
+				if (comboStep > 0) {
+					comboStep--;
+					renderCombo();
+				}
+			});
+			comboNext.addEventListener('click', () => {
+				if (comboStep < COMBO_STEPS.length - 1) {
+					comboStep++;
+					renderCombo();
+				}
+			});
+			comboReset.addEventListener('click', () => {
+				comboStep = 0;
+				renderCombo();
+			});
+			renderCombo();
+
+			// --- Tab 3: day of year ---
+			const doyPicker = widget.querySelector<HTMLInputElement>('[data-doy-picker]')!;
+			const doyNum = widget.querySelector<HTMLElement>('[data-doy-num]')!;
+			const doyOf = widget.querySelector<HTMLElement>('[data-doy-of]')!;
+			const doyLead = widget.querySelector<HTMLElement>('[data-doy-lead]')!;
+			const doySum = widget.querySelector<HTMLElement>('[data-doy-sum]')!;
+			const doySumNote = widget.querySelector<HTMLElement>('[data-doy-sum-note]')!;
+
+			function calcDoy() {
+				const [y, m, d] = doyPicker.value.split('-').map(Number);
+				const date = new Date(y, m - 1, d);
+				const doy = dayOfYear(date);
+				doyNum.textContent = String(doy);
+				doyOf.textContent = `day ${doy} of ${y}`;
+				doyLead.textContent = `${MONTHS[m - 1]} ${d}, ${y} is...`;
+				const breakdown = doySumBreakdown(date);
+				doySum.textContent = breakdown.text;
+				doySumNote.textContent = breakdown.involvesFeb
+					? isLeapYear(y)
+						? `Feb counted as 29 days — ${y} is a leap year.`
+						: `Feb counted as 28 days — ${y} is not a leap year.`
+					: '';
+			}
+			doyPicker.value = localTodayStr();
+			doyPicker.addEventListener('change', calcDoy);
+			doyPicker.addEventListener('input', calcDoy);
+			calcDoy();
+		}
+	}
+
+	setupWidgets();
+	document.addEventListener('astro:page-load', setupWidgets);
+</script>
