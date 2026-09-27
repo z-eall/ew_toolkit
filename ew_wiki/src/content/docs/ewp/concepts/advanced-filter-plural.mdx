@@ -190,7 +190,7 @@ A **location** here means one of Valheim's own placed points of interest — a d
   data: int, level, 3
 ```
 
-`type: create` fires the moment a matching object spawns — Valheim's own natural spawns, not something this rule causes. Adding `locations: Eikthyrnir` narrows that down to just the Boars that happen to spawn near this one altar, and `data: int, level, 3` is what makes each of those already spawn at 2 stars instead of unstarred; every Boar spawning anywhere else is left alone.
+`type: create` fires the moment a matching object spawns — Valheim's own natural spawns, not something this rule causes. Adding `locations: Eikthyrnir` narrows that down to just the Boars that happen to spawn near this one altar, and `data: int, level, 3` is what forces each of them to spawn at 2 stars; every Boar spawning anywhere else is left alone.
 
 ### `locationDistance:` — how close counts as "near"
 
