@@ -1,3 +1,15 @@
+# Backup — Object Ownership page, before the 2026-09-28 trim
+
+Not a live wiki page — internal notes only, never linked from `astro.config.mjs`'s sidebar. Kept for the maintainer to revisit later.
+
+**Why this exists:** the maintainer hand-tested every component section on this page in-game and found `TerrainModifier`, `Turret`, `CookingStation`, `Fish`, and `Gibber` are **not working as intended** — the documented ownership-transfer behavior doesn't hold up in real play. Rather than publish claims proven wrong, those sections were removed from the live page entirely (2026-09-28). The `Sadle`/`Tameable` naming explanation was removed too (the section itself was kept, renamed to "Tameable").
+
+This file is the full page content as it stood immediately before that trim — kept so the maintainer can come back to it later and dig into *why* the EWP/game-source understanding behind those 5 sections went wrong, without needing to dig through git history first. It is not meant to be re-published as-is; whatever comes back from that investigation should be source-re-verified, not just pasted back in.
+
+---
+
+## Full page content (pre-trim, verbatim)
+
 ---
 title: "Object Ownership"
 description: "The two real ways an object's owner changes, and a real paste-in script for every checked object, grouped by component."
@@ -36,8 +48,8 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 
 | | | | | | | | |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Container](#container) | [Sign](#sign) | [ItemStand / ArmorStand](#itemstand--armorstand) | [ItemDrop](#itemdrop) | [Personal FX](#personal-fx) | [Projectile](#projectile) | [Trap](#trap) | [Tameable](#tameable) |
-| [Vagon](#vagon) | [Ship](#ship) | | | | | | |
+| [Container](#container) | [Sign](#sign) | [ItemStand / ArmorStand](#itemstand--armorstand) | [ItemDrop](#itemdrop) | [Personal FX](#personal-fx) | [Projectile](#projectile) | [Trap](#trap) | [TerrainModifier](#terrainmodifier) |
+| [Sadle](#sadle) | [Vagon](#vagon) | [Ship](#ship) | [Turret](#turret) | [CookingStation](#cookingstation) | [Fish](#fish) | [Gibber](#gibber) | |
 
 ### Container
 
@@ -221,23 +233,43 @@ Springing a trap also spawns its `fx_trap_arm` effect (despite the name of "arm"
 ```
 </Aside>
 
-### Tameable
+### TerrainModifier
 
-*See every prefab with this component on [Components/Tameable](https://valheimtools.stream/wiki/components/Tameable).*
+*See every prefab with this component on [Components/TerrainModifier](https://valheimtools.stream/wiki/components/TerrainModifier).*
+
+Digging, raising, flattening, or painting the ground each secretly places a small invisible object to remember that edit — the same way placing a building piece does:
+
+```yaml
+- prefab: TerrainModifier
+  type: create
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Sadle
+
+*See every prefab with this component on [Components/Sadle](https://valheimtools.stream/wiki/components/Sadle).*
 
 Taking the reins of a tamed, saddled creature hands ownership to the rider, through a field called `user`:
 
 ```yaml
-- prefab: Tameable
+- prefab: Sadle # or Tameable
   type: change, user
   command: s This <prefab> is currently owned by <pname> (<pid>).
 ```
+
+<Aside type="caution">
+Don't do this: We suspect `Sadle` is a typo baked into the game's own code, the component is spelled `Sadle`, so targeting the correctly-spelled with `- prefab: Saddle` will not work.
+</Aside>
+
+<Aside type="tip">
+Calling `Tameable` instead of `Sadle` works the same way.
+</Aside>
 
 ### Vagon
 
 *See every prefab with this component on [Components/Vagon](https://valheimtools.stream/wiki/components/Vagon).*
 
-Same shape as Tameable — grabbing the handles of a cart, or becoming the pusher or driver of a siege weapon, hands ownership to whoever grabbed it:
+Same shape as Sadle — grabbing the handles of a cart, or becoming the pusher or driver of a siege weapon, hands ownership to whoever grabbed it:
 
 ```yaml
 - prefab: Vagon
@@ -266,5 +298,56 @@ Given this scenario, the script needs to work a little differently — an "on-de
   spawn:
   - prefab: vfx_spawn_small # For you to easily identify which ship received the poke
     pos: 0,0,2
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Turret
+
+*See every prefab with this component on [Components/Turret](https://valheimtools.stream/wiki/components/Turret).*
+
+Feeding a trophy into a turret to set its target list hands ownership to whoever fed it:
+
+```yaml
+- prefab: Turret
+  type: change, targets
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### CookingStation
+
+*See every prefab with this component on [Components/CookingStation](https://valheimtools.stream/wiki/components/CookingStation).*
+
+Same shape as Turret — placing a raw food item on an empty slot hands ownership to whoever placed it. Each slot's status field can be targeted:
+
+```yaml
+- prefab: CookingStation
+  types:
+  - change, slotstatus0
+  - change, slotstatus1
+  - change, slotstatus2
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Fish
+
+*See every prefab with this component on [Components/Fish](https://valheimtools.stream/wiki/components/Fish).*
+
+Hooking a fish while fishing hands ownership to whoever hooked it:
+
+```yaml
+- prefab: Fish
+  type: change, hooked 1
+  command: s This <prefab> is currently owned by <pname> (<pid>).
+```
+
+### Gibber
+
+*See every prefab with this component on [Components/Gibber](https://valheimtools.stream/wiki/components/Gibber).*
+
+A few seconds after a rock or creature finishes breaking into pieces, the game hands ownership to whoever's nearby client noticed it's still unclaimed — right as it deletes the piece in that same instant:
+
+```yaml
+- prefab: Gibber
+  type: destroy
   command: s This <prefab> is currently owned by <pname> (<pid>).
 ```
