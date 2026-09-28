@@ -99,8 +99,10 @@ export default defineConfig({
 						// then filter/objects, then poke, then functions, then custom-data, then
 						// rpcs last, matching rpcs sitting last in Intermediate) — confirmed with
 						// the maintainer 2026-09-10. advanced-filter-condition is the one
-						// exception: forced to the very end regardless of that ranking, since
-						// condition: is EWP's newest and most advanced feature.
+						// exception: forced ahead of that ranking (originally to the very
+						// end, then advanced-functions-iteration was placed one further
+						// after it), since condition: is EWP's newest and most advanced
+						// feature.
 						{
 							label: 'Advanced',
 							items: [
@@ -114,8 +116,8 @@ export default defineConfig({
 								'ewp/concepts/advanced-functions',
 								'ewp/concepts/ewp-key',
 								'ewp/concepts/advanced-rpcs',
-								'ewp/concepts/advanced-functions-iteration',
 								'ewp/concepts/advanced-filter-condition',
+								'ewp/concepts/advanced-functions-iteration',
 								// Player identity/object-ownership split into its own map,
 								// "Player Identity & Object Ownership". This page is
 								// the short Advanced-tier half; the deep-dive half ("Object Ownership")
