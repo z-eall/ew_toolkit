@@ -112,9 +112,9 @@ export default defineConfig({
 								'ewp/concepts/advanced-poke-mechanics',
 								'ewp/concepts/advanced-poke-creative-systems',
 								'ewp/concepts/advanced-functions',
-								'ewp/concepts/advanced-functions-iteration',
 								'ewp/concepts/ewp-key',
 								'ewp/concepts/advanced-rpcs',
+								'ewp/concepts/advanced-functions-iteration',
 								'ewp/concepts/advanced-filter-condition',
 								// Player identity/object-ownership split into its own map,
 								// "Player Identity & Object Ownership". This page is

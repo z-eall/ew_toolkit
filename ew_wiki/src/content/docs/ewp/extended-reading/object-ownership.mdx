@@ -5,6 +5,7 @@ complexity: advanced
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
+import ComponentIndexGrid from '../../../../components/ComponentIndexGrid.astro';
 
 [Advanced Functions - Player Identity](/ew_toolkit/ew_wiki/ewp/concepts/advanced-functions-player-identity/) covered what `pid` and `cid` return. This page covers how to make use of that: `pid`/`cid` **report whoever currently owns** an object's ZDO right now.
 
@@ -34,10 +35,20 @@ import { Aside, Steps } from '@astrojs/starlight/components';
 
 ## Every object grouped by component
 
-| | | | | | | | |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| [Container](#container) | [Sign](#sign) | [ItemStand / ArmorStand](#itemstand--armorstand) | [ItemDrop](#itemdrop) | [Personal FX](#personal-fx) | [Projectile](#projectile) | [Trap](#trap) | [Tameable](#tameable) |
-| [Vagon](#vagon) | [Ship](#ship) | | | | | | |
+<ComponentIndexGrid
+	items={[
+		{ href: '#container', label: 'Container' },
+		{ href: '#sign', label: 'Sign' },
+		{ href: '#itemstand--armorstand', label: 'ItemStand / ArmorStand' },
+		{ href: '#itemdrop', label: 'ItemDrop' },
+		{ href: '#personal-fx', label: 'Personal FX' },
+		{ href: '#projectile', label: 'Projectile' },
+		{ href: '#trap', label: 'Trap' },
+		{ href: '#tameable', label: 'Tameable' },
+		{ href: '#vagon', label: 'Vagon' },
+		{ href: '#ship', label: 'Ship' },
+	]}
+/>
 
 ### Container
 

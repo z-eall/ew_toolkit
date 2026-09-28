@@ -48,7 +48,7 @@ const { kind } = Astro.props;
 		kind === 'iter' && (
 			<>
 				<h4>A Wood Chest's storage — row 0</h4>
-				<p class="ie-sub">Step through to watch <code>iter</code> visit each slot in the top row.</p>
+				<p class="ie-sub">Step through to watch iter visit each slot in the top row.</p>
 				<div class="ie-call"><code>&lt;iter_add_0_4_amount_i_0&gt;</code></div>
 			</>
 		)
@@ -57,7 +57,7 @@ const { kind } = Astro.props;
 		kind === 'iter2' && (
 			<>
 				<h4>The same Wood Chest — the whole grid</h4>
-				<p class="ie-sub">Step through to watch <code>iter2</code> visit every slot, row by row.</p>
+				<p class="ie-sub">Step through to watch iter2 visit every slot, row by row.</p>
 				<div class="ie-call"><code data-call /></div>
 				<div class="ie-bug-row">
 					<input type="checkbox" id={`ie-bug-${kind}`} data-bug-toggle />
@@ -72,7 +72,7 @@ const { kind } = Astro.props;
 		kind === 'iter2adv' && (
 			<>
 				<h4>Any Wood Chest — total reads its own real size</h4>
-				<p class="ie-sub">Step through to watch both bounds resolve before <code>iter2</code>'s own loop starts.</p>
+				<p class="ie-sub">Step through to watch both bounds resolve before iter2's own loop starts.</p>
 				<div class="ie-call">
 					<code>
 						&lt;iter2_add_0_&lt;sub_&lt;int_Container.m_width&gt;_1&gt;_0_&lt;sub_&lt;int_Container.m_height&gt;_1&gt;_amount_i_j&gt;
@@ -90,9 +90,6 @@ const { kind } = Astro.props;
 
 	<div class="ie-narration-zone"><p class="ie-narration" data-narration /></div>
 	<div class="ie-formula-zone">
-		<div class="ie-formula-label">
-			the call <code>{kind === 'iter' ? 'iter' : 'iter2'}</code> is building, live
-		</div>
 		<div class="ie-formula" data-formula />
 	</div>
 	<div class="ie-controls">
@@ -121,38 +118,51 @@ const { kind } = Astro.props;
 		--ie-final: #2f5233;
 		--ie-revisit: #7a2e1f;
 	}
-	.ie-widget h4 { margin: 0; padding: 10px 14px 0; font-size: 0.95em; color: var(--text); }
-	.ie-sub { margin: 0; padding: 4px 14px 8px; color: var(--muted); font-size: 0.88em; line-height: 1.4; }
+	.ie-widget h4 { margin: 0; padding: 8px 14px 0; font-size: 0.95em; color: var(--text); }
+	.ie-sub { margin: 0; padding: 3px 14px 6px; color: var(--muted); font-size: 0.85em; line-height: 1.35; }
 
 	/* The call this widget demonstrates lives here, in the widget itself —
 	   not restated in a trailing paragraph the reader has to look back at. */
-	.ie-call { padding: 0 14px 10px; text-align: center; }
-	.ie-call code { font-size: 13px; word-break: break-word; color: var(--text); }
+	.ie-call { padding: 0 14px 8px; text-align: center; }
+	.ie-call code { font-size: 12.5px; word-break: break-word; color: var(--text); }
 	.ie-call :global(.ie-swapped) { color: var(--ie-revisit); font-weight: 700; }
 
 	.ie-bug-row {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		padding: 8px 14px;
-		font-size: 12.5px;
+		padding: 6px 14px;
+		font-size: 12px;
 		color: var(--muted);
 		border-top: 1px solid var(--border);
 	}
 
-	.ie-grid-block { padding: 10px 14px 6px; border-top: 1px solid var(--border); }
-	.ie-grid-wrap { display: flex; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
+	.ie-grid-block { padding: 8px 14px 4px; border-top: 1px solid var(--border); }
+	.ie-grid-wrap { display: flex; justify-content: center; margin-bottom: 6px; flex-wrap: wrap; }
 	.ie-grid { display: grid; gap: 4px; }
+	/* margin:0 is load-bearing, not decorative -- Starlight's own global
+	   sibling-spacing CSS (.sl-markdown-content :not(...) + :not(...))
+	   was giving every cell but the very first a stray margin-top:16px,
+	   which a CSS grid item renders as an offset within its own track --
+	   visibly "poking" cell (0,0) up out of line with the rest of row 0.
+	   Same recurring bug already documented in
+	   NestingPeelExplainer.astro/ObjectsNearbyExplainer.astro; zeroing it
+	   explicitly on every cell is the established fix. box-sizing:border-box
+	   is also load-bearing: without it the 1px border adds to the 34px
+	   content width, so cells render 2px wider/taller than their 34px grid
+	   track and overflow it. */
 	.ie-grid :global(.ie-cell) {
+		box-sizing: border-box;
 		width: 34px;
 		height: 34px;
+		margin: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		border-radius: 4px;
-		font-size: 13px;
+		font-size: 12.5px;
 		color: var(--muted);
 		transition: background 0.15s, color 0.15s, border-color 0.15s;
 	}
@@ -174,25 +184,35 @@ const { kind } = Astro.props;
 		font-weight: 700;
 	}
 	.ie-grid :global(.ie-cell.outside) { opacity: 0.25; }
-	.ie-grid-legend { text-align: center; font-size: 12px; color: var(--muted); line-height: 1.4; padding: 0 8px; margin: 0; }
+	.ie-grid-legend { text-align: center; font-size: 11.5px; color: var(--muted); line-height: 1.35; padding: 0 8px; margin: 0; }
 
 	/* Reserved so the longest possible narration sentence never grows this
 	   box further — every shorter sentence just sits inside the reserved
-	   space, so Back/Next/Reset never move mid-sequence. */
-	.ie-narration-zone { padding: 10px 14px 4px; border-top: 1px solid var(--border); min-height: 4.6em; }
-	.ie-narration { font-size: 13px; color: var(--text); line-height: 1.5; margin: 0; }
+	   space, so Back/Next/Reset never move mid-sequence. Fixed px, not em,
+	   and sized PER KIND (via [data-kind]) rather than to one shared
+	   worst case across all three instances -- the simple `iter` widget
+	   (5 short sentences, no bug toggle) doesn't need `iter2`'s bug-on
+	   warning sentence's reserved space, and reserving it there anyway
+	   just reads as a large dead gap. Each value below is measured live
+	   at 375px (the narrowest real viewport, where wrapping is worst) for
+	   that kind's own real content, bug toggle included where it exists. */
+	.ie-narration-zone { padding: 8px 14px 4px; border-top: 1px solid var(--border); min-height: 71px; }
+	[data-kind='iter2'] .ie-narration-zone { min-height: 109px; }
+	[data-kind='iter2adv'] .ie-narration-zone { min-height: 90px; }
+	.ie-narration { font-size: 12.5px; color: var(--text); line-height: 1.45; margin: 0; }
 	.ie-narration :global(code) { color: var(--ie-active); }
 	.ie-narration :global(.ie-warn) { color: var(--ie-revisit); font-weight: 600; }
 
 	.ie-setup {
-		padding: 8px 14px;
+		padding: 6px 14px;
 		text-align: center;
 		border-top: 1px solid var(--border);
-		min-height: 5.4em;
+		/* Measured live at 375px across all 4 meta-steps: 182.25px real max. */
+		min-height: 185px;
 		display: flex;
 		flex-direction: column;
 		justify-content: center;
-		gap: 4px;
+		gap: 3px;
 	}
 	.ie-setup:empty { padding: 0; min-height: 0; border-top: none; }
 	.ie-setup :global(.ie-setup-label) { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
@@ -205,11 +225,12 @@ const { kind } = Astro.props;
 	/* Reserved so the longest possible skeleton (all 10 iter2 pieces still
 	   unresolved, the widest state) never grows the box further — every
 	   other state is shorter, so the box only ever shrinks INTO this
-	   reserved space, never past it. Measured against this widget's own
-	   longest real content, not guessed. */
-	.ie-formula-zone { padding: 6px 14px 10px; text-align: center; min-height: 4.6em; display: flex; flex-direction: column; justify-content: center; }
-	.ie-formula-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-	.ie-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; word-break: break-word; color: var(--text); }
+	   reserved space, never past it. Fixed px, per kind (same reasoning
+	   as .ie-narration-zone above), measured live at 375px against each
+	   kind's own real longest render, not guessed. */
+	.ie-formula-zone { padding: 4px 14px 8px; text-align: center; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
+	[data-kind='iter2'] .ie-formula-zone, [data-kind='iter2adv'] .ie-formula-zone { min-height: 106px; }
+	.ie-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; word-break: break-word; color: var(--text); }
 	.ie-formula :global(.ie-tok) { color: var(--text); }
 	.ie-formula :global(.ie-tok.pending) { color: var(--muted); opacity: 0.6; }
 	.ie-formula :global(.ie-tok.done) { color: var(--ie-done); }
@@ -217,17 +238,17 @@ const { kind } = Astro.props;
 	.ie-formula :global(.ie-tok.revisit) { color: var(--ie-revisit); font-weight: 700; }
 	.ie-formula :global(.ie-eq) { color: var(--ie-final); font-weight: 700; }
 
-	.ie-controls { display: flex; justify-content: center; gap: 8px; padding: 0 14px 12px; }
+	.ie-controls { display: flex; justify-content: center; gap: 8px; padding: 0 14px 10px; }
 	.ie-controls button {
 		box-sizing: border-box;
-		height: 27px;
+		height: 25px;
 		margin: 0;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		color: var(--text);
 		border-radius: 6px;
-		padding: 0 14px;
-		font-size: 12.5px;
+		padding: 0 13px;
+		font-size: 12px;
 		font-weight: 600;
 		cursor: pointer;
 	}
