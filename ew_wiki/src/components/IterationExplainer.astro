@@ -12,13 +12,17 @@
 // order) after the first round read as too summarized; a persistent grid
 // legend was added directly under the grid (not just mentioned once in
 // page prose) after the numbers alone tested as unclear on first look;
-// Back/Next/Reset were pinned to a fixed position via reserved min-height
-// on the narration/formula zones after the box's own height shrinking
-// mid-sequence moved the buttons; and the three case studies (row-only,
-// whole-grid, dual-dynamic-bound) were split into three separate
-// instances of this component, one per heading, after a single widget
-// mixing iter/iter2 controls under the `iter` heading read as confusing
-// as iter2's own controls would have.
+// and the three case studies (row-only, whole-grid, dual-dynamic-bound)
+// were split into three separate instances of this component, one per
+// heading, after a single widget mixing iter/iter2 controls under the
+// `iter` heading read as confusing as iter2's own controls would have.
+//
+// The narration/formula/setup zones once reserved a fixed min-height
+// (sized to each kind's own longest real content) so Back/Next/Reset
+// never moved between steps. That traded a moving control row for dead
+// reserved space on every shorter step -- the maintainer tried both and
+// picked the tight-content version: these zones now hug their real
+// content and the whole widget's height changes as you step through it.
 //
 // The example object throughout is a real Wood Chest (Container.m_width:
 // 5, Container.m_height: 2 — confirmed 5x2/10 slots via web search
@@ -119,11 +123,11 @@ const { kind } = Astro.props;
 		--ie-revisit: #7a2e1f;
 	}
 	.ie-widget h4 { margin: 0; padding: 6px 14px 0; font-size: 0.95em; color: var(--text); }
-	.ie-sub { margin: 0; padding: 2px 14px 4px; color: var(--muted); font-size: 0.85em; line-height: 1.3; }
+	.ie-sub { margin: 0; padding: 2px 14px 0; color: var(--muted); font-size: 0.85em; line-height: 1.3; }
 
 	/* The call this widget demonstrates lives here, in the widget itself —
 	   not restated in a trailing paragraph the reader has to look back at. */
-	.ie-call { padding: 0 14px 6px; text-align: center; }
+	.ie-call { padding: 0 14px; text-align: center; }
 	.ie-call code { font-size: 12.5px; word-break: break-word; color: var(--text); }
 	.ie-call :global(.ie-swapped) { color: var(--ie-revisit); font-weight: 700; }
 
@@ -131,13 +135,13 @@ const { kind } = Astro.props;
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		padding: 4px 14px;
+		padding: 4px 14px 0;
 		font-size: 12px;
 		color: var(--muted);
 		border-top: 1px solid var(--border);
 	}
 
-	.ie-grid-block { padding: 6px 14px 3px; border-top: 1px solid var(--border); }
+	.ie-grid-block { padding: 6px 14px 0; border-top: 1px solid var(--border); }
 	.ie-grid-wrap { display: flex; justify-content: center; margin-bottom: 4px; flex-wrap: wrap; }
 	.ie-grid { display: grid; gap: 4px; }
 	/* margin:0 is load-bearing, not decorative -- Starlight's own global
@@ -186,58 +190,30 @@ const { kind } = Astro.props;
 	.ie-grid :global(.ie-cell.outside) { opacity: 0.25; }
 	.ie-grid-legend { text-align: center; font-size: 11.5px; color: var(--muted); line-height: 1.35; padding: 0 8px; margin: 0; }
 
-	/* Reserved so the longest possible narration sentence never grows this
-	   box further — every shorter sentence just sits inside the reserved
-	   space, so Back/Next/Reset never move mid-sequence. Fixed px, not em,
-	   and sized PER KIND (via [data-kind]) rather than to one shared
-	   worst case across all three instances -- the simple `iter` widget
-	   (5 short sentences, no bug toggle) doesn't need `iter2`'s bug-on
-	   warning sentence's reserved space, and reserving it there anyway
-	   just reads as a large dead gap. Each value below is the real total
-	   rendered height measured live at 375px (the narrowest real
-	   viewport, worst wrapping) for that kind's own content, bug toggle
-	   included where it exists -- box-sizing:border-box is load-bearing
-	   here: without it, min-height only floors the CONTENT box and the
-	   zone's own padding stacks on top of that, reserving more than the
-	   measured number and reading as extra dead space (the exact bug
-	   this comment is here to stop someone re-introducing). */
-	.ie-narration-zone { box-sizing: border-box; padding: 4px 14px 2px; border-top: 1px solid var(--border); min-height: 59px; }
-	[data-kind='iter2'] .ie-narration-zone { min-height: 93px; }
-	[data-kind='iter2adv'] .ie-narration-zone { min-height: 75px; }
-	.ie-narration { font-size: 12px; color: var(--text); line-height: 1.35; margin: 0; }
+	/* No reserved min-height here anymore (a static, never-resizing box
+	   was tried and explicitly rejected by the maintainer -- the dead
+	   space it left on short steps read as worse than the box changing
+	   height between steps). Each zone now hugs its own real content. */
+	.ie-narration-zone { padding: 3px 14px 0; border-top: 1px solid var(--border); }
+	.ie-narration { font-size: 12px; color: var(--text); line-height: 1.3; margin: 0; }
 	.ie-narration :global(code) { color: var(--ie-active); }
 	.ie-narration :global(.ie-warn) { color: var(--ie-revisit); font-weight: 600; }
 
 	.ie-setup {
-		box-sizing: border-box;
-		padding: 4px 14px;
+		padding: 3px 14px 0;
 		text-align: center;
 		border-top: 1px solid var(--border);
-		/* Real total height measured live at both 375px and 1280px across
-		   all 4 meta-steps (160px real max at both). */
-		min-height: 161px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		gap: 2px;
 	}
-	.ie-setup:empty { padding: 0; min-height: 0; border-top: none; }
-	.ie-setup :global(.ie-setup-label) { font-size: 10.5px; color: var(--muted); margin-bottom: 1px; }
-	.ie-setup :global(.ie-setup-formula) { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.35; word-break: break-word; color: var(--text); }
+	.ie-setup:empty { padding: 0; border-top: none; }
+	.ie-setup :global(.ie-setup-label) { font-size: 10.5px; color: var(--muted); margin: 0; }
+	.ie-setup :global(.ie-setup-formula) { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.3; word-break: break-word; color: var(--text); margin: 0; }
 	.ie-setup :global(.ie-tok.pending) { color: var(--muted); opacity: 0.6; }
 	.ie-setup :global(.ie-tok.active) { color: var(--ie-active); font-weight: 700; }
 	.ie-setup :global(.ie-tok.done) { color: var(--ie-done); }
-	.ie-setup :global(.ie-setup-settled) { font-size: 11.5px; color: var(--ie-final); font-weight: 600; }
+	.ie-setup :global(.ie-setup-settled) { font-size: 11.5px; color: var(--ie-final); font-weight: 600; margin: 0; }
 
-	/* Reserved so the longest possible skeleton (all 10 iter2 pieces still
-	   unresolved, the widest state) never grows the box further — every
-	   other state is shorter, so the box only ever shrinks INTO this
-	   reserved space, never past it. Fixed px, per kind (same reasoning
-	   as .ie-narration-zone above, box-sizing included), measured live
-	   at 375px against each kind's own real longest render, not guessed. */
-	.ie-formula-zone { box-sizing: border-box; padding: 2px 14px 4px; text-align: center; min-height: 46px; display: flex; flex-direction: column; justify-content: center; }
-	[data-kind='iter2'] .ie-formula-zone, [data-kind='iter2adv'] .ie-formula-zone { min-height: 88px; }
-	.ie-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; word-break: break-word; color: var(--text); line-height: 1.4; }
+	.ie-formula-zone { padding: 0 14px 0; text-align: center; }
+	.ie-formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; word-break: break-word; color: var(--text); line-height: 1.3; }
 	.ie-formula :global(.ie-tok) { color: var(--text); }
 	.ie-formula :global(.ie-tok.pending) { color: var(--muted); opacity: 0.6; }
 	.ie-formula :global(.ie-tok.done) { color: var(--ie-done); }
