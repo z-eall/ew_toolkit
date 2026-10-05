@@ -96,14 +96,16 @@ describe("checkRpcParams", () => {
     // Param 2's documented type changed from `string` to `hash` upstream
     // (RPCs.md, confirmed live 2026-09-12) — EWP's RpcInfo.cs treats them as
     // genuinely different (hash applies GetStableHashCode(), string doesn't),
-    // so this repro now uses the correct current type.
+    // so this repro now uses the correct current type. The docs dropped the
+    // fourth "orientation" param on 2026-09-29 (EWP e656d92): Valheim's
+    // ArmorStand registers RPC_SetVisualItem as (int index, int itemHash,
+    // int variant); orientation belongs to ItemStand's separate SetVisualItem.
     const issues = checkRpcParams(OBJECT_RPC_PARAMS, "RPC_SetVisualItem", {
       name: "RPC_SetVisualItem",
       target: "all",
       1: 'int, "index of the item slot"',
       2: 'hash, "name of the item"',
       3: 'int, "variant number of the item"',
-      4: 'int, "orientation of the item (0 = none, 1 = vertical, 2 = horizontal, 3 = all)"',
     });
     expect(issues).toEqual([]);
   });
@@ -123,7 +125,7 @@ describe("checkRpcParams", () => {
       1: "int, 0",
       2: "string, SwordIron",
     });
-    expect(issues.filter((i) => i.kind === "missing").map((i) => i.key)).toEqual(["3", "4"]);
+    expect(issues.filter((i) => i.kind === "missing").map((i) => i.key)).toEqual(["3"]);
   });
 });
 
@@ -172,10 +174,11 @@ describe("checkRpcUnrecognizedKeys", () => {
 });
 
 describe("generated RPC tables", () => {
-  it("documents RPC_SetVisualItem with four params from RPCs.md", () => {
+  it("documents RPC_SetVisualItem with three params from RPCs.md", () => {
     // Param 2 changed from `string` to `hash` upstream — confirmed live
-    // against RPCs.md 2026-09-12 (EWP v1.60-era docs).
-    expect(OBJECT_RPC_PARAMS.RPC_SetVisualItem?.map((p) => p.type)).toEqual(["int", "hash", "int", "int"]);
+    // against RPCs.md 2026-09-12 (EWP v1.60-era docs). The fourth param
+    // (orientation) was removed 2026-09-29, matching ArmorStand's real RPC.
+    expect(OBJECT_RPC_PARAMS.RPC_SetVisualItem?.map((p) => p.type)).toEqual(["int", "hash", "int"]);
   });
 
   it("does not include deliberately omitted ambiguous object RPCs", () => {
