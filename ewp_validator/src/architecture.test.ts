@@ -1,5 +1,5 @@
 // Mechanical architecture and wording rules (round 6 ticket 04). Each test guards one rule that
-// used to live only in AGENTS.md / CONTEXT.md prose. TypeScript only, no build step.
+// used to live only in AGENTS.md / GLOSSARY.md prose. TypeScript only, no build step.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ErrorObject } from "ajv";
@@ -32,10 +32,10 @@ describe("(a) detector modules carry no user-facing message text", () => {
   }
 });
 
-describe("(c) every category appears in CONTEXT.md", () => {
-  const context = readFileSync(new URL("../CONTEXT.md", import.meta.url), "utf8");
+describe("(c) every category appears in GLOSSARY.md", () => {
+  const context = readFileSync(new URL("../GLOSSARY.md", import.meta.url), "utf8");
   for (const c of DIAGNOSIS_CATEGORIES) {
-    it(`CONTEXT.md names "${c}"`, () => expect(context.includes(c)).toBe(true));
+    it(`GLOSSARY.md names "${c}"`, () => expect(context.includes(c)).toBe(true));
   }
 });
 

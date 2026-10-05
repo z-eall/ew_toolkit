@@ -1,6 +1,6 @@
 # EWP Validator
 
-Vocabulary specific to `ewp_validator`'s UI and diagnosis/validation logic. Hub-wide concepts (EW Toolkit, Tool, Hub, Subpath) and Valheim-modding domain terms (EWP, WEC, Scripter, Schema) live one level up — see [../CONTEXT.md](../CONTEXT.md).
+Vocabulary specific to `ewp_validator`'s UI and diagnosis/validation logic. Hub-wide concepts (EW Toolkit, Tool, Hub, Subpath) and Valheim-modding domain terms (EWP, WEC, Scripter, Schema) live one level up — see [../GLOSSARY.md](../GLOSSARY.md).
 
 ## Language
 

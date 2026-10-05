@@ -9,7 +9,7 @@ const REPO_ROOT = join(__dirname, "../..");
 const CHECKED = /\.(ts|mjs|cjs|astro|css|yml|yaml|mdx)$/;
 // Markdown may describe the planning-folder convention (`.scratch/`, `.scratch/<effort>/map.md`,
 // as docs/agents/ does), but may not point at a real folder inside it. Round 6 ticket 09 (reopened
-// after sweep 4: seven such links sat in public AGENTS.md, CONTEXT.md and wiki docs).
+// after sweep 4: seven such links sat in public AGENTS.md, GLOSSARY.md and wiki docs).
 const CHECKED_MD = /\.md$/;
 const REAL_PRIVATE_PATH = /\.scratch\/[A-Za-z0-9][\w.-]*\//;
 

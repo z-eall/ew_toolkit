@@ -2,7 +2,7 @@
 
 QoL tooling for scripters who write YAML for Jere's Expand World mod series in Valheim. This context covers the terminology for the tooling project itself, not Valheim or the mods' in-game mechanics.
 
-This file covers hub-wide and Valheim-modding domain vocabulary, shared across every Tool. `ewp_validator`'s own UI/diagnosis vocabulary (Manual/Auto mode, Diagnosis category, Diagnosis arbitration, Problems panel, Confirm modal) lives in [ewp_validator/CONTEXT.md](ewp_validator/CONTEXT.md).
+This file covers hub-wide and Valheim-modding domain vocabulary, shared across every Tool. `ewp_validator`'s own UI/diagnosis vocabulary (Manual/Auto mode, Diagnosis category, Diagnosis arbitration, Problems panel, Confirm modal) lives in [ewp_validator/GLOSSARY.md](ewp_validator/GLOSSARY.md).
 
 ## Language
 
