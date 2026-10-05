@@ -1,7 +1,9 @@
 /** Hand-maintained RPC table overrides — see validation-maintenance research 01. */
 
-/** Same name, incompatible arity across components — never validate. */
+/** Same name, incompatible arity or types across components — never validate. */
 export const OMIT_RPCS = new Set([
+  "RPC_AddItem", // CookingStation: string name; Fermenter: hash name (docs, 2026-10-03)
+  "RPC_Damage", // MineRock5: hit + part index; every other component: hit only (docs, 2026-10-03)
   "RPC_DestroyAttachment",
   "RPC_DropItem",
   "RPC_Extract",

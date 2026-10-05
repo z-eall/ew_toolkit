@@ -66,5 +66,37 @@ describe("parseRpcsMarkdown", () => {
 
   it("omits ambiguous RPC names from object table output", () => {
     expect(OMIT_RPCS.has("RPC_Extract")).toBe(true);
+    expect(OMIT_RPCS.has("RPC_AddItem")).toBe(true);
+    expect(OMIT_RPCS.has("RPC_Damage")).toBe(true);
+  });
+
+  it("does not throw when two components share a name with different param types", () => {
+    const md = [
+      "## Object RPCs",
+      "",
+      "```yaml",
+      "  objectRpc:",
+      "  - name: RPC_AddItem",
+      '    1: string, "name of the item"',
+      '    2: bool, "cheated"',
+      "```",
+      "",
+      "```yaml",
+      "  objectRpc:",
+      "  - name: RPC_AddItem",
+      '    1: hash, "name of the item"',
+      '    2: bool, "cheated"',
+      "```",
+      "",
+      "## Client rpcs",
+      "",
+      "```yaml",
+      "  clientRpc:",
+      "  - name: Ping",
+      "```",
+    ].join("\n");
+
+    const { objectRpcParams } = parseRpcsMarkdown(md, { minCount: 1 });
+    expect(objectRpcParams.RPC_AddItem).toBeUndefined();
   });
 });
