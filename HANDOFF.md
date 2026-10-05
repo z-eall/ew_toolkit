@@ -20,4 +20,4 @@ Same as `ew_toolkit/HANDOFF.md` — `ew_toolkit`'s nav bar and the 5 reported `e
 
 ## Dual-agent note
 
-Standing-rule file sync (`AGENTS.md`/`CLAUDE.md`/`CONTEXT.md`/`docs/agents/`) is hook-enforced now (`guard-standing-rules-sync.cjs`, blocks session end on drift) — see `docs/agents/hooks-vs-rules.md`. Push before switching agents; pull when opening the other one.
+Standing-rule file sync (`AGENTS.md`/`CLAUDE.md`/`GLOSSARY.md`/`docs/agents/`) is hook-enforced now (`guard-standing-rules-sync.cjs`, blocks session end on drift) — see `docs/agents/hooks-vs-rules.md`. Push before switching agents; pull when opening the other one.
