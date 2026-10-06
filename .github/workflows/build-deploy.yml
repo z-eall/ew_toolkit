@@ -54,6 +54,11 @@ jobs:
       - run: npm test
         working-directory: ewp_validator
 
+      # House rules: the runner's own tests (every row's fail and pass example),
+      # then the wiki rows against the real pages. A "block" row fails the build.
+      - run: npm run test:house
+      - run: npm run check:house
+
       # Daily run only: the same tests against the mod's live docs. A failure
       # here means "the mod docs changed; update schema/fixtures/RPCs.md and
       # the validator", not "the code broke".
