@@ -24,6 +24,9 @@ const SAMPLES: Record<keyof typeof practiceMessages, string[]> = {
   terrainPaintName: [practiceMessages.terrainPaintName("Dirtt")],
   ownerDropped: [practiceMessages.ownerDropped()],
   iterOperation: [practiceMessages.iterOperation("ad")],
+  globalFieldIgnored: [practiceMessages.globalFieldIgnored("spawn", "globalkey")],
+  spawnNeedsTriggerRules: [practiceMessages.spawnNeedsTriggerRules("Bonemass")],
+  pokeNoLimit: [practiceMessages.pokeNoLimit("Bonemass")],
   filterBothForms: [practiceMessages.filterBothForms("filter", "filters", "poke"), practiceMessages.filterBothForms("filter", "filters", null)],
 };
 

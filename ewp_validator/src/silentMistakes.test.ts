@@ -13,6 +13,7 @@ function idsOf(...texts: string[]): string[] {
   return out;
 }
 const silent = (ids: string[]) => ids.filter((i) => i.startsWith("silent-"));
+const centre = (ids: string[]) => ids.filter((i) => i === "silent-poke-world-centre");
 
 describe("rule 1: == or <> in a condition", () => {
   it("finds the bad operators and leaves good ones alone", () => {
@@ -81,14 +82,14 @@ describe("rule 3: poke under a prefab-less world-centre trigger without maxDista
 
   it("twin: maxDistance, position or offset on the poke stays quiet", () => {
     for (const extra of ["maxDistance: 10000", "position: 0,0,0", "offset: 0,1,0"]) {
-      expect(silent(idsOf(`- type: globalkey, raidCooldown\n  poke:\n  - prefab: piece_workbench\n    ${extra}\n    parameter: raidEnded\n`)), extra).toEqual([]);
+      expect(centre(idsOf(`- type: globalkey, raidCooldown\n  poke:\n  - prefab: piece_workbench\n    ${extra}\n    parameter: raidEnded\n`)), extra).toEqual([]);
     }
   });
 
   it("twin: event and custom triggers carry a real position, and a rule with a prefab has its own place", () => {
-    expect(silent(idsOf("- type: event, foo\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
-    expect(silent(idsOf("- type: custom, foo\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
-    expect(silent(idsOf("- prefab: Player\n  type: globalkey, raidCooldown\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
+    expect(centre(idsOf("- type: event, foo\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
+    expect(centre(idsOf("- type: custom, foo\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
+    expect(centre(idsOf("- prefab: Player\n  type: globalkey, raidCooldown\n  poke:\n  - prefab: piece_workbench\n    parameter: x\n"))).toEqual([]);
   });
 });
 
@@ -189,5 +190,69 @@ describe("rule 8: an unknown function in <iter_...>", () => {
     for (const ok of ["<iter_add_0_3_<par_i>>", "<iter_max_1_5_<par_i>>", "<iter2_mul_0_1_0_1_<par_i>>"]) {
       expect(silent(idsOf(`- prefab: Boar\n  type: create\n  exec: ${ok}\n`)), ok).toEqual([]);
     }
+  });
+});
+
+// Plan step 3.2 (ticket 07 item 70): three warnings from the EWP script reference. Read against
+// EWP 1.62.0 (PrefabManager.cs HandleGlobal, DelayedSpawn.cs, HandleCreated.cs, docs/scripting.md).
+describe("rule 9: a field a no-object trigger never reads", () => {
+  it("warns on spawn under a globalkey trigger", () => {
+    expect(idsOf("- type: globalkey, raid\n  spawn:\n  - prefab: Boar\n")).toContain("silent-global-field-ignored");
+  });
+  it("warns on swap, terrain and data under a time trigger", () => {
+    for (const body of ["  swap:\n  - prefab: Boar\n", "  terrain:\n  - radius: 5\n", "  data: someData\n"]) {
+      expect(idsOf(`- type: time, hour, 3\n${body}`), body).toContain("silent-global-field-ignored");
+    }
+  });
+  it("twin: poke, exec and command are fine under a global trigger", () => {
+    const ids = idsOf("- type: globalkey, raid\n  exec: <save_x_1>\n  command: s hi\n  poke:\n  - prefab: Boar\n    limit: 1\n    parameter: a\n");
+    expect(ids).not.toContain("silent-global-field-ignored");
+  });
+  it("twin: spawn under an object trigger is fine", () => {
+    expect(idsOf("- prefab: Player\n  type: say, hi\n  spawn:\n  - prefab: Boar\n")).not.toContain("silent-global-field-ignored");
+  });
+  it("twin: remove on a key trigger is not flagged", () => {
+    expect(idsOf("- type: globalkey, raid\n  remove: true\n  command: s hi\n")).not.toContain("silent-global-field-ignored");
+  });
+});
+
+describe("rule 10: a spawned object does not fire create rules", () => {
+  const spawner = (extra: string) => `- prefab: Player\n  type: say, boar\n  spawn:\n  - prefab: Boar\n${extra}`;
+  const watcher = "\n- prefab: Boar\n  type: create\n  command: s hi\n";
+  it("warns when a create entry for the spawned prefab exists", () => {
+    expect(idsOf(spawner("") + watcher)).toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("warns across two files", () => {
+    expect(idsOf(spawner(""), "- prefab: Boar\n  type: create\n  command: s hi\n")).toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("warns on a wildcard create entry", () => {
+    expect(idsOf(spawner("") + "\n- prefab: Bo*\n  type: create\n  command: s hi\n")).toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("twin: triggerRules on the spawn item stays quiet", () => {
+    expect(idsOf(spawner("    triggerRules: true\n") + watcher)).not.toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("twin: triggerRules on the entry stays quiet", () => {
+    expect(idsOf("- prefab: Player\n  type: say, boar\n  triggerRules: true\n  spawn:\n  - prefab: Boar\n" + watcher)).not.toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("twin: no create entry for that prefab stays quiet", () => {
+    expect(idsOf(spawner("") + "\n- prefab: Wolf\n  type: create\n  command: s hi\n")).not.toContain("silent-spawn-needs-trigger-rules");
+  });
+  it("twin: a destroy entry alone stays quiet (the game still fires it)", () => {
+    expect(idsOf(spawner("") + "\n- prefab: Boar\n  type: destroy\n  command: s hi\n")).not.toContain("silent-spawn-needs-trigger-rules");
+  });
+});
+
+describe("rule 11: a poke of a named prefab with no limit or filter", () => {
+  const poke = (extra: string) => `- prefab: Player\n  type: say, go\n  poke:\n  - prefab: Wolf\n    parameter: x\n${extra}`;
+  it("warns when the poke chooses nothing", () => {
+    expect(idsOf(poke(""))).toContain("silent-poke-no-limit");
+  });
+  it("twin: limit, filter, self, target or connected stay quiet", () => {
+    for (const extra of ["    limit: 1\n", "    filter: int, x, 1\n", "    self: true\n", "    connected: true\n", "    bannedFilters:\n    - int, x, 1\n"]) {
+      expect(idsOf(poke(extra)), extra).not.toContain("silent-poke-no-limit");
+    }
+  });
+  it("twin: objects: without limit is not flagged", () => {
+    expect(idsOf("- prefab: Player\n  type: say, go\n  objects:\n  - prefab: Wolf\n")).not.toContain("silent-poke-no-limit");
   });
 });

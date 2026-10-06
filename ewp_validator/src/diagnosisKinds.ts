@@ -73,6 +73,9 @@ const kinds = {
   "silent-key-store-mix": { category: PRACTICE_CATEGORY, severity: "warning", what: "EWP keys and Valheim global keys are separate stores; the watcher reads the other one" },
   "silent-terrain-paint-name": { category: PRACTICE_CATEGORY, severity: "warning", what: "a terrain paint: that is not a paint name or a number; EWP paints Reset instead" },
   "silent-owner-dropped": { category: PRACTICE_CATEGORY, severity: "warning", what: "owner: with addItems/removeItems and no injectData: true; the object is recreated and the owner is lost" },
+  "silent-global-field-ignored": { category: PRACTICE_CATEGORY, severity: "warning", what: "spawn, swap, terrain or data under a trigger with no object (globalkey, key, time, realtime, custom, event): EWP never runs it" },
+  "silent-spawn-needs-trigger-rules": { category: PRACTICE_CATEGORY, severity: "warning", what: "a spawn or swap of a prefab that a type: create entry waits for, without triggerRules: true; the create entry never fires on it" },
+  "silent-poke-no-limit": { category: PRACTICE_CATEGORY, severity: "warning", what: "a poke of a named prefab with no limit, filter, self, target or connected: it reaches every match within 100 m" },
   "silent-iter-operation": { category: PRACTICE_CATEGORY, severity: "warning", what: "<iter_OP_...> with an OP that is not a function EWP has; the expression never resolves" },
 
   // --- Cross-file references ---

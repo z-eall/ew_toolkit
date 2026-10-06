@@ -45,6 +45,8 @@ const CONDITIONS = `${EWP}ExpandWorldPrefabs/service/data/Conditions.cs`;
 const HANDLE_CHANGED = `${EWP}ExpandWorldPrefabs/HandleChanged.cs`;
 const PREFAB_MANAGER = `${EWP}ExpandWorldPrefabs/PrefabManager.cs`;
 const INFO_MANAGER = `${EWP}ExpandWorldPrefabs/InfoManager.cs`;
+const DELAYED_SPAWN = `${EWP}ExpandWorldPrefabs/DelayedSpawn.cs`;
+const HANDLE_CREATED = `${EWP}ExpandWorldPrefabs/HandleCreated.cs`;
 const HANDLE_GLOBAL_KEY = `${EWP}ExpandWorldPrefabs/HandleGlobalKey.cs`;
 const FILTER_SHORTHAND = `${EWP}ExpandWorldPrefabs/service/FilterShorthand.cs`;
 const YAML_LOADER = `${EWP}ExpandWorldPrefabs/service/Yaml.cs`;
@@ -107,6 +109,9 @@ export const DIAGNOSIS_PROVENANCE: Record<DiagnosisId, Provenance> = {
   "silent-key-store-mix": { level: "source", files: [INFO_MANAGER, HANDLE_GLOBAL_KEY, DATA_STORAGE], checked: "2026-09-20", ewpVersion: "1.60.0", note: "type: key fires from DataStorage (EWP keys); type: globalkey fires from ZoneSystem RPC_SetGlobalKey (Valheim keys); setkey is the vanilla console command for Valheim keys (vanilla code not opened)" },
   "silent-terrain-paint-name": { level: "source", files: [PREFAB_DATA, PARSE], checked: "2026-09-21", ewpVersion: "1.60.0", note: "PrefabData.cs TerrainData: paint is parsed as a name (Enum.TryParse, ignoring case), then as a number, else Reset; the names are the decompiled game enum TerrainModifier.PaintType (game 1.0.15)" },
   "silent-owner-dropped": { level: "source", files: [PREFAB_LOADING, PREFAB_MANAGER, DATA_LOADING], checked: "2026-09-21", ewpVersion: "1.60.0", note: "PrefabLoading.cs sets Regenerate when addItems or removeItems is written; PrefabManager.cs regenerates unless injectData is true or the data entry can be injected, and applies owner only in the branch that does not regenerate. docs/scripting.md says owner needs injectData: true; the code is narrower (a rule with only owner is fine). Not checked: whether a data: value can be injected, so any rule with data: is skipped" },
+  "silent-global-field-ignored": { level: "source", files: [PREFAB_MANAGER, INFO_MANAGER], checked: "2026-10-06", ewpVersion: "1.62.0", note: "InfoManager.SelectGlobal picks the entry list by trigger type; PrefabManager.HandleGlobal runs only chance, exec, commands, client RPCs and poke; spawn, swap, terrain and data are read only in Handle(Info, ObjectFunctions, ZDO)" },
+  "silent-spawn-needs-trigger-rules": { level: "source", files: [DELAYED_SPAWN, HANDLE_CREATED], checked: "2026-10-06", ewpVersion: "1.62.0", note: "DelayedSpawn.CreateObject sets HandleCreated.Skip when triggerRules is false, so HandleOwnCreated does not queue the object for create rules. Destroy rules are not affected: HandleDestroyed fires for any destroyed object; only a removal made by EWP (RemoveZDO) skips them" },
+  "silent-poke-no-limit": { level: "docs", files: [SCRIPTING_MD], checked: "2026-10-06", ewpVersion: "1.62.0", note: "docs/scripting.md poke: limit is the maximum number of poked objects, and if not set all matching objects are poked; maxDistance defaults to 100 m" },
   "silent-iter-operation": { level: "source", files: [FUNCTIONS], checked: "2026-09-21", ewpVersion: "1.60.0", note: "Functions.cs HandleIter and BuildIteratorReduceExpression build <OP_v1_v2...> from the OP text, with no check that OP is a function; an unknown name then never resolves. A known function that takes one value is not checked here" },
 
   "check-crashed": { level: "library", files: [], ...NOT_DATED, note: "our own safety net, not a mod rule" },

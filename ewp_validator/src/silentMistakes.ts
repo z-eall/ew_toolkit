@@ -34,7 +34,17 @@ export type SilentFinding =
   | { id: "silent-key-store-mix"; key: string; watcher: "globalkey" | "globalKeys" | "key"; range: [number, number] }
   | { id: "silent-terrain-paint-name"; shown: string; range: [number, number] }
   | { id: "silent-owner-dropped"; range: [number, number] }
-  | { id: "silent-iter-operation"; op: string; range: [number, number] };
+  | { id: "silent-iter-operation"; op: string; range: [number, number] }
+  | { id: "silent-global-field-ignored"; field: string; trigger: string; range: [number, number] }
+  | { id: "silent-spawn-needs-trigger-rules"; prefab: string; range: [number, number] }
+  | { id: "silent-poke-no-limit"; prefab: string; range: [number, number] };
+
+/** Triggers with no object: PrefabManager.cs HandleGlobal runs only chance, exec, commands, client RPCs and poke for them. */
+const GLOBAL_TRIGGERS = new Set(["globalkey", "key", "time", "realtime", "custom", "event"]);
+/** Fields HandleGlobal never reads (ticket 07 item 70, read against PrefabManager.cs 2026-10-06). `remove` is left out: on key triggers it picks add or remove. */
+const IGNORED_UNDER_GLOBAL = ["spawn", "spawns", "swap", "swaps", "terrain", "data"] as const;
+/** A poke item that names these has chosen which objects it reaches. */
+const POKE_CHOOSERS = ["limit", "self", "target", "connected", "filter", "filters", "bannedFilter", "bannedFilters", "data"];
 
 /** TerrainModifier.PaintType, from the decompiled game (a test checks it against the schema list). */
 export const TERRAIN_PAINT_NAMES: readonly string[] = ["Dirt", "Cultivate", "Paved", "Reset", "ClearVegetation", "DeepSnow"];
@@ -180,8 +190,46 @@ export function findSilentEntryMistakes(itemNode: YAMLMap, value: Record<string,
     }
   }
   found.push(...findTerrainPaintNames(itemNode), ...findDroppedOwner(itemNode, value), ...findIterOperations(itemNode));
+  found.push(...findGlobalFieldsIgnored(itemNode, value), ...findPokeWithoutChoice(itemNode));
   return found;
 }
+
+/** A field a no-object trigger never reads (spawn, swap, terrain, data). Left alone when any trigger of the entry has an object. */
+function findGlobalFieldsIgnored(itemNode: YAMLMap, value: Record<string, unknown>): SilentFinding[] {
+  const words = typeWordsOf(value);
+  if (words.length === 0 || !words.every((w) => GLOBAL_TRIGGERS.has(w))) return [];
+  const out: SilentFinding[] = [];
+  for (const field of IGNORED_UNDER_GLOBAL) {
+    const v = value[field];
+    const written = Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim() !== "" : v !== undefined && v !== null && v !== false;
+    if (written) out.push({ id: "silent-global-field-ignored", field, trigger: words[0]!, range: findPairRange(itemNode, field) ?? nodeRange(itemNode) });
+  }
+  return out;
+}
+
+/** A `poke:` item that names a prefab but chooses nothing (no limit, filter, self, target, connected): it reaches every match within 100 m. */
+function findPokeWithoutChoice(itemNode: YAMLMap): SilentFinding[] {
+  const pokes = getPairValueNode(itemNode, "poke");
+  if (!isSeq(pokes)) return [];
+  const out: SilentFinding[] = [];
+  for (const node of pokes.items) {
+    if (!isMap(node)) continue;
+    const json = (node as YAMLMap).toJSON() as Record<string, unknown>;
+    const prefab = typeof json.prefab === "string" ? json.prefab.trim() : "";
+    if (prefab === "" || prefab.includes("<")) continue;
+    if (POKE_CHOOSERS.some((k) => json[k] !== undefined && json[k] !== null)) continue;
+    out.push({ id: "silent-poke-no-limit", prefab: prefab.slice(0, 30), range: nodeRange(node as YAMLMap) });
+  }
+  return out;
+}
+
+/** The literal prefab names of a rule entry, lowercase (a comma list is split; a `<...>` name is skipped). */
+function literalPrefabs(raw: unknown): string[] {
+  if (typeof raw !== "string") return [];
+  return raw.split(",").map((p) => p.trim().toLowerCase()).filter((p) => p !== "" && !p.includes("<"));
+}
+
+const wildcardToRegex = (p: string) => new RegExp(`^${p.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`);
 
 // ---------------------------------------------------------------------------------------------
 // Rules 6 to 8 (round 6 ticket 22)
@@ -268,6 +316,10 @@ interface FileFacts {
   globalWatchers: Array<{ key: string; shown: string; via: "globalkey" | "globalKeys"; range: [number, number] }>;
   /** `type: key, KEY` watchers of EWP keys. `shown` keeps the spelling written in the script. */
   keyWatchers: Array<{ key: string; shown: string; range: [number, number] }>;
+  /** Spawn and swap items that leave `triggerRules` off: the literal prefab (lowercase) and where. */
+  spawners: Array<{ prefab: string; shown: string; range: [number, number] }>;
+  /** `type: create` entries: the prefab names they match (lowercase, `*` allowed). */
+  createWatchers: string[];
 }
 
 const TYPED_LISTS = ["ints", "floats", "strings", "bools", "longs", "vecs", "quats", "bytes", "hashes"];
@@ -281,7 +333,7 @@ const FACTS_CACHE_LIMIT = 2000;
 function collectFacts(text: string): FileFacts {
   const cached = factsCache.get(text);
   if (cached) return cached;
-  const facts: FileFacts = { writers: [], dataEntries: [], changeWatchers: [], ewpWrites: new Set(), setKeys: new Set(), globalWatchers: [], keyWatchers: [] };
+  const facts: FileFacts = { writers: [], dataEntries: [], changeWatchers: [], ewpWrites: new Set(), setKeys: new Set(), globalWatchers: [], keyWatchers: [], spawners: [], createWatchers: [] };
   const bare = stripLineComments(text);
   for (const m of bare.matchAll(SAVE_WRITE)) facts.ewpWrites.add(m[1]!.toLowerCase());
   for (const m of bare.matchAll(SET_KEY)) facts.setKeys.add(m[1]!.toLowerCase());
@@ -304,6 +356,21 @@ function collectFacts(text: string): FileFacts {
 
       const prefab = typeof value.prefab === "string" ? value.prefab.trim().toLowerCase() : "";
       const typeRange = findPairRange(item, Array.isArray(value.types) ? "types" : "type") ?? nodeRange(item);
+
+      if (typeWordsOf(value).includes("create")) facts.createWatchers.push(...literalPrefabs(value.prefab));
+      const entryTriggerRules = isTrue(value.triggerRules);
+      for (const list of ["spawn", "spawns", "swap", "swaps"]) {
+        const seq = getPairValueNode(item, list);
+        if (!isSeq(seq)) continue;
+        for (const spawnNode of seq.items) {
+          if (!isMap(spawnNode)) continue;
+          const spawnJson = (spawnNode as YAMLMap).toJSON() as Record<string, unknown>;
+          const itemRules = spawnJson.triggerRules;
+          if (entryTriggerRules && itemRules === undefined) continue;
+          if (isTrue(itemRules)) continue;
+          for (const p of literalPrefabs(spawnJson.prefab)) facts.spawners.push({ prefab: p, shown: String(spawnJson.prefab).trim().slice(0, 30), range: nodeRange(spawnNode as YAMLMap) });
+        }
+      }
 
       for (const text of typeTexts(value)) {
         const word = text.split(",")[0]!.trim().toLowerCase();
@@ -349,7 +416,7 @@ export function findSilentCrossFileMistakes(files: Array<{ id: string; text: str
     try {
       return { id: f.id, facts: collectFacts(f.text) };
     } catch {
-      return { id: f.id, facts: { writers: [], dataEntries: [], changeWatchers: [], ewpWrites: new Set<string>(), setKeys: new Set<string>(), globalWatchers: [], keyWatchers: [] } as FileFacts };
+      return { id: f.id, facts: { writers: [], dataEntries: [], changeWatchers: [], ewpWrites: new Set<string>(), setKeys: new Set<string>(), globalWatchers: [], keyWatchers: [], spawners: [], createWatchers: [] } as FileFacts };
     }
   });
   const out: Array<{ fileId: string; finding: SilentFinding }> = [];
@@ -358,7 +425,9 @@ export function findSilentCrossFileMistakes(files: Array<{ id: string; text: str
   const changeKeys = new Set<string>(); // "prefab\0key"
   const ewpWrites = new Set<string>();
   const setKeys = new Set<string>();
+  const createMatchers: RegExp[] = [];
   for (const { facts } of perFile) {
+    for (const p of facts.createWatchers) createMatchers.push(wildcardToRegex(p));
     for (const e of facts.dataEntries) dataEntryKeys.set(e.name, e.keys);
     for (const w of facts.changeWatchers) changeKeys.add(`${w.prefab}\0${w.key}`);
     facts.ewpWrites.forEach((k) => ewpWrites.add(k));
@@ -371,6 +440,10 @@ export function findSilentCrossFileMistakes(files: Array<{ id: string; text: str
       const keys = w.dataName !== null ? (dataEntryKeys.get(w.dataName) ?? []) : w.keys;
       const hit = keys.find((k) => changeKeys.has(`${w.prefab}\0${k}`));
       if (hit) out.push({ fileId: id, finding: { id: "silent-change-needs-trigger-rules", key: hit, range: w.range } });
+    }
+    // Rule 9: a spawned or swapped object does not fire `create` rules unless triggerRules is on (DelayedSpawn.cs, HandleCreated.cs)
+    for (const s of facts.spawners) {
+      if (createMatchers.some((m) => m.test(s.prefab))) out.push({ fileId: id, finding: { id: "silent-spawn-needs-trigger-rules", prefab: s.shown, range: s.range } });
     }
     // Rule 5, EWP key read as a global key
     for (const g of facts.globalWatchers) {

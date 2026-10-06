@@ -48,6 +48,9 @@ export const KIND_LABELS: Record<DiagnosisId, KindLabel> = {
   "silent-key-store-mix": "Key saved in one place, read in another",
   "silent-terrain-paint-name": "Terrain paint name EWP does not know",
   "silent-owner-dropped": "Owner lost when items change",
+  "silent-global-field-ignored": "Field does nothing under this trigger",
+  "silent-spawn-needs-trigger-rules": "Create rule will not fire on a spawned object",
+  "silent-poke-no-limit": "Poke reaches every match",
   "silent-iter-operation": "Iterator uses an unknown function",
 
   "data-reference": { error: "Data name not defined anywhere", info: "Data entry never used", warning: "Data name defined twice" },

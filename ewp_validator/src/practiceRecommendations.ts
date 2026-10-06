@@ -77,6 +77,15 @@ export const practiceMessages = {
   iterOperation: (op: string) =>
     `Silently ignored: \`${op}\` is not a function EWP knows, so this \`<iter_...>\` never resolves. Use a function like add, min or max.`,
 
+  globalFieldIgnored: (field: string, trigger: string) =>
+    `Silently ignored: \`${field}:\` does nothing under \`type: ${trigger}\`, because this trigger has no object. Poke an object, and write \`${field}:\` in the poke rule.`,
+
+  spawnNeedsTriggerRules: (prefab: string) =>
+    `Silently ignored: this entry spawns \`${prefab}\`, so the \`type: create\` entry for \`${prefab}\` does not fire on it. Add \`triggerRules: true\`.`,
+
+  pokeNoLimit: (prefab: string) =>
+    `Preferred format: \`poke:\` for \`${prefab}\` has no \`limit:\` and no filter, so it pokes every one within 100 m. Add \`limit:\` or a \`filter:\` if you mean one object.`,
+
   filterBothForms: (singular: string, plural: string, section: string | null) =>
     `Overlapping fields: \`${singular}:\` and \`${plural}:\` are both written ${section ? `under \`${section}:\`` : "here"}. ` +
     `Check which one you want to keep.`,
@@ -93,5 +102,8 @@ export function silentFindingMessage(f: SilentFinding): string {
     case "silent-terrain-paint-name": return practiceMessages.terrainPaintName(f.shown);
     case "silent-owner-dropped": return practiceMessages.ownerDropped();
     case "silent-iter-operation": return practiceMessages.iterOperation(f.op);
+    case "silent-global-field-ignored": return practiceMessages.globalFieldIgnored(f.field, f.trigger);
+    case "silent-spawn-needs-trigger-rules": return practiceMessages.spawnNeedsTriggerRules(f.prefab);
+    case "silent-poke-no-limit": return practiceMessages.pokeNoLimit(f.prefab);
   }
 }

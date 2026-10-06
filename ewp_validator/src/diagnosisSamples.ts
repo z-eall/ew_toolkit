@@ -48,6 +48,9 @@ export const DIAGNOSIS_SAMPLES: Partial<Record<DiagnosisId, SampleCase>> = {
   "silent-key-store-mix": one(P, "- prefab: Player\n  type: say, ack\n  exec: <save_raidRank_3>\n\n- type: globalkey, raidRank\n"),
   "silent-terrain-paint-name": rule("  terrain:\n  - paint: Dirtt\n"),
   "silent-owner-dropped": rule("  owner: 5\n  addItems: Wood, 1\n"),
+  "silent-global-field-ignored": one(P, "- type: globalkey, raidCooldown\n  spawn:\n  - prefab: Boar\n"),
+  "silent-spawn-needs-trigger-rules": one(P, "- prefab: Player\n  type: say, boar\n  spawn:\n  - prefab: Boar\n\n- prefab: Boar\n  type: create\n  command: s hi\n"),
+  "silent-poke-no-limit": rule("  poke:\n  - prefab: Wolf\n    parameter: x\n"),
   "silent-iter-operation": rule("  exec: <iter_ad_0_3_<par_i>>\n"),
   "filter-both-forms": rule("  objects:\n  - prefab: Boar\n    filter: int, health, 5\n    filters:\n    - int, x, 1\n"),
 };
