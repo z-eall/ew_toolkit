@@ -11,11 +11,17 @@ Read this before you write or change an EWP or WEC script, in the wiki or in the
 - `limit:` caps the count. With no `random:`, it picks the closest matches, not the one you placed. To poke one object, use a filter, not `limit: 1` alone.
 - EWP and WEC store a `bool` as an int. Data and filter examples use `int` (0 or 1) or `string`. An RPC line keeps the real `bool`. Source: `ew_wiki/docs/sources.md`.
 
+## Before you write
+
+- Find each key, trigger, function and field name in the local source first. Run `node valheim-modding/scripts/source-lookup.mjs --kind key <term>` (or `trigger`, `function`, `text`).
+- If it says `NOT FOUND`, do not write the term.
+- Read the local copy in `valheim-modding/upstream/` before any web page.
+
 ## Habits
 
 - A complete script starts with one `#` line that says what the whole script does. A reader may copy only the code. The house rule `wiki-script-header-comment` checks it.
 - The first time an example uses a field whose meaning is not clear, add a `#` comment on that line.
-- Field order is a personal habit of the maintainer, not an EWP rule. Order: `ew_toolkit/AGENTS.md`, "Script field order".
+- Field order is a personal habit of the maintainer, not an EWP rule. Order: `scripts/ewp-field-order.json`. The formatter `scripts/format-ewp-scripts.mjs` applies it.
 - Run `npm run validate <script>` on every script. It proves the shape only.
 
 ## Lessons (each with its incident)

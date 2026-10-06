@@ -27,6 +27,47 @@
         "fail": { "public/support/a.png": 153700 },
         "pass": { "public/support/a.png": 90000 }
       }
+    },
+    {
+      "id": "release-note-words",
+      "input": "files",
+      "severity": "show",
+      "files": ["**/release-notes*.md", "**/RELEASE-NOTES*.md"],
+      "exclude": ["node_modules/**", "dist/**"],
+      "scope": "line",
+      "forbid": "\\b[\\w-]+\\.mdx\\b|\\bEw Wiki\\b",
+      "message": "Release notes show a raw page file name (name.mdx) or write \"Ew Wiki\". The reader does not know file names. Use the real page title, and write \"EW Wiki\". scripts/cut-release.mjs checks the same words when you cut a release.",
+      "source": "ticket 07 item 33 (5); scripts/cut-release.mjs checkNotes",
+      "examples": {
+        "fail": {
+          "release-notes-draft.md": "## EW Wiki\nWhat's New: wrote village-cargo.mdx\n",
+          "notes/RELEASE-NOTES.md": "Ew Wiki got new pages.\n"
+        },
+        "pass": { "release-notes-draft.md": "## EW Wiki\nWhat's New: the Village Cargo page.\n" }
+      }
+    },
+    {
+      "id": "shipped-skill-private-path",
+      "input": "files",
+      "severity": "show",
+      "files": [".shipped-skills-none/**"],
+      "scope": "line",
+      "forbid": "(@?~[\\\\/]\\.claude)|([A-Za-z]:[\\\\/]Users[\\\\/][^\\\\/\\n]+[\\\\/]\\.claude)",
+      "flags": "i",
+      "message": "A shipped skill points to a private path (~/.claude or C:\\Users\\<name>\\.claude). That path exists only on this machine. Copy the rule text into the skill. Do not link to the private file.",
+      "source": "ticket 07 item 37; memory note feedback_public_skills_mirror_not_link. Shipped folder list is EMPTY today: when a skill ships, add its folder as \"<folder>/**\" to files and drop the placeholder .shipped-skills-none/**",
+      "examples": {
+        "fail": {
+          ".shipped-skills-none/a/SKILL.md": "See ~/.claude/CLAUDE.md for the rule.\n",
+          ".shipped-skills-none/b/SKILL.md": "Read @~\\.claude\\rules\\x.md first.\n",
+          ".shipped-skills-none/c/notes.md": "Path: C:\\Users\\Someone\\.claude\\hooks\\x.js\n",
+          ".shipped-skills-none/d/SKILL.md": "Path: c:/users/Someone/.CLAUDE/x\n"
+        },
+        "pass": {
+          ".shipped-skills-none/a/SKILL.md": "Copy the rule text into the skill.\n",
+          "private-skill/SKILL.md": "See ~/.claude/CLAUDE.md for the rule.\n"
+        }
+      }
     }
   ]
 }

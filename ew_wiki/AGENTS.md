@@ -49,7 +49,6 @@ In a YAML example, never write a colon followed by a space inside a text value (
 - **State a true fact plainly — no confirmation badge.** Verifying a claim before writing it is the job (see [Never guess](#never-guess--real-source-first)); once it's checked, write the fact itself, not proof of the checking. Cut "officially confirmed," "confirmed on [source]," "verified," or a heading like "Three pars, officially confirmed" — the reader needs the three pars, not a badge that they're confirmed. The one exception is the opposite case: the fact is genuinely uncertain, and the reader needs to know to test it themselves — that stays a plain "unconfirmed"/"untested" flag (still no source name), because it changes what the reader should do next. A confirmed fact changes nothing for the reader, so it earns no flag at all.
 - **A code comment teaches the reader's script, not this wiki's writing process** (another instance of "No internal bookkeeping in reader text," Content voice and depth). `# no space after the colon — a colon breaks unquoted YAML` describes a choice made while writing the example, not something the reader's own `.yaml` file needs explained inline. If a YAML/EWP quirk is worth a reader knowing before they hit it themselves, say so in prose near the example (or in an `<Aside>`) — never as a trailing comment inside the code block itself.
 - **A WRONG/CORRECT bad-cop example** is for something close to break or invalid — resource-expensive enough to lag/crash a server counts, a general stylistic preference doesn't — shown as paired plain YAML fences (`# WRONG — <reason>` / `# CORRECT`, see e.g. `basic-poke.mdx`'s "When a poke doesn't fire"). Precede the WRONG fence (or, for several WRONG examples in one section, the section's own intro) with a `type="caution"` `<Aside>` prefixed exactly **"Don't do this:"** — reuse this wording every time rather than inventing a new lead-in ("Bad idea," "Heads up") per example. For a multi-rule WRONG block, also see the block-purpose header-comment rule under "Comment the first occurrence."
-- **No `bool` type in data or filter examples.** Write a flag as `int` (0 or 1) and a name as `string`. An RPC parameter line such as `2: bool, true` is a different thing and stays. A hook asks before such an example lands (`guard-no-bool-example.cjs`).
 - **`<Tabs>`** is for true alternatives — the reader picks one, like Steam vs. Thunderstore paths. A sequence read in order (second → minute → hour → day) or a comparison the reader needs to see all at once (4 wrong variants beside the 1 correct one) stays a plain block — tabbing would hide what the reader needs open.
 - **Shared snippets** for boilerplate repeated verbatim across pages — an attribution footer, a "starting shape" YAML block, a recurring link. Import it once so it can't quietly drift between pages. **A named `data:`/`f=` entry used in an example is this case, every time**: show its own snippet right where the example uses it, not just a link back to wherever it was first defined — a reader who never clicked that link, or already forgot it, should still be able to run the example in front of them without leaving the page.
 - **Every code fence declares a language** (`yaml`, `bash`, ...) so it actually gets syntax-highlighted.
@@ -67,13 +66,13 @@ Name pages and headings by what the reader does or learns, not by what the thing
 - Good: "Understanding Fields", "Start Writing a Script", root nav: "Home".
 - Bad: "Start Here", "Overview", "Anatomy of X" (clinical, not conversational).
 
-**Category - Subtopic titles use a dash, not a colon** (e.g. `Advanced Poke - Mechanics`, `Advanced Triggers - type: change`) — the site's majority pattern; a few older colon-titled pages are the actual inconsistency (ticket 34). A hook (`guard-page-title-colon-vs-dash.cjs`) asks before a new page's title ships with a colon split, so this rarely needs remembering by hand.
+- **A new page that you push early but hide:** set `draft: true` in its frontmatter and keep it out of the `astro.config.mjs` sidebar (a draft listed there breaks the production build). Never set `draft: true` on a live page: it takes the page offline. Remove the flag when the user signs off.
 
 ## Comment the first occurrence
 
 The first time a YAML example uses a field, key, or value whose meaning isn't obvious from the word itself, add a trailing `#` comment explaining it inline. Later examples reusing the same key don't need it repeated.
 
-A script block with more than one linked rule (a poke chain, a swap-and-reverse, any case study) also gets a one-line `#` header comment above its first rule, naming the whole block's purpose — a reader who copies just the code out, not the page's surrounding prose or `<Steps>` numbering, still needs to know what it does. Skip it only for a single, self-contained rule whose job is already obvious from its fields alone. Enforced (advisory) by `guard-script-block-header-comment.cjs` — see `docs/agents/hooks-vs-rules.md`.
+A script block with more than one linked rule (a poke chain, a swap-and-reverse, any case study) also gets a one-line `#` header comment above its first rule, naming the whole block's purpose. Skip it only for a single, self-contained rule whose job is already obvious from its fields alone. The row `wiki-script-header-comment` checks complete scripts in the example pages only; on other pages this line is the only check.
 
 ## Say when a list isn't the whole list
 
@@ -83,7 +82,7 @@ When a complete list already exists upstream — Jere's own `docs/functions.md`/
 
 ## Complexity badge per page
 
-Every content page (Concepts, ported guides) sets `complexity: beginner | intermediate | advanced` in its frontmatter. The `PageTitle` override (`src/components/PageTitle.astro`) renders it as a `<Badge>` directly under the H1 automatically — don't hand-add a `<Badge>` in the page body, and don't skip the frontmatter field on a new page.
+The `PageTitle` override (`src/components/PageTitle.astro`) renders the `complexity:` frontmatter field as a `<Badge>` directly under the H1 automatically — don't hand-add a `<Badge>` in the page body.
 
 ## Never guess — real source first
 
@@ -104,7 +103,7 @@ Check sources in this order:
 
 Tag each claim by its source's tier, per `docs/sources.md`'s own labels (official / community) — this tagging stays in `docs/sources.md`, it does not get written into the page. A true fact with no single citable source doesn't get dropped, and doesn't get stated as if it were sourced — file it under that document's "Community-observed, no single source" section, and, only if the fact itself is genuinely uncertain, flag that uncertainty on the page with an `<Aside>` (see the confidence-not-source rule above). A fact that's simply true but casually sourced (a forum post, a Discord message) does not need a page-level flag at all once it's checked against a real source — most facts on this wiki land here.
 
-Before you write or change any EWP script or example, read [the EWP script reference](../docs/ewp-script-reference.md) (code facts, habits, lessons). Real nouns are not enough: the interactions between rules need their own check, and it is in that file.
+Before you write or change any EWP script or example, read [the EWP script reference](../docs/ewp-script-reference.md) (code facts, habits, lessons). Follow its "Before you write" section for every EWP term. Real nouns are not enough: the interactions between rules need their own check, and it is in that file.
 
 ## Cross-link on first use
 

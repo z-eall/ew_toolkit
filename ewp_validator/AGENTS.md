@@ -2,7 +2,7 @@
 
 Rules specific to the validator's own code (`fileNameCheck.ts`, `structuralPrecheck.ts`, `rpcValidation.ts`, `referenceValidation.ts`, `shapeMismatchDiagnosis.ts`, `schema/generate.mjs`). Hub-wide rules (cost, tooling, UI/UX, dual-agent workflow) live one level up — see [../AGENTS.md](../AGENTS.md).
 
-Before you change a validation rule or its message, read [the EWP script reference](../docs/ewp-script-reference.md) (code facts and lessons about EWP scripts).
+Before you change a validation rule or its message, read [the EWP script reference](../docs/ewp-script-reference.md) (code facts and lessons about EWP scripts). Before you write EWP terms, follow its "Before you write" section.
 
 ## Validation rule lifecycle
 

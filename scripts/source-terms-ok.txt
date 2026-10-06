@@ -1,0 +1,11 @@
+# Terms the term check (source-term-check.cjs) must not flag. One per line: "term" or "kind:term".
+# Add a term only when it is real but not in the local source (a name made up inside an example).
+# Found by running the check on all real wiki pages on 2026-10-06 (3 hits, all legal):
+function:name    # <name> refers to a value: entry in data.yaml (the user picks the name)
+function:br      # <br> is a rich-text line break inside a text string, not an EWP function
+# Found by running the check on the real ewp_validator/src files on 2026-10-06 (all legal):
+function:function      # "<function>" is a placeholder in a message text
+function:head          # "<head>" is a placeholder in a message text
+function:value         # "<value>" is a placeholder in a message text
+function:notafunction  # a deliberate bad sample in diagnosisSamples.ts
+trigger:notatype       # a deliberate bad sample in diagnosisSamples.ts

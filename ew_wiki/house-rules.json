@@ -93,7 +93,7 @@
         "src/content/docs/ewp/examples/*.mdx"
       ],
       "scope": "file",
-      "forbid": "```ya?ml[^\n]*\r?\n(?!s*#)- (?:prefab|type|exec):",
+      "forbid": "```ya?ml[^\n]*\r?\n(?!\\s*#)- (?:prefab|type|exec):",
       "message": "A complete script in an example page has no header comment. Add one # line before the first rule that says what the whole script does. A reader may copy only the code. A data block that starts with - name: or - value: is free.",
       "source": "AGENTS.md, script header comment rule",
       "examples": {

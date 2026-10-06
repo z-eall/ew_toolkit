@@ -8,6 +8,8 @@ Each entry: link/path, tier (**official** — from Jere or Iron Gate/Coffee Stai
 
 Jere's mods are open source, so a current local copy of each one is kept in the workspace (skill `upstream-mirror`; a hook checks that the copy is fresh before it is used). Search the copy, and cite the file, the line and the copy's short commit id. Use the GitHub links below only for a mod that is not mirrored yet.
 
+To find where a term is in the local copy, run `node ..\..\valheim-modding\scripts\source-lookup.mjs --kind key|trigger|function|text <term>`. It prints `FOUND file:line (repo@commit)` or `NOT FOUND`. A hook runs the same check when you write a wiki page or validator rule.
+
 ## EWP
 
 - `ewp_validator/src/schema.generated.json` and its `*.test.ts` fixtures (in this repo) — **official**, generated straight from EWP's own schema. Check here first for any key/value/type question — fastest ground truth, no network round-trip.
