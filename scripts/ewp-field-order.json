@@ -1,0 +1,28 @@
+{
+  "_about": "The ONE copy of the EWP script field order. Read by scripts/format-ewp-scripts.mjs. Other files point here and do not copy it.",
+  "_why": "This is a personal authoring convention. It is not an EWP rule. YAML key order never changes how a script runs. The goal is that every script example we write looks the same.",
+  "_howToEdit": "Each inner list is one slot. Names in the same slot are aliases, and their order in the script does not matter. Earlier slot = earlier in the script. A field that is not listed here stays where it is. If a new field needs a place, ask the user, then add it here.",
+  "top": [
+    ["prefab"],
+    ["type"],
+    ["weight"],
+    ["exec"],
+    ["filter", "filters", "bannedFilter", "bannedFilters"],
+    ["objects", "bannedObjects"],
+    ["data", "spawn", "remove"],
+    ["injectData"],
+    ["command", "commands"],
+    ["log"],
+    ["poke"]
+  ],
+  "_nestedAbout": "Applies inside a list item that sits under one of the keys in nestedListKeys.",
+  "nested": [
+    ["prefab"],
+    ["filter", "filters", "bannedFilter", "bannedFilters", "data"],
+    ["position", "offset"],
+    ["rot", "rotation"],
+    ["delay"],
+    ["parameter"]
+  ],
+  "nestedListKeys": ["poke", "objects", "bannedObjects", "spawn"]
+}
