@@ -414,6 +414,9 @@ const NO_ARG_FUNCTION_NAMES = new Set([
   "prefab", "safeprefab", "par",
   "par0", "par1", "par2", "par3", "par4", "par5", "par6", "par7", "par8", "par9",
   "day", "ticks", "x", "y", "z", "snap", "amount", "time", "realtime",
+  // `pokecount`: Functions.cs:157. It replaced the bare `<amount>` in EWP 1.61 (see
+  // publish/CHANGELOG.md in the mirror). Added against mirror 1.62.0.
+  "pokecount",
 ]);
 // `ObjectFunctions.GetGeneralParameter`, ObjectFunctions.cs:34-55 — only reachable
 // with an object/ZDO context, but that context can't be told apart from plain
@@ -422,6 +425,7 @@ const NO_ARG_FUNCTION_NAMES = new Set([
 const NO_ARG_OBJECT_FUNCTION_NAMES = new Set([
   "zdo", "pos", "i", "j", "a", "rad", "deg", "rot", "pid", "cid", "platform",
   "pname", "pchar", "pvisible", "owner", "connected", "biome", "altbiome", "joints",
+  "objectcount", // ObjectFunctions.cs:63 (EWP 1.61): count of everything `objects:` matched
   // `<none>`: documented (docs/functions.md:50, "Empty or lack of value when using filters"). It is
   // not a dispatch name in Functions.cs or ObjectFunctions.cs. It is a plain word the mod itself
   // writes and compares: DataValues.cs:239 treats a value of "<none>" as empty, and
@@ -445,12 +449,14 @@ const ARG_FUNCTION_HEADS = new Set([
   "par", "rest", "load", "save", "save++", "save--", "clear", "key",
   "rank", "small", "large", "eq", "ne", "gt", "ge", "lt", "le",
   "even", "odd", "findupper", "findlower", "time", "realtime", "globalkey",
+  "pokecount", // Functions.cs:166, `<pokecount_X>`: targets whose prefab is X
 ]);
 // `ObjectFunctions.GetValueFunction`, ObjectFunctions.cs:60-80 (11 names, object
 // context — same "can't tell context apart statically" call as the no-arg set).
 const ARG_OBJECT_FUNCTION_HEADS = new Set([
   "string", "float", "int", "long", "bool", "vec", "quat",
   "hash", "byte", "zdo", "amount", "quality", "durability", "item", "pos", "pdata",
+  "objectcount", // ObjectFunctions.cs:111, `<objectcount_X>`
 ]);
 
 const KNOWN_NO_ARG_NAMES = new Set([...NO_ARG_FUNCTION_NAMES, ...NO_ARG_OBJECT_FUNCTION_NAMES]);

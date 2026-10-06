@@ -691,6 +691,18 @@ describe("string-template function name typo detection (ticket 06)", () => {
     expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
+  // EWP 1.61 added `objectcount` (ObjectFunctions.cs:63, :111) and renamed the poke `amount` to
+  // `pokecount` (Functions.cs:157, :166), mirror 1.62.0. Bare and with an argument suffix.
+  it("does not flag pokecount or objectcount, bare or with a prefab suffix", () => {
+    const files = [
+      {
+        id: "a",
+        text: "- prefab: Bonemass\n  type: create\n  command: <pokecount> <pokecount_Boar> <objectcount> <objectcount_Boar>\n",
+      },
+    ];
+    expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
+  });
+
   it("reports a case-only mismatch distinctly, since EWP function dispatch is case-sensitive", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <String_x>\n" }];
     const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");
