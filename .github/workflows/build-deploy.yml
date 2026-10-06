@@ -59,6 +59,10 @@ jobs:
       - run: npm run test:house
       - run: npm run check:house
 
+      # Field order of EWP scripts in wiki pages. Warn only until the one known page is fixed.
+      - run: npm run check:ewp-order
+        continue-on-error: true
+
       # Daily run only: the same tests against the mod's live docs. A failure
       # here means "the mod docs changed; update schema/fixtures/RPCs.md and
       # the validator", not "the code broke".

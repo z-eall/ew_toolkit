@@ -14,7 +14,11 @@
     "cut-release": "node scripts/cut-release.mjs",
     "check:look": "node scripts/check-hub-look.mjs",
     "check:house": "node scripts/check-house-rules.mjs --project ew_wiki && node scripts/check-house-rules.mjs --project .",
-    "test:house": "node --test scripts/check-house-rules.test.mjs && node scripts/check-house-rules.mjs --project ew_wiki --examples && node scripts/check-house-rules.mjs --project . --examples"
+    "test:house": "node --test scripts/check-house-rules.test.mjs && node scripts/check-house-rules.mjs --project ew_wiki --examples && node scripts/check-house-rules.mjs --project . --examples && node --test scripts/format-ewp-scripts.test.mjs",
+    "check:ewp-order": "node scripts/format-ewp-scripts.mjs --check",
+    "format:ewp": "node scripts/format-ewp-scripts.mjs --write",
+    "test:wiki": "node --test ew_wiki/tests/ledger-citations.test.mjs",
+    "check:stamps": "node scripts/check-stamps.cjs --text"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
