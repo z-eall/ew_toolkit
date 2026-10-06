@@ -82,6 +82,7 @@ Each station tier — Workbench, Forge, Cauldron, and so on — has its own requ
 `<prefab>` is a [function](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/) that returns the calling object's own prefab id — combine it into another function's name, and `<requiredWorldLevel_<prefab>>` resolves to "look up the value entry named `requiredWorldLevel_` plus whatever this exact object is called." One rule, run against every station, reads a different answer for each one:
 
 ```yaml
+# Every crafting station or extension asks itself if the world level is high enough for its own requirement.
 - prefab: CraftingStation, StationExtension
   type: poke, findUnsealedVillageStation
   poke:
@@ -92,6 +93,7 @@ Each station tier — Workbench, Forge, Cauldron, and so on — has its own requ
 `<ge_X_Y>` (see [Understanding Functions](/ew_toolkit/ew_wiki/ewp/concepts/basic-functions/)) returns `true`/`false` for "is the current world level greater than or equal to this station's requirement" — that result becomes the next poke's own parameter, [self-poked](/ew_toolkit/ew_wiki/ewp/concepts/basic-poke/) right back onto the same station:
 
 ```yaml
+# A station that is not allowed yet is swapped for a locked crate that remembers the station prefab.
 - prefab: CraftingStation
   type: poke, sealIfWorldLevelValid false
   swap:
@@ -118,6 +120,7 @@ Each station tier — Workbench, Forge, Cauldron, and so on — has its own requ
 That's what makes the reverse direction trivial. When the world level rises again, the same fan-out poke reaches sealed crates instead, and this rule swaps the crate back — reading the id it saved on itself instead of needing a separate lookup table for "what was this crate before it was sealed":
 
 ```yaml
+# When the world level is high enough, the locked crate turns back into the original station.
 - prefab: dvergrprops_crate
   type: poke, unsealIfWorldLevelValid true
   filter: int, isBfvVillageStationSeal, 1

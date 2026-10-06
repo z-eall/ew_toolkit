@@ -16,7 +16,7 @@
 //   flags     regex flags (default "")            exceptions  list of project-relative files the row skips
 //   maxBytes  limit input only: a file over this size is a finding
 //   message   reason plus smallest fix            source    pointer to the doc with the full reason
-//   examples  { fail: { "<relative name>": "<text>" }, pass: { ... } } (limit rows: text length stands in for size)
+//   examples  { fail: { "<relative name>": "<text>" }, pass: { ... } } (limit rows: use a number, the file size in bytes)
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -119,7 +119,7 @@ export function runExamples(rows) {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hr-"));
       for (const [name, text] of Object.entries(files)) {
         fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
-        fs.writeFileSync(path.join(dir, name), text);
+        fs.writeFileSync(path.join(dir, name), typeof text === "number" ? "x".repeat(text) : text);
       }
       const f = checkRows([{ ...row, exceptions: [] }], dir).filter((x) => x.id === row.id);
       const ok = kind === "fail" ? f.length > 0 : f.length === 0;

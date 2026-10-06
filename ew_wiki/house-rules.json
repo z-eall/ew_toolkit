@@ -4,58 +4,105 @@
       "id": "wiki-title-colon",
       "input": "files",
       "severity": "block",
-      "files": ["src/content/docs/**/*.mdx"],
+      "files": [
+        "src/content/docs/**/*.mdx"
+      ],
       "scope": "frontmatter:title",
       "forbid": "^(?![^:]* - )[^:]+: ",
       "message": "The page title has a \"Category: Subtopic\" colon split. Use a dash: \"Category - Subtopic\".",
       "source": "AGENTS.md, Page and section naming",
       "examples": {
-        "fail": { "src/content/docs/a.mdx": "---\ntitle: Advanced Poke: Mechanics\n---\n" },
-        "pass": { "src/content/docs/a.mdx": "---\ntitle: Advanced Triggers - type: change\n---\n" }
+        "fail": {
+          "src/content/docs/a.mdx": "---\ntitle: Advanced Poke: Mechanics\n---\n"
+        },
+        "pass": {
+          "src/content/docs/a.mdx": "---\ntitle: Advanced Triggers - type: change\n---\n"
+        }
       }
     },
     {
       "id": "wiki-complexity",
       "input": "files",
       "severity": "block",
-      "files": ["src/content/docs/**/*.mdx"],
-      "exceptions": ["src/content/docs/index.mdx", "src/content/docs/ewp/preparation.mdx"],
+      "files": [
+        "src/content/docs/**/*.mdx"
+      ],
+      "exceptions": [
+        "src/content/docs/index.mdx",
+        "src/content/docs/ewp/preparation.mdx"
+      ],
       "scope": "frontmatter:complexity",
       "require": "^(beginner|intermediate|advanced)$",
       "message": "The page has no complexity: field at the top. Add complexity: beginner, intermediate or advanced. Do not add a Badge by hand.",
       "source": "AGENTS.md, Complexity badge per page",
       "examples": {
-        "fail": { "src/content/docs/a.mdx": "---\ntitle: A\n---\n" },
-        "pass": { "src/content/docs/a.mdx": "---\ntitle: A\ncomplexity: beginner\n---\n" }
+        "fail": {
+          "src/content/docs/a.mdx": "---\ntitle: A\n---\n"
+        },
+        "pass": {
+          "src/content/docs/a.mdx": "---\ntitle: A\ncomplexity: beginner\n---\n"
+        }
       }
     },
     {
       "id": "wiki-no-bool-example",
       "input": "files",
       "severity": "block",
-      "files": ["src/content/docs/**/*.mdx"],
+      "files": [
+        "src/content/docs/**/*.mdx"
+      ],
       "scope": "line",
       "forbid": "^\\s*(?:-\\s+|(?:data|filter|bannedFilter|filters?|bannedFilters?):\\s*)bool\\s*,",
       "message": "A data or filter example uses the bool type. EWP and WEC turn a bool into an int. Write int (0 or 1) or string. An RPC line such as \"2: bool, true\" stays.",
       "source": "AGENTS.md, Component conventions",
       "examples": {
-        "fail": { "src/content/docs/a.mdx": "```yaml\n- prefab: x\n  data: bool, boss, true\n```\n" },
-        "pass": { "src/content/docs/a.mdx": "```yaml\n- prefab: x\n  data: int, boss, 1\n```\n2: bool, true\n" }
+        "fail": {
+          "src/content/docs/a.mdx": "```yaml\n- prefab: x\n  data: bool, boss, true\n```\n"
+        },
+        "pass": {
+          "src/content/docs/a.mdx": "```yaml\n- prefab: x\n  data: int, boss, 1\n```\n2: bool, true\n"
+        }
       }
     },
     {
       "id": "wiki-no-bookkeeping",
       "input": "files",
       "severity": "show",
-      "files": ["src/content/docs/**/*.mdx"],
+      "files": [
+        "src/content/docs/**/*.mdx"
+      ],
       "scope": "file",
       "forbid": "\\bconfirmed\\s+(?:directly\\s+)?(?:from|on|against)\\b|\\bofficially confirmed\\b|(?<!un)\\bverified\\b|\\bcross-checked\\b|\\bthis session\\b|\\bsource-verified\\b|\\btest suite\\b|\\bscripting\\.md['’]s prose\\b",
       "flags": "i",
-      "message": "Reader text shows how this wiki was made (a confirmation badge, who checked it, this session, a test name). State the fact plainly. If the fact is uncertain, flag only that it is unconfirmed, never the source. A true false hit: add <!-- house-ok: wiki-no-bookkeeping --> on that line.",
+      "message": "Reader text shows how this wiki was made (a confirmation badge, who checked it, this session, a test name). State the fact plainly. If the fact is uncertain, flag only that it is unconfirmed, never the source. A true false hit: add {/* house-ok: wiki-no-bookkeeping */} on that line.",
       "source": "AGENTS.md, No internal bookkeeping in reader text",
       "examples": {
-        "fail": { "src/content/docs/a.mdx": "This is a verified table.\n" },
-        "pass": { "src/content/docs/a.mdx": "This table is unverified, so test it yourself.\nThis one is fine. <!-- house-ok: wiki-no-bookkeeping --> verified\n" }
+        "fail": {
+          "src/content/docs/a.mdx": "This is a verified table.\n"
+        },
+        "pass": {
+          "src/content/docs/a.mdx": "This table is unverified, so test it yourself.\nThis one is fine. {/* house-ok: wiki-no-bookkeeping */} verified\n"
+        }
+      }
+    },
+    {
+      "id": "wiki-script-header-comment",
+      "input": "files",
+      "severity": "block",
+      "files": [
+        "src/content/docs/ewp/examples/*.mdx"
+      ],
+      "scope": "file",
+      "forbid": "```ya?ml[^\n]*\r?\n(?!s*#)- (?:prefab|type|exec):",
+      "message": "A complete script in an example page has no header comment. Add one # line before the first rule that says what the whole script does. A reader may copy only the code. A data block that starts with - name: or - value: is free.",
+      "source": "AGENTS.md, script header comment rule",
+      "examples": {
+        "fail": {
+          "src/content/docs/ewp/examples/a.mdx": "```yaml\n- prefab: X\n  type: create\n```\n"
+        },
+        "pass": {
+          "src/content/docs/ewp/examples/a.mdx": "```yaml\n# Does a thing.\n- prefab: X\n  type: create\n```\n```yaml\n- value: a, 1\n```\n"
+        }
       }
     }
   ]

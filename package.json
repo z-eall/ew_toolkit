@@ -13,8 +13,8 @@
     "smoke:hub": "node scripts/smoke-hub.mjs",
     "cut-release": "node scripts/cut-release.mjs",
     "check:look": "node scripts/check-hub-look.mjs",
-    "check:house": "node scripts/check-house-rules.mjs --project ew_wiki",
-    "test:house": "node --test scripts/check-house-rules.test.mjs && node scripts/check-house-rules.mjs --project ew_wiki --examples"
+    "check:house": "node scripts/check-house-rules.mjs --project ew_wiki && node scripts/check-house-rules.mjs --project .",
+    "test:house": "node --test scripts/check-house-rules.test.mjs && node scripts/check-house-rules.mjs --project ew_wiki --examples && node scripts/check-house-rules.mjs --project . --examples"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

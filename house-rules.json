@@ -1,0 +1,32 @@
+{
+  "rows": [
+    {
+      "id": "toolkit-no-handrolled-nav",
+      "input": "files",
+      "severity": "block",
+      "files": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.html", "**/*.astro", "**/*.mdx"],
+      "exclude": ["shared/**", "**/*.test.*", ".scratch/**", "**/prototypes/**", "**/dist/**"],
+      "scope": "line",
+      "forbid": "class=[\"'][^\"']*\\b(?:site-nav|nav-link|theme-toggle)\\b",
+      "message": "This file writes the hub nav bar markup by hand. Import renderNavBar from shared/navBar.ts instead. A hand copy drifts from the shared bar.",
+      "source": "AGENTS.md, UI/UX consistency, point 4; docs/agents/hub-tool-nav.md",
+      "examples": {
+        "fail": { "src/a.ts": "const h = `<nav class=\"site-nav\">`;\n" },
+        "pass": { "src/a.ts": "import { renderNavBar } from \"../shared/navBar\";\n", "shared/navBar.ts": "const h = `<nav class=\"site-nav\">`;\n" }
+      }
+    },
+    {
+      "id": "toolkit-support-image-size",
+      "input": "limit",
+      "severity": "show",
+      "files": ["public/support/*.png", "public/support/*.jpg", "public/support/*.jpeg", "public/support/*.webp"],
+      "maxBytes": 153600,
+      "message": "A support-page image is over 150 KB. Ask the user before you compress it. If the user agrees, resize to 160 by 160 px with sharp and compressionLevel 9.",
+      "source": "this row (it replaces the memory note ew-toolkit-profile-image-compression)",
+      "examples": {
+        "fail": { "public/support/a.png": 153700 },
+        "pass": { "public/support/a.png": 90000 }
+      }
+    }
+  ]
+}

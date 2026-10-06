@@ -24,6 +24,7 @@ The *mechanism* is what's being taught here, not a guarantee that every field na
 The timer runs on [`type: realtime`](/ew_toolkit/ew_wiki/ewp/concepts/advanced-triggers-realtime/) (real-world clock time, not in-game time), so it keeps climbing even with nobody online:
 
 ```yaml
+# Every real-world hour, adds 1 to the cargo counter.
 - type: realtime, hour
   exec: <save++_cargospawnfactor>
 ```
@@ -83,6 +84,7 @@ Cargo destinations: Dragonfang, Varghelm, Haradin, Seaguard, Stormbreaker, Blood
 `rug_bogwitch_wolf` is a real, ordinary decorative rug prefab — not a custom object built for this script. The script plants one per village and gives it two custom flags that mean something only in this script's own context:
 
 ```yaml
+# A cargo tent rug spawns the delivery item and marks that village as received.
 - prefab: rug_bogwitch_wolf
   type: poke, findEmptyCargoSpawner
   data: int, villageCargoReceived, 1
@@ -94,7 +96,7 @@ Cargo destinations: Dragonfang, Varghelm, Haradin, Seaguard, Stormbreaker, Blood
 `villageCargoTent` (which village this rug stands for) and `villageCargoReceived` (whether that village's last delivery is still sitting there, uncollected) exist only because this rule set them — the rug component itself never heard of either one. Any harmless, easy-to-place decorative prefab works the same way: a free, invisible-in-plain-sight marker object, carrying whatever custom state a script wants to track per location.
 
 <Aside type="caution">
-The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items from another mod bundled into that server, not vanilla Valheim or anything in Jotunn's prefab list. This page uses the placeholder `MyVillageCargoItem` above instead of presenting that name as a confirmed prefab — swap in a real, verified lootable prefab of your own.
+The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items from another mod bundled into that server, not vanilla Valheim or anything in Jotunn's prefab list. This page uses the placeholder `MyVillageCargoItem` above instead of presenting that name as a confirmed prefab — swap in a real lootable prefab of your own.
 </Aside>
 
 ### Resetting once a delivery is collected
@@ -102,6 +104,7 @@ The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items fr
 A cargo tent flagged `villageCargoReceived` stays that way until the actual `Cargo*` item near it is gone — [`bannedObjects:`](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) checks for its *absence*, the mirror image of `objects:` checking for presence:
 
 ```yaml
+# When no cargo item is left near the rug, clears the received flag and resets that village status key.
 - prefab: rug_bogwitch_wolf
   type: poke, checkCargoExisted
   bannedObjects:

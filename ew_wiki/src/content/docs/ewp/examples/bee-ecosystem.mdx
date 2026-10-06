@@ -189,6 +189,7 @@ Vanilla drops a QueenBee from most wild beehives. This loop removes that guarant
 A separate, independent rule gives flowers their own small shot at a QueenBee:
 
 ```yaml
+# Picking a grown flower can spawn a QueenBee, but only near an active beehive.
 - prefab: allGrownFlowers
   type: state, picked
   weight: <chanceSpawnQueenbee>
@@ -284,6 +285,7 @@ Drop a big enough stack of Honey on cultivated ground, and it speeds up nearby c
 This one's a single rule chain, no poke needed — `objects:` alone does the "is a hive nearby" check:
 
 ```yaml
+# A grown crop pokes itself with turnBetterYield when an active beehive is within 10 meters.
 - prefab: allGrownCrops
   type: create
   objects:
@@ -298,6 +300,7 @@ This one's a single rule chain, no poke needed — `objects:` alone does the "is
 A grown crop only pokes itself with `turnBetterYield` if an active (non-silent) `piece_beehive` is within 10 meters when it grows — see [Filter - by Objects](/ew_toolkit/ew_wiki/ewp/concepts/objects-filtering/) for how `objects:` works. Two competing outcomes then decide what "better" means:
 
 ```yaml
+# Two competing outcomes decide what better means for a poked crop: blooming or pollinated.
 - prefab: allGrownCrops
   type: poke, turnBetterYield
   weight: <chanceTurnBlooming>
