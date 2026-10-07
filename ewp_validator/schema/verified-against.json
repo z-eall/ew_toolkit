@@ -1,15 +1,15 @@
 {
-  "checkedOn": "2026-09-21",
+  "checkedOn": "2026-10-07",
   "ewp": {
-    "version": "1.60.0",
-    "commit": "668e556"
+    "version": "1.62.0",
+    "commit": "426be9f"
   },
   "wec": {
-    "version": "1.77.0",
-    "commit": "bdf7f8c"
+    "version": "1.80.0",
+    "commit": "328d0fd"
   },
   "valheim": {
-    "version": "1.0.15",
-    "build": "25390630"
+    "version": "1.0.16",
+    "build": "25730771"
   }
 }
