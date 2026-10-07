@@ -1,18 +1,10 @@
 # EW Toolkit — Agent Notes
 
-Shared standing rules for any agent working in this repo — Claude Code or Cursor. `ewp_validator`-specific rules live one level down: [ewp_validator/AGENTS.md](ewp_validator/AGENTS.md); `ew_wiki`-specific rules the same way, in [ew_wiki/AGENTS.md](ew_wiki/AGENTS.md). Domain vocabulary is split the same way, in `GLOSSARY.md`.
+Shared standing rules for any agent working in this repo. `ewp_validator`-specific rules live one level down: [ewp_validator/AGENTS.md](ewp_validator/AGENTS.md); `ew_wiki`-specific rules the same way, in [ew_wiki/AGENTS.md](ew_wiki/AGENTS.md). Domain vocabulary is split the same way, in `GLOSSARY.md`.
 
 ## Domain docs
 
 Single-context — `GLOSSARY.md` + `docs/adr/` at the repo root; wayfinder maps under `.scratch/`. See [../docs/agents/domain.md](../docs/agents/domain.md). (Issue tracker and triage labels: same generic convention as the root project — see the root `CLAUDE.md`, not duplicated here.)
-
-## Dual-agent workflow (Cursor ↔ Claude Code)
-
-- **One agent at a time** per project folder — never run Cursor and Claude Code on the same folder simultaneously.
-- **Commit + push before switching** agents; **pull when opening** the other agent.
-- Update `HANDOFF.md` at the end of every session so the next agent can continue.
-- This repo runs as two worktrees: `main` (Claude Code, `ew_toolkit/`) and `cursor/work` (Cursor, `ew_toolkit-cursor/`).
-- **Standing-rule files (`AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/agents/`) must match byte-for-byte between the two worktrees** — enforced by a Stop hook, not memory; see `docs/agents/hooks-vs-rules.md`.
 
 ## Cost & tooling
 

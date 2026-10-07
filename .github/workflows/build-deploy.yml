@@ -10,7 +10,7 @@ name: Build and deploy
 # push back to the repo in the first place.
 on:
   push:
-    branches: [main, cursor/work]
+    branches: [main]
   pull_request: {}
   schedule:
     # Daily. Off-the-hour minute to avoid GitHub's documented queuing delay

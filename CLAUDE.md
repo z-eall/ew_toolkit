@@ -1,5 +1,5 @@
 # EW Toolkit — Standing Rules
 
-Shared with Cursor via `AGENTS.md`, imported below so there's one copy of the actual rules to maintain.
+Imports `AGENTS.md`, so there is one copy of the rules.
 
 @AGENTS.md
