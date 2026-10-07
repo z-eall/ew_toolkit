@@ -3,7 +3,7 @@
 // One copy of the ownership vocabulary. Two users:
 //   - the citation test: ew_wiki/tests/ledger-citations.test.mjs
 //   - the write-time hook: .agents/hooks/ew_toolkit/guard-pid-ownership-ledger.cjs
-// Plan: .scratch/hook-rule-audit/issues/08-execution-plan.md, step 3.7.
+// Used by the ledger citation test and the stamp check.
 const fs = require("fs");
 const path = require("path");
 

@@ -17,14 +17,14 @@ import ComponentIndexGrid from '../../../../components/ComponentIndexGrid.astro'
 
 <Steps>
 
-1. **The Zone Host — the ongoing fallback.**
+1. **The Zone Host — the ongoing fallback.** {/* ledger: T1-24 */}
 
-   The game constantly checks: **does this object have an owner?** If not, it finds the current Zone Host and makes them the owner. This keeps happening for as long as the object exists, for every object in the active zones.
+   The game constantly checks: **does this object have an owner?** If not, it finds the current Zone Host and makes them the owner. This keeps happening for as long as the object exists, for every object in the active zones. {/* ledger: T1-24 */}
 
-   **There's one exception:** player-built pieces. If you build a piece, the game gives you — the builder — **immediate ownership** (this is really the *Claiming Player* rule below, just triggered by building instead of an interaction), even if someone else is already the Zone Host. That ownership stays yours until you leave the zone — only then does it fall back to the rule above.
+   **There's one exception:** player-built pieces. If you build a piece, the game gives you — the builder — **immediate ownership**, because the player who creates an object owns it from the start, even if someone else is already the Zone Host. That ownership stays yours until you leave the zone — only then does it fall back to the rule above. {/* ledger: T1-24, T3-23 */}
 
    <Aside type="caution">
-   "Zone Host" doesn't mean "the server." It means whoever's currently active in that particular [active zone](https://valheim.fandom.com/wiki/Zones).
+   "Zone Host" doesn't mean "the server." It means whoever's currently active in that particular [active zone](https://valheim.fandom.com/wiki/Zones). {/* ledger: T1-24 */}
    </Aside>
 
 2. **The Claiming Player — a bonus rule some objects have.**
@@ -207,7 +207,7 @@ Anything it spawns along the way belongs to that same player too:
 </Aside>
 
 <Aside type="caution">
-**Monster-fired:** follows the ordinary Zone Host rule instead — e.g. `Greydwarf_throw_projectile` belongs to whoever's currently simulating that monster.
+**Monster-fired:** follows the ordinary Zone Host rule instead — e.g. `Greydwarf_throw_projectile` belongs to whoever's currently simulating that monster. {/* ledger: T1-24, T2-46 */}
 </Aside>
 
 ### Trap

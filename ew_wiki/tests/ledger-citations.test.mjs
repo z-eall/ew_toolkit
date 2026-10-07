@@ -1,7 +1,7 @@
 // node --test ew_wiki/tests/ledger-citations.test.mjs   (from ew_toolkit)
 // Every wiki paragraph that makes an ownership claim must cite a row of the code-proof ledger
 // (`ledger: T1-03`), every cited row must exist, and the ledger must not be stale.
-// Words and rules: scripts/ownership-ledger.cjs. Plan: .scratch/hook-rule-audit, step 3.7.
+// Words and rules: scripts/ownership-ledger.cjs.
 // Ratchet: ledger-citations.baseline.json lists the paragraphs that had no row id when this test
 // was built. A new uncited paragraph fails. A listed paragraph that is now cited or gone also
 // fails, so the list can only shrink. LEDGER_STRICT=1 ignores the list and also fails on a stale ledger.

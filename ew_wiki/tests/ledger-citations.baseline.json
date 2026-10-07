@@ -1,11 +1,4 @@
 {
   "_note": "Paragraphs with no ledger row id when the test was built (2026-10-06). Fix a page, then remove its entry. Do not add entries.",
-  "uncited": [
-    "src/content/docs/ewp/concepts/advanced-functions-player-identity.mdx::`pid`/`cid` only tell you who owns an object *right now* — n",
-    "src/content/docs/ewp/extended-reading/object-ownership.mdx::1. **The Zone Host — the ongoing fallback.**",
-    "src/content/docs/ewp/extended-reading/object-ownership.mdx::The game constantly checks: **does this object have an owner",
-    "src/content/docs/ewp/extended-reading/object-ownership.mdx::**There's one exception:** player-built pieces. If you build",
-    "src/content/docs/ewp/extended-reading/object-ownership.mdx::<Aside type=\"caution\"> \"Zone Host\" doesn't mean \"the server.",
-    "src/content/docs/ewp/extended-reading/object-ownership.mdx::<Aside type=\"caution\"> **Monster-fired:** follows the ordina"
-  ]
+  "uncited": []
 }
