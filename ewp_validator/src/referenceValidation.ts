@@ -413,7 +413,7 @@ function orphanKeyMessage(direction: KeyDirection, name: string, counterpartOnly
 const NO_ARG_FUNCTION_NAMES = new Set([
   "prefab", "safeprefab", "par",
   "par0", "par1", "par2", "par3", "par4", "par5", "par6", "par7", "par8", "par9",
-  "day", "ticks", "x", "y", "z", "snap", "amount", "time", "realtime",
+  "day", "ticks", "x", "y", "z", "snap", "time", "realtime",
   // `pokecount`: Functions.cs:157. It replaced the bare `<amount>` in EWP 1.61 (see
   // publish/CHANGELOG.md in the mirror). Added against mirror 1.62.0.
   "pokecount",
