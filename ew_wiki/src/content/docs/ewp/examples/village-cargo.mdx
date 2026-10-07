@@ -89,15 +89,11 @@ Cargo destinations: Dragonfang, Varghelm, Haradin, Seaguard, Stormbreaker, Blood
   type: poke, findEmptyCargoSpawner
   data: int, villageCargoReceived, 1
   spawn:
-  - prefab: MyVillageCargoItem
+  - prefab: Cargo<par_1>
     pos: 0,0,0.5
 ```
 
 `villageCargoTent` (which village this rug stands for) and `villageCargoReceived` (whether that village's last delivery is still sitting there, uncollected) exist only because this rule set them — the rug component itself never heard of either one. Any harmless, easy-to-place decorative prefab works the same way: a free, invisible-in-plain-sight marker object, carrying whatever custom state a script wants to track per location.
-
-<Aside type="caution">
-The real script spawns `Cargo<par_1>` — a range of custom cargo-crate items from another mod bundled into that server, not vanilla Valheim or anything in Jotunn's prefab list. This page uses the placeholder `MyVillageCargoItem` above instead of presenting that name as a confirmed prefab — swap in a real lootable prefab of your own.
-</Aside>
 
 ### Resetting once a delivery is collected
 
