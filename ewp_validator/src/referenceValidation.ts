@@ -618,7 +618,7 @@ function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestio
   const base = `'<${head}...>' is not an EWP function`;
   const runtime = "It stays as plain text (no error).";
   if (RENAMED_BARE_NAMES.has(head)) {
-    return `${base} since EWP 1.61: it is now '<pokecount>' (${head}_X still works). ${runtime}`;
+    return `${base}. Did you mean '<pokecount...>' or '<${head}_X...>'? ${runtime}`;
   }
   if (!suggestion) {
     return `${base}, so it stays as plain text (no error). Fine if it is a value: or valueGroup: from another file.`;

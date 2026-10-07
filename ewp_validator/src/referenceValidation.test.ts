@@ -708,7 +708,9 @@ describe("string-template function name typo detection (ticket 06)", () => {
     const bare = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <amount>\n" }];
     const problems = runReferenceValidation(bare).filter((p) => p.id === "template-function");
     expect(problems).toHaveLength(1);
-    expect(problems[0].message).toContain("pokecount");
+    expect(problems[0].message).toBe(
+      "'<amount...>' is not an EWP function. Did you mean '<pokecount...>' or '<amount_X...>'? It stays as plain text (no error).",
+    );
     const withArg = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <amount_Wood>\n" }];
     expect(runReferenceValidation(withArg).filter((p) => p.id === "template-function")).toEqual([]);
   });
