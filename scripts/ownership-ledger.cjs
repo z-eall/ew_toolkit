@@ -1,9 +1,8 @@
 // Shared helpers for the pid/ownership code-proof ledger
 // (ew_wiki/docs/guide-source/3-advanced-guide/EWP_pid_ownership_code_findings.md).
-// One copy of the ownership vocabulary. Two users:
-//   - the citation test: ew_wiki/tests/ledger-citations.test.mjs
-//   - the write-time hook: .agents/hooks/ew_toolkit/guard-pid-ownership-ledger.cjs
-// Used by the ledger citation test and the stamp check.
+// One copy of the ownership vocabulary. Used by the citation test
+// (ew_wiki/tests/ledger-citations.test.mjs) and the stamp check.
+// The write-time hook guard-pid-ownership-ledger was retired 2026-10-07; the test replaces it.
 const fs = require("fs");
 const path = require("path");
 

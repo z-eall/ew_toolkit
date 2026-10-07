@@ -43,7 +43,7 @@ Vanilla Valheim's random events all use a fixed id:
 | Wolf hunt | `wolves` |
 | Bat swarm | `bats` |
 
-A separate mod by the same author, [Expand World Events](https://github.com/JereKuusela/valheim-expand_world_events), lets a world owner define entirely new events with ids of their own choosing in `expand_events.yaml` — `type: event` reacts to whatever id actually fires, vanilla or custom. Check that file before writing a rule against an id that isn't in the table above.
+[Expand World Data](https://github.com/JereKuusela/valheim-expand_world_data) lets a world owner define entirely new events with ids of their own choosing in `expand_events.yaml`. Turn on its `Event data` setting first, because it is off by default. `type: event` reacts to whatever id actually fires, vanilla or custom. Check that file before writing a rule against an id that isn't in the table above.
 
 ```yaml
 - type: event, army_eikthyr
