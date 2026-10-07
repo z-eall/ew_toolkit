@@ -703,6 +703,16 @@ describe("string-template function name typo detection (ticket 06)", () => {
     expect(runReferenceValidation(files).filter((p) => p.id === "template-function")).toEqual([]);
   });
 
+  // The bare `<amount>` poke function was renamed `pokecount` in EWP 1.61. `<amount_X>` still exists.
+  it("flags the bare amount function and names pokecount, but accepts amount with an argument", () => {
+    const bare = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <amount>\n" }];
+    const problems = runReferenceValidation(bare).filter((p) => p.id === "template-function");
+    expect(problems).toHaveLength(1);
+    expect(problems[0].message).toContain("pokecount");
+    const withArg = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <amount_Wood>\n" }];
+    expect(runReferenceValidation(withArg).filter((p) => p.id === "template-function")).toEqual([]);
+  });
+
   it("reports a case-only mismatch distinctly, since EWP function dispatch is case-sensitive", () => {
     const files = [{ id: "a", text: "- prefab: Bonemass\n  type: create\n  command: <String_x>\n" }];
     const problems = runReferenceValidation(files).filter((p) => p.id === "template-function");

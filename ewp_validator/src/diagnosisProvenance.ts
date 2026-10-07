@@ -58,7 +58,7 @@ const AUDIT = { checked: "2026-09-18", ewpVersion: "1.60.0" } as const;
 // Sweep 4 / round 6 ticket 23: each rule below was read again against the mirror on this date
 // (mirror commit 668e556, 2026-09-11, EWP 1.60.0). The claim in each `note` was found still true.
 const RECHECK = { checked: "2026-09-20", ewpVersion: "1.60.0" } as const;
-// Sweep 5 (hook-rule-audit step 3.7): the rules whose source files changed after their check were read again
+// Sweep 5: the rules whose source files changed after their check were read again
 // against the mirror at EWP 1.62.0 (commit 426be9f, 2026-10-03). The claim in each `note` was found still true.
 const RECHECK_LATEST = { checked: "2026-10-07", ewpVersion: "1.62.0" } as const;
 const NOT_DATED = { checked: null, ewpVersion: null } as const;

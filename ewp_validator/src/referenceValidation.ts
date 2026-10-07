@@ -485,6 +485,11 @@ for (const name of ALL_KNOWN_FUNCTION_NAMES) {
 // names). Always-recognized regardless of what's loaded in the batch.
 const DEFAULT_VALUE_GROUP_NAMES = new Set(["wearntear", "humanoid", "creature", "structure"]);
 
+// Bare names that EWP removed. `<amount>` became `<pokecount>` in EWP 1.61 (Functions.cs:157,
+// :166; publish/CHANGELOG.md in the mirror). `<amount_X>` is a different, current function
+// (ObjectFunctions.cs:105), so only the bare form is removed.
+const RENAMED_BARE_NAMES = new Set(["amount"]);
+
 function isRecognizedFunctionGroup(inner: string): boolean {
   // EWP strips a `=default` suffix off the ENTIRE bracket text in
   // TryReplaceFunction, unconditionally, before any no-arg/arg-taking
@@ -496,6 +501,9 @@ function isRecognizedFunctionGroup(inner: string): boolean {
   // text must not be mistaken for the outer bracket's default separator.
   const withoutDefault = splitTopLevel(inner, "=")[0] ?? inner;
   if (KNOWN_NO_ARG_NAMES.has(withoutDefault)) return true;
+  // A bare renamed name is not a function any more, even though the same word still heads
+  // an argument form (`<amount_X>`).
+  if (RENAMED_BARE_NAMES.has(withoutDefault)) return false;
   const head = splitTopLevel(inner, "_")[0] ?? inner;
   return KNOWN_ARG_HEADS.has(head);
 }
@@ -609,6 +617,9 @@ function suggestFunctionName(head: string): FunctionNameSuggestion | null {
 function templateFunctionMessage(head: string, suggestion: FunctionNameSuggestion | null): string {
   const base = `'<${head}...>' is not an EWP function`;
   const runtime = "It stays as plain text (no error).";
+  if (RENAMED_BARE_NAMES.has(head)) {
+    return `${base} since EWP 1.61: it is now '<pokecount>' (${head}_X still works). ${runtime}`;
+  }
   if (!suggestion) {
     return `${base}, so it stays as plain text (no error). Fine if it is a value: or valueGroup: from another file.`;
   }
